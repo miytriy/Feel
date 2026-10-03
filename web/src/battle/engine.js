@@ -69,10 +69,16 @@ export function legalActions(state) {
   return targets.map((t) => ({ type: 'skill', target: t.uid }))
 }
 
+// 魔力参照の攻撃は、攻撃力の70%を魔力に変換して攻撃する(魔力は原則0で、攻撃のたびに0へ戻る)
+const MAGIC_CONVERSION = 0.7
+export function refStatValue(unit, skill) {
+  return skill.stat === 'mag' ? unit.atk * MAGIC_CONVERSION + unit.mag : unit.atk
+}
+
 // ダメージ計算(opts.expected = true なら、クリティカルを確率の平均で計算する。CPUの思考用)
 export function calcDamage(attacker, defender, skill, opts = {}) {
   const rng = opts.rng || Math.random
-  const refStat = skill.stat === 'mag' ? attacker.mag : attacker.atk
+  const refStat = refStatValue(attacker, skill)
   const base = refStat * skill.mult + (skill.add || 0)
 
   const critChance = Math.min(1, Math.max(0, attacker.critRate / 100))
