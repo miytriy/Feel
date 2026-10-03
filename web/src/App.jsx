@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import { auth, googleProvider } from './firebase.js'
 import { fetchMe, drawGacha } from './api.js'
+import BattleScreen from './BattleScreen.jsx'
 
 const PITY_COUNT = 40
 const COST = 100
@@ -14,6 +15,7 @@ const RARITY = {
 }
 
 export default function App() {
+  const [screen, setScreen] = useState('home')
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [me, setMe] = useState(null)
@@ -74,13 +76,21 @@ export default function App() {
     return <div style={{ padding: 20 }}>読み込み中...</div>
   }
 
+  if (screen === 'battle') {
+    return <BattleScreen onExit={() => setScreen('home')} />
+  }
+
   return (
     <div style={{ padding: 20, maxWidth: 600, margin: '0 auto' }}>
       <h1>Feel</h1>
 
+      <p>
+        <button onClick={() => setScreen('battle')}>CPU対戦</button>
+      </p>
+
       {!user ? (
         <div>
-          <p>ログインしてください</p>
+          <p>ガチャを引くにはログインしてください</p>
           <button onClick={handleLogin}>Googleでログイン</button>
         </div>
       ) : (
