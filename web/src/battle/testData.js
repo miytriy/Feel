@@ -11,7 +11,7 @@ export const TEST_CHARACTERS = [
   },
   {
     id: 'test_02', name: 'テスト魔導士', class: 'ニュートラル',
-    stats: { hp: 1600, atk: 200, mag: 640, def: 100, spd: 95 },
+    stats: { hp: 1600, atk: 900, def: 100, spd: 95 },
     passives: [],
     skill: { name: '火球', stat: 'mag', type: 'magic', mult: 1.4 },
   },
