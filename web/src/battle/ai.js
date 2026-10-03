@@ -1,5 +1,5 @@
 // Feel Battle - CPUの頭脳(レベル1〜4)
-import { legalActions, applyAction, calcDamage, getUnit, getActiveUnit } from './engine.js'
+import { legalActions, applyAction, calcDamage, refStatValue, getUnit, getActiveUnit } from './engine.js'
 
 export const CPU_LEVELS = [
   { level: 1, name: 'かんたん', description: 'ランダムに攻撃する' },
@@ -49,7 +49,7 @@ function pickBest(actions, scoreFn) {
 // 相手を倒すと攻撃力の合計が減るので、「倒す」「集中攻撃する」ことが自然に高く評価される。
 function unitPower(u) {
   const sk = u.skill
-  const ref = sk.stat === 'mag' ? u.mag : u.atk
+  const ref = refStatValue(u, sk)
   const perHit = (ref * sk.mult + (sk.add || 0)) * (1 + (u.critRate / 100) * (u.critDmg / 100))
   return (perHit * u.spd) / 100
 }
