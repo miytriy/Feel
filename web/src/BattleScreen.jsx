@@ -1,40 +1,27 @@
 import { useEffect, useState } from 'react'
-import { createBattle, applyAction, getActiveUnit } from './battle/engine.js'
+import { createBattle, applyAction, getActiveUnit, legalActions, getUnit, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS } from './battle/ai.js'
-import { TEAM_SAMPLE } from './battle/testData.js'
+import { TEAM_PLAYER, TEAM_CPU } from './battle/testData.js'
 
 // 色: 自分=青、相手=赤紫、行動中=琥珀
 const C = {
-  ink: '#1f2a44',
-  paper: '#eef1f6',
-  card: '#ffffff',
-  line: '#cdd3df',
-  mute: '#6b7488',
-  player: '#2f5bea',
-  enemy: '#b83a6b',
-  active: '#e0a100',
-  hp: '#2f9e6b',
-  hpMid: '#d9a400',
-  hpLow: '#d1403f',
+  ink: '#1f2a44', paper: '#eef1f6', card: '#ffffff', line: '#cdd3df', mute: '#6b7488',
+  player: '#2f5bea', enemy: '#b83a6b', active: '#e0a100',
+  hp: '#2f9e6b', hpMid: '#d9a400', hpLow: '#d1403f',
 }
 const FONT = '"Hiragino Sans","Noto Sans JP",system-ui,sans-serif'
 const TEAM_COLOR = { A: C.player, B: C.enemy }
 const TYPE_LABEL = { physical: '物理', magic: '魔法', true: '確定' }
 
-// これから行動する順番(アクションバー)。100ごとにラウンドの区切りを入れる
+// これから行動する順番(アクションバー)。ラウンドの区切りも入れる
 function buildTimeline(state, count = 12) {
   const items = []
   for (const u of state.units) {
     if (!u.alive) continue
-    for (let k = 0; k < count; k++) {
-      items.push({ time: u.curAV + u.baseAV * k, unit: u })
-    }
+    for (let k = 0; k < count; k++) items.push({ time: u.curAV + u.baseAV * k, unit: u })
   }
-  const toNext = 100 - (state.totalAV % 100)
-  const nextRound = Math.floor(state.totalAV / 100) + 2
-  for (let k = 0; k < count; k++) {
-    items.push({ time: toNext + 100 * k, round: nextRound + k })
-  }
+  const toNext = state.round * 100 - state.totalAV
+  for (let k = 0; k < count; k++) items.push({ time: toNext + 100 * k, round: state.round + 1 + k })
   items.sort((a, b) => a.time - b.time || (a.round ? 1 : 0) - (b.round ? 1 : 0) || (b.unit?.spd ?? 0) - (a.unit?.spd ?? 0))
   return items.slice(0, count)
 }
@@ -73,21 +60,34 @@ function ActionBar({ state }) {
   )
 }
 
-function UnitCard({ unit, active, selected, selectable, onClick }) {
+function badgesOf(unit) {
+  const badges = []
+  for (const k of unit.keywords) {
+    if (k === 'stealth' && !unit.stealth) continue
+    if (k === 'barrier' && unit.barrier <= 0) continue
+    badges.push(KEYWORDS[k]?.label ?? k)
+  }
+  if (unit.buffs.length) badges.push('強化')
+  return badges
+}
+
+function UnitCard({ unit, active, selected, selectable, inspected, onClick }) {
   const ratio = Math.max(0, unit.hp / unit.maxHp)
   const hpColor = ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow
+  const badges = unit.alive ? badgesOf(unit) : []
   return (
     <div
       data-uid={unit.uid}
       data-alive={unit.alive ? 'true' : 'false'}
-      onClick={selectable ? onClick : undefined}
+      data-selectable={selectable ? 'true' : 'false'}
+      onClick={onClick}
       style={{
         minWidth: 0, boxSizing: 'border-box', padding: 4, borderRadius: 8, fontSize: 10, lineHeight: 1.3,
         background: unit.alive ? C.card : '#dfe3ea',
         opacity: unit.alive ? 1 : 0.5,
-        border: `2px solid ${selected ? C.active : active ? TEAM_COLOR[unit.team] : C.line}`,
+        border: `2px solid ${selected ? C.active : selectable ? C.ink : active ? TEAM_COLOR[unit.team] : inspected ? C.mute : C.line}`,
         boxShadow: selected ? `0 0 0 3px ${C.active}55` : active ? `0 0 0 3px ${TEAM_COLOR[unit.team]}33` : 'none',
-        cursor: selectable ? 'pointer' : 'default',
+        cursor: 'pointer',
       }}
     >
       <div style={{ height: 26, overflow: 'hidden' }}>{unit.name}</div>
@@ -96,6 +96,13 @@ function UnitCard({ unit, active, selected, selectable, onClick }) {
       </div>
       <div style={{ marginTop: 2, color: C.mute }}>{unit.alive ? `${Math.ceil(unit.hp)}/${unit.maxHp}` : '戦闘不能'}</div>
       {unit.shield > 0 && <div style={{ color: C.player }}>盾 {Math.ceil(unit.shield)}</div>}
+      {badges.length > 0 && (
+        <div style={{ marginTop: 2, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+          {badges.map((b) => (
+            <span key={b} style={{ fontSize: 9, padding: '0 3px', borderRadius: 3, background: '#e6ecff', color: C.player }}>{b}</span>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -105,6 +112,23 @@ function Row({ title, color, children }) {
     <div style={{ marginTop: 10 }}>
       <div style={{ fontSize: 11, color, fontWeight: 700, marginBottom: 4 }}>{title}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 4 }}>{children}</div>
+    </div>
+  )
+}
+
+// キャラの詳細(能力の説明)
+function InspectBox({ unit }) {
+  const lines = []
+  for (const k of unit.keywords) lines.push(`【${KEYWORDS[k]?.label ?? k}】${KEYWORDS[k]?.desc ?? ''}`)
+  for (const p of unit.passiveObjs) lines.push(`【${TRIGGER_LABELS[p.trigger] ?? p.trigger}】${p.name ?? ''}: ${p.desc ?? ''}`)
+  for (const t of unit.traits) lines.push(`【特性 MP${t.cost}】${t.name}: ${t.desc ?? ''}`)
+  return (
+    <div data-testid="inspect" style={{ marginTop: 8, padding: 8, borderRadius: 8, background: C.card, border: `1px solid ${C.line}`, fontSize: 11, lineHeight: 1.6 }}>
+      <b>{unit.name}</b>
+      <span style={{ color: C.mute }}>
+        {' '}攻撃 {Math.round(unit.atk)} / 防御 {Math.round(unit.def)} / 速度 {Math.round(unit.spd)} / スキル「{unit.skill.name}」({TYPE_LABEL[unit.skill.type]})
+      </span>
+      {lines.length === 0 ? <div style={{ color: C.mute }}>能力なし</div> : lines.map((l, i) => <div key={i}>{l}</div>)}
     </div>
   )
 }
@@ -120,12 +144,19 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
   const [level, setLevel] = useState(2)
   const [state, setState] = useState(null)
   const [selected, setSelected] = useState(null)
+  const [mode, setMode] = useState(null) // 選択中の特性のid(nullならスキル攻撃)
+  const [inspect, setInspect] = useState(null)
 
   const actor = state ? getActiveUnit(state) : null
   const cpuTurn = !!actor && actor.team === 'B' && !state.winner
   const playerTurn = !!actor && actor.team === 'A' && !state.winner
+  const legal = playerTurn ? legalActions(state) : []
+  const skillTargets = legal.filter((a) => a.type === 'skill').map((a) => a.target)
+  const traitActions = (id) => legal.filter((a) => a.type === 'trait' && a.trait === id)
+  const canEnd = legal.some((a) => a.type === 'endTurn')
+  const selectableSet = mode ? traitActions(mode).map((a) => a.target).filter(Boolean) : skillTargets
 
-  // CPUの番になったら少し待ってから行動する
+  // CPUの番になったら少し待ってから行動する(特性を使ったあとも番が続くので、何度か動く)
   useEffect(() => {
     if (!state || state.winner) return
     const current = getActiveUnit(state)
@@ -136,15 +167,37 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
     return () => clearTimeout(timer)
   }, [state, level, cpuDelay])
 
-  const startBattle = () => {
+  const reset = () => {
     setSelected(null)
-    setState(createBattle(TEAM_SAMPLE, TEAM_SAMPLE))
+    setMode(null)
   }
-
-  const handleAttack = () => {
-    if (!selected || !playerTurn) return
-    setState(applyAction(state, { type: 'skill', target: selected }))
+  const startBattle = () => {
+    reset()
+    setInspect(null)
+    setState(createBattle(TEAM_PLAYER, TEAM_CPU))
+  }
+  const act = (action) => {
+    reset()
+    setState(applyAction(state, action))
+  }
+  const handleTrait = (trait) => {
+    const acts = traitActions(trait.id)
+    if (!acts.length) return
+    if (acts.every((a) => a.target == null)) return act(acts[0]) // 対象を選ばない特性はすぐ使う
     setSelected(null)
+    setMode(mode === trait.id ? null : trait.id)
+  }
+  const handleConfirm = () => {
+    if (!selected) return
+    act(mode ? { type: 'trait', trait: mode, target: selected } : { type: 'skill', target: selected })
+  }
+  const handleCard = (u) => {
+    if (playerTurn && selectableSet.includes(u.uid)) {
+      setSelected(u.uid)
+      setInspect(u.uid)
+    } else {
+      setInspect(inspect === u.uid ? null : u.uid)
+    }
   }
 
   const wrap = { maxWidth: 520, margin: '0 auto', padding: 12, minHeight: '100vh', boxSizing: 'border-box', background: C.paper, color: C.ink, fontFamily: FONT }
@@ -182,6 +235,20 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
   const enemies = state.units.filter((u) => u.team === 'B')
   const players = state.units.filter((u) => u.team === 'A')
   const resultText = state.winner === 'A' ? '勝利!' : state.winner === 'B' ? '敗北…' : '引き分け'
+  const inspected = inspect ? getUnit(state, inspect) : null
+  const modeTrait = mode ? actor.traits.find((t) => t.id === mode) : null
+
+  const card = (u) => (
+    <UnitCard
+      key={u.uid}
+      unit={u}
+      active={u.uid === state.active}
+      selected={u.uid === selected}
+      selectable={playerTurn && selectableSet.includes(u.uid)}
+      inspected={u.uid === inspect}
+      onClick={() => handleCard(u)}
+    />
+  )
 
   return (
     <div style={wrap}>
@@ -192,35 +259,27 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
         </div>
         <button onClick={() => setState(null)} style={{ ...buttonStyle(false, false), padding: '4px 10px', fontSize: 12 }}>やめる</button>
       </div>
+      <div style={{ fontSize: 12, marginTop: 2 }}>
+        <span style={{ color: C.player, fontWeight: 700 }}>自分 MP {state.mp.A}/{state.mpMax.A}</span>
+        <span style={{ color: C.mute }}> ・ </span>
+        <span style={{ color: C.enemy, fontWeight: 700 }}>相手 MP {state.mp.B}/{state.mpMax.B}</span>
+      </div>
 
       <ActionBar state={state} />
 
-      <Row title="相手" color={C.enemy}>
-        {enemies.map((u) => (
-          <UnitCard
-            key={u.uid}
-            unit={u}
-            active={u.uid === state.active}
-            selected={u.uid === selected}
-            selectable={playerTurn && u.alive}
-            onClick={() => setSelected(u.uid)}
-          />
-        ))}
-      </Row>
+      <Row title="相手" color={C.enemy}>{enemies.map(card)}</Row>
 
-      <div style={{ margin: '12px 0', padding: 8, borderRadius: 8, background: C.card, border: `1px solid ${C.line}`, fontSize: 12, lineHeight: 1.6, minHeight: 96 }}>
-        {state.log.slice(-6).map((line, i, arr) => (
+      <div style={{ margin: '12px 0 0', padding: 8, borderRadius: 8, background: C.card, border: `1px solid ${C.line}`, fontSize: 12, lineHeight: 1.6, minHeight: 120 }}>
+        {state.log.slice(-8).map((line, i, arr) => (
           <div key={state.log.length - arr.length + i} style={{ fontWeight: i === arr.length - 1 ? 700 : 400, color: i === arr.length - 1 ? C.ink : C.mute }}>
             {line}
           </div>
         ))}
       </div>
 
-      <Row title="自分" color={C.player}>
-        {players.map((u) => (
-          <UnitCard key={u.uid} unit={u} active={u.uid === state.active} selected={false} selectable={false} />
-        ))}
-      </Row>
+      <Row title="自分" color={C.player}>{players.map(card)}</Row>
+
+      {inspected && <InspectBox unit={inspected} />}
 
       <div style={{ marginTop: 14, padding: 10, borderRadius: 8, background: C.card, border: `1px solid ${C.line}` }}>
         {state.winner ? (
@@ -234,12 +293,50 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
         ) : (
           <div>
             <div style={{ fontSize: 13, marginBottom: 6 }}>
-              <b>{actor.name}</b> の番: 「{actor.skill.name}」({TYPE_LABEL[actor.skill.type]})
+              <b>{actor.name}</b> の番: スキル「{actor.skill.name}」({TYPE_LABEL[actor.skill.type]})
             </div>
+
+            {actor.traits.length > 0 && (
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ fontSize: 11, color: C.mute, marginBottom: 4 }}>特性(MPを使う。使ってもターンは続きます)</div>
+                {actor.traits.map((t) => {
+                  const usable = traitActions(t.id).length > 0
+                  const why = actor.usedTraits.includes(t.id) ? '使用済み' : state.mp.A < t.cost ? 'MP不足' : '対象なし'
+                  return (
+                    <div key={t.id} style={{ marginBottom: 4 }}>
+                      <button
+                        onClick={() => handleTrait(t)}
+                        disabled={!usable}
+                        style={{ ...buttonStyle(mode === t.id, !usable), padding: '6px 10px', fontSize: 13 }}
+                      >
+                        {t.name}(MP{t.cost}){!usable ? ` ${why}` : ''}
+                      </button>
+                      <span style={{ fontSize: 11, color: C.mute }}> {t.desc}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
             <div style={{ fontSize: 12, color: C.mute, marginBottom: 8 }}>
-              {selected ? `対象: ${state.units.find((u) => u.uid === selected)?.name}` : '上の「相手」から攻撃する相手をタップ'}
+              {mode
+                ? selected
+                  ? `対象: ${getUnit(state, selected)?.name}`
+                  : `【${modeTrait?.name}】の対象をタップ(光っているキャラ)`
+                : skillTargets.length === 0
+                  ? '入場直後など、いまはスキルを使えません'
+                  : selected
+                    ? `対象: ${getUnit(state, selected)?.name}`
+                    : '上の「相手」から攻撃する相手をタップ'}
             </div>
-            <button onClick={handleAttack} disabled={!selected} style={buttonStyle(true, !selected)}>攻撃する</button>
+
+            {(mode || skillTargets.length > 0) && (
+              <button onClick={handleConfirm} disabled={!selected} style={buttonStyle(true, !selected)}>
+                {mode ? `${modeTrait?.name}を使う` : '攻撃する'}
+              </button>
+            )}{' '}
+            {mode && <button onClick={() => { setMode(null); setSelected(null) }} style={buttonStyle(false, false)}>やめる</button>}{' '}
+            {canEnd && !mode && <button onClick={() => act({ type: 'endTurn' })} style={buttonStyle(skillTargets.length === 0, false)}>ターン終了</button>}
           </div>
         )}
       </div>
