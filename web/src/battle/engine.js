@@ -1,4 +1,4 @@
-// Feel Battle - バトルの処理(段階3: 進化・EP・信仰値・カウントダウン・クレスト)
+// Feel Battle - バトルの処理(段階3: 進化・EP・信仰値・カウントダウン・クレスト・連携・奥義)
 // 画面やFirebaseには依存しません。「状態 + 行動 → 新しい状態」の形で作ってあります。
 
 const AV_BASE = 10000 // 初期行動値 = 10000 ÷ 速度
@@ -9,6 +9,8 @@ const EP_MAX = 2 // EPの最大ストック
 const EP_GRANT_ROUND = 5 // このラウンドの開始時にEPをもらう
 const EP_GRANT = 2 // もらえるEPの数
 const CREST_MAX = 5 // クレストを置ける数
+const ULTIMATE_GAUGE = 10 // 奥義ゲージがこの値以上のとき【奥義】が働く
+const LIBERATION_GAUGE = 15 // 奥義ゲージがこの値以上のとき【解放奥義】が働く
 const MAX_ACTIONS_PER_TURN = 30 // 1ターンに使える特性・進化の回数の安全上限
 const MAX_TURNS = 1500 // これを超えたら引き分け(膠着対策)
 const MAGIC_CONVERSION = 0.7 // 魔力参照の攻撃は、攻撃力の70%を魔力に変換する
@@ -30,7 +32,7 @@ export const KEYWORDS = {
 export const TRIGGER_LABELS = {
   fanfare: 'ファンファーレ', constant: '常時', active: 'アクティブ', lastWord: 'ラストワード',
   onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時',
-  roundStart: 'ラウンド開始時', allyTurnStart: '味方のターン開始時',
+  roundStart: 'ラウンド開始時', allyTurnStart: '味方のターン開始時', link: '連携',
 }
 
 // ---------- ユニットの作成 ----------
@@ -76,6 +78,7 @@ export function createBattle(teamADefs, teamBDefs) {
     units, totalAV: 0, round: 0, turns: 0, actionsThisTurn: 0,
     mp: { A: 0, B: 0 }, mpMax: { A: 0, B: 0 }, ep: { A: 0, B: 0 },
     faith: { A: 0, B: 0 }, crests: { A: [], B: [] },
+    link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 },
     active: null, winner: null, log: ['バトル開始!'],
   }
   startRound(state)
@@ -90,9 +93,17 @@ const alliesOf = (state, u) => state.units.filter((x) => x.alive && x.team === u
 const enemiesOf = (state, u) => state.units.filter((x) => x.alive && x.team !== u.team)
 const abilityTargetable = (u) => u.alive && !u.stealth && !hasKw(u, 'aura')
 
+// 奥義ゲージ = 現在のターン数(ラウンド数) + 特性の発動回数(チーム全体)
+export const gaugeOf = (state, team) => state.round + state.traitCount[team]
+
 // 条件: faith(信仰値の下限) hpBelow/hpAbove(HP%) evolved(進化済みか) crests(クレストの数の下限)
+//       link(連携の下限) gauge(奥義ゲージの下限) ultimate(奥義: ゲージ10以上) liberation(解放奥義: ゲージ15以上)
 function checkCond(state, unit, c) {
   if (!c) return true
+  if (c.link != null && state.link[unit.team] < c.link) return false
+  if (c.gauge != null && gaugeOf(state, unit.team) < c.gauge) return false
+  if (c.ultimate && gaugeOf(state, unit.team) < ULTIMATE_GAUGE) return false
+  if (c.liberation && gaugeOf(state, unit.team) < LIBERATION_GAUGE) return false
   if (c.faith != null && state.faith[unit.team] < c.faith) return false
   if (c.hpBelow != null && (unit.hp / unit.maxHp) * 100 > c.hpBelow) return false
   if (c.hpAbove != null && (unit.hp / unit.maxHp) * 100 < c.hpAbove) return false
@@ -448,6 +459,7 @@ function startRound(state, opts) {
     }
   }
   resolveDeaths(state, opts)
+  recalc(state) // ラウンドが進むと奥義ゲージも変わる
 }
 
 function beginTurn(state, unit, opts) {
@@ -580,6 +592,22 @@ function doSkill(state, actor, targetUid, opts) {
     state.log.push(`${actor.name}の「${skill.name}」!`)
   }
   resolveDeaths(state, opts)
+  countLink(state, actor, opts)
+}
+
+// 連携: 味方がスキルを発動した回数を数える。【連携_N】は、回数がNに達したときに働く
+function countLink(state, actor, opts) {
+  state.link[actor.team] += 1
+  const count = state.link[actor.team]
+  for (const u of state.units) {
+    if (!u.alive || u.team !== actor.team) continue
+    for (const p of u.passiveObjs) {
+      if (p.trigger !== 'link' || p.min !== count || !checkCond(state, u, p.condition)) continue
+      state.log.push(`${u.name}の【連携_${p.min}】`)
+      runEffects(state, u, p.effects, { opts })
+    }
+  }
+  resolveDeaths(state, opts)
 }
 
 // 味方の特性が使われたとき、コンボを持つ味方のカウントを1つ進める
@@ -601,7 +629,9 @@ function countCombos(state, actor, opts) {
 function doTrait(state, actor, action, opts) {
   const trait = actor.traits.find((t) => t.id === action.trait)
   state.mp[actor.team] -= trait.cost
+  state.traitCount[actor.team] += 1 // 奥義ゲージに数えられる
   actor.usedTraits.push(trait.id)
+  recalc(state)
   state.log.push(`${actor.name}の特性【${trait.name}】(MP${trait.cost})`)
   runEffects(state, actor, trait.effects, { opts, chosen: action.target })
   countCombos(state, actor, opts)
