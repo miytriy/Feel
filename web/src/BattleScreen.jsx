@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { createBattle, applyAction, getActiveUnit, legalActions, getUnit, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
+import { createBattle, applyAction, getActiveUnit, legalActions, getUnit, gaugeOf, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS } from './battle/ai.js'
 import { TEAM_PLAYER, TEAM_CPU } from './battle/teams.js'
 
@@ -110,7 +110,10 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick }) {
   )
 }
 
-// チームの資源(MP・EP・信仰値)と、置かれているクレスト
+// 奥義ゲージの段階(10以上で奥義、15以上で解放奥義)
+const tierOf = (g) => (g >= 15 ? '【解放奥義】' : g >= 10 ? '【奥義】' : '')
+
+// チームの資源(MP・EP・信仰値・連携・奥義ゲージ)と、置かれているクレスト
 function TeamStatus({ state, team }) {
   const crests = state.crests[team]
   return (
@@ -119,6 +122,8 @@ function TeamStatus({ state, team }) {
       <span> MP {state.mp[team]}/{state.mpMax[team]}</span>
       <span> ・ EP {state.ep[team]}</span>
       <span> ・ 信仰 {state.faith[team]}</span>
+      <span> ・ 連携 {state.link[team]}</span>
+      <span> ・ 奥義ゲージ {gaugeOf(state, team)}{tierOf(gaugeOf(state, team))}</span>
       {crests.length > 0 && (
         <span>
           {' ・ クレスト '}
@@ -142,12 +147,21 @@ function Row({ title, color, children }) {
   )
 }
 
+// 奥義・解放奥義の条件がついた能力には、頭に【奥義】【解放奥義】を付ける
+const tierPrefix = (cond) => (cond?.liberation ? '【解放奥義】' : cond?.ultimate ? '【奥義】' : '')
+
+function passiveLine(p) {
+  const label = (TRIGGER_LABELS[p.trigger] ?? p.trigger) + (p.min != null && p.trigger !== 'combo' ? `_${p.min}` : '')
+  const name = p.name && p.name !== label ? `${p.name}: ` : ''
+  return `${tierPrefix(p.condition)}【${label}】${name}${p.desc ?? ''}`
+}
+
 // キャラの詳細(能力の説明)
 function InspectBox({ unit }) {
   const lines = []
   for (const k of unit.keywords) lines.push(`【${KEYWORDS[k]?.label ?? k}】${KEYWORDS[k]?.desc ?? ''}`)
-  for (const p of unit.passiveObjs) lines.push(`【${TRIGGER_LABELS[p.trigger] ?? p.trigger}】${p.name ?? ''}: ${p.desc ?? ''}`)
-  for (const t of unit.traits) lines.push(`【特性 MP${t.cost}${t.repeatable ? ' 連続使用可' : ''}】${t.name}: ${t.desc ?? ''}`)
+  for (const p of unit.passiveObjs) lines.push(passiveLine(p))
+  for (const t of unit.traits) lines.push(`${tierPrefix(t.condition)}【特性 MP${t.cost}${t.repeatable ? ' 連続使用可' : ''}】${t.name}: ${t.desc ?? ''}`)
   if (unit.countdown != null) lines.push(`【カウントダウン】あと${unit.countdown}回自分のターンが始まると破壊される`)
   return (
     <div data-testid="inspect" style={{ marginTop: 8, padding: 8, borderRadius: 8, background: C.card, border: `1px solid ${C.line}`, fontSize: 11, lineHeight: 1.6 }}>
