@@ -1,10 +1,15 @@
-// Feel Battle - バトルの処理(段階2: 能力)
+// Feel Battle - バトルの処理(段階3: 進化・EP・信仰値・カウントダウン・クレスト)
 // 画面やFirebaseには依存しません。「状態 + 行動 → 新しい状態」の形で作ってあります。
 
 const AV_BASE = 10000 // 初期行動値 = 10000 ÷ 速度
 const ROUND_AV = 100 // 行動値が100進むごとに1ラウンド
 const EPS = 1e-9
-const MP_CAP = 10 // MPの最大値の上限(仮)
+const MP_CAP = 10 // MPの最大値の上限
+const EP_MAX = 2 // EPの最大ストック
+const EP_GRANT_ROUND = 5 // このラウンドの開始時にEPをもらう
+const EP_GRANT = 2 // もらえるEPの数
+const CREST_MAX = 5 // クレストを置ける数
+const MAX_ACTIONS_PER_TURN = 30 // 1ターンに使える特性・進化の回数の安全上限
 const MAX_TURNS = 1500 // これを超えたら引き分け(膠着対策)
 const MAGIC_CONVERSION = 0.7 // 魔力参照の攻撃は、攻撃力の70%を魔力に変換する
 const FINISHER_RATE = 0.35 // 必殺: 相手の現在HPの35%
@@ -24,7 +29,8 @@ export const KEYWORDS = {
 }
 export const TRIGGER_LABELS = {
   fanfare: 'ファンファーレ', constant: '常時', active: 'アクティブ', lastWord: 'ラストワード',
-  onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ',
+  onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時',
+  roundStart: 'ラウンド開始時', allyTurnStart: '味方のターン開始時',
 }
 
 // ---------- ユニットの作成 ----------
@@ -40,7 +46,7 @@ function makeUnit(def, team, index) {
   const clone = (x) => JSON.parse(JSON.stringify(x))
   return {
     uid: `${team}${index}`, defId: def.id, name: def.name, class: def.class, team,
-    maxHp: s.hp, hp: s.hp, shield: 0, shieldRate: 1,
+    maxHp: s.hp, baseMaxHp: s.hp, hp: s.hp, shield: 0, shieldRate: 1,
     base, ...base,
     baseAV: AV_BASE / base.spd, curAV: AV_BASE / base.spd,
     skill: { ...def.skill },
@@ -49,6 +55,9 @@ function makeUnit(def, team, index) {
     traits: clone(def.traits || []),
     stealth: keywords.includes('stealth'),
     barrier: keywords.includes('barrier') ? 1 : 0,
+    evolvable: def.evolvable !== false, evolved: false,
+    countdown: def.countdown ?? null,
+    comboCount: 0,
     buffs: [], usedTraits: [],
     hasActed: false, alive: true, deathHandled: false, killedBy: null,
   }
@@ -64,8 +73,9 @@ export function createBattle(teamADefs, teamBDefs) {
     ...teamBDefs.map((d, i) => makeUnit(d, 'B', i)),
   ]
   const state = {
-    units, totalAV: 0, round: 0, turns: 0, abilityCount: 0,
-    mp: { A: 0, B: 0 }, mpMax: { A: 0, B: 0 },
+    units, totalAV: 0, round: 0, turns: 0, actionsThisTurn: 0,
+    mp: { A: 0, B: 0 }, mpMax: { A: 0, B: 0 }, ep: { A: 0, B: 0 },
+    faith: { A: 0, B: 0 }, crests: { A: [], B: [] },
     active: null, winner: null, log: ['バトル開始!'],
   }
   startRound(state)
@@ -80,15 +90,49 @@ const alliesOf = (state, u) => state.units.filter((x) => x.alive && x.team === u
 const enemiesOf = (state, u) => state.units.filter((x) => x.alive && x.team !== u.team)
 const abilityTargetable = (u) => u.alive && !u.stealth && !hasKw(u, 'aura')
 
-// ---------- ステータスの再計算(バフ・常時・アクティブ) ----------
+// 条件: faith(信仰値の下限) hpBelow/hpAbove(HP%) evolved(進化済みか) crests(クレストの数の下限)
+function checkCond(state, unit, c) {
+  if (!c) return true
+  if (c.faith != null && state.faith[unit.team] < c.faith) return false
+  if (c.hpBelow != null && (unit.hp / unit.maxHp) * 100 > c.hpBelow) return false
+  if (c.hpAbove != null && (unit.hp / unit.maxHp) * 100 < c.hpAbove) return false
+  if (c.evolved != null && unit.evolved !== c.evolved) return false
+  if (c.crests != null && state.crests[unit.team].length < c.crests) return false
+  return true
+}
+
+// クレストの効果を出す役(置いたキャラ。倒れていたら味方の誰か)
+function crestSource(state, crest) {
+  const src = getUnit(state, crest.sourceUid)
+  if (src && src.alive) return src
+  return state.units.find((u) => u.alive && u.team === crest.team) || null
+}
+
+// ---------- ステータスの再計算(バフ・常時・アクティブ・クレスト) ----------
 
 function recalc(state) {
-  for (const u of state.units) {
-    const mods = [...u.buffs]
-    for (const p of u.passiveObjs) {
-      if (p.trigger === 'constant' || (p.trigger === 'active' && u.uid === state.active)) {
-        for (const e of p.effects) if (e.type === 'buff') mods.push(e)
+  // クレストの常時効果(味方全体 / 相手全体へのバフ)
+  const crestMods = new Map()
+  for (const team of ['A', 'B']) {
+    for (const crest of state.crests[team]) {
+      const src = crestSource(state, crest)
+      if (!src) continue
+      for (const p of crest.passives) {
+        if (p.trigger !== 'constant' || !checkCond(state, src, p.condition)) continue
+        const targets = state.units.filter((u) => u.alive && (p.target === 'enemies' ? u.team !== team : u.team === team))
+        for (const e of p.effects) {
+          if (e.type !== 'buff') continue
+          for (const u of targets) crestMods.set(u.uid, [...(crestMods.get(u.uid) || []), e])
+        }
       }
+    }
+  }
+  for (const u of state.units) {
+    const mods = [...u.buffs, ...(crestMods.get(u.uid) || [])]
+    for (const p of u.passiveObjs) {
+      if (!(p.trigger === 'constant' || (p.trigger === 'active' && u.uid === state.active))) continue
+      if (!checkCond(state, u, p.condition)) continue
+      for (const e of p.effects) if (e.type === 'buff') mods.push(e)
     }
     for (const stat of STATS) {
       let pct = 0
@@ -199,8 +243,50 @@ function statLabel(stat) {
   return { atk: '攻撃力', mag: '魔力', def: '防御力', spd: '速度', critRate: 'クリティカルレート', critDmg: 'クリティカルダメージ', dmgResist: 'ダメージ耐性' }[stat] || stat
 }
 
+// クレストを置く(最大5つ、同名は置けない)
+function placeCrest(state, source, def) {
+  const area = state.crests[source.team]
+  if (area.length >= CREST_MAX) {
+    state.log.push(`クレストは${CREST_MAX}つまでしか置けない(【${def.name}】は置けなかった)`)
+    return
+  }
+  if (area.some((c) => c.name === def.name)) {
+    state.log.push(`同名のクレスト【${def.name}】は置けない`)
+    return
+  }
+  const crest = JSON.parse(JSON.stringify(def))
+  crest.passives = crest.passives || []
+  crest.countdown = def.countdown ?? null
+  crest.sourceUid = source.uid
+  crest.team = source.team
+  area.push(crest)
+  state.log.push(`クレスト【${def.name}】を置いた`)
+}
+
 function runEffects(state, source, effects, ctx = {}) {
   for (const e of effects) {
+    if (e.condition && !checkCond(state, source, e.condition)) continue
+
+    // チーム全体に関わる効果(対象を選ばない)
+    if (e.type === 'faith') {
+      const next = Math.max(0, state.faith[source.team] + (e.amount ?? 1))
+      state.log.push(`信仰値が${(e.amount ?? 1) >= 0 ? '+' : ''}${e.amount ?? 1}(${next})`)
+      state.faith[source.team] = next
+      continue
+    }
+    if (e.type === 'crest') {
+      placeCrest(state, source, e.crest)
+      continue
+    }
+    if (e.type === 'ep') {
+      state.ep[source.team] = Math.min(EP_MAX, state.ep[source.team] + (e.amount ?? 1))
+      continue
+    }
+    if (e.type === 'mp') {
+      state.mp[source.team] = Math.min(state.mpMax[source.team], state.mp[source.team] + (e.amount ?? 1))
+      continue
+    }
+
     const targets = resolveTargets(state, source, e.target || 'self', ctx)
     for (const t of targets) {
       if (!t) continue
@@ -214,14 +300,14 @@ function runEffects(state, source, effects, ctx = {}) {
           break
         }
         case 'heal':
-          heal(state, t, (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1))
+          heal(state, t, e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1))
           break
         case 'buff':
           t.buffs.push({ stat: e.stat, pct: e.pct || 0, flat: e.flat || 0, turns: e.turns ?? null })
           state.log.push(`${t.name}の${statLabel(e.stat)}が上がった`)
           break
         case 'shield': {
-          const amount = (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)
+          const amount = e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)
           t.shield += amount
           t.shieldRate = e.rate ?? 1
           state.log.push(`${t.name}は${Math.round(amount)}のシールドを得た`)
@@ -235,9 +321,6 @@ function runEffects(state, source, effects, ctx = {}) {
           t.curAV = Math.max(0, t.curAV - (t.baseAV * (e.pct ?? 0)) / 100)
           state.log.push(`${t.name}の行動順が早まった`)
           break
-        case 'mp':
-          state.mp[source.team] = Math.min(state.mpMax[source.team], state.mp[source.team] + (e.amount ?? 1))
-          break
         default:
           break
       }
@@ -246,13 +329,37 @@ function runEffects(state, source, effects, ctx = {}) {
   recalc(state)
 }
 
-// トリガー型パッシブ(ファンファーレ・攻撃時・交戦時・ラストワード)を発動する
+// トリガー型パッシブ(ファンファーレ・攻撃時・交戦時・進化時・ラストワード)を発動する
 function fire(state, trigger, unit, ctx = {}) {
   if (!unit.alive && trigger !== 'lastWord') return
   for (const p of unit.passiveObjs) {
-    if (p.trigger !== trigger) continue
+    if (p.trigger !== trigger || !checkCond(state, unit, p.condition)) continue
     state.log.push(`${unit.name}の【${p.name || TRIGGER_LABELS[trigger]}】`)
     runEffects(state, unit, p.effects, ctx)
+  }
+}
+
+// クレストのトリガー(ラウンド開始時・味方のターン開始時)
+function fireCrests(state, team, trigger, subject, opts) {
+  for (const crest of [...state.crests[team]]) {
+    for (const p of crest.passives) {
+      if (p.trigger !== trigger) continue
+      const source = trigger === 'allyTurnStart' ? subject : crestSource(state, crest)
+      if (!source || !checkCond(state, source, p.condition)) continue
+      state.log.push(`クレスト【${crest.name}】が働いた`)
+      runEffects(state, source, p.effects, { opts })
+    }
+  }
+}
+
+// クレストのカウントダウンを1つ進める(0になったら消える)
+function tickCrest(state, crest) {
+  if (crest.countdown == null) return
+  crest.countdown -= 1
+  if (crest.countdown <= 0) {
+    state.crests[crest.team] = state.crests[crest.team].filter((c) => c !== crest)
+    state.log.push(`クレスト【${crest.name}】は役目を終えて消えた`)
+    recalc(state) // クレストの常時効果がなくなった分を反映
   }
 }
 
@@ -293,7 +400,8 @@ function traitTargets(state, actor, trait) {
 }
 
 // 今行動するユニットが選べる行動の一覧
-//  skill = スキル攻撃(ターン終了) / trait = 特性(MPを使う。ターンは続く) / endTurn = 何もせず終える
+//  skill = スキル攻撃(ターン終了) / trait = 特性(MPを使う。ターンは続く)
+//  evolve = 進化(EPを使う。ターンは続く) / endTurn = 何もせず終える
 export function legalActions(state) {
   const actor = getActiveUnit(state)
   if (!actor || state.winner || !actor.alive) return []
@@ -302,10 +410,14 @@ export function legalActions(state) {
   const targets = attackableTargets(state, actor)
   if (canUseSkill) for (const t of targets) actions.push({ type: 'skill', target: t.uid })
 
-  for (const tr of actor.traits) {
-    if (actor.usedTraits.includes(tr.id)) continue // 同じ特性は1ターンに1回
-    if (state.mp[actor.team] < tr.cost) continue
-    for (const target of traitTargets(state, actor, tr)) actions.push({ type: 'trait', trait: tr.id, target })
+  if (state.actionsThisTurn < MAX_ACTIONS_PER_TURN) {
+    for (const tr of actor.traits) {
+      if (!tr.repeatable && actor.usedTraits.includes(tr.id)) continue // 同じ特性は1ターンに1回(連続使用できる特性は除く)
+      if (state.mp[actor.team] < tr.cost) continue
+      if (!checkCond(state, actor, tr.condition)) continue
+      for (const target of traitTargets(state, actor, tr)) actions.push({ type: 'trait', trait: tr.id, target })
+    }
+    if (actor.evolvable && !actor.evolved && state.ep[actor.team] >= 1) actions.push({ type: 'evolve' })
   }
   if (!canUseSkill || targets.length === 0) actions.push({ type: 'endTurn' })
   return actions
@@ -316,28 +428,56 @@ const sameAction = (a, b) =>
 
 // ---------- ターンとラウンドの進行 ----------
 
-function startRound(state) {
+function startRound(state, opts) {
   state.round += 1
   for (const team of ['A', 'B']) {
     state.mpMax[team] = Math.min(MP_CAP, state.mpMax[team] + 1)
     state.mp[team] = state.mpMax[team]
+    if (state.round === EP_GRANT_ROUND) state.ep[team] = Math.min(EP_MAX, state.ep[team] + EP_GRANT)
   }
+  if (state.round === EP_GRANT_ROUND) state.log.push(`ラウンド${EP_GRANT_ROUND}: 両チームにEP${EP_GRANT}が与えられた(進化できる)`)
   for (const u of state.units) {
     if (u.alive && hasKw(u, 'dash')) u.curAV = Math.max(0, u.curAV - u.baseAV) // 疾走: 行動順100%アップ
   }
+  for (const team of ['A', 'B']) {
+    fireCrests(state, team, 'roundStart', null, opts)
+    // 置いたキャラが倒れているクレストは、ラウンド開始時にカウントダウンが進む
+    for (const crest of [...state.crests[team]]) {
+      const src = getUnit(state, crest.sourceUid)
+      if (!src || !src.alive) tickCrest(state, crest)
+    }
+  }
+  resolveDeaths(state, opts)
 }
 
 function beginTurn(state, unit, opts) {
-  state.abilityCount = 0
+  state.actionsThisTurn = 0
   unit.usedTraits = []
   recalc(state) // アクティブ(自ターン中だけ有効)をここで反映
-  if (!unit.hasActed) fire(state, 'fanfare', unit, { opts }) // 入場ターン開始時
+
+  // カウントダウン: 自分のターン開始時に1つ進み、0になったら破壊される
+  if (unit.countdown != null) {
+    unit.countdown -= 1
+    if (unit.countdown <= 0) {
+      state.log.push(`${unit.name}のカウントダウンが0になり、破壊された`)
+      unit.hp = 0
+      unit.alive = false
+      resolveDeaths(state, opts)
+      return
+    }
+  }
+  for (const crest of [...state.crests[unit.team]]) {
+    if (crest.sourceUid === unit.uid) tickCrest(state, crest)
+  }
+  fireCrests(state, unit.team, 'allyTurnStart', unit, opts)
+  if (!unit.hasActed) fire(state, 'fanfare', unit, { opts }) // 最初のターン開始時だけ
   resolveDeaths(state, opts)
 }
 
 function endTurn(state, actor) {
   actor.hasActed = true
   actor.curAV = actor.baseAV
+  actor.comboCount = 0 // コンボは、自分のターンが終わった後から数え直す
   actor.buffs = actor.buffs
     .map((b) => ({ ...b, turns: b.turns == null ? null : b.turns - 1 }))
     .filter((b) => b.turns == null || b.turns > 0)
@@ -381,7 +521,7 @@ function advance(state, opts) {
     if (toBoundary <= next.curAV + EPS) {
       for (const u of alive) u.curAV = Math.max(0, u.curAV - toBoundary)
       state.totalAV += toBoundary
-      startRound(state)
+      startRound(state, opts)
       continue
     }
 
@@ -442,24 +582,48 @@ function doSkill(state, actor, targetUid, opts) {
   resolveDeaths(state, opts)
 }
 
+// 味方の特性が使われたとき、コンボを持つ味方のカウントを1つ進める
+// (コンボ持ちのターンが終わってから、次にそのキャラのターンが来るまでの間に使われた特性を数える)
+function countCombos(state, actor, opts) {
+  for (const u of state.units) {
+    if (!u.alive || u.team !== actor.team || u.uid === actor.uid) continue
+    const combos = u.passiveObjs.filter((p) => p.trigger === 'combo')
+    if (!combos.length) continue
+    u.comboCount += 1
+    for (const p of combos) {
+      if (p.min !== u.comboCount || !checkCond(state, u, p.condition)) continue
+      state.log.push(`${u.name}の【${p.name || 'コンボ'}】(${u.comboCount}コンボ)`)
+      runEffects(state, u, p.effects, { opts })
+    }
+  }
+}
+
 function doTrait(state, actor, action, opts) {
   const trait = actor.traits.find((t) => t.id === action.trait)
   state.mp[actor.team] -= trait.cost
   actor.usedTraits.push(trait.id)
-  state.abilityCount += 1
   state.log.push(`${actor.name}の特性【${trait.name}】(MP${trait.cost})`)
   runEffects(state, actor, trait.effects, { opts, chosen: action.target })
-  for (const p of actor.passiveObjs) {
-    if (p.trigger === 'combo' && p.min === state.abilityCount) {
-      state.log.push(`${actor.name}の【${p.name || 'コンボ'}】(${state.abilityCount}コンボ)`)
-      runEffects(state, actor, p.effects, { opts })
-    }
-  }
+  countCombos(state, actor, opts)
+  resolveDeaths(state, opts)
+}
+
+// 進化: EPを1つ使い、HPと攻撃力が+100%、突進と同じ効果(進化したターンからスキルを使える)を得る
+function doEvolve(state, actor, opts) {
+  state.ep[actor.team] -= 1
+  actor.evolved = true
+  actor.maxHp += actor.baseMaxHp
+  actor.hp += actor.baseMaxHp
+  actor.buffs.push({ stat: 'atk', pct: 100, flat: 0, turns: null })
+  if (!actor.keywords.includes('rush')) actor.keywords.push('rush')
+  state.log.push(`${actor.name}は進化した!(体力と攻撃力が2倍に)`)
+  recalc(state)
+  fire(state, 'onEvolve', actor, { opts })
   resolveDeaths(state, opts)
 }
 
 // 行動を実行して、次の行動待ちの状態を返す(元の状態は書き換えない)
-//  特性を使った場合は、同じユニットのターンが続く
+//  特性・進化を使った場合は、同じユニットのターンが続く
 export function applyAction(prev, action, opts = {}) {
   if (prev.winner || !prev.active) return prev
   const state = structuredClone(prev)
@@ -471,8 +635,10 @@ export function applyAction(prev, action, opts = {}) {
     endTurn(state, actor)
     return advance(state, opts)
   }
-  if (action.type === 'trait') {
-    doTrait(state, actor, action, opts)
+  if (action.type === 'trait' || action.type === 'evolve') {
+    state.actionsThisTurn += 1
+    if (action.type === 'trait') doTrait(state, actor, action, opts)
+    else doEvolve(state, actor, opts)
     if (checkWinner(state) || !actor.alive) return advance(state, opts)
     const actions = legalActions(state)
     if (actions.length === 1 && actions[0].type === 'endTurn') {
