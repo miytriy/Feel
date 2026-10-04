@@ -1,5 +1,5 @@
 // Feel Battle - 動作テスト用の編成(本番のキャラではありません)
-// testData.js のキャラに、進化・信仰値・クレスト・カウントダウン・コンボの確認用キャラを足したものです。
+// testData.js のキャラに、進化・信仰値・クレスト・カウントダウン・コンボ・連携・奥義の確認用キャラを足したものです。
 import { TEST_CHARACTERS } from './testData.js'
 
 // 信仰値とクレストの確認用: 「祈り」で信仰値を貯め、「聖印」でクレストを置く
@@ -70,12 +70,36 @@ const COMBO_USER = {
   ],
 }
 
+// 連携・奥義・解放奥義の確認用
+const FIGHTER = {
+  id: 'test_17', name: 'テスト武闘家', class: 'ニュートラル',
+  stats: { hp: 2300, atk: 500, def: 170, spd: 102 },
+  skill: { name: '連打', stat: 'atk', type: 'physical', mult: 1.1 },
+  passives: [
+    {
+      name: '連携_4', trigger: 'link', min: 4, desc: '味方がスキルを合計4回発動すると、味方全員の攻撃力+15%(戦闘中ずっと)',
+      effects: [{ type: 'buff', stat: 'atk', pct: 15, target: 'allies' }],
+    },
+    {
+      name: '奥義: 闘気', trigger: 'constant', condition: { ultimate: true }, desc: '奥義ゲージ10以上のとき、攻撃力+30%',
+      effects: [{ type: 'buff', stat: 'atk', pct: 30 }],
+    },
+  ],
+  traits: [
+    {
+      id: 'liberation', name: '解放奥義: 極大拳', cost: 3, target: 'enemyOne', condition: { liberation: true },
+      desc: '奥義ゲージ15以上で使える。相手1体に攻撃力の250%のダメージ',
+      effects: [{ type: 'damage', stat: 'atk', mult: 2.5, dmgType: 'physical', target: 'enemyOne' }],
+    },
+  ],
+}
+
 export const ALL_TEST_CHARACTERS = [
   ...TEST_CHARACTERS.filter((c) => c.id !== 'test_09' && c.id !== 'test_10'),
-  KNIGHT, COMBO_USER, PRIEST, FAMILIAR,
+  KNIGHT, COMBO_USER, PRIEST, FAMILIAR, FIGHTER,
 ]
 const byId = (id) => ALL_TEST_CHARACTERS.find((c) => c.id === id)
 
 // 標準の編成(自分側 / CPU側)
-export const TEAM_PLAYER = ['test_01', 'test_03', 'test_04', 'test_15', 'test_16'].map(byId)
+export const TEAM_PLAYER = ['test_17', 'test_03', 'test_04', 'test_15', 'test_16'].map(byId)
 export const TEAM_CPU = ['test_06', 'test_07', 'test_08', 'test_09', 'test_10'].map(byId)
