@@ -11,8 +11,8 @@ export const CPU_LEVELS = [
 const MISTAKE_RATE_LV2 = 0.3 // レベル2がランダムに行動してしまう確率
 const TRAIT_RATE_LV2 = 0.5 // レベル2が特性を使う確率(使えるとき)
 const TRAIT_MIN_GAIN = 0.01 // レベル3: 盤面が これ以上よくなる特性だけ使う
-const LOOKAHEAD = 80 // レベル4: 最大何回先の行動まで読むか
-const SAMPLES = 5 // レベル4: 乱数(クリティカル)を入れた試行の回数
+const LOOKAHEAD = 50 // レベル4: 最大何回先の行動まで読むか
+const SAMPLES = 3 // レベル4: 乱数(クリティカル)を入れた試行の回数
 const MARGIN = 0.15 // レベル4: レベル3の選択より、これ以上よいときだけ選び直す
 
 const pickRandom = (list, rng) => list[Math.floor(rng() * list.length)]
@@ -55,7 +55,7 @@ function pickBest(actions, scoreFn) {
 }
 
 // ---- 盤面の有利さ(自分のチーム視点) ----
-// チームの強さ = 残り体力の合計 × 1ターンあたりの攻撃力の合計(バリアは少し加点)。
+// チームの強さ = 残り体力の合計 × 1ターンあたりの攻撃力の合計(バリア・信仰値・クレストは少し加点)。
 function unitPower(u) {
   const sk = u.skill
   const perHit = (refStatValue(u, sk) * sk.mult + (sk.add || 0)) * (1 + (u.critRate / 100) * (u.critDmg / 100))
@@ -88,13 +88,17 @@ function evaluate(state, team) {
     return (state.winner === team ? 100 : -100) + (mine - theirs)
   }
   const enemy = team === 'A' ? 'B' : 'A'
-  return Math.log((teamPower(state, team) + 1) / (teamPower(state, enemy) + 1))
+  const power = Math.log((teamPower(state, team) + 1) / (teamPower(state, enemy) + 1))
+  // 信仰値とクレストも、少しだけ価値があるものとして数える
+  const faith = state.faith[team] - state.faith[enemy]
+  const crests = state.crests[team].length - state.crests[enemy].length
+  return power + 0.03 * faith + 0.12 * crests
 }
 
 // ---- レベル3: 特性は「盤面がよくなるなら使う」、攻撃は対象の評価で選ぶ ----
 function chooseLv3(state, actions) {
   const skills = actions.filter((a) => a.type === 'skill')
-  const traits = actions.filter((a) => a.type === 'trait')
+  const traits = actions.filter((a) => a.type === 'trait' || a.type === 'evolve')
   const endAction = actions.find((a) => a.type === 'endTurn')
   const team = getActiveUnit(state).team
 
@@ -129,7 +133,7 @@ function seededRng(seed) {
 // 先読み中の動き方(軽い): 使える特性は全部使い、そのあと一番よい対象を攻撃する
 function quickPolicy(state) {
   const actions = legalActions(state)
-  const trait = actions.find((a) => a.type === 'trait')
+  const trait = actions.find((a) => a.type === 'trait' || a.type === 'evolve')
   if (trait) return trait
   const skills = actions.filter((a) => a.type === 'skill')
   return skills.length ? pickBest(skills, (a) => scoreTarget(state, a)) : actions[0]
@@ -169,7 +173,7 @@ export function chooseAction(state, level = 1, rng = Math.random) {
   if (actions.length <= 1) return actions[0]
 
   const skills = actions.filter((a) => a.type === 'skill')
-  const traits = actions.filter((a) => a.type === 'trait')
+  const traits = actions.filter((a) => a.type === 'trait' || a.type === 'evolve')
   const endAction = actions.find((a) => a.type === 'endTurn')
   const anything = skills.length ? [...skills, ...traits] : [...traits, endAction].filter(Boolean)
 
