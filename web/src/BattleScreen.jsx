@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createBattle, applyAction, getActiveUnit, legalActions, getUnit, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS } from './battle/ai.js'
-import { TEAM_PLAYER, TEAM_CPU } from './battle/testData.js'
+import { TEAM_PLAYER, TEAM_CPU } from './battle/teams.js'
 
 // 色: 自分=青、相手=赤紫、行動中=琥珀
 const C = {
@@ -67,7 +67,10 @@ function badgesOf(unit) {
     if (k === 'barrier' && unit.barrier <= 0) continue
     badges.push(KEYWORDS[k]?.label ?? k)
   }
-  if (unit.buffs.length) badges.push('強化')
+  if (unit.evolved) badges.push('進化済')
+  if (unit.countdown != null) badges.push(`CD ${unit.countdown}`)
+  if (unit.comboCount > 0) badges.push(`コンボ${unit.comboCount}`)
+  if (unit.buffs.some((b) => b.turns != null)) badges.push('強化')
   return badges
 }
 
@@ -107,6 +110,29 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick }) {
   )
 }
 
+// チームの資源(MP・EP・信仰値)と、置かれているクレスト
+function TeamStatus({ state, team }) {
+  const crests = state.crests[team]
+  return (
+    <div style={{ fontSize: 11, marginTop: 3, color: TEAM_COLOR[team] }}>
+      <b>{team === 'A' ? '自分' : '相手'}</b>
+      <span> MP {state.mp[team]}/{state.mpMax[team]}</span>
+      <span> ・ EP {state.ep[team]}</span>
+      <span> ・ 信仰 {state.faith[team]}</span>
+      {crests.length > 0 && (
+        <span>
+          {' ・ クレスト '}
+          {crests.map((c) => (
+            <span key={c.name} title={c.desc} style={{ marginRight: 4, padding: '0 4px', borderRadius: 3, background: '#fff3d1', color: '#7a5a00' }}>
+              {c.name}{c.countdown != null ? `(${c.countdown})` : ''}
+            </span>
+          ))}
+        </span>
+      )}
+    </div>
+  )
+}
+
 function Row({ title, color, children }) {
   return (
     <div style={{ marginTop: 10 }}>
@@ -121,12 +147,13 @@ function InspectBox({ unit }) {
   const lines = []
   for (const k of unit.keywords) lines.push(`【${KEYWORDS[k]?.label ?? k}】${KEYWORDS[k]?.desc ?? ''}`)
   for (const p of unit.passiveObjs) lines.push(`【${TRIGGER_LABELS[p.trigger] ?? p.trigger}】${p.name ?? ''}: ${p.desc ?? ''}`)
-  for (const t of unit.traits) lines.push(`【特性 MP${t.cost}】${t.name}: ${t.desc ?? ''}`)
+  for (const t of unit.traits) lines.push(`【特性 MP${t.cost}${t.repeatable ? ' 連続使用可' : ''}】${t.name}: ${t.desc ?? ''}`)
+  if (unit.countdown != null) lines.push(`【カウントダウン】あと${unit.countdown}回自分のターンが始まると破壊される`)
   return (
     <div data-testid="inspect" style={{ marginTop: 8, padding: 8, borderRadius: 8, background: C.card, border: `1px solid ${C.line}`, fontSize: 11, lineHeight: 1.6 }}>
       <b>{unit.name}</b>
       <span style={{ color: C.mute }}>
-        {' '}攻撃 {Math.round(unit.atk)} / 防御 {Math.round(unit.def)} / 速度 {Math.round(unit.spd)} / スキル「{unit.skill.name}」({TYPE_LABEL[unit.skill.type]})
+        {' '}{unit.evolved ? '(進化済) ' : ''}攻撃 {Math.round(unit.atk)} / 防御 {Math.round(unit.def)} / 速度 {Math.round(unit.spd)} / スキル「{unit.skill.name}」({TYPE_LABEL[unit.skill.type]})
       </span>
       {lines.length === 0 ? <div style={{ color: C.mute }}>能力なし</div> : lines.map((l, i) => <div key={i}>{l}</div>)}
     </div>
@@ -154,6 +181,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
   const skillTargets = legal.filter((a) => a.type === 'skill').map((a) => a.target)
   const traitActions = (id) => legal.filter((a) => a.type === 'trait' && a.trait === id)
   const canEnd = legal.some((a) => a.type === 'endTurn')
+  const canEvolve = legal.some((a) => a.type === 'evolve')
   const selectableSet = mode ? traitActions(mode).map((a) => a.target).filter(Boolean) : skillTargets
 
   // CPUの番になったら少し待ってから行動する(特性を使ったあとも番が続くので、何度か動く)
@@ -259,11 +287,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
         </div>
         <button onClick={() => setState(null)} style={{ ...buttonStyle(false, false), padding: '4px 10px', fontSize: 12 }}>やめる</button>
       </div>
-      <div style={{ fontSize: 12, marginTop: 2 }}>
-        <span style={{ color: C.player, fontWeight: 700 }}>自分 MP {state.mp.A}/{state.mpMax.A}</span>
-        <span style={{ color: C.mute }}> ・ </span>
-        <span style={{ color: C.enemy, fontWeight: 700 }}>相手 MP {state.mp.B}/{state.mpMax.B}</span>
-      </div>
+      <TeamStatus state={state} team="A" />
+      <TeamStatus state={state} team="B" />
 
       <ActionBar state={state} />
 
@@ -301,7 +326,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
                 <div style={{ fontSize: 11, color: C.mute, marginBottom: 4 }}>特性(MPを使う。使ってもターンは続きます)</div>
                 {actor.traits.map((t) => {
                   const usable = traitActions(t.id).length > 0
-                  const why = actor.usedTraits.includes(t.id) ? '使用済み' : state.mp.A < t.cost ? 'MP不足' : '対象なし'
+                  const why = !t.repeatable && actor.usedTraits.includes(t.id) ? '使用済み' : state.mp.A < t.cost ? 'MP不足' : t.condition ? '条件未達' : '対象なし'
                   return (
                     <div key={t.id} style={{ marginBottom: 4 }}>
                       <button
@@ -315,6 +340,19 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
                     </div>
                   )
                 })}
+              </div>
+            )}
+
+            {(actor.evolvable || actor.evolved) && (
+              <div style={{ marginBottom: 8 }}>
+                <button
+                  onClick={() => act({ type: 'evolve' })}
+                  disabled={!canEvolve}
+                  style={{ ...buttonStyle(false, !canEvolve), padding: '6px 10px', fontSize: 13 }}
+                >
+                  進化(EP1){!canEvolve ? ` ${actor.evolved ? '進化済み' : state.ep.A < 1 ? 'EPなし' : ''}` : ''}
+                </button>
+                <span style={{ fontSize: 11, color: C.mute }}> 体力と攻撃力が2倍。進化したターンからスキルを使える</span>
               </div>
             )}
 
