@@ -14,6 +14,7 @@ const TRAIT_MIN_GAIN = 0.01 // レベル3: 盤面が これ以上よくなる特
 const LOOKAHEAD = 50 // レベル4: 最大何回先の行動まで読むか
 const SAMPLES = 3 // レベル4: 乱数(クリティカル)を入れた試行の回数
 const MARGIN = 0.15 // レベル4: レベル3の選択より、これ以上よいときだけ選び直す
+const TEMPO_WEIGHT = 0.1 // 行動バーの進み具合を、盤面の評価にどれだけ入れるか
 
 const pickRandom = (list, rng) => list[Math.floor(rng() * list.length)]
 
@@ -92,7 +93,14 @@ function evaluate(state, team) {
   // 信仰値とクレストも、少しだけ価値があるものとして数える
   const faith = state.faith[team] - state.faith[enemy]
   const crests = state.crests[team].length - state.crests[enemy].length
-  return power + 0.03 * faith + 0.12 * crests
+    // 行動バーでの進み具合(次の番まであと少しなほど有利)。アクセラレートで本体の番を消費する損得も、これで見積もる
+  let tempo = 0
+  for (const u of state.units) {
+    if (!u.alive) continue
+    const progress = Math.min(1, Math.max(0, 1 - u.curAV / u.baseAV))
+    tempo += u.team === team ? progress : -progress
+  }
+  return power + 0.03 * faith + 0.12 * crests + TEMPO_WEIGHT * tempo
 }
 
 // ---- レベル3: 特性は「盤面がよくなるなら使う」、攻撃は対象の評価で選ぶ ----
@@ -132,6 +140,8 @@ function seededRng(seed) {
 
 // 先読み中の動き方(軽い): 使える特性は全部使い、そのあと一番よい対象を攻撃する
 function quickPolicy(state) {
+    const accel = actions.find((a) => a.type === 'accelerate')
+  if (accel) return accel
   const actions = legalActions(state)
   const trait = actions.find((a) => a.type === 'trait' || a.type === 'evolve')
   if (trait) return trait
@@ -168,9 +178,32 @@ function chooseLv4(state, actions) {
 }
 
 // 今の状態で、CPUが選ぶ行動を返す(特性を使ったあとも、同じキャラの番が続くので何度か呼ばれる)
+// アクセラレートの番: 実行する(本体の番を消費する)か、見送るか
+function chooseAccel(state, actions, level, rng) {
+  const accels = actions.filter((a) => a.type === 'accelerate')
+  const skip = actions.find((a) => a.type === 'endTurn')
+  if (!accels.length) return skip
+  if (level <= 1) return pickRandom(actions, rng)
+  if (level === 2) return rng() < MISTAKE_RATE_LV2 ? pickRandom(actions, rng) : pickRandom(accels, rng)
+
+  // レベル3以上: 実行したあとの盤面(本体の番を失う分も含む)が、見送るよりよいときだけ実行する
+  const team = getActiveUnit(state).team
+  const base = evaluate(applyAction(state, skip, { expected: true }), team)
+  let best = skip
+  let bestValue = base + TRAIT_MIN_GAIN
+  for (const a of accels) {
+    const v = evaluate(applyAction(state, a, { expected: true }), team)
+    if (v > bestValue) {
+      best = a
+      bestValue = v
+    }
+  }
+  return best
+}
 export function chooseAction(state, level = 1, rng = Math.random) {
   const actions = legalActions(state)
   if (actions.length <= 1) return actions[0]
+    if (state.activeKind === 'accel') return chooseAccel(state, actions, level, rng)
 
   const skills = actions.filter((a) => a.type === 'skill')
   const traits = actions.filter((a) => a.type === 'trait' || a.type === 'evolve')
