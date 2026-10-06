@@ -1,4 +1,4 @@
-// Feel Battle - バトルの処理(段階3: 進化・EP・信仰値・カウントダウン・クレスト・連携・奥義)
+// Feel Battle - バトルの処理(段階3: 進化・EP・信仰値・カウントダウン・クレスト・連携・奥義・アクセラレート)
 // 画面やFirebaseには依存しません。「状態 + 行動 → 新しい状態」の形で作ってあります。
 
 const AV_BASE = 10000 // 初期行動値 = 10000 ÷ 速度
@@ -37,6 +37,12 @@ export const TRIGGER_LABELS = {
 
 // ---------- ユニットの作成 ----------
 
+// アクセラレート: キャラ本体とは別の速度をもつ特性(行動バーに本体とは別の枠として並ぶ)
+function makeAccel(a) {
+  const av = AV_BASE / a.speed
+  return { ...JSON.parse(JSON.stringify(a)), id: a.id || 'accelerate', speed: a.speed, baseAV: av, curAV: av }
+}
+
 function makeUnit(def, team, index) {
   const s = def.stats
   const base = {
@@ -58,6 +64,7 @@ function makeUnit(def, team, index) {
     stealth: keywords.includes('stealth'),
     barrier: keywords.includes('barrier') ? 1 : 0,
     evolvable: def.evolvable !== false, evolved: false,
+    accel: def.accelerate ? makeAccel(def.accelerate) : null,
     countdown: def.countdown ?? null,
     comboCount: 0,
     buffs: [], usedTraits: [],
@@ -79,7 +86,7 @@ export function createBattle(teamADefs, teamBDefs) {
     mp: { A: 0, B: 0 }, mpMax: { A: 0, B: 0 }, ep: { A: 0, B: 0 },
     faith: { A: 0, B: 0 }, crests: { A: [], B: [] },
     link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 },
-    active: null, winner: null, log: ['バトル開始!'],
+    active: null, activeKind: null, winner: null, log: ['バトル開始!'],
   }
   startRound(state)
   recalc(state)
@@ -410,12 +417,24 @@ function traitTargets(state, actor, trait) {
   }
 }
 
+function accelActions(state, actor) {
+  const ac = actor.accel
+  const list = []
+  if (state.mp[actor.team] >= (ac.cost ?? 0) && checkCond(state, actor, ac.condition)) {
+    for (const target of traitTargets(state, actor, ac)) list.push({ type: 'accelerate', trait: ac.id, target })
+  }
+  return list
+}
+
 // 今行動するユニットが選べる行動の一覧
 //  skill = スキル攻撃(ターン終了) / trait = 特性(MPを使う。ターンは続く)
 //  evolve = 進化(EPを使う。ターンは続く) / endTurn = 何もせず終える
+//  accelerate = アクセラレートの実行(アクセラレートの番のときだけ。実行すると本体の行動を消費する)
 export function legalActions(state) {
   const actor = getActiveUnit(state)
   if (!actor || state.winner || !actor.alive) return []
+  // アクセラレートの番: 実行する(特性を使う) か、見送る(endTurn)
+  if (state.activeKind === 'accel') return [...accelActions(state, actor), { type: 'endTurn' }]
   const actions = []
   const canUseSkill = actor.hasActed || hasKw(actor, 'rush') || hasKw(actor, 'dash')
   const targets = attackableTargets(state, actor)
@@ -495,6 +514,27 @@ function endTurn(state, actor) {
     .filter((b) => b.turns == null || b.turns > 0)
   state.turns += 1
   state.active = null
+  state.activeKind = null
+  recalc(state)
+}
+
+// 行動バー上の全員の行動値を同じだけ進める(本体もアクセラレートも)
+function shiftAV(state, amount) {
+  for (const u of state.units) {
+    if (!u.alive) continue
+    u.curAV = Math.max(0, u.curAV - amount)
+    if (u.accel) u.accel.curAV = Math.max(0, u.accel.curAV - amount)
+  }
+}
+
+// アクセラレートの行動が終わったとき。実行したなら本体の行動も消費し、本体とアクセラレートの行動値を初期値に戻す
+// (見送ったときは、アクセラレートの行動値だけ初期値に戻る)
+function endAccel(state, unit, executed) {
+  unit.accel.curAV = unit.accel.baseAV
+  if (executed) unit.curAV = unit.baseAV
+  state.turns += 1
+  state.active = null
+  state.activeKind = null
   recalc(state)
 }
 
@@ -523,29 +563,49 @@ function advance(state, opts) {
       return state
     }
     const alive = state.units.filter((u) => u.alive)
-    let next = alive[0]
+    // 行動バー上の枠: キャラ本体と、アクセラレート(あれば)は別々の枠
+    const slots = []
     for (const u of alive) {
-      if (u.curAV < next.curAV - EPS || (Math.abs(u.curAV - next.curAV) <= EPS && u.spd > next.spd)) next = u
+      slots.push({ u, kind: 'body', av: u.curAV, spd: u.spd })
+      if (u.accel) slots.push({ u, kind: 'accel', av: u.accel.curAV, spd: u.accel.speed })
     }
+    let slot = slots[0]
+    for (const sl of slots) {
+      const tie = Math.abs(sl.av - slot.av) <= EPS
+      if (sl.av < slot.av - EPS || (tie && (sl.spd > slot.spd || (sl.spd === slot.spd && sl.kind === 'accel' && slot.kind === 'body')))) slot = sl
+    }
+    const next = slot.u
 
     // ラウンドの境目が先に来るなら、先にラウンドを進める
     const toBoundary = state.round * ROUND_AV - state.totalAV
-    if (toBoundary <= next.curAV + EPS) {
-      for (const u of alive) u.curAV = Math.max(0, u.curAV - toBoundary)
+    if (toBoundary <= slot.av + EPS) {
+      shiftAV(state, toBoundary)
       state.totalAV += toBoundary
       startRound(state, opts)
       continue
     }
 
-    const elapsed = Math.max(0, next.curAV)
-    for (const u of alive) u.curAV = Math.max(0, u.curAV - elapsed)
-    state.totalAV += elapsed
+    shiftAV(state, Math.max(0, slot.av))
+    state.totalAV += Math.max(0, slot.av)
     state.active = next.uid
+    state.activeKind = slot.kind
+
+    if (slot.kind === 'accel') {
+      recalc(state)
+      if (legalActions(state).length === 1) { // 実行できないときは見送る
+        state.log.push(`${next.name}のアクセラレートは使えず、見送った`)
+        endAccel(state, next, false)
+        continue
+      }
+      return state
+    }
+
     beginTurn(state, next, opts)
 
     if (checkWinner(state)) continue
     if (!next.alive) {
       state.active = null
+      state.activeKind = null
       recalc(state)
       continue
     }
@@ -638,6 +698,18 @@ function doTrait(state, actor, action, opts) {
   resolveDeaths(state, opts)
 }
 
+// アクセラレートを実行する(特性と同じようにMPを使い、特性の発動回数として数える)
+function doAccelerate(state, actor, action, opts) {
+  const ac = actor.accel
+  state.mp[actor.team] -= ac.cost ?? 0
+  state.traitCount[actor.team] += 1
+  recalc(state)
+  state.log.push(`${actor.name}の【${ac.name}】(MP${ac.cost ?? 0})`)
+  runEffects(state, actor, ac.effects, { opts, chosen: action.target })
+  countCombos(state, actor, opts)
+  resolveDeaths(state, opts)
+}
+
 // 進化: EPを1つ使い、HPと攻撃力が+100%、突進と同じ効果(進化したターンからスキルを使える)を得る
 function doEvolve(state, actor, opts) {
   state.ep[actor.team] -= 1
@@ -659,6 +731,14 @@ export function applyAction(prev, action, opts = {}) {
   const state = structuredClone(prev)
   const actor = getActiveUnit(state)
   if (!legalActions(state).some((a) => sameAction(a, action))) throw new Error('その行動は選べません')
+
+  if (state.activeKind === 'accel') {
+    const executed = action.type === 'accelerate'
+    if (executed) doAccelerate(state, actor, action, opts)
+    else state.log.push(`${actor.name}はアクセラレートを見送った`)
+    endAccel(state, actor, executed)
+    return advance(state, opts)
+  }
 
   if (action.type === 'skill') {
     doSkill(state, actor, action.target, opts)
