@@ -93,13 +93,23 @@ const FIGHTER = {
     },
   ],
 }
-
+// アクセラレートの確認用: 本体とは別の速度(70)で番が回る特性
+const STRIKER = {
+  id: 'test_18', name: 'テスト追撃手', class: 'ニュートラル',
+  stats: { hp: 1900, atk: 450, def: 150, spd: 100 },
+  skill: { name: '射撃', stat: 'atk', type: 'physical', mult: 1.0 },
+  accelerate: {
+    id: 'pursuit', name: 'アクセラレート_70: 追撃', speed: 70, cost: 1, target: 'enemyOne',
+    desc: '本体とは別の速度70で番が回る。相手1体に攻撃力の90%のダメージ。実行すると本体の番を消費する',
+    effects: [{ type: 'damage', stat: 'atk', mult: 0.9, dmgType: 'physical', target: 'enemyOne' }],
+  },
+}
 export const ALL_TEST_CHARACTERS = [
   ...TEST_CHARACTERS.filter((c) => c.id !== 'test_09' && c.id !== 'test_10'),
-  KNIGHT, COMBO_USER, PRIEST, FAMILIAR, FIGHTER,
+    KNIGHT, COMBO_USER, PRIEST, FAMILIAR, FIGHTER, STRIKER,
 ]
 const byId = (id) => ALL_TEST_CHARACTERS.find((c) => c.id === id)
 
 // 標準の編成(自分側 / CPU側)
-export const TEAM_PLAYER = ['test_17', 'test_03', 'test_04', 'test_15', 'test_16'].map(byId)
+export const TEAM_PLAYER = ['test_17', 'test_18', 'test_04', 'test_15', 'test_16'].map(byId)
 export const TEAM_CPU = ['test_06', 'test_07', 'test_08', 'test_09', 'test_10'].map(byId)
