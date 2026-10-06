@@ -19,6 +19,7 @@ function buildTimeline(state, count = 12) {
   for (const u of state.units) {
     if (!u.alive) continue
     for (let k = 0; k < count; k++) items.push({ time: u.curAV + u.baseAV * k, unit: u })
+    if (u.accel) for (let k = 0; k < count; k++) items.push({ time: u.accel.curAV + u.accel.baseAV * k, unit: u, accel: true })
   }
   const toNext = state.round * 100 - state.totalAV
   for (let k = 0; k < count; k++) items.push({ time: toNext + 100 * k, round: state.round + 1 + k })
@@ -43,16 +44,17 @@ function ActionBar({ state }) {
           </div>
         ) : (
           <div
-            key={`${it.unit.uid}-${i}`}
+            key={`${it.unit.uid}${it.accel ? 'a' : ''}-${i}`}
             style={{
               flex: '0 0 auto', width: i === 0 ? 66 : 54, height: 38, boxSizing: 'border-box', padding: '3px 4px',
-              borderRadius: 6, fontSize: 10, lineHeight: 1.25, overflow: 'hidden', color: '#fff',
-              background: TEAM_COLOR[it.unit.team],
-              border: i === 0 ? `2px solid ${C.active}` : '2px solid transparent',
+              borderRadius: 6, fontSize: 10, lineHeight: 1.25, overflow: 'hidden',
+              color: it.accel ? TEAM_COLOR[it.unit.team] : '#fff',
+              background: it.accel ? C.card : TEAM_COLOR[it.unit.team],
+              border: i === 0 ? `2px solid ${C.active}` : it.accel ? `2px dashed ${TEAM_COLOR[it.unit.team]}` : '2px solid transparent',
               fontWeight: i === 0 ? 700 : 400,
             }}
           >
-            {it.unit.name}
+            {it.accel ? '⚡' : ''}{it.unit.name}
           </div>
         )
       )}
@@ -67,6 +69,7 @@ function badgesOf(unit) {
     if (k === 'barrier' && unit.barrier <= 0) continue
     badges.push(KEYWORDS[k]?.label ?? k)
   }
+  if (unit.accel) badges.push(`アクセ${unit.accel.speed}`)
   if (unit.evolved) badges.push('進化済')
   if (unit.countdown != null) badges.push(`CD ${unit.countdown}`)
   if (unit.comboCount > 0) badges.push(`コンボ${unit.comboCount}`)
@@ -162,6 +165,7 @@ function InspectBox({ unit }) {
   for (const k of unit.keywords) lines.push(`【${KEYWORDS[k]?.label ?? k}】${KEYWORDS[k]?.desc ?? ''}`)
   for (const p of unit.passiveObjs) lines.push(passiveLine(p))
   for (const t of unit.traits) lines.push(`${tierPrefix(t.condition)}【特性 MP${t.cost}${t.repeatable ? ' 連続使用可' : ''}】${t.name}: ${t.desc ?? ''}`)
+  if (unit.accel) lines.push(`【アクセラレート_${unit.accel.speed}】${unit.accel.name}(MP${unit.accel.cost ?? 0}): ${unit.accel.desc ?? ''}`)
   if (unit.countdown != null) lines.push(`【カウントダウン】あと${unit.countdown}回自分のターンが始まると破壊される`)
   return (
     <div data-testid="inspect" style={{ marginTop: 8, padding: 8, borderRadius: 8, background: C.card, border: `1px solid ${C.line}`, fontSize: 11, lineHeight: 1.6 }}>
@@ -196,7 +200,11 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
   const traitActions = (id) => legal.filter((a) => a.type === 'trait' && a.trait === id)
   const canEnd = legal.some((a) => a.type === 'endTurn')
   const canEvolve = legal.some((a) => a.type === 'evolve')
-  const selectableSet = mode ? traitActions(mode).map((a) => a.target).filter(Boolean) : skillTargets
+  const isAccel = !!state && state.activeKind === 'accel'
+  const accelActs = legal.filter((a) => a.type === 'accelerate')
+  const selectableSet = isAccel
+    ? accelActs.map((a) => a.target).filter(Boolean)
+    : mode ? traitActions(mode).map((a) => a.target).filter(Boolean) : skillTargets
 
   // CPUの番になったら少し待ってから行動する(特性を使ったあとも番が続くので、何度か動く)
   useEffect(() => {
@@ -232,6 +240,11 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
   const handleConfirm = () => {
     if (!selected) return
     act(mode ? { type: 'trait', trait: mode, target: selected } : { type: 'skill', target: selected })
+  }
+  const handleAccel = () => {
+    if (!accelActs.length) return
+    if (accelActs.every((a) => a.target == null)) return act(accelActs[0])
+    if (selected) act({ type: 'accelerate', trait: actor.accel.id, target: selected })
   }
   const handleCard = (u) => {
     if (playerTurn && selectableSet.includes(u.uid)) {
@@ -329,6 +342,34 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
           </div>
         ) : cpuTurn ? (
           <div style={{ fontSize: 13, color: C.mute }}>{actor.name}(相手)が考えています…</div>
+        ) : isAccel ? (
+          <div>
+            <div style={{ fontSize: 13, marginBottom: 6 }}>
+              <b>{actor.name}</b> の【アクセラレート_{actor.accel.speed}】の番です
+            </div>
+            <div style={{ fontSize: 12, color: C.mute, marginBottom: 6 }}>
+              {actor.accel.name}(MP{actor.accel.cost ?? 0}): {actor.accel.desc} 実行すると本体の番を消費します。見送ると、本体の番はそのままです。
+            </div>
+            <div style={{ fontSize: 12, color: C.mute, marginBottom: 8 }}>
+              {accelActs.length === 0
+                ? 'MPが足りないなど、いまは実行できません'
+                : accelActs.every((a) => a.target == null)
+                  ? ''
+                  : selected
+                    ? `対象: ${getUnit(state, selected)?.name}`
+                    : '対象をタップ(光っているキャラ)'}
+            </div>
+            {accelActs.length > 0 && (
+              <button
+                onClick={handleAccel}
+                disabled={!accelActs.every((a) => a.target == null) && !selected}
+                style={buttonStyle(true, !accelActs.every((a) => a.target == null) && !selected)}
+              >
+                実行する
+              </button>
+            )}{' '}
+            <button onClick={() => act({ type: 'endTurn' })} style={buttonStyle(false, false)}>見送る</button>
+          </div>
         ) : (
           <div>
             <div style={{ fontSize: 13, marginBottom: 6 }}>
