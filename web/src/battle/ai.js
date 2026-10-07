@@ -93,7 +93,7 @@ function evaluate(state, team) {
   // 信仰値とクレストも、少しだけ価値があるものとして数える
   const faith = state.faith[team] - state.faith[enemy]
   const crests = state.crests[team].length - state.crests[enemy].length
-    // 行動バーでの進み具合(次の番まであと少しなほど有利)。アクセラレートで本体の番を消費する損得も、これで見積もる
+  // 行動バーでの進み具合(次の番まであと少しなほど有利)。アクセラレートで本体の番を消費する損得も、これで見積もる
   let tempo = 0
   for (const u of state.units) {
     if (!u.alive) continue
@@ -140,9 +140,9 @@ function seededRng(seed) {
 
 // 先読み中の動き方(軽い): 使える特性は全部使い、そのあと一番よい対象を攻撃する
 function quickPolicy(state) {
-    const accel = actions.find((a) => a.type === 'accelerate')
-  if (accel) return accel
   const actions = legalActions(state)
+  const accel = actions.find((a) => a.type === 'accelerate')
+  if (accel) return accel
   const trait = actions.find((a) => a.type === 'trait' || a.type === 'evolve')
   if (trait) return trait
   const skills = actions.filter((a) => a.type === 'skill')
@@ -177,7 +177,6 @@ function chooseLv4(state, actions) {
   return bestValue > baseValue + MARGIN ? best : base
 }
 
-// 今の状態で、CPUが選ぶ行動を返す(特性を使ったあとも、同じキャラの番が続くので何度か呼ばれる)
 // アクセラレートの番: 実行する(本体の番を消費する)か、見送るか
 function chooseAccel(state, actions, level, rng) {
   const accels = actions.filter((a) => a.type === 'accelerate')
@@ -194,28 +193,3 @@ function chooseAccel(state, actions, level, rng) {
   for (const a of accels) {
     const v = evaluate(applyAction(state, a, { expected: true }), team)
     if (v > bestValue) {
-      best = a
-      bestValue = v
-    }
-  }
-  return best
-}
-export function chooseAction(state, level = 1, rng = Math.random) {
-  const actions = legalActions(state)
-  if (actions.length <= 1) return actions[0]
-    if (state.activeKind === 'accel') return chooseAccel(state, actions, level, rng)
-
-  const skills = actions.filter((a) => a.type === 'skill')
-  const traits = actions.filter((a) => a.type === 'trait' || a.type === 'evolve')
-  const endAction = actions.find((a) => a.type === 'endTurn')
-  const anything = skills.length ? [...skills, ...traits] : [...traits, endAction].filter(Boolean)
-
-  if (level <= 1) return pickRandom(anything, rng)
-  if (level === 2) {
-    if (rng() < MISTAKE_RATE_LV2) return pickRandom(anything, rng)
-    if (traits.length && rng() < TRAIT_RATE_LV2) return pickRandom(traits, rng)
-    return skills.length ? pickBest(skills, (a) => expectedDamage(state, a)) : endAction
-  }
-  if (level === 3) return chooseLv3(state, actions)
-  return chooseLv4(state, actions)
-}
