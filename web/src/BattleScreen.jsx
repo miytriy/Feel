@@ -191,6 +191,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
   const [selected, setSelected] = useState(null)
   const [mode, setMode] = useState(null) // 選択中の特性のid(nullならスキル攻撃)
   const [inspect, setInspect] = useState(null)
+  const [cpuError, setCpuError] = useState('') // CPUの思考でエラーが起きたときの表示
 
   const actor = state ? getActiveUnit(state) : null
   const cpuTurn = !!actor && actor.team === 'B' && !state.winner
@@ -212,7 +213,23 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
     const current = getActiveUnit(state)
     if (!current || current.team !== 'B') return
     const timer = setTimeout(() => {
-      setState(applyAction(state, chooseAction(state, level)))
+      let action
+      try {
+        action = chooseAction(state, level)
+      } catch (e) {
+        // CPUの思考でエラーが起きても、ゲームが止まらないようにする(かんたんな行動に切り替え、原因を画面に出す)
+        console.error(e)
+        setCpuError(`CPUの思考でエラー: ${e.message}`)
+        const acts = legalActions(state)
+        action = acts.find((a) => a.type === 'skill') || acts.find((a) => a.type === 'endTurn') || acts[0]
+      }
+      try {
+        setState(applyAction(state, action))
+      } catch (e) {
+        console.error(e)
+        setCpuError(`CPUの行動でエラー: ${e.message}`)
+        setState(applyAction(state, { type: 'endTurn' }))
+      }
     }, cpuDelay)
     return () => clearTimeout(timer)
   }, [state, level, cpuDelay])
@@ -224,6 +241,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
   const startBattle = () => {
     reset()
     setInspect(null)
+    setCpuError('')
     setState(createBattle(TEAM_PLAYER, TEAM_CPU))
   }
   const act = (action) => {
@@ -316,6 +334,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
       </div>
       <TeamStatus state={state} team="A" />
       <TeamStatus state={state} team="B" />
+
+      {cpuError && <div style={{ marginTop: 6, padding: 6, borderRadius: 6, background: '#fde8e8', color: C.hpLow, fontSize: 12 }}>{cpuError}</div>}
 
       <ActionBar state={state} />
 
