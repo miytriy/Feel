@@ -193,3 +193,30 @@ function chooseAccel(state, actions, level, rng) {
   for (const a of accels) {
     const v = evaluate(applyAction(state, a, { expected: true }), team)
     if (v > bestValue) {
+      best = a
+      bestValue = v
+    }
+  }
+  return best
+}
+
+// 今の状態で、CPUが選ぶ行動を返す(特性を使ったあとも、同じキャラの番が続くので何度か呼ばれる)
+export function chooseAction(state, level = 1, rng = Math.random) {
+  const actions = legalActions(state)
+  if (actions.length <= 1) return actions[0]
+  if (state.activeKind === 'accel') return chooseAccel(state, actions, level, rng)
+
+  const skills = actions.filter((a) => a.type === 'skill')
+  const traits = actions.filter((a) => a.type === 'trait' || a.type === 'evolve')
+  const endAction = actions.find((a) => a.type === 'endTurn')
+  const anything = skills.length ? [...skills, ...traits] : [...traits, endAction].filter(Boolean)
+
+  if (level <= 1) return pickRandom(anything, rng)
+  if (level === 2) {
+    if (rng() < MISTAKE_RATE_LV2) return pickRandom(anything, rng)
+    if (traits.length && rng() < TRAIT_RATE_LV2) return pickRandom(traits, rng)
+    return skills.length ? pickBest(skills, (a) => expectedDamage(state, a)) : endAction
+  }
+  if (level === 3) return chooseLv3(state, actions)
+  return chooseLv4(state, actions)
+}
