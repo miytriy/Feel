@@ -1,5 +1,5 @@
 // Feel Battle - 動作テスト用の編成(本番のキャラではありません)
-// testData.js のキャラに、進化・信仰値・クレスト・カウントダウン・コンボ・連携・奥義の確認用キャラを足したものです。
+// testData.js のキャラに、進化・信仰値・クレスト・カウントダウン・コンボ・連携・奥義・アクセラレートの確認用キャラを足したものです。
 import { TEST_CHARACTERS } from './testData.js'
 
 // 信仰値とクレストの確認用: 「祈り」で信仰値を貯め、「聖印」でクレストを置く
@@ -93,6 +93,7 @@ const FIGHTER = {
     },
   ],
 }
+
 // アクセラレートの確認用: 本体とは別の速度(70)で番が回る特性
 const STRIKER = {
   id: 'test_18', name: 'テスト追撃手', class: 'ニュートラル',
@@ -104,9 +105,10 @@ const STRIKER = {
     effects: [{ type: 'damage', stat: 'atk', mult: 0.9, dmgType: 'physical', target: 'enemyOne' }],
   },
 }
+
 export const ALL_TEST_CHARACTERS = [
   ...TEST_CHARACTERS.filter((c) => c.id !== 'test_09' && c.id !== 'test_10'),
-    KNIGHT, COMBO_USER, PRIEST, FAMILIAR, FIGHTER, STRIKER,
+  KNIGHT, COMBO_USER, PRIEST, FAMILIAR, FIGHTER, STRIKER,
 ]
 const byId = (id) => ALL_TEST_CHARACTERS.find((c) => c.id === id)
 
