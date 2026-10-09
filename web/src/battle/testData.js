@@ -12,7 +12,7 @@
 // effects : { type:'damage', stat, mult, add, dmgType, target }
 //           { type:'heal', stat:'atk'|'maxHp', mult, target }
 //           { type:'buff', stat, pct, flat, turns, target }   (turnsを省くと戦闘中ずっと)
-//           { type:'shield', stat, mult, rate, target } { type:'barrier', target }
+//           { type:'armor', stat, mult, rate(吸収レート0.6〜1), target } { type:'barrier', target }
 //           { type:'advance', pct, target } { type:'mp', amount }
 //           target: self / opponent / allies / otherAllies / allyOne / enemies / enemyOne / enemyRandom
 
@@ -92,8 +92,8 @@ export const TEST_CHARACTERS = [
     skill: { name: '騎士剣', stat: 'atk', type: 'physical', mult: 1.1 },
     passives: [
       {
-        name: '加護', trigger: 'fanfare', desc: '最初のターン開始時、最大HPの30%のシールドを得る',
-        effects: [{ type: 'shield', stat: 'maxHp', mult: 0.3, rate: 1, target: 'self' }],
+        name: '加護', trigger: 'fanfare', desc: '最初のターン開始時、最大HPの30%のアーマーを得る',
+        effects: [{ type: 'armor', stat: 'maxHp', mult: 0.3, rate: 1, target: 'self' }],
       },
       {
         name: '受け流し', trigger: 'onEngage', desc: '交戦時、防御力+30%(1ターン)',
