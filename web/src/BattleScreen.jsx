@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { createBattle, applyAction, getActiveUnit, legalActions, getUnit, gaugeOf, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS } from './battle/ai.js'
-import { TEAM_PLAYER, TEAM_CPU } from './battle/teams.js'
+import { TEAM_PLAYER, TEAM_CPU, ALL_TEST_CHARACTERS } from './battle/teams.js'
+import FormationScreen from './FormationScreen.jsx'
 
 // 色: 自分=青、相手=赤紫、行動中=琥珀
 const C = {
@@ -190,6 +191,7 @@ const buttonStyle = (primary, disabled) => ({
 })
 
 export default function BattleScreen({ onExit, cpuDelay = 700 }) {
+  const [team, setTeam] = useState(null) // 編成画面で決めた自分のチーム(キャラ定義の配列)。nullなら編成画面を出す
   const [level, setLevel] = useState(2)
   const [state, setState] = useState(null)
   const [selected, setSelected] = useState(null)
@@ -246,7 +248,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
     reset()
     setInspect(null)
     setCpuError('')
-    setState(createBattle(TEAM_PLAYER, TEAM_CPU))
+    setState(createBattle(team, TEAM_CPU))
   }
   const act = (action) => {
     reset()
@@ -279,6 +281,18 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
 
   const wrap = { maxWidth: 520, margin: '0 auto', padding: 12, minHeight: '100vh', boxSizing: 'border-box', background: C.paper, color: C.ink, fontFamily: FONT }
 
+  // ---- 編成画面 ----
+  if (!team) {
+    return (
+      <FormationScreen
+        allChars={ALL_TEST_CHARACTERS}
+        defaultIds={TEAM_PLAYER.map((c) => c.id)}
+        onStart={(chars) => setTeam(chars)}
+        onExit={onExit}
+      />
+    )
+  }
+
   // ---- 開始前: CPUの強さを選ぶ ----
   if (!state) {
     return (
@@ -300,8 +314,10 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
             <div style={{ fontSize: 12, color: C.mute }}>{l.description}</div>
           </button>
         ))}
-        <p style={{ fontSize: 11, color: C.mute, margin: '8px 0 12px' }}>いまはテスト用の仮キャラで対戦します。</p>
+        <p style={{ fontSize: 12, color: C.mute, margin: '8px 0 4px' }}>編成: {team.map((c, i) => `${i + 1}.${c.name}`).join(' → ')}</p>
+        <p style={{ fontSize: 11, color: C.mute, margin: '0 0 12px' }}>いまはテスト用の仮キャラで対戦します。</p>
         <button onClick={startBattle} style={buttonStyle(true, false)}>バトル開始</button>{' '}
+        <button onClick={() => setTeam(null)} style={buttonStyle(false, false)}>編成を変える</button>{' '}
         <button onClick={onExit} style={buttonStyle(false, false)}>戻る</button>
       </div>
     )
