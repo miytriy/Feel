@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { createBattle, applyAction, getActiveUnit, legalActions, getUnit, gaugeOf, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS } from './battle/ai.js'
-import { TEAM_PLAYER, TEAM_CPU, ALL_TEST_CHARACTERS } from './battle/teams.js'
+import { DEFAULT_PLAYER_IDS, CPU_TEAM_IDS } from './battle/teams.js'
+import { ALL_CHARACTERS, charById } from './battle/characters/index.js'
 import FormationScreen from './FormationScreen.jsx'
 
 // 色: 自分=青、相手=赤紫、行動中=琥珀
@@ -248,7 +249,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
     reset()
     setInspect(null)
     setCpuError('')
-    setState(createBattle(team, TEAM_CPU))
+    setState(createBattle(team, CPU_TEAM_IDS.map(charById).filter(Boolean)))
   }
   const act = (action) => {
     reset()
@@ -285,8 +286,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
   if (!team) {
     return (
       <FormationScreen
-        allChars={ALL_TEST_CHARACTERS}
-        defaultIds={TEAM_PLAYER.map((c) => c.id)}
+        allChars={ALL_CHARACTERS}
+        defaultIds={DEFAULT_PLAYER_IDS}
         onStart={(chars) => setTeam(chars)}
         onExit={onExit}
       />
