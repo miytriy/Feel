@@ -761,3 +761,4 @@ export function applyAction(prev, action, opts = {}) {
   endTurn(state, actor)
   return advance(state, opts)
 }
+
