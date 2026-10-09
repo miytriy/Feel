@@ -69,6 +69,9 @@ function badgesOf(unit) {
     if (k === 'barrier' && unit.barrier <= 0) continue
     badges.push(KEYWORDS[k]?.label ?? k)
   }
+  if (unit.relic) badges.push(`遺物:${unit.relic}`)
+  if (unit.isAmulet) badges.push('アミュレット')
+  else if (unit.field === 'summon') badges.push('召喚物')
   if (unit.accel) badges.push(`アクセ${unit.accel.speed}`)
   if (unit.evolved) badges.push('進化済')
   if (unit.countdown != null) badges.push(`CD ${unit.countdown}`)
@@ -101,7 +104,7 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick }) {
         <div style={{ width: `${ratio * 100}%`, height: '100%', borderRadius: 3, background: hpColor, transition: 'width 0.3s' }} />
       </div>
       <div style={{ marginTop: 2, color: C.mute }}>{unit.alive ? `${Math.ceil(unit.hp)}/${unit.maxHp}` : '戦闘不能'}</div>
-      {unit.shield > 0 && <div style={{ color: C.player }}>盾 {Math.ceil(unit.shield)}</div>}
+      {unit.armor > 0 && <div style={{ color: C.player }}>アーマー {Math.ceil(unit.armor)}{unit.armorRate < 1 ? `(${Math.round(unit.armorRate * 100)}%)` : ''}</div>}
       {badges.length > 0 && (
         <div style={{ marginTop: 2, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           {badges.map((b) => (
@@ -125,6 +128,7 @@ function TeamStatus({ state, team }) {
       <span> MP {state.mp[team]}/{state.mpMax[team]}</span>
       <span> ・ EP {state.ep[team]}</span>
       <span> ・ 信仰 {state.faith[team]}</span>
+      <span> ・ 墓場 {state.graveyard[team]}</span>
       <span> ・ 連携 {state.link[team]}</span>
       <span> ・ 奥義ゲージ {gaugeOf(state, team)}{tierOf(gaugeOf(state, team))}</span>
       {crests.length > 0 && (
@@ -305,8 +309,10 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
 
   // ---- バトル中 ----
   const levelInfo = CPU_LEVELS.find((l) => l.level === level)
-  const enemies = state.units.filter((u) => u.team === 'B')
-  const players = state.units.filter((u) => u.team === 'A')
+  const enemies = state.units.filter((u) => u.team === 'B' && u.field === 'main')
+  const players = state.units.filter((u) => u.team === 'A' && u.field === 'main')
+  const enemySummons = state.units.filter((u) => u.team === 'B' && u.field === 'summon' && u.alive)
+  const playerSummons = state.units.filter((u) => u.team === 'A' && u.field === 'summon' && u.alive)
   const resultText = state.winner === 'A' ? '勝利!' : state.winner === 'B' ? '敗北…' : '引き分け'
   const inspected = inspect ? getUnit(state, inspect) : null
   const modeTrait = mode ? actor.traits.find((t) => t.id === mode) : null
@@ -340,6 +346,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
       <ActionBar state={state} />
 
       <Row title="相手" color={C.enemy}>{enemies.map(card)}</Row>
+      {enemySummons.length > 0 && <Row title="相手の召喚物" color={C.enemy}>{enemySummons.map(card)}</Row>}
 
       <div style={{ margin: '12px 0 0', padding: 8, borderRadius: 8, background: C.card, border: `1px solid ${C.line}`, fontSize: 12, lineHeight: 1.6, minHeight: 120 }}>
         {state.log.slice(-8).map((line, i, arr) => (
@@ -349,6 +356,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
         ))}
       </div>
 
+      {playerSummons.length > 0 && <Row title="自分の召喚物" color={C.player}>{playerSummons.map(card)}</Row>}
       <Row title="自分" color={C.player}>{players.map(card)}</Row>
 
       {inspected && <InspectBox unit={inspected} />}
