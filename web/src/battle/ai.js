@@ -30,7 +30,7 @@ function scoreTarget(state, action) {
   const actor = getActiveUnit(state)
   const target = getUnit(state, action.target)
   const dmg = expectedDamage(state, action)
-  const remaining = target.hp + target.shield
+  const remaining = target.hp + target.armor
   const effective = Math.min(dmg, remaining)
   const canKill = dmg >= remaining
 
@@ -39,7 +39,8 @@ function scoreTarget(state, action) {
   const maxThreat = Math.max(...enemies.map(threat), 1)
   const barrierPenalty = target.barrier > 0 ? 0.5 : 0 // バリアがあると攻撃が無駄になる
 
-  return effective / target.maxHp + (canKill ? 1 : 0) + 0.3 * (threat(target) / maxThreat) - barrierPenalty
+  const summonPenalty = target.field === 'summon' ? 0.6 : 0 // 召喚物を倒しても勝利には近づかないので、少し後回し
+  return effective / target.maxHp + (canKill ? 1 : 0) + 0.3 * (threat(target) / maxThreat) - barrierPenalty - summonPenalty
 }
 
 function pickBest(actions, scoreFn) {
@@ -69,7 +70,7 @@ function teamPower(state, team) {
   let barriers = 0
   for (const u of state.units) {
     if (!u.alive || u.team !== team) continue
-    hp += u.hp + u.shield
+    hp += u.hp + u.armor
     power += unitPower(u)
     barriers += u.barrier
   }
@@ -83,15 +84,15 @@ function evaluate(state, team) {
     let theirs = 0
     for (const u of state.units) {
       if (!u.alive) continue
-      if (u.team === team) mine += (u.hp + u.shield) / u.maxHp
-      else theirs += (u.hp + u.shield) / u.maxHp
+      if (u.team === team) mine += (u.hp + u.armor) / u.maxHp
+      else theirs += (u.hp + u.armor) / u.maxHp
     }
     return (state.winner === team ? 100 : -100) + (mine - theirs)
   }
   const enemy = team === 'A' ? 'B' : 'A'
   const power = Math.log((teamPower(state, team) + 1) / (teamPower(state, enemy) + 1))
   // 信仰値とクレストも、少しだけ価値があるものとして数える
-  const faith = state.faith[team] - state.faith[enemy]
+  const faith = state.faith[team] - state.faith[enemy] + 0.5 * (state.graveyard[team] - state.graveyard[enemy])
   const crests = state.crests[team].length - state.crests[enemy].length
   // 行動バーでの進み具合(次の番まであと少しなほど有利)。アクセラレートで本体の番を消費する損得も、これで見積もる
   let tempo = 0
