@@ -106,12 +106,70 @@ const STRIKER = {
   },
 }
 
+// ネメシス風: 使い魔を召喚する(召喚物フィールド・召喚物の確認用)
+const SUMMONER = {
+  id: 'test_19', name: 'テスト召喚師', class: 'ニュートラル', relic: 'ピエロの祝福',
+  stats: { hp: 1700, atk: 380, def: 120, spd: 105 },
+  skill: { name: '杖打ち', stat: 'atk', type: 'physical', mult: 1.0 },
+  traits: [
+    {
+      id: 'call_imp', name: '使い魔召喚', cost: 2, target: 'self', desc: '使い魔を1体召喚する(召喚物フィールドは最大5体)',
+      effects: [{
+        type: 'summon', count: 1,
+        unit: {
+          id: 'imp', name: '使い魔', class: 'ニュートラル', stats: { hp: 600, atk: 260, def: 60, spd: 120 },
+          skill: { name: 'ひっかき', stat: 'atk', type: 'physical', mult: 1.0 }, passives: [], traits: [],
+        },
+      }],
+    },
+  ],
+}
+
+// ビショップ風: アミュレット(スキル攻撃はできず、特性だけ使う)を設置する
+const AMULETER = {
+  id: 'test_20', name: 'テスト結界師', class: 'ニュートラル', relic: '少女の物語',
+  stats: { hp: 1800, atk: 330, def: 140, spd: 95 },
+  skill: { name: '祈りの一撃', stat: 'atk', type: 'physical', mult: 1.0 },
+  traits: [
+    {
+      id: 'set_amulet', name: '護符設置', cost: 2, target: 'self', desc: '聖なる護符(アミュレット)を1つ設置する。護符は特性で味方全体を回復する',
+      effects: [{
+        type: 'summon', count: 1,
+        unit: {
+          id: 'amulet_heal', name: '聖なる護符', class: 'ニュートラル', amulet: true, countdown: 4,
+          stats: { hp: 400, atk: 0, def: 0, spd: 100 },
+          skill: { name: '-', stat: 'atk', type: 'physical', mult: 0 }, passives: [],
+          traits: [{ id: 'bless', name: '祝福', cost: 1, target: 'allies', desc: '味方全体を150回復', effects: [{ type: 'heal', flat: 150, target: 'allies' }] }],
+        },
+      }],
+    },
+  ],
+}
+
+// ナイトメア風: 墓場が溜まるほど回復・強化できる
+const NIGHTMARE = {
+  id: 'test_21', name: 'テスト墓守', class: 'ニュートラル', relic: '鬼の形相',
+  stats: { hp: 2000, atk: 400, def: 130, spd: 100 },
+  skill: { name: '鎌の一閃', stat: 'atk', type: 'physical', mult: 1.0 },
+  traits: [
+    {
+      id: 'feast', name: '墓場の饗宴', cost: 2, target: 'self', desc: '墓場が3以上のとき、墓場1つにつき120回復し、墓場を3つ消費する',
+      condition: { graveyard: 3 },
+      effects: [{ type: 'heal', flat: 0, perGraveyard: 120, target: 'self' }, { type: 'graveyard', amount: -3 }],
+    },
+    {
+      id: 'grave_rage', name: '墓荒らし', cost: 1, target: 'self', desc: '墓場1つにつき攻撃力+5%(自分)',
+      effects: [{ type: 'buff', stat: 'atk', pct: 0, perGraveyard: 5, turns: 2, target: 'self' }],
+    },
+  ],
+}
+
 export const ALL_TEST_CHARACTERS = [
   ...TEST_CHARACTERS.filter((c) => c.id !== 'test_09' && c.id !== 'test_10'),
-  KNIGHT, COMBO_USER, PRIEST, FAMILIAR, FIGHTER, STRIKER,
+  KNIGHT, COMBO_USER, PRIEST, FAMILIAR, FIGHTER, STRIKER, SUMMONER, AMULETER, NIGHTMARE,
 ]
 const byId = (id) => ALL_TEST_CHARACTERS.find((c) => c.id === id)
 
 // 標準の編成(自分側 / CPU側)
-export const TEAM_PLAYER = ['test_17', 'test_18', 'test_04', 'test_15', 'test_16'].map(byId)
-export const TEAM_CPU = ['test_06', 'test_07', 'test_08', 'test_09', 'test_10'].map(byId)
+export const TEAM_PLAYER = ['test_17', 'test_18', 'test_19', 'test_20', 'test_21'].map(byId)
+export const TEAM_CPU = ['test_06', 'test_09', 'test_10', 'test_15', 'test_16'].map(byId)
