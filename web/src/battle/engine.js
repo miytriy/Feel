@@ -1,4 +1,4 @@
-// Feel Battle - バトルの処理(段階3: 進化・EP・信仰値・カウントダウン・クレスト・連携・奥義・アクセラレート)
+// Feel Battle - バトルの処理(段階4: アーマー・墓場・召喚物・アミュレット・遺物 を追加。段階3までの進化・EP・信仰値・カウントダウン・クレスト・連携・奥義・アクセラレートを含む)
 // 画面やFirebaseには依存しません。「状態 + 行動 → 新しい状態」の形で作ってあります。
 
 const AV_BASE = 10000 // 初期行動値 = 10000 ÷ 速度
@@ -35,6 +35,16 @@ export const TRIGGER_LABELS = {
   roundStart: 'ラウンド開始時', allyTurnStart: '味方のターン開始時', link: '連携',
 }
 
+// ---------- 遺物(頭・胴・脚・靴のセットを装備したキャラに、セット効果がつく) ----------
+// pct = 元のステータスに対する+%、flat = そのまま足す値(少女の物語は%ではなく、耐性値+10)
+export const RELICS = {
+  'ピエロの祝福': { desc: '攻撃力 +12%', mods: [{ stat: 'atk', pct: 12 }] },
+  '鬼の形相': { desc: 'HP +21%', mods: [{ stat: 'hp', pct: 21 }] },
+  '月と太陽の印字': { desc: '魔力 +13%', mods: [{ stat: 'mag', pct: 13 }] },
+  '紅血の証': { desc: '防御力 +29%', mods: [{ stat: 'def', pct: 29 }] },
+  '少女の物語': { desc: 'ダメージ耐性値 +10', mods: [{ stat: 'dmgResist', flat: 10 }] },
+}
+
 // ---------- ユニットの作成 ----------
 
 // アクセラレート: キャラ本体とは別の速度をもつ特性(行動バーに本体とは別の枠として並ぶ)
@@ -43,18 +53,29 @@ function makeAccel(a) {
   return { ...JSON.parse(JSON.stringify(a)), id: a.id || 'accelerate', speed: a.speed, baseAV: av, curAV: av }
 }
 
-function makeUnit(def, team, index) {
-  const s = def.stats
+function makeUnit(def, team, index, field = 'main', uid = null) {
+  const s = { ...def.stats }
   const base = {
     atk: s.atk, mag: s.mag ?? 0, def: s.def, spd: s.spd,
     critRate: s.critRate ?? 5, critDmg: s.critDmg ?? 50, dmgResist: s.dmgResist ?? 0,
+  }
+  // 遺物のセット効果(def.relic に遺物の名前を書く)を、元のステータスに反映する
+  const relic = def.relic ? RELICS[def.relic] : null
+  if (def.relic && !relic) throw new Error(`知らない遺物です: ${def.relic}`)
+  for (const m of relic ? relic.mods : []) {
+    const cur = m.stat === 'hp' ? s.hp : base[m.stat]
+    const next = Math.round(cur * (1 + (m.pct || 0) / 100) + (m.flat || 0))
+    if (m.stat === 'hp') s.hp = next
+    else base[m.stat] = next
   }
   const passives = def.passives || []
   const keywords = passives.filter((p) => typeof p === 'string')
   const clone = (x) => JSON.parse(JSON.stringify(x))
   return {
-    uid: `${team}${index}`, defId: def.id, name: def.name, class: def.class, team,
-    maxHp: s.hp, baseMaxHp: s.hp, hp: s.hp, shield: 0, shieldRate: 1,
+    uid: uid || `${team}${index}`, defId: def.id, name: def.name, class: def.class, team, relic: def.relic || null,
+    field, // 'main' = 場のキャラ / 'summon' = 召喚物フィールドの召喚物・アミュレット
+    isAmulet: field === 'summon' && !!def.amulet, // アミュレット: スキル攻撃はできず、相手のスキル攻撃の対象にもならない
+    maxHp: s.hp, baseMaxHp: s.hp, hp: s.hp, armor: 0, armorRate: 1,
     base, ...base,
     baseAV: AV_BASE / base.spd, curAV: AV_BASE / base.spd,
     skill: { ...def.skill },
@@ -63,7 +84,7 @@ function makeUnit(def, team, index) {
     traits: clone(def.traits || []),
     stealth: keywords.includes('stealth'),
     barrier: keywords.includes('barrier') ? 1 : 0,
-    evolvable: def.evolvable !== false, evolved: false,
+    evolvable: field === 'main' && def.evolvable !== false, evolved: false,
     accel: def.accelerate ? makeAccel(def.accelerate) : null,
     countdown: def.countdown ?? null,
     comboCount: 0,
@@ -84,8 +105,8 @@ export function createBattle(teamADefs, teamBDefs) {
   const state = {
     units, totalAV: 0, round: 0, turns: 0, actionsThisTurn: 0,
     mp: { A: 0, B: 0 }, mpMax: { A: 0, B: 0 }, ep: { A: 0, B: 0 },
-    faith: { A: 0, B: 0 }, crests: { A: [], B: [] },
-    link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 },
+    faith: { A: 0, B: 0 }, crests: { A: [], B: [] }, graveyard: { A: 0, B: 0 },
+    link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 }, summonSeq: 0,
     active: null, activeKind: null, winner: null, log: ['バトル開始!'],
   }
   startRound(state)
@@ -96,14 +117,17 @@ export function createBattle(teamADefs, teamBDefs) {
 export const getUnit = (state, uid) => state.units.find((u) => u.uid === uid)
 export const getActiveUnit = (state) => (state.active ? getUnit(state, state.active) : null)
 const hasKw = (u, k) => u.keywords.includes(k)
-const alliesOf = (state, u) => state.units.filter((x) => x.alive && x.team === u.team)
-const enemiesOf = (state, u) => state.units.filter((x) => x.alive && x.team !== u.team)
+// 「味方」「相手」は場のキャラのこと。召喚物は専用の指定(summons)で選ぶ
+const alliesOf = (state, u) => state.units.filter((x) => x.alive && x.field === 'main' && x.team === u.team)
+const enemiesOf = (state, u) => state.units.filter((x) => x.alive && x.field === 'main' && x.team !== u.team)
+const summonsOf = (state, u) => state.units.filter((x) => x.alive && x.field === 'summon' && x.team === u.team)
+const SUMMON_MAX = 5 // 召喚物フィールドは最大5体
 const abilityTargetable = (u) => u.alive && !u.stealth && !hasKw(u, 'aura')
 
 // 奥義ゲージ = 現在のターン数(ラウンド数) + 特性の発動回数(チーム全体)
 export const gaugeOf = (state, team) => state.round + state.traitCount[team]
 
-// 条件: faith(信仰値の下限) hpBelow/hpAbove(HP%) evolved(進化済みか) crests(クレストの数の下限)
+// 条件: graveyard(墓場の下限) faith(信仰値の下限) hpBelow/hpAbove(HP%) evolved(進化済みか) crests(クレストの数の下限)
 //       link(連携の下限) gauge(奥義ゲージの下限) ultimate(奥義: ゲージ10以上) liberation(解放奥義: ゲージ15以上)
 function checkCond(state, unit, c) {
   if (!c) return true
@@ -112,6 +136,7 @@ function checkCond(state, unit, c) {
   if (c.ultimate && gaugeOf(state, unit.team) < ULTIMATE_GAUGE) return false
   if (c.liberation && gaugeOf(state, unit.team) < LIBERATION_GAUGE) return false
   if (c.faith != null && state.faith[unit.team] < c.faith) return false
+  if (c.graveyard != null && state.graveyard[unit.team] < c.graveyard) return false
   if (c.hpBelow != null && (unit.hp / unit.maxHp) * 100 > c.hpBelow) return false
   if (c.hpAbove != null && (unit.hp / unit.maxHp) * 100 < c.hpAbove) return false
   if (c.evolved != null && unit.evolved !== c.evolved) return false
@@ -202,11 +227,17 @@ export function calcDamage(attacker, defender, skill, opts = {}) {
   return { damage: opts.expected ? raw : Math.max(1, Math.floor(raw)), isCrit }
 }
 
-// シールドがあれば先に吸収する(仮の処理)
-function dealDamage(target, dmg) {
-  const absorbed = Math.min(target.shield, dmg * target.shieldRate)
-  target.shield -= absorbed
-  target.hp -= dmg - absorbed
+// アーマーがあれば、吸収レートの分だけ先にアーマーが受ける
+// 例: 吸収レート60%なら、ダメージの60%をアーマーが受け、体力は残り40%分を受ける
+//     アーマーが足りなければ、あふれた分は体力が受ける
+// 確定ダメージ(isTrue)は、アーマーに対するダメージが元の50%に減る
+const TRUE_VS_ARMOR = 0.5
+function dealDamage(target, dmg, isTrue = false) {
+  const mult = isTrue ? TRUE_VS_ARMOR : 1
+  const toArmor = dmg * target.armorRate // アーマーが受け持つ分
+  const covered = Math.min(toArmor, target.armor / mult) // アーマーで止められるダメージ
+  target.armor -= covered * mult
+  target.hp -= dmg - covered
   if (target.hp <= 0) {
     target.hp = 0
     target.alive = false
@@ -214,15 +245,16 @@ function dealDamage(target, dmg) {
 }
 
 // 攻撃を受ける(バリアがあれば0ダメージにして壊れる)。実際に与えたダメージを返す
-function applyDamage(state, source, target, amount) {
+function applyDamage(state, source, target, amount, isTrue = false) {
   if (!target.alive) return 0
   if (target.barrier > 0) {
     target.barrier = 0
     state.log.push(`${target.name}のバリアが攻撃を防いだ!`)
     return 0
   }
-  dealDamage(target, amount)
+  dealDamage(target, amount, isTrue)
   if (!target.alive) target.killedBy = source.uid
+  if (target.field === 'main') state.graveyard[target.team] += GRAVE_PER_HIT // 攻撃をされると墓場が溜まる
   return amount
 }
 
@@ -246,6 +278,7 @@ function resolveTargets(state, source, key, ctx) {
     case 'opponent': return ctx.other && ctx.other.alive ? [ctx.other] : []
     case 'allies': return allies
     case 'otherAllies': return allies.filter((u) => u !== source)
+    case 'summons': return summonsOf(state, source)
     case 'allyOne': {
       if (ctx.chosen) return [getUnit(state, ctx.chosen)]
       return [[...allies].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]].filter(Boolean)
@@ -281,6 +314,26 @@ function placeCrest(state, source, def) {
   state.log.push(`クレスト【${def.name}】を置いた`)
 }
 
+// 墓場: 攻撃を受けるたびに+1、キャラが倒されると+3(チーム共有)
+const GRAVE_PER_HIT = 1
+const GRAVE_PER_DEATH = 3
+// 効果の perGraveyard が指定されていれば、墓場1つにつきその分だけ効果が大きくなる
+const graveBonus = (state, source, e) => (e.perGraveyard || 0) * state.graveyard[source.team]
+
+// 召喚: 召喚物フィールド(最大5体)に出す。満員なら出せない
+function summon(state, source, def) {
+  if (summonsOf(state, source).length >= SUMMON_MAX) {
+    state.log.push(`召喚物フィールドが満員で、${def.name}は出せなかった`)
+    return null
+  }
+  state.summonSeq += 1
+  const u = makeUnit(def, source.team, 0, 'summon', `${source.team}s${state.summonSeq}`)
+  state.units.push(u)
+  state.log.push(`${source.name}は${def.name}を${u.isAmulet ? '設置' : '召喚'}した`)
+  recalc(state)
+  return u
+}
+
 function runEffects(state, source, effects, ctx = {}) {
   for (const e of effects) {
     if (e.condition && !checkCond(state, source, e.condition)) continue
@@ -290,6 +343,17 @@ function runEffects(state, source, effects, ctx = {}) {
       const next = Math.max(0, state.faith[source.team] + (e.amount ?? 1))
       state.log.push(`信仰値が${(e.amount ?? 1) >= 0 ? '+' : ''}${e.amount ?? 1}(${next})`)
       state.faith[source.team] = next
+      continue
+    }
+    if (e.type === 'graveyard') {
+      const amount = e.amount ?? 1
+      const next = Math.max(0, state.graveyard[source.team] + amount)
+      state.log.push(`墓場が${amount >= 0 ? '+' : ''}${amount}(${next})`)
+      state.graveyard[source.team] = next
+      continue
+    }
+    if (e.type === 'summon') {
+      for (let i = 0; i < (e.count ?? 1); i++) summon(state, source, e.unit)
       continue
     }
     if (e.type === 'crest') {
@@ -310,25 +374,26 @@ function runEffects(state, source, effects, ctx = {}) {
       if (!t) continue
       switch (e.type) {
         case 'damage': {
-          const skill = { stat: e.stat || 'atk', mult: e.mult ?? 1, add: e.add || 0, type: e.dmgType || 'physical' }
+          const skill = { stat: e.stat || 'atk', mult: e.mult ?? 1, add: (e.add || 0) + graveBonus(state, source, e), type: e.dmgType || 'physical' }
           const { damage } = calcDamage(source, t, skill, ctx.opts)
-          const dealt = applyDamage(state, source, t, damage)
+          const dealt = applyDamage(state, source, t, damage, skill.type === 'true')
           source.stealth = false // 能力でダメージを与えたら潜伏を失う
           if (dealt > 0) state.log.push(`${source.name}の効果で${t.name}に${Math.round(dealt)}ダメージ`)
           break
         }
         case 'heal':
-          heal(state, t, e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1))
+          heal(state, t, (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + graveBonus(state, source, e))
           break
         case 'buff':
-          t.buffs.push({ stat: e.stat, pct: e.pct || 0, flat: e.flat || 0, turns: e.turns ?? null })
+          t.buffs.push({ stat: e.stat, pct: (e.pct || 0) + graveBonus(state, source, e), flat: e.flat || 0, turns: e.turns ?? null })
           state.log.push(`${t.name}の${statLabel(e.stat)}が上がった`)
           break
-        case 'shield': {
-          const amount = e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)
-          t.shield += amount
-          t.shieldRate = e.rate ?? 1
-          state.log.push(`${t.name}は${Math.round(amount)}のシールドを得た`)
+        case 'armor':
+        case 'shield': { // 'shield' は昔の書き方(アーマーと同じ)
+          const amount = (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + graveBonus(state, source, e)
+          t.armor += amount
+          t.armorRate = e.rate ?? 1
+          state.log.push(`${t.name}は${Math.round(amount)}のアーマーを得た(吸収${Math.round((e.rate ?? 1) * 100)}%)`)
           break
         }
         case 'barrier':
@@ -389,10 +454,11 @@ function resolveDeaths(state, opts) {
     for (const u of dead) {
       u.deathHandled = true
       u.buffs = []
-      u.shield = 0
+      u.armor = 0
       u.barrier = 0
       u.stealth = false
       state.log.push(`${u.name}は倒れた`)
+      if (u.field === 'main') state.graveyard[u.team] += GRAVE_PER_DEATH // 倒されると墓場が大きく増える
       const killer = u.killedBy ? getUnit(state, u.killedBy) : null
       fire(state, 'lastWord', u, { other: killer, opts })
     }
@@ -403,7 +469,10 @@ function resolveDeaths(state, opts) {
 // ---------- 行動の一覧 ----------
 
 export function attackableTargets(state, actor) {
-  const candidates = enemiesOf(state, actor).filter((u) => !u.stealth && !hasKw(u, 'intimidate'))
+  // スキル攻撃は、相手の場のキャラと召喚物を選べる(アミュレットは選べない)
+  const candidates = state.units.filter(
+    (u) => u.alive && u.team !== actor.team && !u.isAmulet && !u.stealth && !hasKw(u, 'intimidate')
+  )
   const guards = candidates.filter((u) => hasKw(u, 'guard'))
   return guards.length ? guards : candidates
 }
@@ -436,7 +505,7 @@ export function legalActions(state) {
   // アクセラレートの番: 実行する(特性を使う) か、見送る(endTurn)
   if (state.activeKind === 'accel') return [...accelActions(state, actor), { type: 'endTurn' }]
   const actions = []
-  const canUseSkill = actor.hasActed || hasKw(actor, 'rush') || hasKw(actor, 'dash')
+  const canUseSkill = !actor.isAmulet && (actor.hasActed || hasKw(actor, 'rush') || hasKw(actor, 'dash'))
   const targets = attackableTargets(state, actor)
   if (canUseSkill) for (const t of targets) actions.push({ type: 'skill', target: t.uid })
 
@@ -539,8 +608,9 @@ function endAccel(state, unit, executed) {
 }
 
 function checkWinner(state) {
-  const aAlive = state.units.some((u) => u.team === 'A' && u.alive)
-  const bAlive = state.units.some((u) => u.team === 'B' && u.alive)
+  // 勝敗は場のキャラだけで決まる(召喚物は数えない)
+  const aAlive = state.units.some((u) => u.team === 'A' && u.field === 'main' && u.alive)
+  const bAlive = state.units.some((u) => u.team === 'B' && u.field === 'main' && u.alive)
   if (aAlive && bAlive) return null
   if (aAlive) return 'A'
   if (bAlive) return 'B'
@@ -634,14 +704,14 @@ function doSkill(state, actor, targetUid, opts) {
   recalc(state)
 
   const { damage, isCrit } = calcDamage(actor, target, skill, opts)
-  const dealt = applyDamage(state, actor, target, damage)
+  const dealt = applyDamage(state, actor, target, damage, skill.type === 'true')
   if (dealt > 0) {
     state.log.push(`${actor.name}の「${skill.name}」! ${target.name}に${Math.round(dealt)}ダメージ${isCrit ? '(クリティカル!)' : ''}`)
     let total = dealt
     if (hasKw(actor, 'finisher') && target.alive) {
       const fixed = Math.floor(target.hp * FINISHER_RATE)
       if (fixed > 0) {
-        dealDamage(target, fixed)
+        dealDamage(target, fixed, true) // 必殺の固定ダメージは確定ダメージ
         if (!target.alive) target.killedBy = actor.uid
         total += fixed
         state.log.push(`【必殺】${target.name}に追加で${fixed}の固定ダメージ`)
@@ -652,7 +722,7 @@ function doSkill(state, actor, targetUid, opts) {
     state.log.push(`${actor.name}の「${skill.name}」!`)
   }
   resolveDeaths(state, opts)
-  countLink(state, actor, opts)
+  if (actor.field === 'main') countLink(state, actor, opts) // 連携は場のキャラのスキルだけ数える
 }
 
 // 連携: 味方がスキルを発動した回数を数える。【連携_N】は、回数がNに達したときに働く
@@ -761,4 +831,3 @@ export function applyAction(prev, action, opts = {}) {
   endTurn(state, actor)
   return advance(state, opts)
 }
-
