@@ -191,7 +191,8 @@ const buttonStyle = (primary, disabled) => ({
   color: disabled ? '#8a93a6' : primary ? '#fff' : C.ink,
 })
 
-export default function BattleScreen({ onExit, cpuDelay = 700 }) {
+// rewardApi: ログイン中だけ渡される。{ start(level) → { ticketId }, finish(ticketId, 'win'|'lose') → { reward, reason } }
+export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null }) {
   const [team, setTeam] = useState(null) // 編成画面で決めた自分のチーム(キャラ定義の配列)。nullなら編成画面を出す
   const [level, setLevel] = useState(2)
   const [state, setState] = useState(null)
@@ -199,6 +200,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
   const [mode, setMode] = useState(null) // 選択中の特性のid(nullならスキル攻撃)
   const [inspect, setInspect] = useState(null)
   const [cpuError, setCpuError] = useState('') // CPUの思考でエラーが起きたときの表示
+  const [ticketId, setTicketId] = useState(null) // 対戦の報酬用の「対戦券」(サーバーが発行)
+  const [rewardMsg, setRewardMsg] = useState('') // 報酬の結果の表示
 
   const actor = state ? getActiveUnit(state) : null
   const cpuTurn = !!actor && actor.team === 'B' && !state.winner
@@ -241,6 +244,18 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
     return () => clearTimeout(timer)
   }, [state, level, cpuDelay])
 
+  // 対戦が終わったら、サーバーに結果を送って報酬をもらう(1つの対戦券につき1回だけ)
+  useEffect(() => {
+    if (!state || !state.winner || !rewardApi || !ticketId) return
+    const id = ticketId
+    setTicketId(null)
+    setRewardMsg('報酬を確認しています…')
+    rewardApi
+      .finish(id, state.winner === 'A' ? 'win' : 'lose')
+      .then((r) => setRewardMsg(r.reward > 0 ? `報酬 +${r.reward} ジェム` : r.reason || '報酬はありません'))
+      .catch((e) => setRewardMsg(`報酬を受け取れませんでした: ${e.message}`))
+  }, [state, rewardApi, ticketId])
+
   const reset = () => {
     setSelected(null)
     setMode(null)
@@ -249,6 +264,14 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
     reset()
     setInspect(null)
     setCpuError('')
+    setRewardMsg('')
+    setTicketId(null)
+    if (rewardApi) {
+      rewardApi
+        .start(level)
+        .then((r) => setTicketId(r.ticketId))
+        .catch((e) => setRewardMsg(`この対戦では報酬がもらえません: ${e.message}`))
+    }
     setState(createBattle(team, CPU_TEAM_IDS.map(charById).filter(Boolean)))
   }
   const act = (action) => {
@@ -316,7 +339,10 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
           </button>
         ))}
         <p style={{ fontSize: 12, color: C.mute, margin: '8px 0 4px' }}>編成: {team.map((c, i) => `${i + 1}.${c.name}`).join(' → ')}</p>
-        <p style={{ fontSize: 11, color: C.mute, margin: '0 0 12px' }}>いまはテスト用の仮キャラで対戦します。</p>
+        <p style={{ fontSize: 11, color: C.mute, margin: '0 0 4px' }}>いまはテスト用の仮キャラで対戦します。</p>
+        <p style={{ fontSize: 11, color: C.mute, margin: '0 0 12px' }}>
+          {rewardApi ? '勝利すると報酬(ジェム)がもらえます。' : 'ログインして対戦すると、勝利で報酬がもらえます。'}
+        </p>
         <button onClick={startBattle} style={buttonStyle(true, false)}>バトル開始</button>{' '}
         <button onClick={() => setTeam(null)} style={buttonStyle(false, false)}>編成を変える</button>{' '}
         <button onClick={onExit} style={buttonStyle(false, false)}>戻る</button>
@@ -382,6 +408,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700 }) {
         {state.winner ? (
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>{resultText}</div>
+            {rewardMsg && <div style={{ fontSize: 13, color: C.player, marginBottom: 8 }}>{rewardMsg}</div>}
             <button onClick={startBattle} style={buttonStyle(true, false)}>もう一度</button>{' '}
             <button onClick={() => setState(null)} style={buttonStyle(false, false)}>強さを選び直す</button>
           </div>
