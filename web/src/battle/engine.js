@@ -106,7 +106,7 @@ export function createBattle(teamADefs, teamBDefs) {
     units, totalAV: 0, round: 0, turns: 0, actionsThisTurn: 0,
     mp: { A: 0, B: 0 }, mpMax: { A: 0, B: 0 }, ep: { A: 0, B: 0 },
     faith: { A: 0, B: 0 }, crests: { A: [], B: [] }, graveyard: { A: 0, B: 0 },
-    link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 }, summonSeq: 0,
+    link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 }, summonSeq: 0, pending: null,
     active: null, activeKind: null, winner: null, log: ['バトル開始!'],
   }
   startRound(state)
@@ -123,6 +123,11 @@ const enemiesOf = (state, u) => state.units.filter((x) => x.alive && x.field ===
 const summonsOf = (state, u) => state.units.filter((x) => x.alive && x.field === 'summon' && x.team === u.team)
 const SUMMON_MAX = 5 // 召喚物フィールドは最大5体
 const abilityTargetable = (u) => u.alive && !u.stealth && !hasKw(u, 'aura')
+// 単体を選ぶ能力の候補: 相手の場のキャラ + 相手のアミュレット(アミュレットは、単体指定の能力で消滅させられる)
+const enemyOneList = (state, u) => [
+  ...enemiesOf(state, u).filter(abilityTargetable),
+  ...state.units.filter((x) => x.alive && x.field === 'summon' && x.isAmulet && x.team !== u.team),
+]
 
 // 奥義ゲージ = 現在のターン数(ラウンド数) + 特性の発動回数(チーム全体)
 export const gaugeOf = (state, team) => state.round + state.traitCount[team]
@@ -247,6 +252,7 @@ function dealDamage(target, dmg, isTrue = false) {
 // 攻撃を受ける(バリアがあれば0ダメージにして壊れる)。実際に与えたダメージを返す
 function applyDamage(state, source, target, amount, isTrue = false) {
   if (!target.alive) return 0
+  if (target.isAmulet) return 0 // アミュレットには体力がなく、ダメージを受けない(なくなるのは、破壊・消滅・カウントダウンだけ)
   if (target.barrier > 0) {
     target.barrier = 0
     state.log.push(`${target.name}のバリアが攻撃を防いだ!`)
@@ -259,7 +265,7 @@ function applyDamage(state, source, target, amount, isTrue = false) {
 }
 
 function heal(state, unit, amount) {
-  if (!unit.alive) return
+  if (!unit.alive || unit.isAmulet) return
   const before = unit.hp
   unit.hp = Math.min(unit.maxHp, unit.hp + amount)
   const gained = Math.round(unit.hp - before)
@@ -278,6 +284,11 @@ function resolveTargets(state, source, key, ctx) {
     case 'opponent': return ctx.other && ctx.other.alive ? [ctx.other] : []
     case 'allies': return allies
     case 'otherAllies': return allies.filter((u) => u !== source)
+    case 'otherAllyOne': {
+      const others = allies.filter((u) => u !== source)
+      if (ctx.chosen) return others.filter((u) => u.uid === ctx.chosen)
+      return others.slice(0, 1) // 選ばれなかった(CPUの読み・テストなど)ときは先頭の1体
+    }
     case 'summons': return summonsOf(state, source)
     case 'allyOne': {
       if (ctx.chosen) return [getUnit(state, ctx.chosen)]
@@ -334,9 +345,32 @@ function summon(state, source, def) {
   return u
 }
 
+// 選択が必要な効果(choose: true)の、選べる対象の一覧
+function candidatesOf(state, source, e) {
+  const key = e.target || 'self'
+  if (key === 'otherAllyOne') return alliesOf(state, source).filter((u) => u.uid !== source.uid)
+  if (key === 'allyOne') return alliesOf(state, source)
+  if (key === 'enemyOne') return enemyOneList(state, source)
+  return resolveTargets(state, source, key, {})
+}
+
+// 候補が0体 → 何もしない / 1体 → 自動で選ぶ / 2体以上 → state.pending に残して、選ばれるまで待つ(ファンファーレのときだけ)
 function runEffects(state, source, effects, ctx = {}) {
-  for (const e of effects) {
+  for (let idx = 0; idx < effects.length; idx++) {
+    const e = effects[idx]
     if (e.condition && !checkCond(state, source, e.condition)) continue
+    if (e.choose && !ctx.chosen && ctx.allowPending) {
+      const cands = candidatesOf(state, source, e)
+      if (cands.length === 0) { state.log.push(`${source.name}の効果の対象がいなかった`); continue }
+      if (cands.length > 1) {
+        // 選んでもらうために止まる(残りの効果と、あとに続くパッシブは、選ばれたあとに続けて行う)
+        state.pending = { uid: source.uid, effects: effects.slice(idx), candidates: cands.map((u) => u.uid), trigger: ctx.trigger || null, nextPassive: ctx.nextPassive ?? null }
+        state.log.push(`${source.name}の効果: 対象を選んでください`)
+        recalc(state)
+        return
+      }
+      ctx = { ...ctx, chosen: cands[0].uid } // 1体だけなら自動で選ぶ
+    }
 
     // チーム全体に関わる効果(対象を選ばない)
     if (e.type === 'faith') {
@@ -400,6 +434,29 @@ function runEffects(state, source, effects, ctx = {}) {
           t.barrier = 1
           state.log.push(`${t.name}はバリアを得た`)
           break
+        case 'loseKeyword': { // キーワード能力(守護など)を失わせる
+          const k = e.keyword || 'guard'
+          if (t.keywords.includes(k)) {
+            t.keywords = t.keywords.filter((x) => x !== k)
+            state.log.push(`${t.name}は【${KEYWORDS[k]?.label || k}】を失った`)
+          } else state.log.push(`${t.name}は【${KEYWORDS[k]?.label || k}】を持っていなかった`)
+          break
+        }
+        case 'vanish': // 消滅させる(破壊とは違い、墓場に行かず、ラストワードも働かない)
+          if (t.alive) {
+            t.alive = false; t.deathHandled = true; t.hp = 0
+            t.buffs = []; t.armor = 0; t.barrier = 0; t.stealth = false
+            state.log.push(`${t.name}は消滅した`)
+          }
+          break
+        case 'destroy': // 破壊する(召喚物の「自身を破壊」など)
+          if (t.alive) { t.hp = 0; t.alive = false; state.log.push(`${t.name}は破壊された`) }
+          break
+        case 'reenter': // 入場し直す: 入場直後の状態に戻る(次の自分のターン開始時にファンファーレがもう一度働き、そのターンはスキル攻撃ができない)
+          t.hasActed = false
+          t.comboCount = 0
+          state.log.push(`${t.name}は入場し直した`)
+          break
         case 'advance':
           t.curAV = Math.max(0, t.curAV - (t.baseAV * (e.pct ?? 0)) / 100)
           state.log.push(`${t.name}の行動順が早まった`)
@@ -413,12 +470,14 @@ function runEffects(state, source, effects, ctx = {}) {
 }
 
 // トリガー型パッシブ(ファンファーレ・攻撃時・交戦時・進化時・ラストワード)を発動する
-function fire(state, trigger, unit, ctx = {}) {
+function fire(state, trigger, unit, ctx = {}, from = 0) {
   if (!unit.alive && trigger !== 'lastWord') return
-  for (const p of unit.passiveObjs) {
+  for (let i = from; i < unit.passiveObjs.length; i++) {
+    const p = unit.passiveObjs[i]
     if (p.trigger !== trigger || !checkCond(state, unit, p.condition)) continue
     state.log.push(`${unit.name}の【${p.name || TRIGGER_LABELS[trigger]}】`)
-    runEffects(state, unit, p.effects, ctx)
+    runEffects(state, unit, p.effects, { ...ctx, trigger, nextPassive: i + 1 })
+    if (state.pending) return // 選ぶのを待つ。続きは、選ばれたあとに行う
   }
 }
 
@@ -480,7 +539,8 @@ export function attackableTargets(state, actor) {
 function traitTargets(state, actor, trait) {
   switch (trait.target) {
     case 'allyOne': return alliesOf(state, actor).map((u) => u.uid)
-    case 'enemyOne': return enemiesOf(state, actor).filter(abilityTargetable).map((u) => u.uid)
+    case 'otherAllyOne': return alliesOf(state, actor).filter((u) => u.uid !== actor.uid).map((u) => u.uid)
+    case 'enemyOne': return enemyOneList(state, actor).map((u) => u.uid)
     case 'enemies': return enemiesOf(state, actor).some(abilityTargetable) ? [null] : []
     default: return [null]
   }
@@ -502,6 +562,8 @@ function accelActions(state, actor) {
 export function legalActions(state) {
   const actor = getActiveUnit(state)
   if (!actor || state.winner || !actor.alive) return []
+  // 効果の対象を選ぶ場面(ファンファーレなど): 選べる対象だけが行動になる
+  if (state.pending) return state.pending.candidates.map((uid) => ({ type: 'choose', target: uid }))
   // アクセラレートの番: 実行する(特性を使う) か、見送る(endTurn)
   if (state.activeKind === 'accel') return [...accelActions(state, actor), { type: 'endTurn' }]
   const actions = []
@@ -570,7 +632,7 @@ function beginTurn(state, unit, opts) {
     if (crest.sourceUid === unit.uid) tickCrest(state, crest)
   }
   fireCrests(state, unit.team, 'allyTurnStart', unit, opts)
-  if (!unit.hasActed) fire(state, 'fanfare', unit, { opts }) // 最初のターン開始時だけ
+  if (!unit.hasActed) fire(state, 'fanfare', unit, { opts, allowPending: true }) // 最初のターン開始時だけ(選ぶ効果は、プレイヤーが選ぶまで待つ)
   resolveDeaths(state, opts)
 }
 
@@ -790,8 +852,8 @@ function doEvolve(state, actor, opts) {
   if (!actor.keywords.includes('rush')) actor.keywords.push('rush')
   state.log.push(`${actor.name}は進化した!(体力と攻撃力が2倍に)`)
   recalc(state)
-  fire(state, 'onEvolve', actor, { opts })
-  resolveDeaths(state, opts)
+  fire(state, 'onEvolve', actor, { opts, allowPending: true }) // 選ぶ効果は、プレイヤーが選ぶまで待つ
+  if (!state.pending) resolveDeaths(state, opts)
 }
 
 // 行動を実行して、次の行動待ちの状態を返す(元の状態は書き換えない)
@@ -808,6 +870,23 @@ export function applyAction(prev, action, opts = {}) {
     else state.log.push(`${actor.name}はアクセラレートを見送った`)
     endAccel(state, actor, executed)
     return advance(state, opts)
+  }
+
+  if (action.type === 'choose') {
+    const p = state.pending
+    state.pending = null
+    state.log.push(`${getUnit(state, action.target).name}を選んだ`)
+    runEffects(state, actor, p.effects, { opts, chosen: action.target, trigger: p.trigger })
+    if (p.trigger && p.nextPassive != null) fire(state, p.trigger, actor, { opts, allowPending: true }, p.nextPassive) // 続きのパッシブ
+    if (!state.pending) resolveDeaths(state, opts)
+    if (checkWinner(state) || !actor.alive) return advance(state, opts)
+    const acts = legalActions(state)
+    if (acts.length === 1 && acts[0].type === 'endTurn') {
+      state.log.push(`${actor.name}は様子を見ている(入場直後はスキルを使えない)`)
+      endTurn(state, actor)
+      return advance(state, opts)
+    }
+    return state
   }
 
   if (action.type === 'skill') {
