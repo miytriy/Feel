@@ -361,6 +361,21 @@ function runEffects(state, source, effects, ctx = {}) {
   for (let idx = 0; idx < effects.length; idx++) {
     const e = effects[idx]
     if (e.condition && !checkCond(state, source, e.condition)) continue
+    if (e.optional) { // 「追加でMPを消費すると〜」のように、使うかどうかを選べる効果
+      if (ctx.answer === undefined) {
+        if (e.mpCost && state.mp[source.team] < e.mpCost) { state.log.push(`MPが足りないので、追加の効果はなし`); continue }
+        if (ctx.allowPending) {
+          state.pending = { uid: source.uid, effects: effects.slice(idx), candidates: ['yes', 'no'], confirm: true, prompt: e.prompt || '追加の効果を使いますか?', trigger: ctx.trigger || null, nextPassive: ctx.nextPassive ?? null }
+          state.log.push(`${source.name}の効果: ${state.pending.prompt}`)
+          recalc(state)
+          return
+        }
+      } else {
+        const ans = ctx.answer
+        ctx = { ...ctx, answer: undefined }
+        if (ans === 'no') continue
+      }
+    }
     if (e.choose && !ctx.chosen && ctx.allowPending) {
       const cands = candidatesOf(state, source, e)
       if (cands.length === 0) { state.log.push(`${source.name}の効果の対象がいなかった`); continue }
@@ -389,6 +404,11 @@ function runEffects(state, source, effects, ctx = {}) {
       continue
     }
     if (e.type === 'summon') {
+      if (e.mpCost) { // 追加でMPを消費すると働く効果(MPが足りなければ働かない)
+        if (state.mp[source.team] < e.mpCost) { state.log.push(`MPが足りないので、${e.unit.name}の追加召喚はなし`); continue }
+        state.mp[source.team] -= e.mpCost
+        state.log.push(`MPを${e.mpCost}消費して、追加で召喚する`)
+      }
       for (let i = 0; i < (e.count ?? 1); i++) summon(state, source, e.unit)
       continue
     }
@@ -893,8 +913,13 @@ export function applyAction(prev, action, opts = {}) {
   if (action.type === 'choose') {
     const p = state.pending
     state.pending = null
-    state.log.push(`${getUnit(state, action.target).name}を選んだ`)
-    runEffects(state, actor, p.effects, { opts, chosen: action.target, trigger: p.trigger })
+    if (p.confirm) {
+      state.log.push(action.target === 'yes' ? '使うことにした' : '使わないことにした')
+      runEffects(state, actor, p.effects, { opts, answer: action.target, trigger: p.trigger })
+    } else {
+      state.log.push(`${getUnit(state, action.target).name}を選んだ`)
+      runEffects(state, actor, p.effects, { opts, chosen: action.target, trigger: p.trigger })
+    }
     if (p.trigger && p.nextPassive != null) fire(state, p.trigger, actor, { opts, allowPending: true }, p.nextPassive) // 続きのパッシブ
     if (!state.pending) resolveDeaths(state, opts)
     if (checkWinner(state) || !actor.alive) return advance(state, opts)
