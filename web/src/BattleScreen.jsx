@@ -102,10 +102,12 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick }) {
       }}
     >
       <div style={{ height: 26, overflow: 'hidden' }}>{unit.name}</div>
-      <div style={{ background: '#e3e7ef', height: 6, borderRadius: 3, marginTop: 3 }}>
-        <div style={{ width: `${ratio * 100}%`, height: '100%', borderRadius: 3, background: hpColor, transition: 'width 0.3s' }} />
-      </div>
-      <div style={{ marginTop: 2, color: C.mute }}>{unit.alive ? `${Math.ceil(unit.hp)}/${unit.maxHp}` : '戦闘不能'}</div>
+      {!unit.isAmulet && (
+        <div style={{ background: '#e3e7ef', height: 6, borderRadius: 3, marginTop: 3 }}>
+          <div style={{ width: `${ratio * 100}%`, height: '100%', borderRadius: 3, background: hpColor, transition: 'width 0.3s' }} />
+        </div>
+      )}
+      <div style={{ marginTop: 2, color: C.mute }}>{unit.isAmulet ? (unit.alive ? '体力なし' : '消えた') : unit.alive ? `${Math.ceil(unit.hp)}/${unit.maxHp}` : '戦闘不能'}</div>
       {unit.armor > 0 && <div style={{ color: C.player }}>アーマー {Math.ceil(unit.armor)}{unit.armorRate < 1 ? `(${Math.round(unit.armorRate * 100)}%)` : ''}</div>}
       {badges.length > 0 && (
         <div style={{ marginTop: 2, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
@@ -213,7 +215,11 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
   const canEvolve = legal.some((a) => a.type === 'evolve')
   const isAccel = !!state && state.activeKind === 'accel'
   const accelActs = legal.filter((a) => a.type === 'accelerate')
-  const selectableSet = isAccel
+  const chooseActs = legal.filter((a) => a.type === 'choose') // 効果の対象を選ぶ場面(ファンファーレなど)
+  const choosing = chooseActs.length > 0
+  const selectableSet = choosing
+    ? chooseActs.map((a) => a.target)
+    : isAccel
     ? accelActs.map((a) => a.target).filter(Boolean)
     : mode ? traitActions(mode).map((a) => a.target).filter(Boolean) : skillTargets
 
@@ -295,6 +301,10 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
     if (selected) act({ type: 'accelerate', trait: actor.accel.id, target: selected })
   }
   const handleCard = (u) => {
+    if (playerTurn && choosing && selectableSet.includes(u.uid)) {
+      act({ type: 'choose', target: u.uid }) // 選んだらすぐに効果が働く
+      return
+    }
     if (playerTurn && selectableSet.includes(u.uid)) {
       setSelected(u.uid)
       setInspect(u.uid)
@@ -414,6 +424,17 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
           </div>
         ) : cpuTurn ? (
           <div style={{ fontSize: 13, color: C.mute }}>{actor.name}(相手)が考えています…</div>
+        ) : choosing ? (
+          <div>
+            <div style={{ fontSize: 13, marginBottom: 6 }}>
+              <b>{actor.name}</b> の効果: 対象を選んでください
+            </div>
+            <div style={{ fontSize: 12, color: C.mute }}>
+              {state.pending && state.pending.effects.some((e) => e.type === 'reenter')
+                ? '選んだ味方が入場し直します(次のターンの開始時にファンファーレがもう一度働き、そのターンはスキル攻撃ができません)。'
+                : '光っている枠のキャラをタップしてください。'}
+            </div>
+          </div>
         ) : isAccel ? (
           <div>
             <div style={{ fontSize: 13, marginBottom: 6 }}>
