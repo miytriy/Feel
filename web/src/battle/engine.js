@@ -424,6 +424,14 @@ function runEffects(state, source, effects, ctx = {}) {
           t.buffs.push({ stat: e.stat, pct: (e.pct || 0) + graveBonus(state, source, e), flat: e.flat || 0, turns: e.turns ?? null })
           state.log.push(`${t.name}の${statLabel(e.stat)}が上がった`)
           break
+        case 'loseHp': { // 現在体力を直接減らす(ダメージではないので、防御・アーマー・バリアは関係なく、墓場も増えない)
+          if (t.isAmulet || !t.alive) break
+          const before = t.hp
+          t.hp = Math.max(0, t.hp - (e.amount || 0))
+          state.log.push(`${t.name}の現在体力が${Math.round(before - t.hp)}減った`)
+          if (t.hp <= 0) { t.alive = false; t.killedBy = source.uid }
+          break
+        }
         case 'maxHp': { // 最大HPを元のHPの+%だけ増やす(現在HPも同じだけ増える。アミュレットには体力がない)
           if (t.isAmulet) break
           const up = Math.round((t.baseMaxHp * (e.pct || 0)) / 100)
