@@ -146,6 +146,7 @@ function checkCond(state, unit, c) {
   if (c.hpAbove != null && (unit.hp / unit.maxHp) * 100 < c.hpAbove) return false
   if (c.evolved != null && unit.evolved !== c.evolved) return false
   if (c.crests != null && state.crests[unit.team].length < c.crests) return false
+  if (c.combo != null && unit.comboCount < c.combo) return false // コンボ: 味方の特性が使われた回数(自分の前のターンが終わってから)
   return true
 }
 
@@ -290,6 +291,7 @@ function resolveTargets(state, source, key, ctx) {
       return others.slice(0, 1) // 選ばれなかった(CPUの読み・テストなど)ときは先頭の1体
     }
     case 'summons': return summonsOf(state, source)
+    case 'allyField': return [...allies, ...summonsOf(state, source)] // 自分の場すべて(場のキャラ + 召喚物)
     case 'allyOne': {
       if (ctx.chosen) return [getUnit(state, ctx.chosen)]
       return [[...allies].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]].filter(Boolean)
@@ -422,6 +424,14 @@ function runEffects(state, source, effects, ctx = {}) {
           t.buffs.push({ stat: e.stat, pct: (e.pct || 0) + graveBonus(state, source, e), flat: e.flat || 0, turns: e.turns ?? null })
           state.log.push(`${t.name}の${statLabel(e.stat)}が上がった`)
           break
+        case 'maxHp': { // 最大HPを元のHPの+%だけ増やす(現在HPも同じだけ増える。アミュレットには体力がない)
+          if (t.isAmulet) break
+          const up = Math.round((t.baseMaxHp * (e.pct || 0)) / 100)
+          t.maxHp += up
+          t.hp += up
+          state.log.push(`${t.name}の最大HPが${up}増えた`)
+          break
+        }
         case 'armor':
         case 'shield': { // 'shield' は昔の書き方(アーマーと同じ)
           const amount = (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + graveBonus(state, source, e)
@@ -808,7 +818,7 @@ function countCombos(state, actor, opts) {
   for (const u of state.units) {
     if (!u.alive || u.team !== actor.team || u.uid === actor.uid) continue
     const combos = u.passiveObjs.filter((p) => p.trigger === 'combo')
-    if (!combos.length) continue
+    if (!combos.length && !u.passiveObjs.some((p) => p.condition?.combo != null)) continue
     u.comboCount += 1
     for (const p of combos) {
       if (p.min !== u.comboCount || !checkCond(state, u, p.condition)) continue
