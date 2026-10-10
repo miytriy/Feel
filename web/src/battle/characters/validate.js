@@ -6,11 +6,11 @@ export const CLASSES = ['エルフ', 'ロイヤル', 'ウィッチ', 'ドラゴ�
 export const RARITIES = ['legend', 'gold', 'silver', 'bronze']
 const SKILL_STATS = ['atk', 'mag']
 const DMG_TYPES = ['physical', 'magic', 'true']
-const EFFECT_TYPES = ['damage', 'heal', 'buff', 'armor', 'shield', 'barrier', 'advance', 'mp', 'ep', 'faith', 'graveyard', 'crest', 'summon', 'reenter', 'loseKeyword', 'destroy', 'vanish']
-const EFFECT_TARGETS = ['self', 'opponent', 'allies', 'otherAllies', 'allyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons', 'otherAllyOne']
+const EFFECT_TYPES = ['damage', 'heal', 'buff', 'armor', 'shield', 'barrier', 'advance', 'mp', 'ep', 'faith', 'graveyard', 'crest', 'summon', 'reenter', 'loseKeyword', 'destroy', 'vanish', 'maxHp']
+const EFFECT_TARGETS = ['self', 'opponent', 'allies', 'otherAllies', 'allyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons', 'otherAllyOne', 'allyField']
 const TRAIT_TARGETS = ['self', 'allies', 'otherAllies', 'allyOne', 'otherAllyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons']
 const BUFF_STATS = ['atk', 'mag', 'def', 'spd', 'critRate', 'critDmg', 'dmgResist']
-const CONDITION_KEYS = ['link', 'gauge', 'ultimate', 'liberation', 'faith', 'graveyard', 'hpBelow', 'hpAbove', 'evolved', 'crests']
+const CONDITION_KEYS = ['link', 'gauge', 'ultimate', 'liberation', 'faith', 'graveyard', 'hpBelow', 'hpAbove', 'evolved', 'crests', 'combo']
 
 const isNum = (x) => typeof x === 'number' && Number.isFinite(x)
 const isStr = (x) => typeof x === 'string' && x.length > 0
