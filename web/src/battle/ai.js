@@ -142,6 +142,7 @@ function seededRng(seed) {
 // 先読み中の動き方(軽い): 使える特性は全部使い、そのあと一番よい対象を攻撃する
 // 効果の対象を選ぶ(ファンファーレなど)。入場し直させる効果なら、ファンファーレを持つ味方を優先する
 function pickChoice(state, actions, rng) {
+  if (state.pending?.confirm) return actions.find((a) => a.target === 'yes') || actions[0] // 使うかどうか: CPUは使う
   const effects = state.pending ? state.pending.effects : []
   const reenter = effects.some((e) => e.type === 'reenter')
   return pickBest(actions, (act) => {
