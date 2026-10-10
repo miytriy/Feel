@@ -140,8 +140,21 @@ function seededRng(seed) {
 }
 
 // 先読み中の動き方(軽い): 使える特性は全部使い、そのあと一番よい対象を攻撃する
+// 効果の対象を選ぶ(ファンファーレなど)。入場し直させる効果なら、ファンファーレを持つ味方を優先する
+function pickChoice(state, actions, rng) {
+  const effects = state.pending ? state.pending.effects : []
+  const reenter = effects.some((e) => e.type === 'reenter')
+  return pickBest(actions, (act) => {
+    const u = getUnit(state, act.target)
+    if (!u) return -Infinity
+    const fanfares = u.passiveObjs.filter((p) => p.trigger === 'fanfare').length
+    return (reenter ? fanfares * 10 - (u.hasActed ? 0 : 5) : 0) + u.hp / u.maxHp * 0.1 + rng() * 0.01
+  })
+}
+
 function quickPolicy(state) {
   const actions = legalActions(state)
+  if (actions[0] && actions[0].type === 'choose') return pickChoice(state, actions, () => 0.5)
   const accel = actions.find((a) => a.type === 'accelerate')
   if (accel) return accel
   const trait = actions.find((a) => a.type === 'trait' || a.type === 'evolve')
@@ -205,6 +218,7 @@ function chooseAccel(state, actions, level, rng) {
 export function chooseAction(state, level = 1, rng = Math.random) {
   const actions = legalActions(state)
   if (actions.length <= 1) return actions[0]
+  if (actions[0].type === 'choose') return level <= 1 ? pickRandom(actions, rng) : pickChoice(state, actions, rng) // 効果の対象を選ぶ場面
   if (state.activeKind === 'accel') return chooseAccel(state, actions, level, rng)
 
   const skills = actions.filter((a) => a.type === 'skill')
