@@ -3,11 +3,12 @@
 import { KEYWORDS, TRIGGER_LABELS, RELICS } from '../engine.js'
 
 export const CLASSES = ['エルフ', 'ロイヤル', 'ウィッチ', 'ドラゴン', 'ナイトメア', 'ビショップ', 'ネメシス', 'ニュートラル']
+export const RARITIES = ['legend', 'gold', 'silver', 'bronze']
 const SKILL_STATS = ['atk', 'mag']
 const DMG_TYPES = ['physical', 'magic', 'true']
-const EFFECT_TYPES = ['damage', 'heal', 'buff', 'armor', 'shield', 'barrier', 'advance', 'mp', 'ep', 'faith', 'graveyard', 'crest', 'summon']
-const EFFECT_TARGETS = ['self', 'opponent', 'allies', 'otherAllies', 'allyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons']
-const TRAIT_TARGETS = ['self', 'allies', 'otherAllies', 'allyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons']
+const EFFECT_TYPES = ['damage', 'heal', 'buff', 'armor', 'shield', 'barrier', 'advance', 'mp', 'ep', 'faith', 'graveyard', 'crest', 'summon', 'reenter', 'loseKeyword', 'destroy', 'vanish']
+const EFFECT_TARGETS = ['self', 'opponent', 'allies', 'otherAllies', 'allyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons', 'otherAllyOne']
+const TRAIT_TARGETS = ['self', 'allies', 'otherAllies', 'allyOne', 'otherAllyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons']
 const BUFF_STATS = ['atk', 'mag', 'def', 'spd', 'critRate', 'critDmg', 'dmgResist']
 const CONDITION_KEYS = ['link', 'gauge', 'ultimate', 'liberation', 'faith', 'graveyard', 'hpBelow', 'hpAbove', 'evolved', 'crests']
 
@@ -51,6 +52,7 @@ export function validateCharacter(def, opts = {}) {
   if (!isStr(def.id)) add('id がありません')
   if (opts.expectedId && def.id !== opts.expectedId) add(`id「${def.id}」がファイル名「${opts.expectedId}」と違います`)
   if (!isStr(def.name)) add('name(名前)がありません')
+  if (def.rarity != null && !RARITIES.includes(def.rarity)) add(`rarity「${def.rarity}」は使えません(${RARITIES.join(' / ')})`)
   if (!CLASSES.includes(def.class)) add(`class「${def.class}」は使えません(${CLASSES.join(' / ')})`)
 
   const s = def.stats
