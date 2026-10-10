@@ -217,6 +217,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
   const accelActs = legal.filter((a) => a.type === 'accelerate')
   const chooseActs = legal.filter((a) => a.type === 'choose') // 効果の対象を選ぶ場面(ファンファーレなど)
   const choosing = chooseActs.length > 0
+  const confirming = !!(state && state.pending && state.pending.confirm) // 「使う/使わない」を選ぶ場面
   const selectableSet = choosing
     ? chooseActs.map((a) => a.target)
     : isAccel
@@ -424,6 +425,16 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
           </div>
         ) : cpuTurn ? (
           <div style={{ fontSize: 13, color: C.mute }}>{actor.name}(相手)が考えています…</div>
+        ) : choosing && confirming ? (
+          <div>
+            <div style={{ fontSize: 13, marginBottom: 6 }}>
+              <b>{actor.name}</b> の効果: {state.pending.prompt}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => act({ type: 'choose', target: 'yes' })} style={buttonStyle(true, false)}>使う</button>
+              <button onClick={() => act({ type: 'choose', target: 'no' })} style={buttonStyle(false, false)}>使わない</button>
+            </div>
+          </div>
         ) : choosing ? (
           <div>
             <div style={{ fontSize: 13, marginBottom: 6 }}>
