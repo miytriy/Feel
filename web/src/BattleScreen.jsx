@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createBattle, applyAction, getActiveUnit, legalActions, getUnit, gaugeOf, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS } from './battle/ai.js'
-import { DEFAULT_PLAYER_IDS, buildCpuTeam, loadCpuCharSetting, saveCpuCharSetting } from './battle/teams.js'
+import { DEFAULT_PLAYER_IDS, buildCpuTeam, loadCpuCharSetting, saveCpuCharSetting, loadComboMode, saveComboMode } from './battle/teams.js'
 import { ALL_CHARACTERS, charById } from './battle/characters/index.js'
 import FormationScreen from './FormationScreen.jsx'
 
@@ -23,9 +23,13 @@ function buildTimeline(state, count = 12) {
     for (let k = 0; k < count; k++) items.push({ time: u.curAV + u.baseAV * k, unit: u })
     if (u.accel) for (let k = 0; k < count; k++) items.push({ time: u.accel.curAV + u.accel.baseAV * k, unit: u, accel: true })
   }
+  for (const team of ['A', 'B']) {
+    const cr = state.comboReset?.[team]
+    if (cr) for (let k = 0; k < count; k++) items.push({ time: cr.curAV + cr.baseAV * k, sys: team })
+  }
   const toNext = state.round * 100 - state.totalAV
   for (let k = 0; k < count; k++) items.push({ time: toNext + 100 * k, round: state.round + 1 + k })
-  items.sort((a, b) => a.time - b.time || (a.round ? 1 : 0) - (b.round ? 1 : 0) || (b.unit?.spd ?? 0) - (a.unit?.spd ?? 0))
+  items.sort((a, b) => a.time - b.time || (a.round ? 1 : 0) - (b.round ? 1 : 0) || (b.unit?.spd ?? -1) - (a.unit?.spd ?? -1))
   return items.slice(0, count)
 }
 
@@ -43,6 +47,17 @@ function ActionBar({ state }) {
             }}
           >
             R{it.round}
+          </div>
+        ) : it.sys ? (
+          <div
+            key={`sys${it.sys}-${i}`}
+            title="コンボリセット(システムターン): 味方のコンボ数が0に戻ります"
+            style={{
+              flex: '0 0 auto', width: 54, height: 38, boxSizing: 'border-box', padding: '3px 4px', borderRadius: 6, fontSize: 9, lineHeight: 1.25,
+              overflow: 'hidden', background: '#fff3d1', color: '#7a5a00', border: `2px dotted ${TEAM_COLOR[it.sys]}`,
+            }}
+          >
+            コンボリセット
           </div>
         ) : (
           <div
@@ -197,6 +212,7 @@ const buttonStyle = (primary, disabled) => ({
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null }) {
   const [team, setTeam] = useState(null) // 編成画面で決めた自分のチーム(キャラ定義の配列)。nullなら編成画面を出す
   const [level, setLevel] = useState(2)
+  const [comboMode, setComboMode] = useState(() => loadComboMode()) // 開発者設定: コンボのシステム(old = 従来 / reset = β: コンボリセット)
   const [cpuChars, setCpuChars] = useState(() => loadCpuCharSetting()) // 開発者設定: CPUが使うキャラ(test / real)
   const [state, setState] = useState(null)
   const [selected, setSelected] = useState(null)
@@ -280,7 +296,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
         .then((r) => setTicketId(r.ticketId))
         .catch((e) => setRewardMsg(`この対戦では報酬がもらえません: ${e.message}`))
     }
-    setState(createBattle(team, buildCpuTeam(ALL_CHARACTERS, cpuChars)))
+    setState(createBattle(team, buildCpuTeam(ALL_CHARACTERS, cpuChars), { comboMode }))
   }
   const act = (action) => {
     reset()
@@ -367,6 +383,21 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
                 {label}
               </button>
             ))}
+            <div style={{ margin: '8px 0 4px' }}>コンボのシステム</div>
+            {[['old', '従来'], ['reset', 'β(コンボリセット)']].map(([v, label]) => (
+              <button
+                key={v}
+                onClick={() => { setComboMode(v); saveComboMode(v) }}
+                style={{ ...buttonStyle(comboMode === v, false), marginRight: 6 }}
+              >
+                {label}
+              </button>
+            ))}
+            <div style={{ marginTop: 4, color: C.mute, fontSize: 11 }}>
+              {comboMode === 'reset'
+                ? 'β: 【コンボ_◯】を持つキャラが味方にいると、アクションバーに「コンボリセット」が並び(行動値=150×人数)、そこでコンボ数が0に戻ります。'
+                : '従来: コンボ持ち自身のターンが終わると、コンボ数が0に戻ります。'}
+            </div>
           </div>
         </details>
         <p style={{ fontSize: 11, color: C.mute, margin: '0 0 12px' }}>
