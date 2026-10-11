@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createBattle, applyAction, getActiveUnit, legalActions, getUnit, gaugeOf, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS } from './battle/ai.js'
-import { DEFAULT_PLAYER_IDS, CPU_TEAM_IDS } from './battle/teams.js'
+import { DEFAULT_PLAYER_IDS, buildCpuTeam, loadCpuCharSetting, saveCpuCharSetting } from './battle/teams.js'
 import { ALL_CHARACTERS, charById } from './battle/characters/index.js'
 import FormationScreen from './FormationScreen.jsx'
 
@@ -197,6 +197,7 @@ const buttonStyle = (primary, disabled) => ({
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null }) {
   const [team, setTeam] = useState(null) // 編成画面で決めた自分のチーム(キャラ定義の配列)。nullなら編成画面を出す
   const [level, setLevel] = useState(2)
+  const [cpuChars, setCpuChars] = useState(() => loadCpuCharSetting()) // 開発者設定: CPUが使うキャラ(test / real)
   const [state, setState] = useState(null)
   const [selected, setSelected] = useState(null)
   const [mode, setMode] = useState(null) // 選択中の特性のid(nullならスキル攻撃)
@@ -279,7 +280,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
         .then((r) => setTicketId(r.ticketId))
         .catch((e) => setRewardMsg(`この対戦では報酬がもらえません: ${e.message}`))
     }
-    setState(createBattle(team, CPU_TEAM_IDS.map(charById).filter(Boolean)))
+    setState(createBattle(team, buildCpuTeam(ALL_CHARACTERS, cpuChars)))
   }
   const act = (action) => {
     reset()
@@ -350,7 +351,24 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
           </button>
         ))}
         <p style={{ fontSize: 12, color: C.mute, margin: '8px 0 4px' }}>編成: {team.map((c, i) => `${i + 1}.${c.name}`).join(' → ')}</p>
-        <p style={{ fontSize: 11, color: C.mute, margin: '0 0 4px' }}>いまはテスト用の仮キャラで対戦します。</p>
+        <p style={{ fontSize: 11, color: C.mute, margin: '0 0 4px' }}>
+          {cpuChars === 'real' ? 'CPUは本実装キャラ(クラスは毎回ランダム)で対戦します。' : 'CPUはテスト用の仮キャラで対戦します。'}
+        </p>
+        <details style={{ margin: '0 0 8px', fontSize: 12 }}>
+          <summary style={{ cursor: 'pointer', color: C.mute }}>開発者設定</summary>
+          <div style={{ marginTop: 6 }}>
+            <div style={{ marginBottom: 4 }}>CPUが使うキャラ</div>
+            {[['test', 'テストキャラ'], ['real', '本実装キャラ']].map(([v, label]) => (
+              <button
+                key={v}
+                onClick={() => { setCpuChars(v); saveCpuCharSetting(v) }}
+                style={{ ...buttonStyle(cpuChars === v, false), marginRight: 6 }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </details>
         <p style={{ fontSize: 11, color: C.mute, margin: '0 0 12px' }}>
           {rewardApi ? '勝利すると報酬(ジェム)がもらえます。' : 'ログインして対戦すると、勝利で報酬がもらえます。'}
         </p>
