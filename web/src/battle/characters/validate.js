@@ -31,7 +31,7 @@ function checkEffects(effects, where, errs, depth = 0) {
     if (e.type === 'damage' && e.dmgType != null && !DMG_TYPES.includes(e.dmgType)) errs.push(`${w}: dmgType は ${DMG_TYPES.join(' / ')} のどれか`)
     if (e.type === 'buff') {
       if (!BUFF_STATS.includes(e.stat)) errs.push(`${w}: buff の stat は ${BUFF_STATS.join(' / ')} のどれか(「${e.stat}」は使えません)`)
-      if (e.pct == null && e.flat == null && e.perGraveyard == null && e.perCombo == null) errs.push(`${w}: buff には pct か flat が必要です`)
+      if (e.pct == null && e.flat == null && e.perGraveyard == null && e.perCombo == null && e.perType == null) errs.push(`${w}: buff には pct か flat が必要です`)
     }
     if (e.type === 'summon') {
       if (!e.unit && !e.fromOwned) errs.push(`${w}: summon には unit(召喚するキャラ)か fromOwned: true が必要です`)
