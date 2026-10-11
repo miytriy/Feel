@@ -34,8 +34,8 @@ function checkEffects(effects, where, errs, depth = 0) {
       if (e.pct == null && e.flat == null && e.perGraveyard == null) errs.push(`${w}: buff には pct か flat が必要です`)
     }
     if (e.type === 'summon') {
-      if (!e.unit) errs.push(`${w}: summon には unit(召喚するキャラ)が必要です`)
-      else if (depth < 2) errs.push(...validateCharacter(e.unit, { summon: true }).map((m) => `${w} の召喚物 → ${m}`))
+      if (!e.unit && !e.fromOwned) errs.push(`${w}: summon には unit(召喚するキャラ)か fromOwned: true が必要です`)
+      else if (e.unit && depth < 2) errs.push(...validateCharacter(e.unit, { summon: true }).map((m) => `${w} の召喚物 → ${m}`))
     }
     if (e.type === 'crest' && !(e.crest && isStr(e.crest.name))) errs.push(`${w}: crest には name を持つ crest が必要です`)
     if (['heal', 'armor', 'shield'].includes(e.type) && e.flat == null && e.mult == null && e.perGraveyard == null) errs.push(`${w}: ${e.type} には mult か flat が必要です`)
