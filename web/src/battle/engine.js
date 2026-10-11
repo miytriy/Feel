@@ -111,6 +111,7 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
     link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 }, summonSeq: 0, pending: null,
     active: null, activeKind: null, winner: null, log: ['バトル開始!'],
     comboMode: opts.comboMode === 'reset' ? 'reset' : 'old', comboReset: { A: null, B: null }, comboCount: { A: 0, B: 0 },
+    pool: { A: opts.pool?.A || [], B: opts.pool?.B || [] }, // 所持キャラクター(「所持キャラから召喚する」能力の候補)
   }
   startRound(state)
   recalc(state)
@@ -166,7 +167,7 @@ function crestSource(state, crest) {
 // ---------- ステータスの再計算(バフ・常時・アクティブ・クレスト) ----------
 
 // 【コンボ_◯】を持っているキャラ(コンボのパッシブ、または条件 combo を持つ能力がある、場の生きているキャラ)
-export const hasComboAbility = (u) => u.passiveObjs.some((p) => p.trigger === 'combo' || p.condition?.combo != null)
+export const hasComboAbility = (u) => u.passiveObjs.some((p) => p.trigger === 'combo' || p.condition?.combo != null || p.usesCombo || p.effects?.some((e) => e.fromOwned))
 const comboHolders = (state, team) => state.units.filter((u) => u.alive && u.field === 'main' && u.team === team && hasComboAbility(u))
 
 // βのコンボリセット(システムターン)の行動値を、味方のコンボ持ちの数Nに合わせる: Tr = K × N
@@ -427,6 +428,17 @@ function runEffects(state, source, effects, ctx = {}) {
       const next = Math.max(0, state.graveyard[source.team] + amount)
       state.log.push(`墓場が${amount >= 0 ? '+' : ''}${amount}(${next})`)
       state.graveyard[source.team] = next
+      continue
+    }
+    if (e.type === 'summon' && e.fromOwned) { // 所持キャラクターから、速度が コンボ数×10(最大10コンボ)のキャラをランダムに1体召喚する
+      const x = Math.min(e.maxCombo ?? 10, comboOf(state, source))
+      const spd = x * (e.speedPerCombo ?? 10)
+      const cands = (state.pool[source.team] || []).filter((c) => c.stats.spd === spd)
+      if (!cands.length) { state.log.push(`コンボ${x}(速度${spd})の所持キャラがいないので、召喚はなし`); continue }
+      const rng = ctx.opts?.rng || Math.random
+      const pick = cands[Math.floor(rng() * cands.length)]
+      state.log.push(`コンボ${x}: 速度${spd}の所持キャラから${pick.name}が選ばれた`)
+      summon(state, source, pick)
       continue
     }
     if (e.type === 'summon') {
@@ -894,7 +906,7 @@ function countCombos(state, actor, opts) {
   for (const u of state.units) {
     if (!u.alive || u.team !== actor.team || (!shared && u.uid === actor.uid)) continue
     const combos = u.passiveObjs.filter((p) => p.trigger === 'combo')
-    if (!combos.length && !u.passiveObjs.some((p) => p.condition?.combo != null)) continue
+    if (!hasComboAbility(u)) continue
     if (!shared) u.comboCount += 1
     const count = comboOf(state, u)
     for (const p of combos) {
