@@ -73,7 +73,7 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
   const keywords = passives.filter((p) => typeof p === 'string')
   const clone = (x) => JSON.parse(JSON.stringify(x))
   return {
-    uid: uid || `${team}${index}`, defId: def.id, name: def.name, class: def.class, team, relic: def.relic || null,
+    uid: uid || `${team}${index}`, defId: def.id, name: def.name, class: def.class, type: def.type || null, team, relic: def.relic || null, // type: キャラのタイプ(妖精など)
     field, // 'main' = 場のキャラ / 'summon' = 召喚物フィールドの召喚物・アミュレット
     isAmulet: field === 'summon' && !!def.amulet, // アミュレット: スキル攻撃はできず、相手のスキル攻撃の対象にもならない
     maxHp: s.hp, baseMaxHp: s.hp, hp: s.hp, armor: 0, armorRate: 1,
@@ -168,6 +168,8 @@ function crestSource(state, crest) {
 
 // 【コンボ_◯】を持っているキャラ(コンボのパッシブ、または条件 combo を持つ能力がある、場の生きているキャラ)
 export const hasComboAbility = (u) => u.passiveObjs.some((p) => p.trigger === 'combo' || p.condition?.combo != null || p.usesCombo || p.effects?.some((e) => e.fromOwned || e.perCombo))
+// 自分の場(場のキャラ + 召喚物フィールド)にいる、指定のタイプのキャラの数
+const typeCount = (state, source, type) => state.units.filter((u) => u.alive && u.team === source.team && u.type === type).length
 const comboHolders = (state, team) => state.units.filter((u) => u.alive && u.field === 'main' && u.team === team && hasComboAbility(u))
 
 // βのコンボリセット(システムターン)の行動値を、味方のコンボ持ちの数Nに合わせる: Tr = K × N
@@ -388,6 +390,12 @@ function runEffects(state, source, effects, ctx = {}) {
   for (let idx = 0; idx < effects.length; idx++) {
     const e = effects[idx]
     if (e.condition && !checkCond(state, source, e.condition)) continue
+    if (e.timesPerType && !ctx.noRepeat) { // 「自分の場の〇〇タイプの数だけ、この効果を繰り返す」(対象は毎回選び直す)
+      const n = typeCount(state, source, e.timesPerType)
+      state.log.push(`${e.timesPerType}タイプが${n}体なので、${n}回行う`)
+      for (let i = 0; i < n; i++) runEffects(state, source, [{ ...e, timesPerType: undefined }], { ...ctx, noRepeat: true })
+      continue
+    }
     if (e.optional) { // 「追加でMPを消費すると〜」のように、使うかどうかを選べる効果
       if (ctx.answer === undefined) {
         if (e.mpCost && state.mp[source.team] < e.mpCost) { state.log.push(`MPが足りないので、追加の効果はなし`); continue }
@@ -479,7 +487,7 @@ function runEffects(state, source, effects, ctx = {}) {
           heal(state, t, (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + graveBonus(state, source, e))
           break
         case 'buff':
-          t.buffs.push({ stat: e.stat, pct: (e.pct || 0) + graveBonus(state, source, e), flat: (e.flat || 0) + (e.perCombo || 0) * comboOf(state, source), turns: e.turns ?? null }) // perCombo: コンボ1つにつき、flat がその分だけ増える
+          t.buffs.push({ stat: e.stat, pct: (e.pct || 0) + graveBonus(state, source, e), flat: (e.flat || 0) + (e.perCombo || 0) * comboOf(state, source) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0), turns: e.turns ?? null }) // perCombo: コンボ1つにつき、flat がその分だけ増える
           state.log.push(`${t.name}の${statLabel(e.stat)}が上がった`)
           break
         case 'loseHp': { // 現在体力を直接減らす(ダメージではないので、防御・アーマー・バリアは関係なく、墓場も増えない)
@@ -492,7 +500,7 @@ function runEffects(state, source, effects, ctx = {}) {
         }
         case 'maxHp': { // 最大HPを元のHPの+%だけ増やす(現在HPも同じだけ増える。アミュレットには体力がない)
           if (t.isAmulet) break
-          const up = Math.round((t.baseMaxHp * (e.pct || 0)) / 100)
+          const up = Math.round((t.baseMaxHp * (e.pct || 0)) / 100) + (e.flat || 0) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0)
           t.maxHp += up
           t.hp += up
           state.log.push(`${t.name}の最大HPが${up}増えた`)
