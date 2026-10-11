@@ -110,7 +110,7 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
     faith: { A: 0, B: 0 }, crests: { A: [], B: [] }, graveyard: { A: 0, B: 0 },
     link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 }, summonSeq: 0, pending: null,
     active: null, activeKind: null, winner: null, log: ['バトル開始!'],
-    comboMode: opts.comboMode === 'reset' ? 'reset' : 'old', comboReset: { A: null, B: null },
+    comboMode: opts.comboMode === 'reset' ? 'reset' : 'old', comboReset: { A: null, B: null }, comboCount: { A: 0, B: 0 },
   }
   startRound(state)
   recalc(state)
@@ -137,6 +137,9 @@ export const gaugeOf = (state, team) => state.round + state.traitCount[team]
 
 // 条件: graveyard(墓場の下限) faith(信仰値の下限) hpBelow/hpAbove(HP%) evolved(進化済みか) crests(クレストの数の下限)
 //       link(連携の下限) gauge(奥義ゲージの下限) ultimate(奥義: ゲージ10以上) liberation(解放奥義: ゲージ15以上)
+// コンボ数: 従来はキャラごと(自分のターンが終わると0) / βはチーム共有(コンボリセットのターンで0)
+const comboOf = (state, unit) => (state.comboMode === 'reset' ? state.comboCount[unit.team] : unit.comboCount)
+
 function checkCond(state, unit, c) {
   if (!c) return true
   if (c.link != null && state.link[unit.team] < c.link) return false
@@ -149,7 +152,7 @@ function checkCond(state, unit, c) {
   if (c.hpAbove != null && (unit.hp / unit.maxHp) * 100 < c.hpAbove) return false
   if (c.evolved != null && unit.evolved !== c.evolved) return false
   if (c.crests != null && state.crests[unit.team].length < c.crests) return false
-  if (c.combo != null && unit.comboCount < c.combo) return false // コンボ: 味方の特性が使われた回数(自分の前のターンが終わってから)
+  if (c.combo != null && comboOf(state, unit) < c.combo) return false // コンボ: 味方の特性が使われた回数
   return true
 }
 
@@ -792,8 +795,9 @@ function advance(state, opts) {
 
     if (slot.kind === 'comboReset') { // システムターン: コンボ持ちの味方全員のコンボ数を0に戻す(行動は選ばない)
       const holders = comboHolders(state, slot.team)
-      for (const u of holders) u.comboCount = 0
-      state.log.push(`${slot.team === 'A' ? '自分' : '相手'}側のコンボリセット(${holders.map((u) => u.name).join('・')}のコンボが0に)`)
+      const before = state.comboCount[slot.team]
+      state.comboCount[slot.team] = 0 // コンボカウントはチーム共有
+      state.log.push(`${slot.team === 'A' ? '自分' : '相手'}側のコンボリセット(コンボ${before}→0)`)
       const cr = state.comboReset[slot.team]
       cr.curAV = cr.baseAV
       continue
@@ -885,14 +889,17 @@ function countLink(state, actor, opts) {
 // 味方の特性が使われたとき、コンボを持つ味方のカウントを1つ進める
 // (コンボ持ちのターンが終わってから、次にそのキャラのターンが来るまでの間に使われた特性を数える)
 function countCombos(state, actor, opts) {
+  const shared = state.comboMode === 'reset'
+  if (shared) state.comboCount[actor.team] += 1 // β: コンボカウントはチーム共有(特性を使ったのが誰でも数える)
   for (const u of state.units) {
-    if (!u.alive || u.team !== actor.team || u.uid === actor.uid) continue
+    if (!u.alive || u.team !== actor.team || (!shared && u.uid === actor.uid)) continue
     const combos = u.passiveObjs.filter((p) => p.trigger === 'combo')
     if (!combos.length && !u.passiveObjs.some((p) => p.condition?.combo != null)) continue
-    u.comboCount += 1
+    if (!shared) u.comboCount += 1
+    const count = comboOf(state, u)
     for (const p of combos) {
-      if (p.min !== u.comboCount || !checkCond(state, u, p.condition)) continue
-      state.log.push(`${u.name}の【${p.name || 'コンボ'}】(${u.comboCount}コンボ)`)
+      if (p.min !== count || !checkCond(state, u, p.condition)) continue
+      state.log.push(`${u.name}の【${p.name || 'コンボ'}】(${count}コンボ)`)
       runEffects(state, u, p.effects, { opts })
     }
   }
