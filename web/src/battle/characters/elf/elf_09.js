@@ -6,10 +6,10 @@ export default {
     'guard', // 【守護】
     {
       name: 'ファンファーレ', trigger: 'fanfare',
-      desc: '自分の攻撃力・体力+X。Xは自分の場の「タイプ:妖精」キャラクターの数。',
+      desc: '自分の攻撃力・体力+20×X。Xは自分の場の「タイプ:妖精」キャラクターの数。',
       effects: [
-        { type: 'buff', stat: 'atk', perType: '妖精', target: 'self' },
-        { type: 'maxHp', perType: '妖精', target: 'self' },
+        { type: 'buff', stat: 'atk', perType: '妖精', perTypeFlat: 20, target: 'self' },
+        { type: 'maxHp', perType: '妖精', perTypeFlat: 20, target: 'self' },
       ],
     },
     {
