@@ -24,6 +24,23 @@ export function saveCpuCharSetting(mode, storage = globalThis.localStorage) {
   }
 }
 
+// ---- 開発者設定: コンボのシステム('old' = 従来 / 'reset' = β: コンボリセットのシステムターン) ----
+export const DEV_COMBO_KEY = 'feel.dev.comboMode'
+export function loadComboMode(storage = globalThis.localStorage) {
+  try {
+    return storage.getItem(DEV_COMBO_KEY) === 'reset' ? 'reset' : 'old'
+  } catch {
+    return 'old'
+  }
+}
+export function saveComboMode(mode, storage = globalThis.localStorage) {
+  try {
+    storage.setItem(DEV_COMBO_KEY, mode)
+  } catch {
+    /* 保存できなくても、そのまま続ける */
+  }
+}
+
 const shuffle = (list, rng) => {
   const a = [...list]
   for (let i = a.length - 1; i > 0; i--) {
