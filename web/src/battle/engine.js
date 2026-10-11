@@ -167,7 +167,7 @@ function crestSource(state, crest) {
 // ---------- ステータスの再計算(バフ・常時・アクティブ・クレスト) ----------
 
 // 【コンボ_◯】を持っているキャラ(コンボのパッシブ、または条件 combo を持つ能力がある、場の生きているキャラ)
-export const hasComboAbility = (u) => u.passiveObjs.some((p) => p.trigger === 'combo' || p.condition?.combo != null || p.usesCombo || p.effects?.some((e) => e.fromOwned || e.perCombo))
+export const hasComboAbility = (u) => u.passiveObjs.some((p) => p.trigger === 'combo' || p.condition?.combo != null || p.usesCombo || p.effects?.some((e) => e.fromOwned || e.perCombo || e.comboCount))
 // 自分の場(場のキャラ + 召喚物フィールド)にいる、指定のタイプのキャラの数
 const typeCount = (state, source, type) => state.units.filter((u) => u.alive && u.team === source.team && u.type === type).length
 const comboHolders = (state, team) => state.units.filter((u) => u.alive && u.field === 'main' && u.team === team && hasComboAbility(u))
@@ -471,7 +471,16 @@ function runEffects(state, source, effects, ctx = {}) {
       continue
     }
 
-    const targets = resolveTargets(state, source, e.target || 'self', ctx)
+    let targets = resolveTargets(state, source, e.target || 'self', ctx)
+    // ランダムな相手の人数: count(基本は1体)。comboCount: { combo: 3, count: 3 } なら、コンボが3以上のとき3体(重ならないように選ぶ)
+    if ((e.target || 'self') === 'enemyRandom' && (e.count != null || e.comboCount)) {
+      let n = e.count ?? 1
+      if (e.comboCount && comboOf(state, source) >= e.comboCount.combo) n = e.comboCount.count
+      const rng = ctx.opts?.rng || Math.random
+      const pool = [...enemiesOf(state, source).filter(abilityTargetable)]
+      targets = []
+      while (targets.length < n && pool.length) targets.push(pool.splice(Math.floor(rng() * pool.length), 1)[0])
+    }
     for (const t of targets) {
       if (!t) continue
       switch (e.type) {
