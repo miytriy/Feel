@@ -167,7 +167,7 @@ function crestSource(state, crest) {
 // ---------- ステータスの再計算(バフ・常時・アクティブ・クレスト) ----------
 
 // 【コンボ_◯】を持っているキャラ(コンボのパッシブ、または条件 combo を持つ能力がある、場の生きているキャラ)
-export const hasComboAbility = (u) => u.passiveObjs.some((p) => p.trigger === 'combo' || p.condition?.combo != null || p.usesCombo || p.effects?.some((e) => e.fromOwned))
+export const hasComboAbility = (u) => u.passiveObjs.some((p) => p.trigger === 'combo' || p.condition?.combo != null || p.usesCombo || p.effects?.some((e) => e.fromOwned || e.perCombo))
 const comboHolders = (state, team) => state.units.filter((u) => u.alive && u.field === 'main' && u.team === team && hasComboAbility(u))
 
 // βのコンボリセット(システムターン)の行動値を、味方のコンボ持ちの数Nに合わせる: Tr = K × N
@@ -479,7 +479,7 @@ function runEffects(state, source, effects, ctx = {}) {
           heal(state, t, (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + graveBonus(state, source, e))
           break
         case 'buff':
-          t.buffs.push({ stat: e.stat, pct: (e.pct || 0) + graveBonus(state, source, e), flat: e.flat || 0, turns: e.turns ?? null })
+          t.buffs.push({ stat: e.stat, pct: (e.pct || 0) + graveBonus(state, source, e), flat: (e.flat || 0) + (e.perCombo || 0) * comboOf(state, source), turns: e.turns ?? null }) // perCombo: コンボ1つにつき、flat がその分だけ増える
           state.log.push(`${t.name}の${statLabel(e.stat)}が上がった`)
           break
         case 'loseHp': { // 現在体力を直接減らす(ダメージではないので、防御・アーマー・バリアは関係なく、墓場も増えない)
