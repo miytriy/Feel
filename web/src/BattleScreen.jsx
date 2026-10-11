@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createBattle, applyAction, getActiveUnit, legalActions, getUnit, gaugeOf, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS } from './battle/ai.js'
-import { DEFAULT_PLAYER_IDS, buildCpuTeam, loadCpuCharSetting, saveCpuCharSetting, loadComboMode, saveComboMode } from './battle/teams.js'
+import { DEFAULT_PLAYER_IDS, buildCpuTeam, loadCpuCharSetting, saveCpuCharSetting, isTestChar, loadComboMode, saveComboMode } from './battle/teams.js'
 import { ALL_CHARACTERS, charById } from './battle/characters/index.js'
 import FormationScreen from './FormationScreen.jsx'
 
@@ -284,6 +284,11 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
     setSelected(null)
     setMode(null)
   }
+  // 所持キャラクター(「所持キャラから召喚する」能力の候補)。いまはガチャの所持データとはつないでいないので、実装済みの本実装キャラ全員を所持とみなす
+  const ownedPool = (cpuMode) => {
+    const real = ALL_CHARACTERS.filter((c) => !isTestChar(c))
+    return { A: real, B: cpuMode === 'real' ? real : ALL_CHARACTERS.filter(isTestChar) }
+  }
   const startBattle = () => {
     reset()
     setInspect(null)
@@ -296,7 +301,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
         .then((r) => setTicketId(r.ticketId))
         .catch((e) => setRewardMsg(`この対戦では報酬がもらえません: ${e.message}`))
     }
-    setState(createBattle(team, buildCpuTeam(ALL_CHARACTERS, cpuChars), { comboMode }))
+    setState(createBattle(team, buildCpuTeam(ALL_CHARACTERS, cpuChars), { comboMode, pool: ownedPool(cpuChars) }))
   }
   const act = (action) => {
     reset()
