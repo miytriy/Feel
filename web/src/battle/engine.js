@@ -4,6 +4,7 @@
 const AV_BASE = 10000 // 初期行動値 = 10000 ÷ 速度
 const ROUND_AV = 100 // 行動値が100進むごとに1ラウンド
 const EPS = 1e-9
+const COMBO_RESET_K = 150 // コンボリセットの行動値 Tr = K × N (N = 【コンボ_◯】を持つ味方の数)
 const MP_CAP = 10 // MPの最大値の上限
 const EP_MAX = 2 // EPの最大ストック
 const EP_GRANT_ROUND = 5 // このラウンドの開始時にEPをもらう
@@ -94,7 +95,8 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
 }
 
 // バトルを作る(teamA = プレイヤー側, teamB = 相手側。最大5体ずつ)
-export function createBattle(teamADefs, teamBDefs) {
+// opts.comboMode: 'old' = 従来(コンボ持ち自身のターンが終わると数え直す) / 'reset' = β(味方のアクションバーに「コンボリセット」が並ぶ)
+export function createBattle(teamADefs, teamBDefs, opts = {}) {
   if (teamADefs.length < 1 || teamADefs.length > 5 || teamBDefs.length < 1 || teamBDefs.length > 5) {
     throw new Error('編成は1〜5体にしてください')
   }
@@ -108,6 +110,7 @@ export function createBattle(teamADefs, teamBDefs) {
     faith: { A: 0, B: 0 }, crests: { A: [], B: [] }, graveyard: { A: 0, B: 0 },
     link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 }, summonSeq: 0, pending: null,
     active: null, activeKind: null, winner: null, log: ['バトル開始!'],
+    comboMode: opts.comboMode === 'reset' ? 'reset' : 'old', comboReset: { A: null, B: null },
   }
   startRound(state)
   recalc(state)
@@ -159,6 +162,25 @@ function crestSource(state, crest) {
 
 // ---------- ステータスの再計算(バフ・常時・アクティブ・クレスト) ----------
 
+// 【コンボ_◯】を持っているキャラ(コンボのパッシブ、または条件 combo を持つ能力がある、場の生きているキャラ)
+export const hasComboAbility = (u) => u.passiveObjs.some((p) => p.trigger === 'combo' || p.condition?.combo != null)
+const comboHolders = (state, team) => state.units.filter((u) => u.alive && u.field === 'main' && u.team === team && hasComboAbility(u))
+
+// βのコンボリセット(システムターン)の行動値を、味方のコンボ持ちの数Nに合わせる: Tr = K × N
+function syncComboReset(state) {
+  for (const team of ['A', 'B']) {
+    const n = state.comboMode === 'reset' ? comboHolders(state, team).length : 0
+    const cr = state.comboReset[team]
+    if (!n) { state.comboReset[team] = null; continue }
+    const base = COMBO_RESET_K * n
+    if (!cr) state.comboReset[team] = { baseAV: base, curAV: base }
+    else if (Math.abs(cr.baseAV - base) > EPS) { // Nが変わったら、進み具合は保ったまま調整する
+      cr.curAV = cr.curAV * (base / cr.baseAV)
+      cr.baseAV = base
+    }
+  }
+}
+
 function recalc(state) {
   // クレストの常時効果(味方全体 / 相手全体へのバフ)
   const crestMods = new Map()
@@ -201,6 +223,7 @@ function recalc(state) {
       u.baseAV = newBase
     }
   }
+  syncComboReset(state)
 }
 
 // ---------- ダメージ ----------
@@ -677,7 +700,7 @@ function beginTurn(state, unit, opts) {
 function endTurn(state, actor) {
   actor.hasActed = true
   actor.curAV = actor.baseAV
-  actor.comboCount = 0 // コンボは、自分のターンが終わった後から数え直す
+  if (state.comboMode !== 'reset') actor.comboCount = 0 // 従来: コンボは、自分のターンが終わった後から数え直す(βでは、コンボリセットのターンで数え直す)
   actor.buffs = actor.buffs
     .map((b) => ({ ...b, turns: b.turns == null ? null : b.turns - 1 }))
     .filter((b) => b.turns == null || b.turns > 0)
@@ -693,6 +716,10 @@ function shiftAV(state, amount) {
     if (!u.alive) continue
     u.curAV = Math.max(0, u.curAV - amount)
     if (u.accel) u.accel.curAV = Math.max(0, u.accel.curAV - amount)
+  }
+  for (const team of ['A', 'B']) {
+    const cr = state.comboReset[team]
+    if (cr) cr.curAV = Math.max(0, cr.curAV - amount)
   }
 }
 
@@ -739,12 +766,17 @@ function advance(state, opts) {
       slots.push({ u, kind: 'body', av: u.curAV, spd: u.spd })
       if (u.accel) slots.push({ u, kind: 'accel', av: u.accel.curAV, spd: u.accel.speed })
     }
+    // βのコンボリセット: 味方のアクションバーに並ぶシステムターン(同じ行動値なら、キャラの行動のあとに回る)
+    for (const team of ['A', 'B']) {
+      const cr = state.comboReset[team]
+      if (cr) slots.push({ u: null, kind: 'comboReset', team, av: cr.curAV, spd: -1 })
+    }
     let slot = slots[0]
     for (const sl of slots) {
       const tie = Math.abs(sl.av - slot.av) <= EPS
       if (sl.av < slot.av - EPS || (tie && (sl.spd > slot.spd || (sl.spd === slot.spd && sl.kind === 'accel' && slot.kind === 'body')))) slot = sl
     }
-    const next = slot.u
+    const next = slot.u // コンボリセットのときは null
 
     // ラウンドの境目が先に来るなら、先にラウンドを進める
     const toBoundary = state.round * ROUND_AV - state.totalAV
@@ -757,6 +789,16 @@ function advance(state, opts) {
 
     shiftAV(state, Math.max(0, slot.av))
     state.totalAV += Math.max(0, slot.av)
+
+    if (slot.kind === 'comboReset') { // システムターン: コンボ持ちの味方全員のコンボ数を0に戻す(行動は選ばない)
+      const holders = comboHolders(state, slot.team)
+      for (const u of holders) u.comboCount = 0
+      state.log.push(`${slot.team === 'A' ? '自分' : '相手'}側のコンボリセット(${holders.map((u) => u.name).join('・')}のコンボが0に)`)
+      const cr = state.comboReset[slot.team]
+      cr.curAV = cr.baseAV
+      continue
+    }
+
     state.active = next.uid
     state.activeKind = slot.kind
 
