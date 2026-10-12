@@ -87,7 +87,7 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
     traits: clone(def.traits || []),
     stealth: keywords.includes('stealth'), stealthEvery, stealthTimer: null,
     barrier: keywords.includes('barrier') ? 1 : 0,
-    evolvable: field === 'main' && def.evolvable !== false, evolved: false,
+    evolvable: !(field === 'summon' && def.amulet) && def.evolvable !== false, evolved: false, charDef: def, // 召喚物も進化できる(アミュレットだけ進化しない)。def: 「自分と同じキャラを召喚」のために元の定義を持つ
     accel: def.accelerate ? makeAccel(def.accelerate) : null,
     countdown: def.countdown ?? null,
     comboCount: 0,
@@ -464,12 +464,13 @@ function runEffects(state, source, effects, ctx = {}) {
       continue
     }
     if (e.type === 'summon') {
+      const sdef = e.copySelf ? source.charDef : e.unit // copySelf: 自分と同じキャラを召喚する(進化もできる)
       if (e.mpCost) { // 追加でMPを消費すると働く効果(MPが足りなければ働かない)
-        if (state.mp[source.team] < e.mpCost) { state.log.push(`MPが足りないので、${e.unit.name}の追加召喚はなし`); continue }
+        if (state.mp[source.team] < e.mpCost) { state.log.push(`MPが足りないので、${sdef.name}の追加召喚はなし`); continue }
         state.mp[source.team] -= e.mpCost
         state.log.push(`MPを${e.mpCost}消費して、追加で召喚する`)
       }
-      for (let i = 0; i < (e.count ?? 1); i++) summon(state, source, e.unit)
+      for (let i = 0; i < (e.count ?? 1); i++) summon(state, source, sdef)
       continue
     }
     if (e.type === 'crest') {
