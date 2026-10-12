@@ -33,7 +33,7 @@ export const KEYWORDS = {
 export const TRIGGER_LABELS = {
   fanfare: 'ファンファーレ', constant: '常時', active: 'アクティブ', lastWord: 'ラストワード',
   onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時',
-  roundStart: 'ラウンド開始時', allyDeath: '味方が戦闘不能になったとき', allyTurnStart: '味方のターン開始時', link: '連携',
+  roundStart: 'ラウンド開始時', allyDeath: '味方が戦闘不能になったとき', allyEnter: '味方が場に出たとき', allyTurnStart: '味方のターン開始時', link: '連携',
 }
 
 // ---------- 遺物(頭・胴・脚・靴のセットを装備したキャラに、セット効果がつく) ----------
@@ -380,6 +380,8 @@ function summon(state, source, def) {
     u.keywords.push(oe.gainKeyword)
     state.log.push(`【${crest.name}】の効果で、${u.name}は【${KEYWORDS[oe.gainKeyword]?.label || oe.gainKeyword}】を持つ`)
   }
+  // 自分の場の「味方が場に出たとき」(enterType があれば、そのタイプのキャラが出たときだけ)
+  for (const a of state.units.filter((x) => x.alive && x.team === u.team && x.uid !== u.uid)) fire(state, 'allyEnter', a, { other: u })
   recalc(state)
   return u
 }
@@ -586,6 +588,7 @@ function fire(state, trigger, unit, ctx = {}, from = 0) {
   for (let i = from; i < unit.passiveObjs.length; i++) {
     const p = unit.passiveObjs[i]
     if (p.trigger !== trigger || !checkCond(state, unit, p.condition)) continue
+    if (p.enterType && ctx.other?.type !== p.enterType) continue
     state.log.push(`${unit.name}の【${p.name || TRIGGER_LABELS[trigger]}】`)
     runEffects(state, unit, p.effects, { ...ctx, trigger, nextPassive: i + 1 })
     if (state.pending) return // 選ぶのを待つ。続きは、選ばれたあとに行う
