@@ -177,6 +177,18 @@ const typeCount = (state, source, type) => state.units.filter((u) => u.alive && 
 const comboHolders = (state, team) => state.units.filter((u) => u.alive && u.field === 'main' && u.team === team && hasComboAbility(u))
 
 // βのコンボリセット(システムターン)の行動値を、味方のコンボ持ちの数Nに合わせる: Tr = K × N
+// 持ち主のいないカウントダウン付きクレストは、元の持ち主の速度で行動バーに並び、順番が来るたびにカウントダウンが進む
+function syncCrestSlots(state) {
+  for (const team of ['A', 'B']) {
+    for (const c of state.crests[team]) {
+      if (c.countdown == null) continue
+      const src = getUnit(state, c.sourceUid)
+      if (src && src.alive) { c.ownerSpd = src.spd; c.slot = null; continue } // 持ち主がいる間は、持ち主の行動で進む。速度は覚えておく
+      if (!c.slot) { const base = AV_BASE / (c.ownerSpd || 1); c.slot = { baseAV: base, curAV: base } }
+    }
+  }
+}
+
 function syncComboReset(state) {
   for (const team of ['A', 'B']) {
     const n = state.comboMode === 'reset' ? comboHolders(state, team).length : 0
@@ -233,6 +245,7 @@ function recalc(state) {
       u.baseAV = newBase
     }
   }
+  syncCrestSlots(state)
   syncComboReset(state)
 }
 
@@ -357,6 +370,9 @@ function placeCrest(state, source, def) {
   crest.countdown = def.countdown ?? null
   crest.sourceUid = source.uid
   crest.team = source.team
+  crest.ownerSpd = source.spd // 持ち主が倒れたあとは、この速度で行動バーに並ぶ
+  crest.slot = null
+  crest.originDef = source.charDef // 置いたキャラの元の定義(「置いたキャラと同じキャラを召喚」のため)
   area.push(crest)
   state.log.push(`クレスト【${def.name}】を置いた`)
 }
@@ -464,12 +480,13 @@ function runEffects(state, source, effects, ctx = {}) {
       continue
     }
     if (e.type === 'summon') {
-      const sdef = e.copySelf ? source.charDef : e.unit // copySelf: 自分と同じキャラを召喚する(進化もできる)
+      const sdef = e.fromCrest ? ctx.crest?.originDef : e.copySelf ? source.charDef : e.unit // copySelf: 自分と同じキャラを召喚する(進化もできる)
       if (e.mpCost) { // 追加でMPを消費すると働く効果(MPが足りなければ働かない)
         if (state.mp[source.team] < e.mpCost) { state.log.push(`MPが足りないので、${sdef.name}の追加召喚はなし`); continue }
         state.mp[source.team] -= e.mpCost
         state.log.push(`MPを${e.mpCost}消費して、追加で召喚する`)
       }
+      if (!sdef) continue
       for (let i = 0; i < (e.count ?? 1); i++) summon(state, source, sdef)
       continue
     }
@@ -624,13 +641,21 @@ function fireCrests(state, team, trigger, subject, opts) {
 }
 
 // クレストのカウントダウンを1つ進める(0になったら消える)
-function tickCrest(state, crest) {
+function tickCrest(state, crest, opts) {
   if (crest.countdown == null) return
   crest.countdown -= 1
   if (crest.countdown <= 0) {
     state.crests[crest.team] = state.crests[crest.team].filter((c) => c !== crest)
     state.log.push(`クレスト【${crest.name}】は役目を終えて消えた`)
     recalc(state) // クレストの常時効果がなくなった分を反映
+    // クレストのラストワード(消えるときに働く)
+    for (const p of crest.passives) {
+      if (p.trigger !== 'lastWord') continue
+      const src = crestSource(state, crest)
+      if (!src) continue
+      state.log.push(`クレスト【${crest.name}】の【ラストワード】`)
+      runEffects(state, src, p.effects, { opts, crest })
+    }
   }
 }
 
@@ -734,11 +759,6 @@ function startRound(state, opts) {
   }
   for (const team of ['A', 'B']) {
     fireCrests(state, team, 'roundStart', null, opts)
-    // 置いたキャラが倒れているクレストは、ラウンド開始時にカウントダウンが進む
-    for (const crest of [...state.crests[team]]) {
-      const src = getUnit(state, crest.sourceUid)
-      if (!src || !src.alive) tickCrest(state, crest)
-    }
   }
   resolveDeaths(state, opts)
   recalc(state) // ラウンドが進むと奥義ゲージも変わる
@@ -765,7 +785,7 @@ function beginTurn(state, unit, opts) {
     }
   }
   for (const crest of [...state.crests[unit.team]]) {
-    if (crest.sourceUid === unit.uid) tickCrest(state, crest)
+    if (crest.sourceUid === unit.uid) tickCrest(state, crest, opts)
   }
   fireCrests(state, unit.team, 'allyTurnStart', unit, opts)
   if (!unit.hasActed) fire(state, 'fanfare', unit, { opts, allowPending: true }) // 最初のターン開始時だけ(選ぶ効果は、プレイヤーが選ぶまで待つ)
@@ -795,6 +815,7 @@ function shiftAV(state, amount) {
   for (const team of ['A', 'B']) {
     const cr = state.comboReset[team]
     if (cr) cr.curAV = Math.max(0, cr.curAV - amount)
+    for (const c of state.crests[team]) if (c.slot) c.slot.curAV = Math.max(0, c.slot.curAV - amount)
   }
 }
 
@@ -846,6 +867,8 @@ function advance(state, opts) {
       const cr = state.comboReset[team]
       if (cr) slots.push({ u: null, kind: 'comboReset', team, av: cr.curAV, spd: -1 })
     }
+    // 持ち主のいないクレストのカウントダウン(元の持ち主の速度で並ぶ。コンボリセットと同じく、キャラの行動のあとに回る)
+    for (const team of ['A', 'B']) for (const c of state.crests[team]) if (c.slot) slots.push({ u: null, kind: 'crest', crest: c, team, av: c.slot.curAV, spd: -2 })
     let slot = slots[0]
     for (const sl of slots) {
       const tie = Math.abs(sl.av - slot.av) <= EPS
@@ -864,6 +887,14 @@ function advance(state, opts) {
 
     shiftAV(state, Math.max(0, slot.av))
     state.totalAV += Math.max(0, slot.av)
+
+    if (slot.kind === 'crest') { // 持ち主のいないクレストの番: カウントダウンが1つ進む(行動は選ばない)
+      slot.crest.slot.curAV = slot.crest.slot.baseAV
+      state.log.push(`クレスト【${slot.crest.name}】のカウントダウンが進んだ`)
+      tickCrest(state, slot.crest, opts)
+      resolveDeaths(state, opts)
+      continue
+    }
 
     if (slot.kind === 'comboReset') { // システムターン: コンボ持ちの味方全員のコンボ数を0に戻す(行動は選ばない)
       const holders = comboHolders(state, slot.team)
