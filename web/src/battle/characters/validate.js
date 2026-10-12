@@ -34,7 +34,7 @@ function checkEffects(effects, where, errs, depth = 0) {
       if (e.pct == null && e.flat == null && e.perGraveyard == null && e.perCombo == null && e.perType == null) errs.push(`${w}: buff には pct か flat が必要です`)
     }
     if (e.type === 'summon') {
-      if (!e.unit && !e.fromOwned) errs.push(`${w}: summon には unit(召喚するキャラ)か fromOwned: true が必要です`)
+      if (!e.unit && !e.fromOwned && !e.copySelf) errs.push(`${w}: summon には unit(召喚するキャラ)・fromOwned: true・copySelf: true のどれかが必要です`)
       else if (e.unit && depth < 2) errs.push(...validateCharacter(e.unit, { summon: true }).map((m) => `${w} の召喚物 → ${m}`))
     }
     if (e.type === 'crest' && e.crest?.onEnter && !isStr(e.crest.onEnter.gainKeyword)) errs.push(`${w}: crest の onEnter には gainKeyword(例: 'dash')が必要です`)
