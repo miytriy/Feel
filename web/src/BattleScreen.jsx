@@ -539,7 +539,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
                 <div style={{ fontSize: 11, color: C.mute, marginBottom: 4 }}>特性(MPを使う。使ってもターンは続きます)</div>
                 {actor.traits.map((t) => {
                   const usable = traitActions(t.id).length > 0
-                  const why = !t.repeatable && actor.usedTraits.includes(t.id) ? '使用済み' : state.mp.A < t.cost ? 'MP不足' : t.condition ? '条件未達' : '対象なし'
+                  const why = t.charges != null && t.charges <= 0 ? '回数切れ' : !t.repeatable && actor.usedTraits.includes(t.id) ? '使用済み' : state.mp.A < t.cost ? 'MP不足' : t.condition ? '条件未達' : '対象なし'
                   return (
                     <div key={t.id} style={{ marginBottom: 4 }}>
                       <button
@@ -547,7 +547,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
                         disabled={!usable}
                         style={{ ...buttonStyle(mode === t.id, !usable), padding: '6px 10px', fontSize: 13 }}
                       >
-                        {t.name}(MP{t.cost}){!usable ? ` ${why}` : ''}
+                        {t.name}(MP{t.cost}{t.charges != null ? `・残り${t.charges}回` : ''}){!usable ? ` ${why}` : ''}
                       </button>
                       <span style={{ fontSize: 11, color: C.mute }}> {t.desc}</span>
                     </div>
