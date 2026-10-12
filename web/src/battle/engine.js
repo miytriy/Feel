@@ -153,6 +153,7 @@ function checkCond(state, unit, c) {
   if (c.hpBelow != null && (unit.hp / unit.maxHp) * 100 > c.hpBelow) return false
   if (c.hpAbove != null && (unit.hp / unit.maxHp) * 100 < c.hpAbove) return false
   if (c.evolved != null && unit.evolved !== c.evolved) return false
+  if (c.canEvolve && !(unit.evolvable && !unit.evolved && state.ep[unit.team] >= 1)) return false // 進化できる状態(進化できるキャラで、まだ進化しておらず、EPがある)
   if (c.crests != null && state.crests[unit.team].length < c.crests) return false
   if (c.combo != null && comboOf(state, unit) < c.combo) return false // コンボ: 味方の特性が使われた回数
   return true
@@ -545,6 +546,14 @@ function runEffects(state, source, effects, ctx = {}) {
           const have = source.traits.find((x) => x.id === e.trait.id)
           if (have) have.charges = (have.charges ?? 0) + n
           else source.traits.push({ ...structuredClone(e.trait), charges: n })
+          break
+        }
+        case 'gainKeyword': { // キーワード能力(必殺など)を得る
+          const k = e.keyword
+          if (!t.keywords.includes(k)) {
+            t.keywords.push(k)
+            state.log.push(`${t.name}は【${KEYWORDS[k]?.label || k}】を持つ`)
+          }
           break
         }
         case 'loseKeyword': { // キーワード能力(守護など)を失わせる
