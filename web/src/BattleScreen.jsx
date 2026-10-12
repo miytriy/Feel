@@ -26,6 +26,10 @@ function buildTimeline(state, count = 12) {
   for (const team of ['A', 'B']) {
     const cr = state.comboReset?.[team]
     if (cr) for (let k = 0; k < count; k++) items.push({ time: cr.curAV + cr.baseAV * k, sys: team })
+    // 持ち主のいないクレストのカウントダウン(残りの回数ぶんだけ並ぶ)
+    for (const c of state.crests?.[team] || []) {
+      if (c.slot) for (let k = 0; k < Math.min(count, c.countdown); k++) items.push({ time: c.slot.curAV + c.slot.baseAV * k, crestTeam: team, crest: c, left: c.countdown - k })
+    }
   }
   const toNext = state.round * 100 - state.totalAV
   for (let k = 0; k < count; k++) items.push({ time: toNext + 100 * k, round: state.round + 1 + k })
@@ -47,6 +51,17 @@ function ActionBar({ state }) {
             }}
           >
             R{it.round}
+          </div>
+        ) : it.crest ? (
+          <div
+            key={`crest-${it.crest.name}-${i}`}
+            title={`クレスト【${it.crest.name}】のカウントダウン(持ち主の速度で進む)`}
+            style={{
+              flex: '0 0 auto', width: 54, height: 38, boxSizing: 'border-box', padding: '3px 4px', borderRadius: 6, fontSize: 9, lineHeight: 1.25,
+              overflow: 'hidden', background: '#e8e1ff', color: '#3d2b8f', border: `2px dotted ${TEAM_COLOR[it.crestTeam]}`,
+            }}
+          >
+            CD{it.left} {it.crest.name}
           </div>
         ) : it.sys ? (
           <div
