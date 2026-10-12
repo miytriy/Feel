@@ -78,7 +78,7 @@ export function validateCharacter(def, opts = {}) {
 
   ;(def.passives || []).forEach((p, i) => {
     if (typeof p === 'string') {
-      if (!KEYWORDS[p]) add(`passives の「${p}」は知らないキーワードです(使えるもの: ${Object.keys(KEYWORDS).join(' / ')})`)
+      if (!KEYWORDS[p] && !/^stealth_[1-9]\d*$/.test(p)) add(`passives の「${p}」は知らないキーワードです(使えるもの: ${Object.keys(KEYWORDS).join(' / ')})`)
     } else if (p && typeof p === 'object') {
       const w = `パッシブ${i + 1}(${p.name || '名前なし'})`
       if (!TRIGGER_LABELS[p.trigger]) errs.push(`${label}: ${w}: 知らない trigger「${p.trigger}」(使えるもの: ${Object.keys(TRIGGER_LABELS).join(' / ')})`)
