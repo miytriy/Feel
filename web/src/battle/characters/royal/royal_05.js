@@ -1,10 +1,15 @@
+import knight from './royal_01.js' // 召喚する「ナイト」
+
 export default {
-  id: 'royal_05', name: '忍びのムササビ', class: 'ロイヤル', rarity: 'silver',
-  stats: { hp: 111, atk: 216, def: 120, spd: 90 },
+  id: 'royal_05', name: '勇猛のルミナスランサー', class: 'ロイヤル', rarity: 'silver', type: 'ルミナス',
+  stats: { hp: 291, atk: 121, def: 170, spd: 90 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
-    'stealth_3', // 【潜伏_3】: 攻撃すると剥がれ、自分のターンが3回始まるたびに戻る
-    // copySelf: 召喚されるのも、このキャラ自身(召喚物も進化できるので、進化すればまた召喚できる)
-    { name: '進化時', trigger: 'onEvolve', desc: '「忍びのムササビ」1体を召喚する。', effects: [{ type: 'summon', count: 1, copySelf: true }] },
+    {
+      name: '常時', trigger: 'allyEnter', enterType: '兵士',
+      desc: '自分の場に「タイプ:兵士」のキャラクターが出たとき、それは【突進】を持つ。',
+      effects: [{ type: 'gainKeyword', keyword: 'rush', target: 'entered' }],
+    },
+    { name: 'ファンファーレ', trigger: 'fanfare', desc: '「ナイト」1体を召喚する。', effects: [{ type: 'summon', count: 1, unit: knight }] },
   ],
 }
