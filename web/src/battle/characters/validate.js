@@ -42,7 +42,7 @@ function checkEffects(effects, where, errs, depth = 0) {
     if (e.type === 'enableTrait' && !(e.trait && isStr(e.trait.id) && isStr(e.trait.name) && Array.isArray(e.trait.effects))) errs.push(`${w}: enableTrait には id・name・effects を持つ trait が必要です`)
     if (e.type === 'enableTrait' && e.trait?.effects) checkEffects(e.trait.effects, `${w} の特性`, errs)
     if (e.type === 'crest' && !(e.crest && isStr(e.crest.name))) errs.push(`${w}: crest には name を持つ crest が必要です`)
-    if (['heal', 'armor', 'shield'].includes(e.type) && e.flat == null && e.mult == null && e.perGraveyard == null && e.pctPerSummon == null) errs.push(`${w}: ${e.type} には mult か flat が必要です`)
+    if (['heal', 'armor', 'shield'].includes(e.type) && e.flat == null && e.mult == null && e.perGraveyard == null && e.pctPerSummon == null && e.pctMax == null) errs.push(`${w}: ${e.type} には mult か flat が必要です`)
     checkCondition(e.condition, w, errs)
   })
 }
