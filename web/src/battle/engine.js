@@ -153,7 +153,7 @@ function checkCond(state, unit, c) {
   if (c.hpBelow != null && (unit.hp / unit.maxHp) * 100 > c.hpBelow) return false
   if (c.hpAbove != null && (unit.hp / unit.maxHp) * 100 < c.hpAbove) return false
   if (c.evolved != null && unit.evolved !== c.evolved) return false
-  if (c.canEvolve && !(unit.evolvable && !unit.evolved && state.ep[unit.team] >= 1)) return false // 進化できる状態(進化できるキャラで、まだ進化しておらず、EPがある)
+  if (c.evolveTurn && state.round < EP_GRANT_ROUND) return false // 進化可能ターン: EPが配られたラウンドから戦闘終了まで
   if (c.crests != null && state.crests[unit.team].length < c.crests) return false
   if (c.combo != null && comboOf(state, unit) < c.combo) return false // コンボ: 味方の特性が使われた回数
   return true
