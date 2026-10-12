@@ -6,7 +6,7 @@ export const CLASSES = ['エルフ', 'ロイヤル', 'ウィッチ', 'ドラゴ�
 export const RARITIES = ['legend', 'gold', 'silver', 'bronze']
 const SKILL_STATS = ['atk', 'mag']
 const DMG_TYPES = ['physical', 'magic', 'true']
-const EFFECT_TYPES = ['damage', 'heal', 'buff', 'armor', 'shield', 'barrier', 'advance', 'mp', 'ep', 'faith', 'graveyard', 'crest', 'summon', 'reenter', 'loseKeyword', 'destroy', 'vanish', 'maxHp', 'loseHp']
+const EFFECT_TYPES = ['damage', 'heal', 'buff', 'armor', 'shield', 'barrier', 'advance', 'mp', 'ep', 'faith', 'graveyard', 'crest', 'summon', 'reenter', 'loseKeyword', 'destroy', 'vanish', 'maxHp', 'loseHp', 'enableTrait']
 const EFFECT_TARGETS = ['self', 'opponent', 'allies', 'otherAllies', 'allyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons', 'otherAllyOne', 'allyField']
 const TRAIT_TARGETS = ['self', 'allies', 'otherAllies', 'allyOne', 'otherAllyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons']
 const BUFF_STATS = ['atk', 'mag', 'def', 'spd', 'critRate', 'critDmg', 'dmgResist']
@@ -38,6 +38,8 @@ function checkEffects(effects, where, errs, depth = 0) {
       else if (e.unit && depth < 2) errs.push(...validateCharacter(e.unit, { summon: true }).map((m) => `${w} の召喚物 → ${m}`))
     }
     if (e.type === 'crest' && e.crest?.onEnter && !isStr(e.crest.onEnter.gainKeyword)) errs.push(`${w}: crest の onEnter には gainKeyword(例: 'dash')が必要です`)
+    if (e.type === 'enableTrait' && !(e.trait && isStr(e.trait.id) && isStr(e.trait.name) && Array.isArray(e.trait.effects))) errs.push(`${w}: enableTrait には id・name・effects を持つ trait が必要です`)
+    if (e.type === 'enableTrait' && e.trait?.effects) checkEffects(e.trait.effects, `${w} の特性`, errs)
     if (e.type === 'crest' && !(e.crest && isStr(e.crest.name))) errs.push(`${w}: crest には name を持つ crest が必要です`)
     if (['heal', 'armor', 'shield'].includes(e.type) && e.flat == null && e.mult == null && e.perGraveyard == null && e.pctPerSummon == null) errs.push(`${w}: ${e.type} には mult か flat が必要です`)
     checkCondition(e.condition, w, errs)
