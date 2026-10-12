@@ -546,7 +546,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
         ) : (
           <div>
             <div style={{ fontSize: 13, marginBottom: 6 }}>
-              <b>{actor.name}</b> の番: スキル「{actor.skill.name}」({TYPE_LABEL[actor.skill.type]})
+              <b>{actor.name}</b> の番: スキル「{actor.skill.name}」({TYPE_LABEL[actor.skill.type]}){actor.doubleSkill ? ` ・1ターンに2回(2回目はMP${actor.doubleSkill.mpCost})${(actor.skillsThisTurn || 0) >= 1 ? ' ・1回目は済み' : ''}` : ''}
             </div>
 
             {actor.traits.length > 0 && (
