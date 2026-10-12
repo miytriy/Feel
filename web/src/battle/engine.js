@@ -124,6 +124,7 @@ const hasKw = (u, k) => u.keywords.includes(k)
 // 「味方」「相手」は場のキャラのこと。召喚物は専用の指定(summons)で選ぶ
 const alliesOf = (state, u) => state.units.filter((x) => x.alive && x.field === 'main' && x.team === u.team)
 const enemiesOf = (state, u) => state.units.filter((x) => x.alive && x.field === 'main' && x.team !== u.team)
+const allyFieldOf = (state, u) => state.units.filter((x) => x.alive && x.team === u.team)
 const summonsOf = (state, u) => state.units.filter((x) => x.alive && x.field === 'summon' && x.team === u.team)
 const SUMMON_MAX = 5 // 召喚物フィールドは最大5体
 const abilityTargetable = (u) => u.alive && !u.stealth && !hasKw(u, 'aura')
@@ -535,6 +536,15 @@ function runEffects(state, source, effects, ctx = {}) {
           t.barrier = 1
           state.log.push(`${t.name}はバリアを得た`)
           break
+        case 'enableTrait': { // 特性を使えるようにする(回数つき)。回数は「指定した速度の味方の数」(自分以外・場のキャラと召喚物)
+          const n = e.perAllySpeed ? allyFieldOf(state, source).filter((u) => u.uid !== source.uid && e.perAllySpeed.includes(Math.round(u.spd))).length : (e.charges ?? 1)
+          state.log.push(`${source.name}は特性【${e.trait.name}】を${n}回使えるようになった`)
+          if (n <= 0) break
+          const have = source.traits.find((x) => x.id === e.trait.id)
+          if (have) have.charges = (have.charges ?? 0) + n
+          else source.traits.push({ ...structuredClone(e.trait), charges: n })
+          break
+        }
         case 'loseKeyword': { // キーワード能力(守護など)を失わせる
           const k = e.keyword || 'guard'
           if (t.keywords.includes(k)) {
@@ -676,6 +686,7 @@ export function legalActions(state) {
 
   if (state.actionsThisTurn < MAX_ACTIONS_PER_TURN) {
     for (const tr of actor.traits) {
+      if (tr.charges != null && tr.charges <= 0) continue // 回数つきの特性は、使い切ったら使えない
       if (!tr.repeatable && actor.usedTraits.includes(tr.id)) continue // 同じ特性は1ターンに1回(連続使用できる特性は除く)
       if (state.mp[actor.team] < tr.cost) continue
       if (!checkCond(state, actor, tr.condition)) continue
@@ -949,6 +960,7 @@ function doTrait(state, actor, action, opts) {
   state.mp[actor.team] -= trait.cost
   state.traitCount[actor.team] += 1 // 奥義ゲージに数えられる
   actor.usedTraits.push(trait.id)
+  if (trait.charges != null) trait.charges -= 1
   recalc(state)
   state.log.push(`${actor.name}の特性【${trait.name}】(MP${trait.cost})`)
   runEffects(state, actor, trait.effects, { opts, chosen: action.target })
