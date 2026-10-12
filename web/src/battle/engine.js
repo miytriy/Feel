@@ -70,7 +70,9 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
     else base[m.stat] = next
   }
   const passives = def.passives || []
-  const keywords = passives.filter((p) => typeof p === 'string')
+  const rawKw = passives.filter((p) => typeof p === 'string')
+  const keywords = rawKw.map((k) => (/^stealth_\d+$/.test(k) ? 'stealth' : k)) // 'stealth_3' = 【潜伏_3】(3ターンごとに潜伏が戻る)
+  const stealthEvery = Number(rawKw.map((k) => /^stealth_(\d+)$/.exec(k)).find(Boolean)?.[1]) || null
   const clone = (x) => JSON.parse(JSON.stringify(x))
   return {
     uid: uid || `${team}${index}`, defId: def.id, name: def.name, class: def.class, type: def.type || null, team, relic: def.relic || null, // type: キャラのタイプ(妖精など)
@@ -83,7 +85,7 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
     keywords,
     passiveObjs: clone(passives.filter((p) => typeof p === 'object')),
     traits: clone(def.traits || []),
-    stealth: keywords.includes('stealth'),
+    stealth: keywords.includes('stealth'), stealthEvery, stealthTimer: null,
     barrier: keywords.includes('barrier') ? 1 : 0,
     evolvable: field === 'main' && def.evolvable !== false, evolved: false,
     accel: def.accelerate ? makeAccel(def.accelerate) : null,
@@ -500,7 +502,7 @@ function runEffects(state, source, effects, ctx = {}) {
           const skill = { stat: e.stat || 'atk', mult: e.mult ?? 1, add: (e.add || 0) + graveBonus(state, source, e), type: e.dmgType || 'physical' }
           const { damage } = calcDamage(source, t, skill, ctx.opts)
           const dealt = applyDamage(state, source, t, damage, skill.type === 'true')
-          source.stealth = false // 能力でダメージを与えたら潜伏を失う
+          loseStealth(source) // 能力でダメージを与えたら潜伏を失う
           if (dealt > 0) state.log.push(`${source.name}の効果で${t.name}に${Math.round(dealt)}ダメージ`)
           break
         }
@@ -742,6 +744,10 @@ function startRound(state, opts) {
 function beginTurn(state, unit, opts) {
   state.actionsThisTurn = 0
   unit.usedTraits = []
+  if (unit.stealthEvery && !unit.stealth && unit.stealthTimer != null) {
+    unit.stealthTimer += 1
+    if (unit.stealthTimer >= unit.stealthEvery) { unit.stealth = true; unit.stealthTimer = null; state.log.push(`${unit.name}は再び【潜伏】した`) }
+  }
   recalc(state) // アクティブ(自ターン中だけ有効)をここで反映
 
   // カウントダウン: 自分のターン開始時に1つ進み、0になったら破壊される
@@ -901,10 +907,17 @@ function advance(state, opts) {
 
 // ---------- 行動の実行 ----------
 
+// 潜伏を失う。【潜伏_N】は、自分のターンがN回始まると潜伏が戻る(【潜伏】だけなら二度と戻らない)
+function loseStealth(u) {
+  if (!u.stealth) return
+  u.stealth = false
+  if (u.stealthEvery) u.stealthTimer = 0
+}
+
 function doSkill(state, actor, targetUid, opts) {
   const target = getUnit(state, targetUid)
   const skill = actor.skill
-  actor.stealth = false // 攻撃したら潜伏を失う
+  loseStealth(actor) // 攻撃したら潜伏を失う
 
   // 攻撃時・交戦時の能力(ダメージ計算の前に働く)
   fire(state, 'onAttack', actor, { other: target, opts })
