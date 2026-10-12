@@ -10,7 +10,7 @@ const EFFECT_TYPES = ['damage', 'heal', 'buff', 'armor', 'shield', 'barrier', 'a
 const EFFECT_TARGETS = ['self', 'opponent', 'allies', 'otherAllies', 'allyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons', 'otherAllyOne', 'allyField']
 const TRAIT_TARGETS = ['self', 'allies', 'otherAllies', 'allyOne', 'otherAllyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons']
 const BUFF_STATS = ['atk', 'mag', 'def', 'spd', 'critRate', 'critDmg', 'dmgResist']
-const CONDITION_KEYS = ['link', 'gauge', 'ultimate', 'liberation', 'faith', 'graveyard', 'hpBelow', 'hpAbove', 'evolved', 'crests', 'combo', 'canEvolve']
+const CONDITION_KEYS = ['link', 'gauge', 'ultimate', 'liberation', 'faith', 'graveyard', 'hpBelow', 'hpAbove', 'evolved', 'crests', 'combo', 'evolveTurn']
 
 const isNum = (x) => typeof x === 'number' && Number.isFinite(x)
 const isStr = (x) => typeof x === 'string' && x.length > 0
