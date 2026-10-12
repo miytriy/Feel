@@ -33,7 +33,7 @@ export const KEYWORDS = {
 export const TRIGGER_LABELS = {
   fanfare: 'ファンファーレ', constant: '常時', active: 'アクティブ', lastWord: 'ラストワード',
   onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時',
-  roundStart: 'ラウンド開始時', allyTurnStart: '味方のターン開始時', link: '連携',
+  roundStart: 'ラウンド開始時', allyDeath: '味方が戦闘不能になったとき', allyTurnStart: '味方のターン開始時', link: '連携',
 }
 
 // ---------- 遺物(頭・胴・脚・靴のセットを装備したキャラに、セット効果がつく) ----------
@@ -621,6 +621,8 @@ function resolveDeaths(state, opts) {
       if (u.field === 'main') state.graveyard[u.team] += GRAVE_PER_DEATH // 倒されると墓場が大きく増える
       const killer = u.killedBy ? getUnit(state, u.killedBy) : null
       fire(state, 'lastWord', u, { other: killer, opts })
+      // 場のキャラが倒れたら、同じチームの生き残り(自分以外)の「味方が戦闘不能になったとき」が働く
+      if (u.field === 'main') for (const a of state.units.filter((x) => x.alive && x.team === u.team && x.uid !== u.uid)) fire(state, 'allyDeath', a, { other: u, opts })
     }
     recalc(state)
   }
