@@ -555,6 +555,7 @@ function runEffects(state, source, effects, ctx = {}) {
         }
         case 'gainKeyword': { // キーワード能力(必殺など)を得る
           const k = e.keyword
+          if (k === 'stealth' && !t.stealth) t.stealth = true // 潜伏は持っているだけでなく、いま潜伏している状態にする
           if (!t.keywords.includes(k)) {
             t.keywords.push(k)
             state.log.push(`${t.name}は【${KEYWORDS[k]?.label || k}】を持つ`)
