@@ -571,6 +571,10 @@ function runEffects(state, source, effects, ctx = {}) {
           else source.traits.push({ ...structuredClone(e.trait), charges: n })
           break
         }
+        case 'gainDoubleSkill': // 【アクティブ】1ターンに2回スキルを発動できる(2回目はMPを消費)
+          t.doubleSkill = { mpCost: e.mpCost ?? 1 }
+          state.log.push(`${t.name}は1ターンに2回スキルを発動できるようになった(2回目はMP${t.doubleSkill.mpCost})`)
+          break
         case 'gainKeyword': { // キーワード能力(必殺など)を得る
           const k = e.keyword
           if (k === 'stealth' && !t.stealth) t.stealth = true // 潜伏は持っているだけでなく、いま潜伏している状態にする
@@ -724,7 +728,10 @@ export function legalActions(state) {
   // アクセラレートの番: 実行する(特性を使う) か、見送る(endTurn)
   if (state.activeKind === 'accel') return [...accelActions(state, actor), { type: 'endTurn' }]
   const actions = []
-  const canUseSkill = !actor.isAmulet && (actor.hasActed || hasKw(actor, 'rush') || hasKw(actor, 'dash'))
+  // 「1ターンに2回スキルを発動できる」(2回目はMPを消費)
+  const skillsDone = actor.skillsThisTurn || 0
+  const secondOk = !!actor.doubleSkill && skillsDone === 1 && state.mp[actor.team] >= actor.doubleSkill.mpCost
+  const canUseSkill = !actor.isAmulet && (actor.hasActed || hasKw(actor, 'rush') || hasKw(actor, 'dash')) && (skillsDone === 0 || secondOk)
   const targets = attackableTargets(state, actor)
   if (canUseSkill) for (const t of targets) actions.push({ type: 'skill', target: t.uid })
 
@@ -738,7 +745,7 @@ export function legalActions(state) {
     }
     if (actor.evolvable && !actor.evolved && state.ep[actor.team] >= 1) actions.push({ type: 'evolve' })
   }
-  if (!canUseSkill || targets.length === 0) actions.push({ type: 'endTurn' })
+  if (!canUseSkill || targets.length === 0 || skillsDone > 0) actions.push({ type: 'endTurn' })
   return actions
 }
 
@@ -768,6 +775,7 @@ function startRound(state, opts) {
 function beginTurn(state, unit, opts) {
   state.actionsThisTurn = 0
   unit.usedTraits = []
+  unit.skillsThisTurn = 0
   if (unit.stealthEvery && !unit.stealth && unit.stealthTimer != null) {
     unit.stealthTimer += 1
     if (unit.stealthTimer >= unit.stealthEvery) { unit.stealth = true; unit.stealthTimer = null; state.log.push(`${unit.name}は再び【潜伏】した`) }
@@ -1094,7 +1102,14 @@ export function applyAction(prev, action, opts = {}) {
   }
 
   if (action.type === 'skill') {
+    if ((actor.skillsThisTurn || 0) >= 1) { // 2回目のスキル発動: MPを消費する
+      state.mp[actor.team] -= actor.doubleSkill.mpCost
+      state.log.push(`${actor.name}は2回目のスキルを発動(MP${actor.doubleSkill.mpCost})`)
+    }
+    actor.skillsThisTurn = (actor.skillsThisTurn || 0) + 1
     doSkill(state, actor, action.target, opts)
+    // 2回発動できるなら、1回目のあとはターンが続く(2回目が打てるとき)
+    if (actor.alive && !checkWinner(state) && actor.skillsThisTurn === 1 && actor.doubleSkill && legalActions(state).some((a) => a.type === 'skill')) return state
     endTurn(state, actor)
     return advance(state, opts)
   }
