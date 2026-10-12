@@ -321,6 +321,7 @@ function resolveTargets(state, source, key, ctx) {
       if (ctx.chosen) return others.filter((u) => u.uid === ctx.chosen)
       return others.slice(0, 1) // 選ばれなかった(CPUの読み・テストなど)ときは先頭の1体
     }
+    case 'entered': return ctx.other && ctx.other.alive ? [ctx.other] : [] // 「味方が場に出たとき」の、出てきたキャラ
     case 'summons': return summonsOf(state, source)
     case 'allyField': return [...allies, ...summonsOf(state, source)] // 自分の場すべて(場のキャラ + 召喚物)
     case 'allyOne': {
