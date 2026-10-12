@@ -508,7 +508,8 @@ function runEffects(state, source, effects, ctx = {}) {
           break
         }
         case 'heal':
-          if (e.pctPerSummon != null) heal(state, t, (t.maxHp * e.pctPerSummon * summonsOf(state, source).length) / 100) // 回復する本人の最大HPの(pctPerSummon×召喚物の数)%
+          if (e.pctMax != null) heal(state, t, (t.maxHp * e.pctMax) / 100) // 回復される本人の最大HPの○%
+          else if (e.pctPerSummon != null) heal(state, t, (t.maxHp * e.pctPerSummon * summonsOf(state, source).length) / 100) // 回復する本人の最大HPの(pctPerSummon×召喚物の数)%
           else heal(state, t, (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + graveBonus(state, source, e))
           break
         case 'buff':
