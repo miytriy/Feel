@@ -39,7 +39,7 @@ function checkEffects(effects, where, errs, depth = 0) {
     }
     if (e.type === 'crest' && e.crest?.onEnter && !isStr(e.crest.onEnter.gainKeyword)) errs.push(`${w}: crest の onEnter には gainKeyword(例: 'dash')が必要です`)
     if (e.type === 'crest' && !(e.crest && isStr(e.crest.name))) errs.push(`${w}: crest には name を持つ crest が必要です`)
-    if (['heal', 'armor', 'shield'].includes(e.type) && e.flat == null && e.mult == null && e.perGraveyard == null) errs.push(`${w}: ${e.type} には mult か flat が必要です`)
+    if (['heal', 'armor', 'shield'].includes(e.type) && e.flat == null && e.mult == null && e.perGraveyard == null && e.pctPerSummon == null) errs.push(`${w}: ${e.type} には mult か flat が必要です`)
     checkCondition(e.condition, w, errs)
   })
 }
