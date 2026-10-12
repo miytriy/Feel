@@ -500,7 +500,8 @@ function runEffects(state, source, effects, ctx = {}) {
           break
         }
         case 'heal':
-          heal(state, t, (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + graveBonus(state, source, e))
+          if (e.pctPerSummon != null) heal(state, t, (t.maxHp * e.pctPerSummon * summonsOf(state, source).length) / 100) // 回復する本人の最大HPの(pctPerSummon×召喚物の数)%
+          else heal(state, t, (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + graveBonus(state, source, e))
           break
         case 'buff':
           t.buffs.push({ stat: e.stat, pct: (e.pct || 0) + graveBonus(state, source, e), flat: (e.flat || 0) + (e.perCombo || 0) * comboOf(state, source) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0), turns: e.turns ?? null }) // perCombo: コンボ1つにつき、flat がその分だけ増える
