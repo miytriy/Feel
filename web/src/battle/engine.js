@@ -372,6 +372,13 @@ function summon(state, source, def) {
   const u = makeUnit(def, source.team, 0, 'summon', `${source.team}s${state.summonSeq}`)
   state.units.push(u)
   state.log.push(`${source.name}は${def.name}を${u.isAmulet ? '設置' : '召喚'}した`)
+  // クレストの onEnter: 自分のチームの(指定のタイプの)キャラが場に出たとき、キーワード能力(疾走など)を持つ
+  for (const crest of state.crests[u.team]) {
+    const oe = crest.onEnter
+    if (!oe || (oe.type && u.type !== oe.type) || !oe.gainKeyword || u.keywords.includes(oe.gainKeyword)) continue
+    u.keywords.push(oe.gainKeyword)
+    state.log.push(`【${crest.name}】の効果で、${u.name}は【${KEYWORDS[oe.gainKeyword]?.label || oe.gainKeyword}】を持つ`)
+  }
   recalc(state)
   return u
 }
