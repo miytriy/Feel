@@ -99,6 +99,7 @@ export const defaultFormation = (allChars, ids) =>
   quickFill(ids.map((id) => allChars.find((c) => c.id === id)).filter(Boolean))
 
 // ---- スペルセット(キャラ編成とは別)。最大 MAX_SPELL_SLOTS 回分を有効化できる。同じスペルを何回入れてもよい ----
+export const TOKEN_TYPE = 'トークン' // このタイプは編成(スペルセット)に入れられない
 export const SPELL_STORAGE_KEY = 'feel.spellset.v1'
 
 // スペルのクラス(「エルフ/スペル」→「エルフ」)。ニュートラルのスペルは、どのクラスの編成でも使える
@@ -113,6 +114,8 @@ export const canUseSpell = (chars, spell) => {
 
 export function validateSpellSet(list, chars = []) {
   if (list.length > MAX_SPELL_SLOTS) return { ok: false, reason: `スペルは最大${MAX_SPELL_SLOTS}回までです` }
+  const tok = list.find((sp) => sp.type === TOKEN_TYPE)
+  if (tok) return { ok: false, reason: `「${tok.name}」はトークンなので、スペルセットには入れられません` }
   const bad = list.find((sp) => !canUseSpell(chars, sp))
   if (bad) return { ok: false, reason: `スペル「${bad.name}」(${spellClassOf(bad)})は、この編成では使えません。外すか、編成のクラスを合わせてください` }
   return { ok: true }
@@ -131,7 +134,7 @@ export function loadSpellSet(allSpells, storage = globalThis.localStorage) {
   try {
     const ids = JSON.parse(storage.getItem(SPELL_STORAGE_KEY) || 'null')
     if (!Array.isArray(ids)) return []
-    return ids.map((id) => allSpells.find((sp) => sp.id === id)).filter(Boolean).slice(0, MAX_SPELL_SLOTS)
+    return ids.map((id) => allSpells.find((sp) => sp.id === id)).filter((sp) => sp && sp.type !== TOKEN_TYPE).slice(0, MAX_SPELL_SLOTS)
   } catch {
     return []
   }
