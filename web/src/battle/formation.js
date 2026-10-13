@@ -101,8 +101,22 @@ export const defaultFormation = (allChars, ids) =>
 // ---- スペルセット(キャラ編成とは別)。最大 MAX_SPELL_SLOTS 回分を有効化できる。同じスペルを何回入れてもよい ----
 export const SPELL_STORAGE_KEY = 'feel.spellset.v1'
 
-export const validateSpellSet = (list) =>
-  list.length > MAX_SPELL_SLOTS ? { ok: false, reason: `スペルは最大${MAX_SPELL_SLOTS}回までです` } : { ok: true }
+// スペルのクラス(「エルフ/スペル」→「エルフ」)。ニュートラルのスペルは、どのクラスの編成でも使える
+export const spellClassOf = (spell) => String(spell.class || '').split('/')[0]
+// この編成(キャラの配列)のクラス。ニュートラルしかいなければ null
+export const teamClassOf = (chars) => classesOf(chars)[0] ?? null
+// そのスペルを、この編成で使えるか(スペルのクラスが、編成のクラスと同じ、またはニュートラルのスペル)
+export const canUseSpell = (chars, spell) => {
+  const k = spellClassOf(spell)
+  return k === NEUTRAL || k === teamClassOf(chars)
+}
+
+export function validateSpellSet(list, chars = []) {
+  if (list.length > MAX_SPELL_SLOTS) return { ok: false, reason: `スペルは最大${MAX_SPELL_SLOTS}回までです` }
+  const bad = list.find((sp) => !canUseSpell(chars, sp))
+  if (bad) return { ok: false, reason: `スペル「${bad.name}」(${spellClassOf(bad)})は、この編成では使えません。外すか、編成のクラスを合わせてください` }
+  return { ok: true }
+}
 
 export function saveSpellSet(list, storage = globalThis.localStorage) {
   try {
