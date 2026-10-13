@@ -481,14 +481,15 @@ function runEffects(state, source, effects, ctx = {}) {
       continue
     }
     if (e.type === 'summon') {
-      const sdef = e.fromCrest ? ctx.crest?.originDef : e.copySelf ? source.charDef : e.unit // copySelf: 自分と同じキャラを召喚する(進化もできる)
+      const rng0 = ctx.opts?.rng || Math.random
+      const sdef = e.fromCrest ? ctx.crest?.originDef : e.copySelf ? source.charDef : e.randomUnits ? e.randomUnits[0] : e.unit // copySelf: 自分と同じキャラを召喚する(進化もできる)
       if (e.mpCost) { // 追加でMPを消費すると働く効果(MPが足りなければ働かない)
         if (state.mp[source.team] < e.mpCost) { state.log.push(`MPが足りないので、${sdef.name}の追加召喚はなし`); continue }
         state.mp[source.team] -= e.mpCost
         state.log.push(`MPを${e.mpCost}消費して、追加で召喚する`)
       }
       if (!sdef) continue
-      for (let i = 0; i < (e.count ?? 1); i++) summon(state, source, sdef)
+      for (let i = 0; i < (e.count ?? 1); i++) summon(state, source, e.randomUnits ? e.randomUnits[Math.floor(rng0() * e.randomUnits.length)] : sdef) // randomUnits: 1体ごとに、候補からランダムに選ぶ
       continue
     }
     if (e.type === 'crest') {
@@ -505,6 +506,7 @@ function runEffects(state, source, effects, ctx = {}) {
     }
 
     let targets = resolveTargets(state, source, e.target || 'self', ctx)
+    if (e.onlyClass) targets = targets.filter((t) => t.class === e.onlyClass) // 指定のクラス(ロイヤルなど)だけ
     // ランダムな相手の人数: count(基本は1体)。comboCount: { combo: 3, count: 3 } なら、コンボが3以上のとき3体(重ならないように選ぶ)
     if ((e.target || 'self') === 'enemyRandom' && (e.count != null || e.comboCount)) {
       let n = e.count ?? 1
@@ -577,6 +579,7 @@ function runEffects(state, source, effects, ctx = {}) {
           break
         case 'gainKeyword': { // キーワード能力(必殺など)を得る
           const k = e.keyword
+          if (k === 'barrier' && t.barrier <= 0) t.barrier = 1 // バリアは、持つだけでなく、いま1回分が張られた状態にする
           if (k === 'stealth' && !t.stealth) t.stealth = true // 潜伏は持っているだけでなく、いま潜伏している状態にする
           if (!t.keywords.includes(k)) {
             t.keywords.push(k)
