@@ -3,6 +3,7 @@ import { createBattle, applyAction, getActiveUnit, legalActions, getUnit, gaugeO
 import { chooseAction, CPU_LEVELS } from './battle/ai.js'
 import { DEFAULT_PLAYER_IDS, buildCpuTeam, loadCpuCharSetting, saveCpuCharSetting, isTestChar, loadComboMode, saveComboMode } from './battle/teams.js'
 import { ALL_CHARACTERS, charById } from './battle/characters/index.js'
+import { ALL_SPELLS } from './battle/spells/index.js'
 import FormationScreen from './FormationScreen.jsx'
 
 // 色: 自分=青、相手=赤紫、行動中=琥珀
@@ -225,6 +226,7 @@ const buttonStyle = (primary, disabled) => ({
 
 // rewardApi: ログイン中だけ渡される。{ start(level) → { ticketId }, finish(ticketId, 'win'|'lose') → { reward, reason } }
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null }) {
+  const [spellSet, setSpellSet] = useState([]) // 編成画面で決めたスペルセット(スペル定義の配列。同じスペルを複数入れてよい)
   const [team, setTeam] = useState(null) // 編成画面で決めた自分のチーム(キャラ定義の配列)。nullなら編成画面を出す
   const [level, setLevel] = useState(2)
   const [comboMode, setComboMode] = useState(() => loadComboMode()) // 開発者設定: コンボのシステム(old = 従来 / reset = β: コンボリセット)
@@ -243,6 +245,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
   const legal = playerTurn ? legalActions(state) : []
   const skillTargets = legal.filter((a) => a.type === 'skill').map((a) => a.target)
   const traitActions = (id) => legal.filter((a) => a.type === 'trait' && a.trait === id)
+  const spellActs = legal.filter((a) => a.type === 'spell')
   const canEnd = legal.some((a) => a.type === 'endTurn')
   const canEvolve = legal.some((a) => a.type === 'evolve')
   const isAccel = !!state && state.activeKind === 'accel'
@@ -316,7 +319,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
         .then((r) => setTicketId(r.ticketId))
         .catch((e) => setRewardMsg(`この対戦では報酬がもらえません: ${e.message}`))
     }
-    setState(createBattle(team, buildCpuTeam(ALL_CHARACTERS, cpuChars), { comboMode, pool: ownedPool(cpuChars) }))
+    setState(createBattle(team, buildCpuTeam(ALL_CHARACTERS, cpuChars), { comboMode, pool: ownedPool(cpuChars), spells: { A: spellSet, B: [] } }))
   }
   const act = (action) => {
     reset()
@@ -359,7 +362,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
       <FormationScreen
         allChars={ALL_CHARACTERS}
         defaultIds={DEFAULT_PLAYER_IDS}
-        onStart={(chars) => setTeam(chars)}
+        allSpells={ALL_SPELLS}
+        onStart={(chars, spells) => { setTeam(chars); setSpellSet(spells || []) }}
         onExit={onExit}
       />
     )
@@ -387,6 +391,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
           </button>
         ))}
         <p style={{ fontSize: 12, color: C.mute, margin: '8px 0 4px' }}>編成: {team.map((c, i) => `${i + 1}.${c.name}`).join(' → ')}</p>
+        <p style={{ fontSize: 12, color: C.mute, margin: '0 0 4px' }}>スペル: {spellSet.length ? spellSet.map((sp) => sp.name).join(' / ') : 'なし'}</p>
         <p style={{ fontSize: 11, color: C.mute, margin: '0 0 4px' }}>
           {cpuChars === 'real' ? 'CPUは本実装キャラ(クラスは毎回ランダム)で対戦します。' : 'CPUはテスト用の仮キャラで対戦します。'}
         </p>
@@ -548,6 +553,28 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
             <div style={{ fontSize: 13, marginBottom: 6 }}>
               <b>{actor.name}</b> の番: スキル「{actor.skill.name}」({TYPE_LABEL[actor.skill.type]}){actor.doubleSkill ? ` ・1ターンに2回(2回目はMP${actor.doubleSkill.mpCost})${(actor.skillsThisTurn || 0) >= 1 ? ' ・1回目は済み' : ''}` : ''}
             </div>
+
+            {state.spells.A.length > 0 && !choosing && (
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ fontSize: 11, color: C.mute, marginBottom: 4 }}>スペル(プレイヤー能力。MPを使う・1枠につき1回・キャラの行動は消えません・特性として数えます)</div>
+                {state.spells.A.map((sp) => {
+                  const usable = spellActs.some((a) => a.spell === sp.slot)
+                  const why = sp.used ? '使用済み' : state.mp.A < sp.cost ? 'MP不足' : '使えません'
+                  return (
+                    <div key={sp.slot} style={{ marginBottom: 4 }}>
+                      <button
+                        onClick={() => act({ type: 'spell', spell: sp.slot })}
+                        disabled={!usable}
+                        style={{ ...buttonStyle(false, !usable), padding: '6px 10px', fontSize: 13 }}
+                      >
+                        ✦{sp.name}(MP{sp.cost}){!usable ? ` ${why}` : ''}
+                      </button>
+                      <span style={{ fontSize: 11, color: C.mute }}> {sp.desc}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
 
             {actor.traits.length > 0 && (
               <div style={{ marginBottom: 8 }}>
