@@ -21,6 +21,8 @@ function checkCondition(c, where, errs) {
   for (const k of Object.keys(c)) if (!CONDITION_KEYS.includes(k)) errs.push(`${where}: 知らない条件「${k}」(使えるもの: ${CONDITION_KEYS.join(' / ')})`)
 }
 
+export function validateEffects(effects, where) { const errs = []; checkEffects(effects, where, errs); return errs }
+
 function checkEffects(effects, where, errs, depth = 0) {
   if (!Array.isArray(effects) || effects.length === 0) return errs.push(`${where}: effects は1つ以上の配列で書いてください`)
   effects.forEach((e, i) => {
