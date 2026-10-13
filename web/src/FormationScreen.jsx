@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   MAX_SLOTS, validateFormation, canPlace, placeChar, removeChar, swapSlots, quickFill,
-  saveFormation, loadFormation, defaultFormation,
+  saveFormation, loadFormation, defaultFormation, MAX_SPELL_SLOTS, saveSpellSet, loadSpellSet,
 } from './battle/formation.js'
 
 // 編成画面: スロット(最大5)にキャラを入れる。順番は、行動値が同じときの優先順(1番目が最優先)
@@ -35,16 +35,21 @@ function CharLine({ c }) {
   )
 }
 
-export default function FormationScreen({ allChars, defaultIds = [], onStart, onExit }) {
+export default function FormationScreen({ allChars, allSpells = [], defaultIds = [], onStart, onExit }) {
   const [slots, setSlots] = useState(() => loadFormation(allChars) || defaultFormation(allChars, defaultIds))
   const [savedIds, setSavedIds] = useState(() => JSON.stringify(slots.map((c) => c?.id ?? null)))
   const [activeSlot, setActiveSlot] = useState(null) // 選択中のスロット(キャラを選ぶ)
   const [quick, setQuick] = useState(false) // クイック編成: 選んだ順に1番目から詰める
   const [picks, setPicks] = useState([])
   const [message, setMessage] = useState('')
+  // スペルセット: 最大 MAX_SPELL_SLOTS 回分。同じスペルを何回入れてもよい
+  const [spellSet, setSpellSet] = useState(() => loadSpellSet(allSpells))
+  const [savedSpellIds, setSavedSpellIds] = useState(() => JSON.stringify(loadSpellSet(allSpells).map((sp) => sp.id)))
+  const [spellPick, setSpellPick] = useState(false) // スペルの一覧を開いているか
 
   const ids = JSON.stringify(slots.map((c) => c?.id ?? null))
-  const dirty = ids !== savedIds
+  const spellIds = JSON.stringify(spellSet.map((sp) => sp.id))
+  const dirty = ids !== savedIds || spellIds !== savedSpellIds
   const filled = slots.filter(Boolean)
   const check = validateFormation(slots)
 
@@ -82,7 +87,7 @@ export default function FormationScreen({ allChars, defaultIds = [], onStart, on
     setQuick(true); setPicks([]); setActiveSlot(null); setMessage('')
   }
   const handleSave = () => {
-    if (saveFormation(slots)) setSavedIds(ids)
+    if (saveFormation(slots) && saveSpellSet(spellSet)) { setSavedIds(ids); setSavedSpellIds(spellIds) }
     else setMessage('この端末では保存できませんでした(戦闘は始められます)')
   }
 
@@ -142,6 +147,40 @@ export default function FormationScreen({ allChars, defaultIds = [], onStart, on
           : '同じクラスだけで編成できます。ニュートラルはどのクラスとも組めます。'}
       </div>
 
+      {/* スペルセット(キャラ編成とは別)。最大3回分。同じスペルを何回入れてもよい */}
+      {allSpells.length > 0 && (
+        <div style={{ padding: 8, borderRadius: 10, background: C.card, border: `1px solid ${C.line}`, marginBottom: 10 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>スペルセット({spellSet.length}/{MAX_SPELL_SLOTS}回)</div>
+          <div style={{ fontSize: 11, color: C.mute, marginBottom: 6 }}>戦闘中に、自分のキャラのターンならいつでも使えます(キャラの行動は消えません)。使うたびにコスト(MP)を払います。同じスペルを複数回入れられます。</div>
+          {spellSet.map((sp, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', marginBottom: 4, borderRadius: 8, border: `1px solid ${C.line}` }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 13 }}>✦{sp.name}(MP{sp.cost})</div>
+                <div style={{ fontSize: 11, color: C.mute }}>{sp.class} ・ {sp.desc}</div>
+              </div>
+              <button aria-label="外す" onClick={() => setSpellSet(spellSet.filter((_, k) => k !== i))} style={{ ...mini(false), color: '#c0392b' }}>✕</button>
+            </div>
+          ))}
+          {spellSet.length < MAX_SPELL_SLOTS && (
+            <button onClick={() => setSpellPick(!spellPick)} style={{ ...btn(false, false), padding: '6px 12px', fontSize: 13 }}>{spellPick ? '閉じる' : '＋ スペルを追加'}</button>
+          )}
+          {spellPick && spellSet.length < MAX_SPELL_SLOTS && (
+            <div style={{ marginTop: 6 }}>
+              {allSpells.map((sp) => (
+                <div
+                  key={sp.id}
+                  onClick={() => { setSpellSet([...spellSet, sp]); setSpellPick(false) }}
+                  style={{ padding: '6px 8px', marginBottom: 4, borderRadius: 8, border: `1.5px solid ${C.line}`, cursor: 'pointer' }}
+                >
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>✦{sp.name}(MP{sp.cost})</div>
+                  <div style={{ fontSize: 11, color: C.mute }}>{sp.class} ・ {sp.desc}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {message && <div style={{ padding: 8, borderRadius: 8, background: '#fff3e6', color: C.warn, fontSize: 12, marginBottom: 8 }}>{message}</div>}
 
       {showList && (
@@ -178,7 +217,7 @@ export default function FormationScreen({ allChars, defaultIds = [], onStart, on
       {!check.ok && <div style={{ fontSize: 12, color: C.warn, marginBottom: 6 }}>{check.reason}</div>}
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={handleSave} disabled={!dirty} style={{ ...btn(false, !dirty), flex: 1 }}>保存</button>
-        <button onClick={() => check.ok && onStart(filled)} disabled={!check.ok} style={{ ...btn(true, !check.ok), flex: 2 }}>この編成で対戦へ</button>
+        <button onClick={() => check.ok && onStart(filled, spellSet)} disabled={!check.ok} style={{ ...btn(true, !check.ok), flex: 2 }}>この編成で対戦へ</button>
       </div>
       <div style={{ marginTop: 10 }}>
         <button onClick={onExit} style={btn(false, false)}>戻る</button>
