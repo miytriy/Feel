@@ -3,7 +3,10 @@
 // ・同じクラス同士でしか編成できない。ただし「ニュートラル」だけは例外で、どのクラスとも組める
 // ・スロットの順番は、行動値が同じときの行動の優先順になる(1番目が最優先)
 
+import { MAX_SPELL_SLOTS } from './engine.js'
+
 export const MAX_SLOTS = 5
+export { MAX_SPELL_SLOTS }
 export const NEUTRAL = 'ニュートラル'
 export const STORAGE_KEY = 'feel.formation.v1'
 
@@ -94,3 +97,28 @@ export function loadFormation(allChars, storage = globalThis.localStorage) {
 // 初期の編成(保存がないとき)
 export const defaultFormation = (allChars, ids) =>
   quickFill(ids.map((id) => allChars.find((c) => c.id === id)).filter(Boolean))
+
+// ---- スペルセット(キャラ編成とは別)。最大 MAX_SPELL_SLOTS 回分を有効化できる。同じスペルを何回入れてもよい ----
+export const SPELL_STORAGE_KEY = 'feel.spellset.v1'
+
+export const validateSpellSet = (list) =>
+  list.length > MAX_SPELL_SLOTS ? { ok: false, reason: `スペルは最大${MAX_SPELL_SLOTS}回までです` } : { ok: true }
+
+export function saveSpellSet(list, storage = globalThis.localStorage) {
+  try {
+    storage.setItem(SPELL_STORAGE_KEY, JSON.stringify(list.map((sp) => sp.id)))
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function loadSpellSet(allSpells, storage = globalThis.localStorage) {
+  try {
+    const ids = JSON.parse(storage.getItem(SPELL_STORAGE_KEY) || 'null')
+    if (!Array.isArray(ids)) return []
+    return ids.map((id) => allSpells.find((sp) => sp.id === id)).filter(Boolean).slice(0, MAX_SPELL_SLOTS)
+  } catch {
+    return []
+  }
+}
