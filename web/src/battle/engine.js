@@ -96,6 +96,12 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
   }
 }
 
+export const MAX_SPELL_SLOTS = 3 // スペルセットで有効化できる回数(環境を見て変更する予定)
+
+function makeSpell(def, i) {
+  return { slot: `sp${i}`, id: def.id, name: def.name, cost: def.cost ?? 0, desc: def.desc ?? '', effects: def.effects, used: false }
+}
+
 // バトルを作る(teamA = プレイヤー側, teamB = 相手側。最大5体ずつ)
 // opts.comboMode: 'old' = 従来(コンボ持ち自身のターンが終わると数え直す) / 'reset' = β(味方のアクションバーに「コンボリセット」が並ぶ)
 export function createBattle(teamADefs, teamBDefs, opts = {}) {
@@ -114,6 +120,10 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
     active: null, activeKind: null, winner: null, log: ['バトル開始!'],
     comboMode: opts.comboMode === 'reset' ? 'reset' : 'old', comboReset: { A: null, B: null }, comboCount: { A: 0, B: 0 },
     pool: { A: opts.pool?.A || [], B: opts.pool?.B || [] }, // 所持キャラクター(「所持キャラから召喚する」能力の候補)
+    // スペル(プレイヤー能力): opts.spells = { A: [スペル定義...], B: [...] }(同じスペルを何回入れてもよい。最大 MAX_SPELL_SLOTS 回分)
+    // 自分のキャラのターン中に、枠1つにつき1回、MPを払って使える
+    spells: { A: (opts.spells?.A || []).slice(0, MAX_SPELL_SLOTS).map(makeSpell), B: (opts.spells?.B || []).slice(0, MAX_SPELL_SLOTS).map(makeSpell) },
+    casting: null,
   }
   startRound(state)
   recalc(state)
@@ -393,7 +403,7 @@ function summon(state, source, def) {
   state.summonSeq += 1
   const u = makeUnit(def, source.team, 0, 'summon', `${source.team}s${state.summonSeq}`)
   state.units.push(u)
-  state.log.push(`${source.name}は${def.name}を${u.isAmulet ? '設置' : '召喚'}した`)
+  state.log.push(state.casting ? `スペル【${state.casting}】で${def.name}を${u.isAmulet ? '設置' : '召喚'}した` : `${source.name}は${def.name}を${u.isAmulet ? '設置' : '召喚'}した`)
   // クレストの onEnter: 自分のチームの(指定のタイプの)キャラが場に出たとき、キーワード能力(疾走など)を持つ
   for (const crest of state.crests[u.team]) {
     const oe = crest.onEnter
@@ -719,6 +729,16 @@ function accelActions(state, actor) {
   return list
 }
 
+// 使えるスペル(プレイヤー能力)。自分のキャラの通常のターン中、まだ使っていない枠で、MPが足りているもの
+function spellActions(state, actor) {
+  const mp = state.mp[actor.team]
+  const full = summonsOf(state, actor).length >= SUMMON_MAX
+  return state.spells[actor.team]
+    .filter((sp) => !sp.used && mp >= sp.cost)
+    .filter((sp) => !(full && sp.effects.every((e) => e.type === 'summon'))) // 召喚物が満員なら、召喚だけのスペルは使えない
+    .map((sp) => ({ type: 'spell', spell: sp.slot }))
+}
+
 // 今行動するユニットが選べる行動の一覧
 //  skill = スキル攻撃(ターン終了) / trait = 特性(MPを使う。ターンは続く)
 //  evolve = 進化(EPを使う。ターンは続く) / endTurn = 何もせず終える
@@ -748,12 +768,13 @@ export function legalActions(state) {
     }
     if (actor.evolvable && !actor.evolved && state.ep[actor.team] >= 1) actions.push({ type: 'evolve' })
   }
+  actions.push(...spellActions(state, actor)) // スペルはキャラの行動を消費しない
   if (!canUseSkill || targets.length === 0 || skillsDone > 0) actions.push({ type: 'endTurn' })
   return actions
 }
 
 const sameAction = (a, b) =>
-  a.type === b.type && (a.target ?? null) === (b.target ?? null) && (a.trait ?? null) === (b.trait ?? null)
+  a.type === b.type && (a.target ?? null) === (b.target ?? null) && (a.trait ?? null) === (b.trait ?? null) && (a.spell ?? null) === (b.spell ?? null)
 
 // ---------- ターンとラウンドの進行 ----------
 
@@ -1040,6 +1061,21 @@ function doTrait(state, actor, action, opts) {
   resolveDeaths(state, opts)
 }
 
+// スペルを使う: MPを払い、効果を行う。キャラの行動(スキル・特性)は消費しない。特性として数えられる(奥義ゲージ・コンボが増える)
+function doSpell(state, actor, action, opts) {
+  const sp = state.spells[actor.team].find((x) => x.slot === action.spell)
+  state.mp[actor.team] -= sp.cost
+  state.traitCount[actor.team] += 1
+  sp.used = true
+  state.log.push(`${actor.team === 'A' ? '自分' : '相手'}のスペル【${sp.name}】(MP${sp.cost})`)
+  state.casting = sp.name
+  recalc(state)
+  runEffects(state, actor, sp.effects, { opts, spell: true })
+  state.casting = null
+  countCombos(state, actor, opts)
+  resolveDeaths(state, opts)
+}
+
 // アクセラレートを実行する(特性と同じようにMPを使い、特性の発動回数として数える)
 function doAccelerate(state, actor, action, opts) {
   const ac = actor.accel
@@ -1080,6 +1116,12 @@ export function applyAction(prev, action, opts = {}) {
     else state.log.push(`${actor.name}はアクセラレートを見送った`)
     endAccel(state, actor, executed)
     return advance(state, opts)
+  }
+
+  if (action.type === 'spell') {
+    doSpell(state, actor, action, opts)
+    if (checkWinner(state) || !actor.alive) return advance(state, opts)
+    return state // スペルを使っても、そのキャラのターンは続く
   }
 
   if (action.type === 'choose') {
