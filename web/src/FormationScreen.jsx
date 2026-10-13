@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   MAX_SLOTS, validateFormation, canPlace, placeChar, removeChar, swapSlots, quickFill,
-  saveFormation, loadFormation, defaultFormation, MAX_SPELL_SLOTS, saveSpellSet, loadSpellSet,
+  saveFormation, loadFormation, defaultFormation, MAX_SPELL_SLOTS, saveSpellSet, loadSpellSet, validateSpellSet, canUseSpell, spellClassOf, teamClassOf,
 } from './battle/formation.js'
 
 // 編成画面: スロット(最大5)にキャラを入れる。順番は、行動値が同じときの優先順(1番目が最優先)
@@ -51,7 +51,9 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
   const spellIds = JSON.stringify(spellSet.map((sp) => sp.id))
   const dirty = ids !== savedIds || spellIds !== savedSpellIds
   const filled = slots.filter(Boolean)
-  const check = validateFormation(slots)
+  const checkChars = validateFormation(slots)
+  const checkSpells = validateSpellSet(spellSet, filled)
+  const check = checkChars.ok ? checkSpells : checkChars
 
   const apply = (next) => { setSlots(next); setMessage('') }
 
@@ -151,11 +153,11 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
       {allSpells.length > 0 && (
         <div style={{ padding: 8, borderRadius: 10, background: C.card, border: `1px solid ${C.line}`, marginBottom: 10 }}>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>スペルセット({spellSet.length}/{MAX_SPELL_SLOTS}回)</div>
-          <div style={{ fontSize: 11, color: C.mute, marginBottom: 6 }}>戦闘中に、自分のキャラのターンならいつでも使えます(キャラの行動は消えません)。使うたびにコスト(MP)を払います。同じスペルを複数回入れられます。</div>
+          <div style={{ fontSize: 11, color: C.mute, marginBottom: 6 }}>スペルにもクラス制限があります(編成のクラスと同じスペル、またはニュートラルのスペルだけ入れられます)。戦闘中に、自分のキャラのターンならいつでも使えます(キャラの行動は消えません)。使うたびにコスト(MP)を払います。同じスペルを複数回入れられます。</div>
           {spellSet.map((sp, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', marginBottom: 4, borderRadius: 8, border: `1px solid ${C.line}` }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', marginBottom: 4, borderRadius: 8, border: `1px solid ${canUseSpell(filled, sp) ? C.line : C.warn}` }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 13 }}>✦{sp.name}(MP{sp.cost})</div>
+                <div style={{ fontWeight: 700, fontSize: 13 }}>✦{sp.name}(MP{sp.cost}){!canUseSpell(filled, sp) && <span style={{ fontSize: 11, color: C.warn }}> この編成では使えません</span>}</div>
                 <div style={{ fontSize: 11, color: C.mute }}>{sp.class} ・ {sp.desc}</div>
               </div>
               <button aria-label="外す" onClick={() => setSpellSet(spellSet.filter((_, k) => k !== i))} style={{ ...mini(false), color: '#c0392b' }}>✕</button>
@@ -166,16 +168,19 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
           )}
           {spellPick && spellSet.length < MAX_SPELL_SLOTS && (
             <div style={{ marginTop: 6 }}>
-              {allSpells.map((sp) => (
-                <div
-                  key={sp.id}
-                  onClick={() => { setSpellSet([...spellSet, sp]); setSpellPick(false) }}
-                  style={{ padding: '6px 8px', marginBottom: 4, borderRadius: 8, border: `1.5px solid ${C.line}`, cursor: 'pointer' }}
-                >
-                  <div style={{ fontWeight: 700, fontSize: 13 }}>✦{sp.name}(MP{sp.cost})</div>
-                  <div style={{ fontSize: 11, color: C.mute }}>{sp.class} ・ {sp.desc}</div>
-                </div>
-              ))}
+              {allSpells.map((sp) => {
+                const ok = canUseSpell(filled, sp)
+                return (
+                  <div
+                    key={sp.id}
+                    onClick={() => { if (!ok) { setMessage(`「${sp.name}」は${spellClassOf(sp)}のスペルなので、いまの編成(${teamClassOf(filled) || 'ニュートラルのみ'})では入れられません`); return } setMessage(''); setSpellSet([...spellSet, sp]); setSpellPick(false) }}
+                    style={{ padding: '6px 8px', marginBottom: 4, borderRadius: 8, border: `1.5px solid ${C.line}`, cursor: ok ? 'pointer' : 'default', opacity: ok ? 1 : 0.4 }}
+                  >
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>✦{sp.name}(MP{sp.cost}){!ok && <span style={{ fontSize: 11, color: C.warn }}> クラス違い</span>}</div>
+                    <div style={{ fontSize: 11, color: C.mute }}>{sp.class} ・ {sp.desc}</div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
