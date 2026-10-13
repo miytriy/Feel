@@ -362,7 +362,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
       <FormationScreen
         allChars={ALL_CHARACTERS}
         defaultIds={DEFAULT_PLAYER_IDS}
-        allSpells={ALL_SPELLS}
+        allSpells={ALL_SPELLS.filter((sp) => sp.type !== 'トークン')}
         onStart={(chars, spells) => { setTeam(chars); setSpellSet(spells || []) }}
         onExit={onExit}
       />
