@@ -5,6 +5,7 @@ import { DEFAULT_PLAYER_IDS, buildCpuTeam, loadCpuCharSetting, saveCpuCharSettin
 import { ALL_CHARACTERS, charById } from './battle/characters/index.js'
 import { ALL_SPELLS } from './battle/spells/index.js'
 import FormationScreen from './FormationScreen.jsx'
+import { useIsDesktop } from './ui.js'
 
 // 色: 自分=青、相手=赤紫、行動中=琥珀
 const C = {
@@ -38,17 +39,20 @@ function buildTimeline(state, count = 12) {
   return items.slice(0, count)
 }
 
-function ActionBar({ state }) {
-  const items = buildTimeline(state)
+function ActionBar({ state, big = false }) {
+  const items = buildTimeline(state, big ? 18 : 12)
+  const W = big ? 84 : 54 // 1つ分の幅
+  const H = big ? 50 : 38
+  const F = big ? 12 : 10
   return (
-    <div style={{ display: 'flex', gap: 4, overflowX: 'auto', padding: '6px 2px', alignItems: 'stretch' }}>
+    <div style={{ display: 'flex', gap: big ? 6 : 4, overflowX: 'auto', padding: '6px 2px', alignItems: 'stretch' }}>
       {items.map((it, i) =>
         it.round ? (
           <div
             key={`r${it.round}`}
             style={{
-              flex: '0 0 auto', width: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 10, color: C.mute, borderLeft: `2px dashed ${C.line}`, borderRight: `2px dashed ${C.line}`,
+              flex: '0 0 auto', width: big ? 36 : 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: big ? 11 : 10, color: C.mute, borderLeft: `2px dashed ${C.line}`, borderRight: `2px dashed ${C.line}`,
             }}
           >
             R{it.round}
@@ -58,7 +62,7 @@ function ActionBar({ state }) {
             key={`crest-${it.crest.name}-${i}`}
             title={`クレスト【${it.crest.name}】のカウントダウン(持ち主の速度で進む)`}
             style={{
-              flex: '0 0 auto', width: 54, height: 38, boxSizing: 'border-box', padding: '3px 4px', borderRadius: 6, fontSize: 9, lineHeight: 1.25,
+              flex: '0 0 auto', width: W, height: H, boxSizing: 'border-box', padding: '3px 4px', borderRadius: 6, fontSize: big ? 11 : 9, lineHeight: 1.25,
               overflow: 'hidden', background: '#e8e1ff', color: '#3d2b8f', border: `2px dotted ${TEAM_COLOR[it.crestTeam]}`,
             }}
           >
@@ -69,7 +73,7 @@ function ActionBar({ state }) {
             key={`sys${it.sys}-${i}`}
             title="コンボリセット(システムターン): 味方のコンボ数が0に戻ります"
             style={{
-              flex: '0 0 auto', width: 54, height: 38, boxSizing: 'border-box', padding: '3px 4px', borderRadius: 6, fontSize: 9, lineHeight: 1.25,
+              flex: '0 0 auto', width: W, height: H, boxSizing: 'border-box', padding: '3px 4px', borderRadius: 6, fontSize: big ? 11 : 9, lineHeight: 1.25,
               overflow: 'hidden', background: '#fff3d1', color: '#7a5a00', border: `2px dotted ${TEAM_COLOR[it.sys]}`,
             }}
           >
@@ -79,8 +83,8 @@ function ActionBar({ state }) {
           <div
             key={`${it.unit.uid}${it.accel ? 'a' : ''}-${i}`}
             style={{
-              flex: '0 0 auto', width: i === 0 ? 66 : 54, height: 38, boxSizing: 'border-box', padding: '3px 4px',
-              borderRadius: 6, fontSize: 10, lineHeight: 1.25, overflow: 'hidden',
+              flex: '0 0 auto', width: i === 0 ? W + (big ? 20 : 12) : W, height: H, boxSizing: 'border-box', padding: '3px 4px',
+              borderRadius: 6, fontSize: F, lineHeight: 1.25, overflow: 'hidden',
               color: it.accel ? TEAM_COLOR[it.unit.team] : '#fff',
               background: it.accel ? C.card : TEAM_COLOR[it.unit.team],
               border: i === 0 ? `2px solid ${C.active}` : it.accel ? `2px dashed ${TEAM_COLOR[it.unit.team]}` : '2px solid transparent',
@@ -113,7 +117,7 @@ function badgesOf(unit) {
   return badges
 }
 
-function UnitCard({ unit, active, selected, selectable, inspected, onClick }) {
+function UnitCard({ unit, active, selected, selectable, inspected, onClick, big = false }) {
   const ratio = Math.max(0, unit.hp / unit.maxHp)
   const hpColor = ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow
   const badges = unit.alive ? badgesOf(unit) : []
@@ -124,7 +128,7 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick }) {
       data-selectable={selectable ? 'true' : 'false'}
       onClick={onClick}
       style={{
-        minWidth: 0, boxSizing: 'border-box', padding: 4, borderRadius: 8, fontSize: 10, lineHeight: 1.3,
+        minWidth: 0, boxSizing: 'border-box', padding: big ? 10 : 4, borderRadius: big ? 10 : 8, fontSize: big ? 13 : 10, lineHeight: 1.3,
         background: unit.alive ? C.card : '#dfe3ea',
         opacity: unit.alive ? 1 : 0.5,
         border: `2px solid ${selected ? C.active : selectable ? C.ink : active ? TEAM_COLOR[unit.team] : inspected ? C.mute : C.line}`,
@@ -132,9 +136,9 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick }) {
         cursor: 'pointer',
       }}
     >
-      <div style={{ height: 26, overflow: 'hidden' }}>{unit.name}</div>
+      <div style={{ height: big ? 36 : 26, overflow: 'hidden', fontWeight: big ? 700 : 400 }}>{unit.name}</div>
       {!unit.isAmulet && (
-        <div style={{ background: '#e3e7ef', height: 6, borderRadius: 3, marginTop: 3 }}>
+        <div style={{ background: '#e3e7ef', height: big ? 9 : 6, borderRadius: 3, marginTop: 3 }}>
           <div style={{ width: `${ratio * 100}%`, height: '100%', borderRadius: 3, background: hpColor, transition: 'width 0.3s' }} />
         </div>
       )}
@@ -143,7 +147,7 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick }) {
       {badges.length > 0 && (
         <div style={{ marginTop: 2, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           {badges.map((b) => (
-            <span key={b} style={{ fontSize: 9, padding: '0 3px', borderRadius: 3, background: '#e6ecff', color: C.player }}>{b}</span>
+            <span key={b} style={{ fontSize: big ? 11 : 9, padding: '0 3px', borderRadius: 3, background: '#e6ecff', color: C.player }}>{b}</span>
           ))}
         </div>
       )}
@@ -155,10 +159,10 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick }) {
 const tierOf = (g) => (g >= 15 ? '【解放奥義】' : g >= 10 ? '【奥義】' : '')
 
 // チームの資源(MP・EP・信仰値・連携・奥義ゲージ)と、置かれているクレスト
-function TeamStatus({ state, team }) {
+function TeamStatus({ state, team, big = false }) {
   const crests = state.crests[team]
   return (
-    <div style={{ fontSize: 11, marginTop: 3, color: TEAM_COLOR[team] }}>
+    <div style={{ fontSize: big ? 13 : 11, marginTop: 3, color: TEAM_COLOR[team], lineHeight: 1.5 }}>
       <b>{team === 'A' ? '自分' : '相手'}</b>
       <span> MP {state.mp[team]}/{state.mpMax[team]}</span>
       <span> ・ EP {state.ep[team]}</span>
@@ -180,11 +184,11 @@ function TeamStatus({ state, team }) {
   )
 }
 
-function Row({ title, color, children }) {
+function Row({ title, color, children, big = false }) {
   return (
-    <div style={{ marginTop: 10 }}>
-      <div style={{ fontSize: 11, color, fontWeight: 700, marginBottom: 4 }}>{title}</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 4 }}>{children}</div>
+    <div style={{ marginTop: big ? 0 : 10 }}>
+      <div style={{ fontSize: big ? 13 : 11, color, fontWeight: 700, marginBottom: 4 }}>{title}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: big ? 10 : 4 }}>{children}</div>
     </div>
   )
 }
@@ -199,7 +203,7 @@ function passiveLine(p) {
 }
 
 // キャラの詳細(能力の説明)
-function InspectBox({ unit }) {
+function InspectBox({ unit, big = false }) {
   const lines = []
   for (const k of unit.keywords) lines.push(`【${KEYWORDS[k]?.label ?? k}】${KEYWORDS[k]?.desc ?? ''}`)
   for (const p of unit.passiveObjs) lines.push(passiveLine(p))
@@ -207,7 +211,7 @@ function InspectBox({ unit }) {
   if (unit.accel) lines.push(`【アクセラレート_${unit.accel.speed}】${unit.accel.name}(MP${unit.accel.cost ?? 0}): ${unit.accel.desc ?? ''}`)
   if (unit.countdown != null) lines.push(`【カウントダウン】あと${unit.countdown}回自分のターンが始まると破壊される`)
   return (
-    <div data-testid="inspect" style={{ marginTop: 8, padding: 8, borderRadius: 8, background: C.card, border: `1px solid ${C.line}`, fontSize: 11, lineHeight: 1.6 }}>
+    <div data-testid="inspect" style={{ marginTop: 8, padding: 8, borderRadius: 8, background: C.card, border: `1px solid ${C.line}`, fontSize: big ? 13 : 11, lineHeight: 1.6 }}>
       <b>{unit.name}</b>
       <span style={{ color: C.mute }}>
         {' '}{unit.evolved ? '(進化済) ' : ''}攻撃 {Math.round(unit.atk)} / 防御 {Math.round(unit.def)} / 速度 {Math.round(unit.spd)} / スキル「{unit.skill.name}」({TYPE_LABEL[unit.skill.type]})
@@ -238,6 +242,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
   const [cpuError, setCpuError] = useState('') // CPUの思考でエラーが起きたときの表示
   const [ticketId, setTicketId] = useState(null) // 対戦の報酬用の「対戦券」(サーバーが発行)
   const [rewardMsg, setRewardMsg] = useState('') // 報酬の結果の表示
+  const desktop = useIsDesktop() // 画面の幅が広い(PC)ときは、画面全体を使うレイアウトにする
 
   const actor = state ? getActiveUnit(state) : null
   const cpuTurn = !!actor && actor.team === 'B' && !state.winner
@@ -354,7 +359,9 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
     }
   }
 
-  const wrap = { maxWidth: 520, margin: '0 auto', padding: 12, minHeight: '100vh', boxSizing: 'border-box', background: C.paper, color: C.ink, fontFamily: FONT }
+  const wrap = desktop
+    ? { maxWidth: 1100, margin: '0 auto', padding: '28px 32px', minHeight: '100vh', boxSizing: 'border-box', background: C.paper, color: C.ink, fontFamily: FONT }
+    : { maxWidth: 520, margin: '0 auto', padding: 12, paddingBottom: 'calc(12px + env(safe-area-inset-bottom))', minHeight: '100vh', boxSizing: 'border-box', background: C.paper, color: C.ink, fontFamily: FONT }
 
   // ---- 編成画面 ----
   if (!team) {
@@ -373,8 +380,9 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
   if (!state) {
     return (
       <div style={wrap}>
-        <h2 style={{ margin: '4px 0 12px' }}>CPU対戦</h2>
-        <p style={{ margin: '0 0 8px', fontSize: 13 }}>CPUの強さを選んでください</p>
+        <h2 style={{ margin: '4px 0 12px', fontSize: desktop ? 28 : 22 }}>CPU対戦</h2>
+        <p style={{ margin: '0 0 8px', fontSize: desktop ? 15 : 13 }}>CPUの強さを選んでください</p>
+        <div style={desktop ? { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 6 } : undefined}>
         {CPU_LEVELS.map((l) => (
           <button
             key={l.level}
@@ -390,6 +398,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
             <div style={{ fontSize: 12, color: C.mute }}>{l.description}</div>
           </button>
         ))}
+        </div>
         <p style={{ fontSize: 12, color: C.mute, margin: '8px 0 4px' }}>編成: {team.map((c, i) => `${i + 1}.${c.name}`).join(' → ')}</p>
         <p style={{ fontSize: 12, color: C.mute, margin: '0 0 4px' }}>スペル: {spellSet.length ? spellSet.map((sp) => sp.name).join(' / ') : 'なし'}</p>
         <p style={{ fontSize: 11, color: C.mute, margin: '0 0 4px' }}>
@@ -454,42 +463,13 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
       selectable={playerTurn && selectableSet.includes(u.uid)}
       inspected={u.uid === inspect}
       onClick={() => handleCard(u)}
+      big={desktop}
     />
   )
 
-  return (
-    <div style={wrap}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontSize: 13 }}>
-          <b>ラウンド {state.round}</b>
-          <span style={{ color: C.mute }}> / CPU Lv{level} {levelInfo?.name}</span>
-        </div>
-        <button onClick={() => setState(null)} style={{ ...buttonStyle(false, false), padding: '4px 10px', fontSize: 12 }}>やめる</button>
-      </div>
-      <TeamStatus state={state} team="A" />
-      <TeamStatus state={state} team="B" />
-
-      {cpuError && <div style={{ marginTop: 6, padding: 6, borderRadius: 6, background: '#fde8e8', color: C.hpLow, fontSize: 12 }}>{cpuError}</div>}
-
-      <ActionBar state={state} />
-
-      <Row title="相手" color={C.enemy}>{enemies.map(card)}</Row>
-      {enemySummons.length > 0 && <Row title="相手の召喚物" color={C.enemy}>{enemySummons.map(card)}</Row>}
-
-      <div style={{ margin: '12px 0 0', padding: 8, borderRadius: 8, background: C.card, border: `1px solid ${C.line}`, fontSize: 12, lineHeight: 1.6, minHeight: 120 }}>
-        {state.log.slice(-8).map((line, i, arr) => (
-          <div key={state.log.length - arr.length + i} style={{ fontWeight: i === arr.length - 1 ? 700 : 400, color: i === arr.length - 1 ? C.ink : C.mute }}>
-            {line}
-          </div>
-        ))}
-      </div>
-
-      {playerSummons.length > 0 && <Row title="自分の召喚物" color={C.player}>{playerSummons.map(card)}</Row>}
-      <Row title="自分" color={C.player}>{players.map(card)}</Row>
-
-      {inspected && <InspectBox unit={inspected} />}
-
-      <div style={{ marginTop: 14, padding: 10, borderRadius: 8, background: C.card, border: `1px solid ${C.line}` }}>
+  // 操作パネル(スキル・特性・スペル・進化・ターン終了など)。PCは右側、スマホは画面の下に固定
+  const panelInner = (
+    <>
         {state.winner ? (
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>{resultText}</div>
@@ -556,7 +536,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
 
             {state.spells.A.length > 0 && !choosing && (
               <div style={{ marginBottom: 8 }}>
-                <div style={{ fontSize: 11, color: C.mute, marginBottom: 4 }}>スペル(プレイヤー能力。MPを使う・1枠につき1回・キャラの行動は消えません・特性として数えます)</div>
+                <div style={{ fontSize: 11, color: C.mute, marginBottom: 4 }}>スペル(MPを使う・1枠につき1回・行動は消えません)</div>
                 {state.spells.A.map((sp) => {
                   const usable = spellActs.some((a) => a.spell === sp.slot)
                   const why = sp.used ? '使用済み' : state.mp.A < sp.cost ? 'MP不足' : '使えません'
@@ -569,7 +549,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
                       >
                         ✦{sp.name}(MP{sp.cost}){!usable ? ` ${why}` : ''}
                       </button>
-                      <span style={{ fontSize: 11, color: C.mute }}> {sp.desc}</span>
+                      <span style={{ fontSize: 11, color: C.mute, ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> {sp.desc}</span>
                     </div>
                   )
                 })}
@@ -591,7 +571,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
                       >
                         {t.name}(MP{t.cost}{t.charges != null ? `・残り${t.charges}回` : ''}){!usable ? ` ${why}` : ''}
                       </button>
-                      <span style={{ fontSize: 11, color: C.mute }}> {t.desc}</span>
+                      <span style={{ fontSize: 11, color: C.mute, ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> {t.desc}</span>
                     </div>
                   )
                 })}
@@ -607,7 +587,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
                 >
                   進化(EP1){!canEvolve ? ` ${actor.evolved ? '進化済み' : state.ep.A < 1 ? 'EPなし' : ''}` : ''}
                 </button>
-                <span style={{ fontSize: 11, color: C.mute }}> 体力と攻撃力が2倍。進化したターンからスキルを使える</span>
+                <span style={{ fontSize: 11, color: C.mute, ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> 体力と攻撃力が2倍。進化したターンからスキルを使える</span>
               </div>
             )}
 
@@ -623,6 +603,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
                     : '上の「相手」から攻撃する相手をタップ'}
             </div>
 
+            <div style={desktop ? undefined : { position: 'sticky', bottom: -10, background: C.card, padding: '6px 0 2px', marginTop: 4 }}>
             {(mode || skillTargets.length > 0) && (
               <button onClick={handleConfirm} disabled={!selected} style={buttonStyle(true, !selected)}>
                 {mode ? `${modeTrait?.name}を使う` : '攻撃する'}
@@ -630,8 +611,96 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
             )}{' '}
             {mode && <button onClick={() => { setMode(null); setSelected(null) }} style={buttonStyle(false, false)}>やめる</button>}{' '}
             {canEnd && !mode && <button onClick={() => act({ type: 'endTurn' })} style={buttonStyle(skillTargets.length === 0, false)}>ターン終了</button>}
+            </div>
           </div>
         )}
+    </>
+  )
+  const logLines = state.log.slice(desktop ? -40 : -6)
+  const logBox = (
+    <div style={{ padding: desktop ? 12 : 8, borderRadius: 8, background: C.card, border: `1px solid ${C.line}`, fontSize: desktop ? 13 : 12, lineHeight: 1.6, minHeight: desktop ? 0 : 96, ...(desktop ? { flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column-reverse' } : { marginTop: 12 }) }}>
+      <div>
+        {logLines.map((line, i, arr) => (
+          <div key={state.log.length - arr.length + i} style={{ fontWeight: i === arr.length - 1 ? 700 : 400, color: i === arr.length - 1 ? C.ink : C.mute }}>
+            {line}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+  const roundLine = (
+    <div style={{ fontSize: desktop ? 16 : 13 }}>
+      <b>ラウンド {state.round}</b>
+      <span style={{ color: C.mute }}> / CPU Lv{level} {levelInfo?.name}</span>
+    </div>
+  )
+  const quitBtn = <button onClick={() => setState(null)} style={{ ...buttonStyle(false, false), padding: '4px 10px', fontSize: 12 }}>やめる</button>
+  const errBox = cpuError && <div style={{ marginTop: 6, padding: 6, borderRadius: 6, background: '#fde8e8', color: C.hpLow, fontSize: 12 }}>{cpuError}</div>
+
+  // ---- PC: 画面全体を使う(左=盤面、右=詳細・ログ・操作) ----
+  if (desktop) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 24px 16px', background: C.paper, color: C.ink, fontFamily: FONT, boxSizing: 'border-box', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+          {roundLine}
+          <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+            <TeamStatus state={state} team="A" big />
+            <TeamStatus state={state} team="B" big />
+          </div>
+          {quitBtn}
+        </div>
+        {errBox}
+        <ActionBar state={state} big />
+        <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(380px, 30vw)', gap: 20 }}>
+          <div style={{ minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 14, paddingRight: 4 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <Row big title="相手" color={C.enemy}>{enemies.map(card)}</Row>
+              {enemySummons.length > 0 && <Row big title="相手の召喚物" color={C.enemy}>{enemySummons.map(card)}</Row>}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {playerSummons.length > 0 && <Row big title="自分の召喚物" color={C.player}>{playerSummons.map(card)}</Row>}
+              <Row big title="自分" color={C.player}>{players.map(card)}</Row>
+            </div>
+          </div>
+          <div style={{ minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {inspected && <div style={{ flex: '0 1 auto', maxHeight: '30%', overflowY: 'auto' }}><InspectBox unit={inspected} big /></div>}
+            {logBox}
+            <div style={{ flex: '0 1 auto', maxHeight: '58%', overflowY: 'auto', padding: 14, borderRadius: 10, background: C.card, border: `1px solid ${C.line}`, fontSize: 14 }}>
+              {panelInner}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ---- スマホ: 1列。上に行動バーを固定、下に操作パネルを固定して、盤面をスクロールで見る ----
+  return (
+    <div style={wrap}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 9, background: C.paper, margin: '-12px -12px 0', padding: '8px 12px 2px', borderBottom: `1px solid ${C.line}` }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {roundLine}
+          {quitBtn}
+        </div>
+        <ActionBar state={state} />
+      </div>
+      <TeamStatus state={state} team="A" />
+      <TeamStatus state={state} team="B" />
+
+      {errBox}
+
+      <Row title="相手" color={C.enemy}>{enemies.map(card)}</Row>
+      {enemySummons.length > 0 && <Row title="相手の召喚物" color={C.enemy}>{enemySummons.map(card)}</Row>}
+
+      {logBox}
+
+      {playerSummons.length > 0 && <Row title="自分の召喚物" color={C.player}>{playerSummons.map(card)}</Row>}
+      <Row title="自分" color={C.player}>{players.map(card)}</Row>
+
+      {inspected && <InspectBox unit={inspected} />}
+
+      <div style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '14px -12px 0', padding: '10px 12px calc(10px + env(safe-area-inset-bottom))', maxHeight: '42vh', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
+        {panelInner}
       </div>
     </div>
   )
