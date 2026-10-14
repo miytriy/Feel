@@ -540,6 +540,7 @@ function runEffects(state, source, effects, ctx = {}) {
         case 'heal':
           if (e.pctMax != null) heal(state, t, (t.maxHp * e.pctMax) / 100) // 回復される本人の最大HPの○%
           else if (e.pctPerSummon != null) heal(state, t, (t.maxHp * e.pctPerSummon * summonsOf(state, source).length) / 100) // 回復する本人の最大HPの(pctPerSummon×召喚物の数)%
+          else if (e.split && e.flat != null) heal(state, t, e.flat / targets.length) // 回復量を、対象の人数で等分に割り振る(全体で合計 flat)
           else heal(state, t, (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + graveBonus(state, source, e))
           break
         case 'buff':
@@ -581,6 +582,12 @@ function runEffects(state, source, effects, ctx = {}) {
           const have = source.traits.find((x) => x.id === e.trait.id)
           if (have) have.charges = (have.charges ?? 0) + n
           else source.traits.push({ ...structuredClone(e.trait), charges: n })
+          break
+        }
+        case 'enableSpell': { // スペルを1回分有効化する(スペルセットの最大回数には数えない。すぐに使える)
+          const list = state.spells[source.team]
+          list.push(makeSpell(e.spell, list.length))
+          state.log.push(`スペル【${e.spell.name}】が1回使えるようになった`)
           break
         }
         case 'gainDoubleSkill': // 【アクティブ】1ターンに2回スキルを発動できる(2回目はMPを消費)
