@@ -123,7 +123,7 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
     // スペル(プレイヤー能力): opts.spells = { A: [スペル定義...], B: [...] }(同じスペルを何回入れてもよい。最大 MAX_SPELL_SLOTS 回分)
     // 自分のキャラのターン中に、枠1つにつき1回、MPを払って使える
     spells: { A: (opts.spells?.A || []).slice(0, MAX_SPELL_SLOTS).map(makeSpell), B: (opts.spells?.B || []).slice(0, MAX_SPELL_SLOTS).map(makeSpell) },
-    casting: null, lastAbility: null, abilitySeq: 0,
+    casting: null, lastAbility: null, abilitySeq: 0, means: '', // means = いま働いている攻撃手段の名前(スキル名・特性名など。画面の「○○の△△!」用)
     events: [], rec: opts.record !== false, // events = 直近の行動で起きたことの記録(画面で1つずつ再生する用)
   }
   startRound(state)
@@ -314,13 +314,13 @@ function applyDamage(state, source, target, amount, isTrue = false) {
   if (target.barrier > 0) {
     target.barrier = 0
     state.log.push(`${target.name}のバリアが攻撃を防いだ!`)
-    emit(state, 'block', { target: target.uid })
+    emit(state, 'block', { src: source.uid, target: target.uid, means: state.means || '攻撃' })
     return 0
   }
   dealDamage(target, amount, isTrue)
   if (!target.alive) target.killedBy = source.uid
   if (target.field === 'main') state.graveyard[target.team] += GRAVE_PER_HIT // 攻撃をされると墓場が溜まる
-  emit(state, 'damage', { src: source.uid, target: target.uid, amount: Math.round(amount) })
+  emit(state, 'damage', { src: source.uid, target: target.uid, amount: Math.round(amount), means: state.means || '効果' })
   return amount
 }
 
@@ -349,6 +349,7 @@ function emit(state, type, data = {}) {
 function noteAbility(state, kind, owner, name, desc, team) {
   state.abilitySeq += 1
   state.lastAbility = { seq: state.abilitySeq, kind, owner, name: name || '', desc: desc || '', team: team ?? null }
+  state.means = name || kind
   emit(state, 'ability', { kind, owner, name: name || '', desc: desc || '', team: team ?? null })
 }
 
@@ -1052,6 +1053,7 @@ function doSkill(state, actor, targetUid, opts) {
   recalc(state)
 
   emit(state, 'attack', { src: actor.uid, target: target.uid, skill: skill.name })
+  state.means = skill.name // これから与えるダメージの攻撃手段(攻撃時の能力が働いたあとに決める)
   const { damage, isCrit } = calcDamage(actor, target, skill, opts)
   const dealt = applyDamage(state, actor, target, damage, skill.type === 'true')
   if (dealt > 0) {
@@ -1062,6 +1064,7 @@ function doSkill(state, actor, targetUid, opts) {
       const fixed = Math.floor(target.hp * FINISHER_RATE)
       if (fixed > 0) {
         dealDamage(target, fixed, true) // 必殺の固定ダメージは確定ダメージ
+        emit(state, 'damage', { src: actor.uid, target: target.uid, amount: fixed, means: '必殺' })
         if (!target.alive) target.killedBy = actor.uid
         total += fixed
         state.log.push(`【必殺】${target.name}に追加で${fixed}の固定ダメージ`)
