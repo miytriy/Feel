@@ -1,82 +1,43 @@
-// Feel - キャリア(対戦の記録): この端末に保存する(サーバーには送らない)。最新の MAX_MATCHES 試合を残す
-const KEY = 'feel.career.v1'
-export const MAX_MATCHES = 30
+// Feel サーバー - キャリア(対戦の記録)のルール(Firebaseに依存しない部分)
+// 記録は画面が送ってくるので、そのまま信用せず、形・長さ・数字の範囲を整えてから保存する。報酬(ジェム)とは無関係
+export const MAX_MATCHES = 20 // 1人につき残す試合数(新しい順)
+const MAX_ROUNDS = 100
+const MAX_NAMES = 10
+const MAX_UNITS = 40
+const MAX_LOG = 150
+const MAX_DMG = 1e9
 
-export function loadMatches() {
-  try {
-    const v = JSON.parse(localStorage.getItem(KEY) || '[]')
-    return Array.isArray(v) ? v : []
-  } catch {
-    return []
-  }
-}
+const str = (v, n) => String(v ?? '').slice(0, n)
+const num = (v, max = MAX_DMG) => (Number.isFinite(Number(v)) ? Math.max(0, Math.min(max, Math.round(Number(v)))) : 0)
+const list = (v, n) => (Array.isArray(v) ? v.slice(0, n) : [])
 
-export function saveMatch(match) {
-  try {
-    const all = [match, ...loadMatches()].slice(0, MAX_MATCHES)
-    localStorage.setItem(KEY, JSON.stringify(all))
-  } catch {
-    /* 保存できなくても、対戦は続けられる */
-  }
-}
-
-export function clearMatches() {
-  try { localStorage.removeItem(KEY) } catch { /* 無視 */ }
-}
-
-// 対戦中のダメージの集計(1ラウンドごと・キャラごと)
-export function newStats() {
-  return { rounds: {}, units: {}, heal: { A: 0, B: 0 } }
-}
-
-// 1回の行動で起きたこと(events)を集計に足す。unitsOf(uid) → { name, team }
-export function addEvents(stats, events, unitsOf) {
-  for (const e of events) {
-    if (e.type === 'damage') {
-      const src = unitsOf(e.src)
-      if (!src) continue
-      const r = (stats.rounds[e.round] ??= { A: 0, B: 0 })
-      r[src.team] += e.amount
-      const u = (stats.units[src.name + '|' + src.team] ??= { name: src.name, team: src.team, dealt: 0 })
-      u.dealt += e.amount
-    } else if (e.type === 'heal') {
-      const t = unitsOf(e.target)
-      if (t) stats.heal[t.team] += e.amount
-    }
-  }
-}
-
-export function buildMatch(state, level, stats, names) {
-  const rounds = Object.keys(stats.rounds).map(Number).sort((a, b) => a - b).map((r) => ({ round: r, A: stats.rounds[r].A, B: stats.rounds[r].B }))
-  const sum = (k) => rounds.reduce((n, r) => n + r[k], 0)
+// 受け取った試合の記録を、保存してよい形にする。使えない形なら null
+export function sanitizeMatch(m, nowMs) {
+  if (!m || typeof m !== 'object') return null
+  if (!['win', 'lose', 'draw'].includes(m.result)) return null
+  const level = num(m.level, 10)
+  if (level < 1) return null
+  const t = Number.isFinite(Number(m.t)) && Number(m.t) > 0 && Number(m.t) <= nowMs + 60000 ? Math.round(Number(m.t)) : nowMs
+  const perRound = list(m.perRound, MAX_ROUNDS).map((r) => ({ round: num(r?.round, 10000), A: num(r?.A), B: num(r?.B) }))
+  const sum = (k) => perRound.reduce((n, r) => n + r[k], 0)
   return {
-    id: Date.now(),
-    t: Date.now(),
-    result: state.winner === 'A' ? 'win' : state.winner === 'B' ? 'lose' : 'draw',
+    id: str(m.id, 40) || String(t),
+    t,
+    result: m.result,
     level,
-    rounds: state.round,
-    names, // { A: [...], B: [...] }
-    perRound: rounds,
-    totals: { A: sum('A'), B: sum('B') },
-    heal: stats.heal,
-    units: Object.values(stats.units).sort((a, b) => b.dealt - a.dealt),
-    log: state.log.slice(-400),
+    rounds: num(m.rounds, 10000),
+    names: { A: list(m.names?.A, MAX_NAMES).map((x) => str(x, 40)), B: list(m.names?.B, MAX_NAMES).map((x) => str(x, 40)) },
+    perRound,
+    totals: { A: sum('A'), B: sum('B') }, // 合計は、ラウンドごとの数字から計算し直す
+    heal: { A: num(m.heal?.A), B: num(m.heal?.B) },
+    units: list(m.units, MAX_UNITS).map((u) => ({ name: str(u?.name, 40), team: u?.team === 'B' ? 'B' : 'A', dealt: num(u?.dealt) })),
+    log: list(m.log, MAX_LOG).map((l) => str(l, 120)),
   }
 }
 
-// 勝率などのまとめ
-export function summarize(matches) {
-  const count = (list, r) => list.filter((m) => m.result === r).length
-  const rate = (list) => (list.length ? Math.round((count(list, 'win') / list.length) * 100) : null)
-  const recent = matches.slice(0, 10)
-  let streak = 0
-  for (const m of matches) { if (m.result === 'win') streak++; else break }
-  const avgRounds = matches.length ? matches.reduce((n, m) => n + m.rounds, 0) / matches.length : 0
-  let dealt = 0, rc = 0, taken = 0
-  for (const m of matches) { dealt += m.totals.A; taken += m.totals.B; rc += Math.max(1, m.perRound.length) }
-  return {
-    total: matches.length, win: count(matches, 'win'), lose: count(matches, 'lose'), draw: count(matches, 'draw'),
-    rate: rate(matches), recentRate: rate(recent), recentN: recent.length, streak, avgRounds,
-    dpsDealt: rc ? dealt / rc : 0, dpsTaken: rc ? taken / rc : 0,
-  }
+// いまの記録の一覧(新しい順)に1試合を足す。同じidはすでにあれば足さない
+export function addMatch(existing, match) {
+  const cur = Array.isArray(existing) ? existing : []
+  if (cur.some((x) => x.id === match.id)) return cur
+  return [match, ...cur].slice(0, MAX_MATCHES)
 }
