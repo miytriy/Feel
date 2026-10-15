@@ -331,6 +331,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
   const [cpuError, setCpuError] = useState('') // CPUの思考でエラーが起きたときの表示
   const [ticketId, setTicketId] = useState(null) // 対戦の報酬用の「対戦券」(サーバーが発行)
   const [rewardMsg, setRewardMsg] = useState('') // 報酬の結果の表示
+  const [careerMsg, setCareerMsg] = useState('') // 戦績の記録の結果の表示
   const [speed, setSpeed] = useState(loadSpeed) // 再生の速さ
   const [play, setPlay] = useState(null) // 再生中の記録 { events, i, prevActive, prevAbility }。null なら再生していない
   const playing = !!play
@@ -401,7 +402,14 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
     savedRef.current = state
     // ログイン中なら、アカウントに記録する(失敗しても対戦には影響しない)
     try {
-      if (rewardApi && typeof rewardApi.record === 'function') Promise.resolve(rewardApi.record(buildMatch(state, level, statsRef.current, namesRef.current))).catch((e) => console.error('キャリアの記録に失敗', e))
+      if (rewardApi && typeof rewardApi.record === 'function') {
+        setCareerMsg('戦績を記録しています…')
+        Promise.resolve(rewardApi.record(buildMatch(state, level, statsRef.current, namesRef.current)))
+          .then(() => setCareerMsg('戦績を記録しました(キャリアで見られます)'))
+          .catch((e) => { console.error('キャリアの記録に失敗', e); setCareerMsg(`戦績を記録できませんでした: ${e.message}`) })
+      } else {
+        setCareerMsg('ログインしていないので、戦績は記録されません')
+      }
     } catch (e) {
       console.error('キャリアの記録に失敗', e)
     }
@@ -442,6 +450,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
     setInspect(null)
     setCpuError('')
     setRewardMsg('')
+    setCareerMsg('')
     setTicketId(null)
     if (rewardApi) {
       rewardApi
@@ -646,6 +655,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>{resultText}</div>
             {rewardMsg && <div style={{ fontSize: 13, color: C.player, marginBottom: 8 }}>{rewardMsg}</div>}
+            {careerMsg && <div data-testid="career-msg" style={{ fontSize: 12, color: careerMsg.includes('できませんでした') ? '#c0392b' : C.mute, marginBottom: 8 }}>{careerMsg}</div>}
             <button onClick={startBattle} style={buttonStyle(true, false)}>もう一度</button>{' '}
             <button onClick={() => setState(null)} style={buttonStyle(false, false)}>強さを選び直す</button>
           </div>
