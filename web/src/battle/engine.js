@@ -489,6 +489,30 @@ function runEffects(state, source, effects, ctx = {}) {
       ctx = { ...ctx, chosen: cands[0].uid } // 1体だけなら自動で選ぶ
     }
 
+    if (e.type === 'mode') { // 【モード】1つ選んで、その能力が働く(選ぶまで待つ。選べない場面では先頭のモード)
+      let pick = ctx.mode
+      if (pick === undefined) {
+        if (ctx.allowPending) {
+          state.pending = {
+            uid: source.uid, effects: effects.slice(idx), candidates: e.modes.map((_, i) => `mode${i}`),
+            modes: e.modes.map((m) => ({ name: m.name, desc: m.desc || '' })), prompt: e.prompt || 'モードを1つ選んでください',
+            trigger: ctx.trigger || null, nextPassive: ctx.nextPassive ?? null, spell: !!ctx.spell,
+          }
+          state.log.push(`${source.name}の効果: モードを選んでください`)
+          recalc(state)
+          return
+        }
+        pick = 0
+      }
+      const m = e.modes[pick]
+      if (m) {
+        state.log.push(`モード【${m.name}】が働く`)
+        runEffects(state, source, m.effects, { ...ctx, mode: undefined, chosen: undefined, allowPending: false })
+      }
+      ctx = { ...ctx, mode: undefined }
+      continue
+    }
+
     // チーム全体に関わる効果(対象を選ばない)
     if (e.type === 'faith') {
       const next = Math.max(0, state.faith[source.team] + (e.amount ?? 1))
@@ -1111,8 +1135,9 @@ function doSpell(state, actor, action, opts) {
   state.casting = sp.name
   noteAbility(state, 'スペル', actor.team === 'A' ? '自分' : '相手', sp.name, sp.desc, actor.team)
   recalc(state)
-  runEffects(state, actor, sp.effects, { opts, spell: true })
+  runEffects(state, actor, sp.effects, { opts, spell: true, allowPending: true })
   state.casting = null
+  if (state.pending) { emit(state, 'sync'); return } // モードを選んだあとに、続きを行う
   countCombos(state, actor, opts)
   resolveDeaths(state, opts)
   emit(state, 'sync')
@@ -1175,7 +1200,12 @@ export function applyAction(prev, action, opts = {}) {
   if (action.type === 'choose') {
     const p = state.pending
     state.pending = null
-    if (p.confirm) {
+    if (p.modes) {
+      const idx = Number(String(action.target).replace('mode', ''))
+      state.log.push(`モード【${p.modes[idx]?.name}】を選んだ`)
+      runEffects(state, actor, p.effects, { opts, mode: idx, trigger: p.trigger, spell: p.spell })
+      if (p.spell && !state.pending) countCombos(state, actor, opts) // スペルは特性として数える
+    } else if (p.confirm) {
       state.log.push(action.target === 'yes' ? '使うことにした' : '使わないことにした')
       runEffects(state, actor, p.effects, { opts, answer: action.target, trigger: p.trigger })
     } else {
@@ -1185,6 +1215,7 @@ export function applyAction(prev, action, opts = {}) {
     if (p.trigger && p.nextPassive != null) fire(state, p.trigger, actor, { opts, allowPending: true }, p.nextPassive) // 続きのパッシブ
     if (!state.pending) resolveDeaths(state, opts)
     if (checkWinner(state) || !actor.alive) return advance(state, opts)
+    if (p.spell) return state // スペルのあとも、そのキャラのターンは続く
     const acts = legalActions(state)
     if (acts.length === 1 && acts[0].type === 'endTurn') {
       state.log.push(`${actor.name}は様子を見ている(入場直後はスキルを使えない)`)
