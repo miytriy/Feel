@@ -229,15 +229,20 @@ function InspectBox({ unit, big = false }) {
 }
 
 // 直近に発動した能力の説明(ファンファーレ・特性・スペル・進化など)。何が起きたかを、説明つきで見せる
-function AbilityBanner({ ability, big = false }) {
-  if (!ability) return null
-  const color = ability.team === 'B' ? C.enemy : C.player
+function AbilityBanner({ ability, now = '', big = false }) {
+  if (!ability && !now) return null
+  const color = ability && ability.team === 'B' ? C.enemy : C.player
   return (
     <div data-testid="ability" style={{ padding: big ? '10px 14px' : '8px 10px', borderRadius: 10, background: C.card, borderLeft: `6px solid ${color}`, border: `1px solid ${C.line}`, borderLeftWidth: 6, borderLeftColor: color, fontSize: big ? 14 : 12, lineHeight: 1.5 }}>
-      <div style={{ color, fontWeight: 700 }}>
-        <span style={{ color: C.mute, fontWeight: 400, fontSize: big ? 11 : 10 }}>直近の能力 </span>【{ability.kind}】{ability.owner}{ability.name ? ` ― ${ability.name}` : ''}
-      </div>
-      {ability.desc && <div>{ability.desc}</div>}
+      {now && <div data-testid="now" style={{ fontWeight: 800, marginBottom: 4, color: C.ink }}>{now}</div>}
+      {ability && (
+        <>
+          <div style={{ color, fontWeight: 700 }}>
+            <span style={{ color: C.mute, fontWeight: 400, fontSize: big ? 11 : 10 }}>直近の能力 </span>【{ability.kind}】{ability.owner}{ability.name ? ` ― ${ability.name}` : ''}
+          </div>
+          {ability.desc && <div>{ability.desc}</div>}
+        </>
+      )}
     </div>
   )
 }
@@ -289,32 +294,6 @@ const SPEEDS = [
 ]
 const EVENT_MS = { turn: 700, ability: 2200, attack: 900, damage: 900, heal: 800, summon: 800, block: 800, sync: 300 }
 const loadSpeed = () => { try { const v = localStorage.getItem('feel-play-speed'); return SPEEDS.some((x) => x.id === v) ? v : 'normal' } catch { return 'normal' } }
-
-// 画面の中央に出す「いま起きていること」(能力の説明・攻撃・ターンの開始)
-function EventOverlay({ ev, state, onSkip }) {
-  if (!ev) return null
-  const nameOf = (uid) => state.units.find((u) => u.uid === uid)?.name ?? ''
-  let body = null
-  if (ev.type === 'ability') {
-    const color = ev.team === 'B' ? C.enemy : C.player
-    body = (
-      <div style={{ borderLeft: `6px solid ${color}`, paddingLeft: 10 }}>
-        <div style={{ color, fontWeight: 800, fontSize: 16 }}>【{ev.kind}】{ev.owner}{ev.name ? ` ― ${ev.name}` : ''}</div>
-        {ev.desc && <div style={{ marginTop: 4, fontSize: 14, lineHeight: 1.5 }}>{ev.desc}</div>}
-      </div>
-    )
-  } else if (ev.type === 'attack') {
-    body = <div style={{ fontWeight: 700, fontSize: 15 }}>⚔ {nameOf(ev.src)} の {ev.skill} → {nameOf(ev.target)}</div>
-  } else if (ev.type === 'turn') {
-    body = <div style={{ fontWeight: 800, fontSize: 16, color: ev.team === 'B' ? C.enemy : C.player }}>{ev.team === 'B' ? '相手' : 'あなた'}のターン: {ev.name}</div>
-  }
-  if (!body) return null
-  return (
-    <div key={ev.type + ev.logLen} data-testid="overlay" onClick={onSkip} style={{ position: 'fixed', left: '50%', top: '34%', transform: 'translateX(-50%)', zIndex: 50, width: 'min(92vw, 460px)', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.97)', border: `2px solid ${C.line}`, boxShadow: '0 8px 28px rgba(31,42,68,0.3)', animation: 'feel-pop 0.25s ease-out', cursor: 'pointer' }}>
-      {body}
-    </div>
-  )
-}
 
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null }) {
   const [spellSet, setSpellSet] = useState([]) // 編成画面で決めたスペルセット(スペル定義の配列。同じスペルを複数入れてよい)
@@ -624,7 +603,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
             <button onClick={() => setState(null)} style={buttonStyle(false, false)}>強さを選び直す</button>
           </div>
         ) : playing ? (
-          <div style={{ fontSize: 13, color: C.mute }}>動きを再生中… (画面をタップでスキップ)</div>
+          <div style={{ fontSize: 13, color: C.mute }}>動きを再生中… (スキップもできます)</div>
         ) : cpuTurn ? (
           <div style={{ fontSize: 13, color: C.mute }}>{actor.name}(相手)が考えています…</div>
         ) : choosing && confirming ? (
@@ -792,7 +771,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
       {playing && <button onClick={() => setPlay(null)} style={{ ...buttonStyle(true, false), padding: '2px 10px', fontSize: 11, minHeight: 0 }}>スキップ</button>}
     </div>
   )
-  const overlay = playing ? <EventOverlay ev={ev} state={view} onSkip={() => setPlay(null)} /> : null
+  const nameOf = (uid) => state.units.find((u) => u.uid === uid)?.name ?? ''
+  const nowText = !ev ? '' : ev.type === 'attack' ? `⚔ ${nameOf(ev.src)} の ${ev.skill} → ${nameOf(ev.target)}` : ev.type === 'turn' ? `${ev.team === 'B' ? '相手' : 'あなた'}のターン: ${ev.name}` : ''
   const errBox = cpuError && <div style={{ marginTop: 6, padding: 6, borderRadius: 6, background: '#fde8e8', color: C.hpLow, fontSize: 12 }}>{cpuError}</div>
 
   // ---- PC: 画面全体を使う(左=盤面、右=詳細・ログ・操作) ----
@@ -807,7 +787,6 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
           </div>
           {quitBtn}
         </div>
-        {overlay}
         {speedBar}
         {errBox}
         <ActionBar state={view} big />
@@ -817,7 +796,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
               <Row big title="相手" color={C.enemy}>{enemies.map(card)}</Row>
               {enemySummons.length > 0 && <Row big title="相手の召喚物" color={C.enemy}>{enemySummons.map(card)}</Row>}
             </div>
-            <AbilityBanner ability={view.lastAbility} big />
+            <AbilityBanner ability={view.lastAbility} now={nowText} big />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {playerSummons.length > 0 && <Row big title="自分の召喚物" color={C.player}>{playerSummons.map(card)}</Row>}
               <Row big title="自分" color={C.player}>{players.map(card)}</Row>
@@ -848,14 +827,13 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
       <TeamStatus state={view} team="A" />
       <TeamStatus state={view} team="B" />
 
-      {overlay}
       {speedBar}
       {errBox}
 
       <Row title="相手" color={C.enemy}>{enemies.map(card)}</Row>
       {enemySummons.length > 0 && <Row title="相手の召喚物" color={C.enemy}>{enemySummons.map(card)}</Row>}
 
-      <div style={{ marginTop: 12 }}><AbilityBanner ability={view.lastAbility} /></div>
+      <div style={{ marginTop: 12 }}><AbilityBanner ability={view.lastAbility} now={nowText} /></div>
       {logBox}
 
       {playerSummons.length > 0 && <Row title="自分の召喚物" color={C.player}>{playerSummons.map(card)}</Row>}
