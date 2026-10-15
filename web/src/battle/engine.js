@@ -124,6 +124,7 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
     // 自分のキャラのターン中に、枠1つにつき1回、MPを払って使える
     spells: { A: (opts.spells?.A || []).slice(0, MAX_SPELL_SLOTS).map(makeSpell), B: (opts.spells?.B || []).slice(0, MAX_SPELL_SLOTS).map(makeSpell) },
     casting: null, lastAbility: null, abilitySeq: 0,
+    events: [], rec: opts.record !== false, // events = 直近の行動で起きたことの記録(画面で1つずつ再生する用)
   }
   startRound(state)
   recalc(state)
@@ -313,11 +314,13 @@ function applyDamage(state, source, target, amount, isTrue = false) {
   if (target.barrier > 0) {
     target.barrier = 0
     state.log.push(`${target.name}のバリアが攻撃を防いだ!`)
+    emit(state, 'block', { target: target.uid })
     return 0
   }
   dealDamage(target, amount, isTrue)
   if (!target.alive) target.killedBy = source.uid
   if (target.field === 'main') state.graveyard[target.team] += GRAVE_PER_HIT // 攻撃をされると墓場が溜まる
+  emit(state, 'damage', { src: source.uid, target: target.uid, amount: Math.round(amount) })
   return amount
 }
 
@@ -326,13 +329,27 @@ function heal(state, unit, amount) {
   const before = unit.hp
   unit.hp = Math.min(unit.maxHp, unit.hp + amount)
   const gained = Math.round(unit.hp - before)
-  if (gained > 0) state.log.push(`${unit.name}は${gained}回復した`)
+  if (gained > 0) { state.log.push(`${unit.name}は${gained}回復した`); emit(state, 'heal', { target: unit.uid, amount: gained }) }
+}
+
+// 起きたことの記録(画面で、1つずつ順番に見せるため)。そのときの盤面の要約(体力など)つき。AIの先読み(expected)のときは記録しない
+const SNAP_KEYS = ['hp', 'maxHp', 'alive', 'armor', 'armorRate', 'barrier', 'stealth', 'countdown', 'comboCount', 'evolved']
+function emit(state, type, data = {}) {
+  if (!state.rec) return
+  const units = {}
+  for (const u of state.units) {
+    const o = { keywords: [...u.keywords] }
+    for (const k of SNAP_KEYS) o[k] = u[k]
+    units[u.uid] = o
+  }
+  state.events.push({ type, ...data, units, logLen: state.log.length, mp: { ...state.mp }, ep: { ...state.ep } })
 }
 
 // 直近に発動した能力(画面に説明を出すための記録): kind=種類(ファンファーレ・特性・スペルなど) owner=持ち主の名前 name=能力名 desc=説明
 function noteAbility(state, kind, owner, name, desc, team) {
   state.abilitySeq += 1
   state.lastAbility = { seq: state.abilitySeq, kind, owner, name: name || '', desc: desc || '', team: team ?? null }
+  emit(state, 'ability', { kind, owner, name: name || '', desc: desc || '', team: team ?? null })
 }
 
 // ---------- 効果の実行 ----------
@@ -409,6 +426,7 @@ function summon(state, source, def) {
   state.summonSeq += 1
   const u = makeUnit(def, source.team, 0, 'summon', `${source.team}s${state.summonSeq}`)
   state.units.push(u)
+  emit(state, 'summon', { target: u.uid, name: def.name, team: u.team })
   state.log.push(state.casting ? `スペル【${state.casting}】で${def.name}を${u.isAmulet ? '設置' : '召喚'}した` : `${source.name}は${def.name}を${u.isAmulet ? '設置' : '召喚'}した`)
   // クレストの onEnter: 自分のチームの(指定のタイプの)キャラが場に出たとき、キーワード能力(疾走など)を持つ
   for (const crest of state.crests[u.team]) {
@@ -814,6 +832,7 @@ function startRound(state, opts) {
 
 function beginTurn(state, unit, opts) {
   state.actionsThisTurn = 0
+  emit(state, 'turn', { uid: unit.uid, name: unit.name, team: unit.team })
   unit.usedTraits = []
   unit.skillsThisTurn = 0
   if (unit.stealthEvery && !unit.stealth && unit.stealthTimer != null) {
@@ -1008,9 +1027,11 @@ function doSkill(state, actor, targetUid, opts) {
   fire(state, 'onEngage', target, { other: actor, opts })
   recalc(state)
 
+  emit(state, 'attack', { src: actor.uid, target: target.uid, skill: skill.name })
   const { damage, isCrit } = calcDamage(actor, target, skill, opts)
   const dealt = applyDamage(state, actor, target, damage, skill.type === 'true')
   if (dealt > 0) {
+    if (isCrit && state.rec) { const ev = [...state.events].reverse().find((e) => e.type === 'damage' && e.target === target.uid); if (ev) ev.crit = true }
     state.log.push(`${actor.name}の「${skill.name}」! ${target.name}に${Math.round(dealt)}ダメージ${isCrit ? '(クリティカル!)' : ''}`)
     let total = dealt
     if (hasKw(actor, 'finisher') && target.alive) {
@@ -1028,6 +1049,7 @@ function doSkill(state, actor, targetUid, opts) {
   }
   resolveDeaths(state, opts)
   if (actor.field === 'main') countLink(state, actor, opts) // 連携は場のキャラのスキルだけ数える
+  emit(state, 'sync')
 }
 
 // 連携: 味方がスキルを発動した回数を数える。【連携_N】は、回数がNに達したときに働く
@@ -1076,6 +1098,7 @@ function doTrait(state, actor, action, opts) {
   runEffects(state, actor, trait.effects, { opts, chosen: action.target })
   countCombos(state, actor, opts)
   resolveDeaths(state, opts)
+  emit(state, 'sync')
 }
 
 // スペルを使う: MPを払い、効果を行う。キャラの行動(スキル・特性)は消費しない。特性として数えられる(奥義ゲージ・コンボが増える)
@@ -1092,6 +1115,7 @@ function doSpell(state, actor, action, opts) {
   state.casting = null
   countCombos(state, actor, opts)
   resolveDeaths(state, opts)
+  emit(state, 'sync')
 }
 
 // アクセラレートを実行する(特性と同じようにMPを使い、特性の発動回数として数える)
@@ -1105,6 +1129,7 @@ function doAccelerate(state, actor, action, opts) {
   runEffects(state, actor, ac.effects, { opts, chosen: action.target })
   countCombos(state, actor, opts)
   resolveDeaths(state, opts)
+  emit(state, 'sync')
 }
 
 // 進化: EPを1つ使い、HPと攻撃力が+100%、突進と同じ効果(進化したターンからスキルを使える)を得る
@@ -1120,6 +1145,7 @@ function doEvolve(state, actor, opts) {
   recalc(state)
   fire(state, 'onEvolve', actor, { opts, allowPending: true }) // 選ぶ効果は、プレイヤーが選ぶまで待つ
   if (!state.pending) resolveDeaths(state, opts)
+  emit(state, 'sync')
 }
 
 // 行動を実行して、次の行動待ちの状態を返す(元の状態は書き換えない)
@@ -1127,6 +1153,8 @@ function doEvolve(state, actor, opts) {
 export function applyAction(prev, action, opts = {}) {
   if (prev.winner || !prev.active) return prev
   const state = structuredClone(prev)
+  state.events = [] // 今回の行動で起きたことだけを記録する
+  state.rec = !opts.expected
   const actor = getActiveUnit(state)
   if (!legalActions(state).some((a) => sameAction(a, action))) throw new Error('その行動は選べません')
 
