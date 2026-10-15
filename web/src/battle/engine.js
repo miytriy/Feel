@@ -342,7 +342,7 @@ function emit(state, type, data = {}) {
     for (const k of SNAP_KEYS) o[k] = u[k]
     units[u.uid] = o
   }
-  state.events.push({ type, ...data, units, logLen: state.log.length, mp: { ...state.mp }, ep: { ...state.ep } })
+  state.events.push({ type, ...data, round: state.round, units, logLen: state.log.length, mp: { ...state.mp }, ep: { ...state.ep } })
 }
 
 // 直近に発動した能力(画面に説明を出すための記録): kind=種類(ファンファーレ・特性・スペルなど) owner=持ち主の名前 name=能力名 desc=説明
