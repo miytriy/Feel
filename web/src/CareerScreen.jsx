@@ -55,17 +55,19 @@ function Detail({ m, big }) {
       <div style={box}>
         <div style={{ fontSize: 22, fontWeight: 800, color: r.color }}>{r.label}</div>
         <div style={{ fontSize: 12, color: C.mute }}>{fmtDate(m.t)} ・ CPU Lv{m.level} {LEVEL[m.level] ?? ''} ・ {m.rounds}ラウンド</div>
+        <div style={{ fontSize: 11, marginTop: 6, color: C.mute }}>DPR = 1ラウンドあたりのダメージ ・ DPT = 1ターン(1回の行動)あたりのダメージ</div>
         <div style={{ fontSize: 12, marginTop: 8, color: C.player }}><b>自分</b> {m.names.A.join('、')}</div>
         <div style={{ fontSize: 12, marginTop: 2, color: C.enemy }}><b>相手</b> {m.names.B.join('、')}</div>
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
-        <Stat label="与えたダメージ" value={n0(m.totals.A)} sub={`1ラウンド平均 ${n0(m.totals.A / Math.max(1, m.perRound.length))}`} />
-        <Stat label="受けたダメージ" value={n0(m.totals.B)} sub={`1ラウンド平均 ${n0(m.totals.B / Math.max(1, m.perRound.length))}`} />
+        <Stat label="与えたダメージ" value={n0(m.totals.A)} sub={`DPR ${n0(m.totals.A / Math.max(1, m.perRound.length))}${m.turns?.A ? ` ・ DPT ${n0(m.totals.A / m.turns.A)}` : ''}`} />
+        <Stat label="受けたダメージ" value={n0(m.totals.B)} sub={`DPR ${n0(m.totals.B / Math.max(1, m.perRound.length))}${m.turns?.B ? ` ・ DPT ${n0(m.totals.B / m.turns.B)}` : ''}`} />
+        {m.turns && <Stat label="ターン数" value={`${m.turns.A} / ${m.turns.B}`} sub="自分 / 相手" />}
         <Stat label="最大の1ラウンド" value={best ? n0(best.A) : '-'} sub={best ? `R${best.round}` : ''} />
         <Stat label="回復量" value={n0(m.heal.A)} sub={`相手 ${n0(m.heal.B)}`} />
       </div>
       <div style={box}>
-        <h4 style={h}>1ラウンドごとのダメージ <span style={{ fontWeight: 400, fontSize: 11, color: C.mute }}>(<span style={{ color: C.player }}>■</span>与えた <span style={{ color: C.enemy }}>■</span>受けた)</span></h4>
+        <h4 style={h}>1ラウンドごとのダメージ(DPR) <span style={{ fontWeight: 400, fontSize: 11, color: C.mute }}>(<span style={{ color: C.player }}>■</span>与えた <span style={{ color: C.enemy }}>■</span>受けた)</span></h4>
         <RoundChart rows={m.perRound} />
       </div>
       <div style={box}>
@@ -115,7 +117,8 @@ export default function CareerScreen({ onExit, fetchCareer, clearCareer }) {
         <Stat big={desktop} label="通算勝率" value={pct(sm.rate)} sub={`${sm.win}勝 ${sm.lose}敗 ${sm.draw}分`} />
         <Stat big={desktop} label="連勝" value={sm.streak} sub="いまの連勝数" />
         <Stat big={desktop} label="平均ラウンド" value={sm.total ? sm.avgRounds.toFixed(1) : '-'} />
-        <Stat big={desktop} label="1ラウンド平均 与ダメ" value={sm.total ? n0(sm.dpsDealt) : '-'} sub={sm.total ? `受ダメ ${n0(sm.dpsTaken)}` : ''} />
+        <Stat big={desktop} label="DPR(1ラウンドの与ダメ)" value={sm.total ? n0(sm.dpsDealt) : '-'} sub={sm.total ? `受ダメ ${n0(sm.dpsTaken)}` : ''} />
+        <Stat big={desktop} label="DPT(1ターンの与ダメ)" value={sm.hasTurns ? n0(sm.dptDealt) : '-'} sub={sm.hasTurns ? `受ダメ ${n0(sm.dptTaken)}` : ''} />
       </div>
       {matches.length > 0 && (
         <div data-testid="form-strip" style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 10 }}>
