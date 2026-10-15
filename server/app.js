@@ -3,6 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import { drawGacha } from './gacha.js'
 import { sanitizeMatch, addMatch } from './career.js'
+import { checkPassword, checkToken, gateToken, makeFailLimiter } from './gate.js'
 import { CONFIG } from './config.js'
 import {
   dayKey, loginBonusStatus, claimLoginBonus, isValidBattleLevel, judgeBattleReward,
@@ -16,7 +17,7 @@ class HttpError extends Error {
   }
 }
 
-export function createApp({ db, auth, FieldValue, allowedOrigins = [], now = () => Date.now(), randomId = () => Math.random().toString(36).slice(2) + Date.now().toString(36) }) {
+export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOrigins = [], now = () => Date.now(), randomId = () => Math.random().toString(36).slice(2) + Date.now().toString(36) }) {
   const app = express()
   app.use(express.json({ limit: '300kb' })) // キャリアの記録(対戦ログつき)が入る大きさ
   app.use(cors({ origin: allowedOrigins }))
@@ -27,18 +28,41 @@ export function createApp({ db, auth, FieldValue, allowedOrigins = [], now = () 
     res.status(500).json({ error: 'サーバーでエラーが発生しました' })
   }
 
-  // ログインしている人だけ通す
-  async function requireAuth(req, res, next) {
+  // ---------- 開発中の入口(マスターパスワード) ----------
+  // masterPassword が空なら、入口は無し。あれば、すでにアカウントがある人か、パスワードを通った人だけがAPIを使える
+  const gateOn = !!masterPassword
+  const failLimiter = makeFailLimiter()
+  const knownUids = new Set() // アカウントがあると確認ずみの人(毎回の確認を省く)
+  const ipOf = (req) => String(req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim()
+  const gatePassed = (req) => checkToken(req.headers['x-gate-token'], masterPassword)
+  async function hasAccount(uid) {
+    if (knownUids.has(uid)) return true
+    const snap = await db.collection('users').doc(uid).get()
+    if (snap.exists) knownUids.add(uid)
+    return snap.exists
+  }
+
+  // ログインしている人だけ通す(skipGate: 入口の確認そのものに使うときは、入口のチェックをしない)
+  const makeAuth = (skipGate) => async (req, res, next) => {
     const header = req.headers.authorization || ''
     const token = header.startsWith('Bearer ') ? header.slice(7) : null
     if (!token) return res.status(401).json({ error: 'ログインが必要です' })
     try {
       req.user = await auth.verifyIdToken(token)
+    } catch (e) {
+      return res.status(401).json({ error: '認証に失敗しました' })
+    }
+    try {
+      if (gateOn && !skipGate && !gatePassed(req) && !(await hasAccount(req.user.uid))) {
+        return res.status(403).json({ error: '開発中のため、マスターパスワードが必要です' })
+      }
       next()
     } catch (e) {
-      res.status(401).json({ error: '認証に失敗しました' })
+      handleError(res, e)
     }
   }
+  const requireAuth = makeAuth(false)
+  const authOnly = makeAuth(true)
 
   const newUserData = () => ({ gems: CONFIG.INITIAL_GEMS, pityCount: 0, owned: {} })
   const userRefOf = (uid) => db.collection('users').doc(uid)
@@ -63,6 +87,28 @@ export function createApp({ db, auth, FieldValue, allowedOrigins = [], now = () 
       battle: { todayCount: daily, dailyLimit: CONFIG.BATTLE_REWARD_DAILY_LIMIT, rewards: CONFIG.BATTLE_REWARD },
     }
   }
+
+  // 入口: 必要かどうか / パスワードを入れる / 通行証の確認 / 自分がアカウント持ちか
+  app.get('/api/gate/status', (req, res) => res.json({ required: gateOn }))
+  app.post('/api/gate/enter', (req, res) => {
+    if (!gateOn) return res.json({ ok: true, token: '' })
+    const key = ipOf(req)
+    if (failLimiter.blocked(key, now())) return res.status(429).json({ error: '間違えすぎました。しばらくしてからもう一度試してください' })
+    if (!checkPassword(req.body?.password, masterPassword)) {
+      failLimiter.fail(key, now())
+      return res.status(401).json({ error: 'パスワードが違います' })
+    }
+    failLimiter.reset(key)
+    res.json({ ok: true, token: gateToken(masterPassword) })
+  })
+  app.post('/api/gate/check', (req, res) => res.json({ ok: !gateOn || checkToken(req.body?.token, masterPassword) }))
+  app.get('/api/gate/me', authOnly, async (req, res) => {
+    try {
+      res.json({ exempt: !gateOn || (await hasAccount(req.user.uid)) })
+    } catch (e) {
+      handleError(res, e)
+    }
+  })
 
   app.get('/', (req, res) => res.send('ok'))
   app.get('/health', (req, res) => res.send('ok'))
