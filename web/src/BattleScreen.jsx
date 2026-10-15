@@ -462,6 +462,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
     setPlay(null)
     const first = createBattle(team, buildCpuTeam(ALL_CHARACTERS, cpuChars), { comboMode, pool: ownedPool(cpuChars), spells: { A: spellSet, B: [] } })
     statsRef.current = newStats()
+    const firstActor = first.units.find((u) => u.uid === first.active)
+    if (firstActor) statsRef.current.turns[firstActor.team]++ // 最初のターンも数える
     savedRef.current = null
     const mains = (t) => first.units.filter((u) => u.team === t && u.field === 'main' && !u.isAmulet).map((u) => u.name)
     namesRef.current = { A: mains('A'), B: mains('B') }
