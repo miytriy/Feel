@@ -99,6 +99,21 @@ function ActionBar({ state, big = false }) {
   )
 }
 
+// 予想ダメージを受けたとき、体力がいくつ減るか(アーマーが先に受け持つ分と、バリアで防がれる分を考える)
+function hpLossOf(unit, dmg, isTrue) {
+  if (dmg == null || unit.barrier > 0 || unit.isAmulet) return 0
+  const mult = isTrue ? 0.5 : 1
+  const covered = Math.min(dmg * unit.armorRate, unit.armor / mult)
+  return Math.max(0, Math.min(unit.hp, dmg - covered))
+}
+// 体力バーの上で点滅して、「どこまで削れるか」を見せる部分
+function LossBlink({ unit, loss, radius = 3 }) {
+  if (!loss || loss <= 0) return null
+  const left = Math.max(0, (unit.hp - loss) / unit.maxHp) * 100
+  const width = Math.min(100 - left, (loss / unit.maxHp) * 100)
+  return <div data-testid="loss-blink" style={{ position: 'absolute', top: 0, bottom: 0, left: `${left}%`, width: `${width}%`, borderRadius: radius, background: '#ff2d2d', animation: 'feel-blink 0.7s ease-in-out infinite' }} />
+}
+
 function badgesOf(unit) {
   const badges = []
   for (const k of unit.keywords) {
@@ -117,7 +132,7 @@ function badgesOf(unit) {
   return badges
 }
 
-function UnitCard({ unit, active, selected, selectable, inspected, onClick, big = false, fx = null, hl = false, tick = 0 }) {
+function UnitCard({ unit, active, selected, selectable, inspected, onClick, big = false, fx = null, hl = false, tick = 0, loss = 0 }) {
   const ratio = Math.max(0, unit.hp / unit.maxHp)
   const hpColor = ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow
   const badges = unit.alive ? badgesOf(unit) : []
@@ -145,8 +160,9 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
       )}
       <div style={{ height: big ? 36 : 26, overflow: 'hidden', fontWeight: big ? 700 : 400 }}>{unit.name}</div>
       {!unit.isAmulet && (
-        <div style={{ background: '#e3e7ef', height: big ? 9 : 6, borderRadius: 3, marginTop: 3 }}>
+        <div style={{ background: '#e3e7ef', height: big ? 9 : 6, borderRadius: 3, marginTop: 3, position: 'relative' }}>
           <div style={{ width: `${ratio * 100}%`, height: '100%', borderRadius: 3, background: hpColor, transition: 'width 0.3s' }} />
+          <LossBlink unit={unit} loss={loss} />
         </div>
       )}
       <div style={{ marginTop: 2, color: C.mute }}>{unit.isAmulet ? (unit.alive ? '体力なし' : '消えた') : unit.alive ? `${Math.ceil(unit.hp)}/${unit.maxHp}` : '戦闘不能'}</div>
@@ -248,7 +264,7 @@ function AbilityBanner({ ability, now = '', big = false }) {
 }
 
 // 選択中の相手(攻撃・特性の対象)の情報。予想ダメージつき
-function TargetInfo({ unit, expected, big = false }) {
+function TargetInfo({ unit, expected, loss = 0, big = false }) {
   const ratio = Math.max(0, unit.hp / unit.maxHp)
   const lines = []
   for (const k of unit.keywords) {
@@ -264,14 +280,20 @@ function TargetInfo({ unit, expected, big = false }) {
       <div style={{ fontWeight: 700, fontSize: big ? 15 : 13 }}>{unit.name}{unit.evolved ? '(進化済)' : ''}{unit.field === 'summon' ? '(召喚物)' : ''}</div>
       {!unit.isAmulet && (
         <>
-          <div style={{ background: '#e3e7ef', height: 8, borderRadius: 4, margin: '4px 0' }}>
+          <div style={{ background: '#e3e7ef', height: 10, borderRadius: 4, margin: '4px 0', position: 'relative' }}>
             <div style={{ width: `${ratio * 100}%`, height: '100%', borderRadius: 4, background: ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow }} />
+            <LossBlink unit={unit} loss={loss} radius={4} />
           </div>
           <div>HP {Math.ceil(unit.hp)}/{unit.maxHp}{unit.armor > 0 ? ` ・ アーマー ${Math.ceil(unit.armor)}` : ''}{unit.barrier > 0 ? ' ・ バリア' : ''}</div>
           <div style={{ color: C.mute }}>攻撃 {Math.round(unit.atk)} / 防御 {Math.round(unit.def)} / 速度 {Math.round(unit.spd)}</div>
         </>
       )}
-      {expected != null && <div style={{ fontWeight: 700, color: C.player }}>予想ダメージ 約{Math.round(expected)}{expected >= unit.hp + unit.armor ? '(倒せる!)' : ''}</div>}
+      {expected != null && (
+        <div style={{ fontWeight: 700, color: C.player }}>
+          予想ダメージ 約{Math.round(expected)}{expected >= unit.hp + unit.armor ? '(倒せる!)' : ''}
+          {unit.barrier > 0 ? '(バリアで防がれる)' : !unit.isAmulet && <span style={{ color: C.mute, fontWeight: 400 }}> → HP {Math.ceil(unit.hp - loss)}/{unit.maxHp}</span>}
+        </div>
+      )}
       {lines.map((l, i) => <div key={i} style={{ fontSize: big ? 12 : 11, color: C.ink }}>{l}</div>)}
     </div>
   )
@@ -575,6 +597,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
     try { expectedDmg = calcDamage(actor, selectedUnit, actor.skill, { expected: true }).damage } catch { expectedDmg = null }
   }
 
+  const lossShown = selectedUnit && expectedDmg != null ? hpLossOf(selectedUnit, expectedDmg, actor.skill.type === 'true') : 0
+
   const card = (u) => (
     <UnitCard
       key={u.uid}
@@ -583,6 +607,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
       fx={fxFor(u.uid)}
       hl={hlFor(u.uid)}
       tick={play ? play.i : 0}
+      loss={u.uid === selected ? lossShown : 0}
       selected={u.uid === selected}
       selectable={playerTurn && selectableSet.includes(u.uid)}
       inspected={u.uid === inspect}
@@ -594,7 +619,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
   // 操作パネル(スキル・特性・スペル・進化・ターン終了など)。PCは右側、スマホは画面の下に固定
   const panelInner = (
     <>
-      {selectedUnit && <TargetInfo unit={selectedUnit} expected={expectedDmg} big={desktop} />}
+      {selectedUnit && <TargetInfo unit={selectedUnit} expected={expectedDmg} loss={lossShown} big={desktop} />}
         {state.winner && !playing ? (
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>{resultText}</div>
