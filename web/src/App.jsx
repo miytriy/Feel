@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import { auth, googleProvider } from './firebase.js'
 import {
-  fetchMe, fetchCareer, recordMatch, clearCareer, drawGacha, claimLoginBonus, startBattleTicket, finishBattle, fetchGifts, claimGift, redeemCode,
+  gateStatus, gateEnter, gateCheck, gateMe, getGateToken, setGateToken, fetchMe, fetchCareer, recordMatch, clearCareer, drawGacha, claimLoginBonus, startBattleTicket, finishBattle, fetchGifts, claimGift, redeemCode,
 } from './api.js'
 import BattleScreen from './BattleScreen.jsx'
 import CareerScreen from './CareerScreen.jsx'
 import CodexScreen from './CodexScreen.jsx'
 import ErrorBoundary from './ErrorBoundary.jsx'
+import GateScreen from './GateScreen.jsx'
 import { useIsDesktop, C, FONT } from './ui.js'
 
 const PITY_COUNT = 40
@@ -32,6 +33,10 @@ export default function App() {
   const [gifts, setGifts] = useState([])
   const [code, setCode] = useState('')
   const desktop = useIsDesktop() // 画面の幅が広い(PC)ときは、画面全体を使うレイアウトにする
+  // 開発中の入口(マスターパスワード): checking=確認中 / locked=パスワードが必要 / open=入れる / offline=サーバーにつながらない
+  const [gate, setGate] = useState('checking')
+  const [gateTry, setGateTry] = useState(0)
+  const gateOpen = gate === 'open'
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
@@ -45,8 +50,33 @@ export default function App() {
     return () => unsubscribe()
   }, [])
 
+  // 入口の確認: パスワード不要の設定 / すでにアカウントがある人 / 通行証を持っている人 は入れる
   useEffect(() => {
-    if (!user) return
+    if (authLoading) return
+    let alive = true
+    setGate('checking') // ログイン・ログアウトのたびに、入れるかを確かめ直す
+    ;(async () => {
+      try {
+        const st = await gateStatus()
+        if (!st.required) return alive && setGate('open')
+        if (user) {
+          const m = await gateMe()
+          if (m.exempt) return alive && setGate('open')
+        }
+        const t = getGateToken()
+        if (t && (await gateCheck(t)).ok) return alive && setGate('open')
+        if (t) setGateToken('') // 古い通行証(パスワードが変わったときなど)は捨てる
+        if (alive) setGate('locked')
+      } catch (e) {
+        console.error('入口の確認に失敗', e)
+        if (alive) setGate('offline')
+      }
+    })()
+    return () => { alive = false }
+  }, [authLoading, user, gateTry])
+
+  useEffect(() => {
+    if (!user || !gateOpen) return
     setBusy(true)
     setError('')
     fetchMe()
@@ -56,7 +86,7 @@ export default function App() {
     fetchGifts()
       .then((r) => setGifts(r.gifts))
       .catch(() => {}) // プレゼント一覧が取れなくても、他の機能は使える
-  }, [user])
+  }, [user, gateOpen])
 
   const handleLogin = async () => {
     setError('')
@@ -124,6 +154,29 @@ export default function App() {
 
   if (authLoading) {
     return <div style={{ padding: 20, fontFamily: FONT }}>読み込み中...</div>
+  }
+
+  if (gate === 'checking') {
+    return <div style={{ padding: 20, fontFamily: FONT }}>読み込み中...(サーバーが眠っていると、1分ほどかかることがあります)</div>
+  }
+  if (gate === 'offline') {
+    return (
+      <div style={{ padding: 20, fontFamily: FONT }}>
+        <p>サーバーにつながりませんでした。しばらくしてからもう一度お試しください。</p>
+        <button onClick={() => { setGate('checking'); setGateTry((n) => n + 1) }} style={{ padding: '10px 16px', borderRadius: 8, fontSize: 15 }}>もう一度つなぐ</button>
+      </div>
+    )
+  }
+  if (gate === 'locked') {
+    return (
+      <GateScreen
+        user={user}
+        notice={error}
+        onEnter={async (pw) => { await gateEnter(pw); setError(''); setGate('open') }}
+        onLogin={handleLogin}
+        onLogout={handleLogout}
+      />
+    )
   }
 
   if (screen === 'battle') {
