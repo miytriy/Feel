@@ -13,6 +13,7 @@ const app = createApp({
   db: admin.firestore(),
   auth: admin.auth(),
   FieldValue: admin.firestore.FieldValue,
+  masterPassword: process.env.MASTER_PASSWORD || '', // 開発中の入口のパスワード(Renderの環境変数。空なら入口なし)
   allowedOrigins,
 })
 
