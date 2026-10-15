@@ -6,6 +6,7 @@ import {
 } from './api.js'
 import BattleScreen from './BattleScreen.jsx'
 import CareerScreen from './CareerScreen.jsx'
+import ErrorBoundary from './ErrorBoundary.jsx'
 import { useIsDesktop, C, FONT } from './ui.js'
 
 const PITY_COUNT = 40
@@ -125,11 +126,11 @@ export default function App() {
   }
 
   if (screen === 'battle') {
-    return <BattleScreen onExit={() => setScreen('home')} rewardApi={rewardApi} />
+    return <ErrorBoundary onExit={() => setScreen('home')}><BattleScreen onExit={() => setScreen('home')} rewardApi={rewardApi} /></ErrorBoundary>
   }
 
   if (screen === 'career') {
-    return <CareerScreen onExit={() => setScreen('home')} fetchCareer={fetchCareer} clearCareer={clearCareer} />
+    return <ErrorBoundary onExit={() => setScreen('home')}><CareerScreen onExit={() => setScreen('home')} fetchCareer={fetchCareer} clearCareer={clearCareer} /></ErrorBoundary>
   }
 
   // ---- 部品 ----
