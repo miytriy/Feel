@@ -353,6 +353,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
   const accelActs = legal.filter((a) => a.type === 'accelerate')
   const chooseActs = legal.filter((a) => a.type === 'choose') // 効果の対象を選ぶ場面(ファンファーレなど)
   const choosing = chooseActs.length > 0
+  const modePicking = !!(state && state.pending && state.pending.modes) // 【モード】を選ぶ場面
   const confirming = !!(state && state.pending && state.pending.confirm) // 「使う/使わない」を選ぶ場面
   const selectableSet = choosing
     ? chooseActs.map((a) => a.target)
@@ -663,6 +664,17 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
           <div style={{ fontSize: 13, color: C.mute }}>動きを再生中… (スキップもできます)</div>
         ) : cpuTurn ? (
           <div style={{ fontSize: 13, color: C.mute }}>{actor.name}(相手)が考えています…</div>
+        ) : choosing && modePicking ? (
+          <div>
+            <div style={{ fontSize: 13, marginBottom: 6 }}>【モード】{state.pending.prompt}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {state.pending.modes.map((m, i) => (
+                <button key={i} onClick={() => act({ type: 'choose', target: `mode${i}` })} style={{ ...buttonStyle(true, false), textAlign: 'left' }}>
+                  ({i + 1}) {m.name}{m.desc ? ` — ${m.desc}` : ''}
+                </button>
+              ))}
+            </div>
+          </div>
         ) : choosing && confirming ? (
           <div>
             <div style={{ fontSize: 13, marginBottom: 6 }}>
