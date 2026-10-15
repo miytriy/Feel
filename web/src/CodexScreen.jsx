@@ -52,6 +52,7 @@ function collectRelated(def) {
       if (Array.isArray(e.randomUnits)) units.push(...e.randomUnits)
       if (e.spell) spells.push(e.spell)
       if (e.trait) walk(e.trait.effects)
+      if (Array.isArray(e.modes)) e.modes.forEach((m) => walk(m && m.effects))
       if (e.crest) {
         for (const p of e.crest.passives || []) if (typeof p === 'object') walk(p.effects)
       }
