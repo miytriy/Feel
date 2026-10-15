@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { createBattle, applyAction, getActiveUnit, legalActions, getUnit, gaugeOf, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
+import { createBattle, applyAction, getActiveUnit, legalActions, getUnit, gaugeOf, calcDamage, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS } from './battle/ai.js'
 import { DEFAULT_PLAYER_IDS, buildCpuTeam, loadCpuCharSetting, saveCpuCharSetting, isTestChar, loadComboMode, saveComboMode } from './battle/teams.js'
 import { ALL_CHARACTERS, charById } from './battle/characters/index.js'
@@ -217,6 +217,50 @@ function InspectBox({ unit, big = false }) {
         {' '}{unit.evolved ? '(進化済) ' : ''}攻撃 {Math.round(unit.atk)} / 防御 {Math.round(unit.def)} / 速度 {Math.round(unit.spd)} / スキル「{unit.skill.name}」({TYPE_LABEL[unit.skill.type]})
       </span>
       {lines.length === 0 ? <div style={{ color: C.mute }}>能力なし</div> : lines.map((l, i) => <div key={i}>{l}</div>)}
+    </div>
+  )
+}
+
+// 直近に発動した能力の説明(ファンファーレ・特性・スペル・進化など)。何が起きたかを、説明つきで見せる
+function AbilityBanner({ ability, big = false }) {
+  if (!ability) return null
+  const color = ability.team === 'B' ? C.enemy : C.player
+  return (
+    <div data-testid="ability" style={{ padding: big ? '10px 14px' : '8px 10px', borderRadius: 10, background: C.card, borderLeft: `6px solid ${color}`, border: `1px solid ${C.line}`, borderLeftWidth: 6, borderLeftColor: color, fontSize: big ? 14 : 12, lineHeight: 1.5 }}>
+      <div style={{ color, fontWeight: 700 }}>
+        <span style={{ color: C.mute, fontWeight: 400, fontSize: big ? 11 : 10 }}>直近の能力 </span>【{ability.kind}】{ability.owner}{ability.name ? ` ― ${ability.name}` : ''}
+      </div>
+      {ability.desc && <div>{ability.desc}</div>}
+    </div>
+  )
+}
+
+// 選択中の相手(攻撃・特性の対象)の情報。予想ダメージつき
+function TargetInfo({ unit, expected, big = false }) {
+  const ratio = Math.max(0, unit.hp / unit.maxHp)
+  const lines = []
+  for (const k of unit.keywords) {
+    if (k === 'stealth' && !unit.stealth) continue
+    if (k === 'barrier' && unit.barrier <= 0) continue
+    lines.push(`【${KEYWORDS[k]?.label ?? k}】${KEYWORDS[k]?.desc ?? ''}`)
+  }
+  for (const p of unit.passiveObjs) lines.push(passiveLine(p))
+  for (const t of unit.traits) lines.push(`【特性 MP${t.cost}】${t.name}: ${t.desc ?? ''}`)
+  return (
+    <div data-testid="target-info" style={{ marginBottom: 8, padding: big ? 12 : 8, borderRadius: 10, background: '#fffaf0', border: `2px solid ${C.active}`, fontSize: big ? 13 : 12, lineHeight: 1.5 }}>
+      <div style={{ fontSize: big ? 11 : 10, color: C.mute }}>選択中の{unit.team === 'B' ? '相手' : '味方'}</div>
+      <div style={{ fontWeight: 700, fontSize: big ? 15 : 13 }}>{unit.name}{unit.evolved ? '(進化済)' : ''}{unit.field === 'summon' ? '(召喚物)' : ''}</div>
+      {!unit.isAmulet && (
+        <>
+          <div style={{ background: '#e3e7ef', height: 8, borderRadius: 4, margin: '4px 0' }}>
+            <div style={{ width: `${ratio * 100}%`, height: '100%', borderRadius: 4, background: ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow }} />
+          </div>
+          <div>HP {Math.ceil(unit.hp)}/{unit.maxHp}{unit.armor > 0 ? ` ・ アーマー ${Math.ceil(unit.armor)}` : ''}{unit.barrier > 0 ? ' ・ バリア' : ''}</div>
+          <div style={{ color: C.mute }}>攻撃 {Math.round(unit.atk)} / 防御 {Math.round(unit.def)} / 速度 {Math.round(unit.spd)}</div>
+        </>
+      )}
+      {expected != null && <div style={{ fontWeight: 700, color: C.player }}>予想ダメージ 約{Math.round(expected)}{expected >= unit.hp + unit.armor ? '(倒せる!)' : ''}</div>}
+      {lines.map((l, i) => <div key={i} style={{ fontSize: big ? 12 : 11, color: C.ink }}>{l}</div>)}
     </div>
   )
 }
@@ -451,8 +495,13 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
   const enemySummons = state.units.filter((u) => u.team === 'B' && u.field === 'summon' && u.alive)
   const playerSummons = state.units.filter((u) => u.team === 'A' && u.field === 'summon' && u.alive)
   const resultText = state.winner === 'A' ? '勝利!' : state.winner === 'B' ? '敗北…' : '引き分け'
-  const inspected = inspect ? getUnit(state, inspect) : null
+  const inspected = inspect && inspect !== selected ? getUnit(state, inspect) : null // 選択中の相手は、操作パネルに詳しく出すので、ここでは重ねて出さない
   const modeTrait = mode ? actor.traits.find((t) => t.id === mode) : null
+  const selectedUnit = playerTurn && selected ? getUnit(state, selected) : null
+  let expectedDmg = null
+  if (selectedUnit && !mode && !isAccel && skillTargets.includes(selected)) {
+    try { expectedDmg = calcDamage(actor, selectedUnit, actor.skill, { expected: true }).damage } catch { expectedDmg = null }
+  }
 
   const card = (u) => (
     <UnitCard
@@ -470,6 +519,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
   // 操作パネル(スキル・特性・スペル・進化・ターン終了など)。PCは右側、スマホは画面の下に固定
   const panelInner = (
     <>
+      {selectedUnit && <TargetInfo unit={selectedUnit} expected={expectedDmg} big={desktop} />}
         {state.winner ? (
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>{resultText}</div>
@@ -657,6 +707,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
               <Row big title="相手" color={C.enemy}>{enemies.map(card)}</Row>
               {enemySummons.length > 0 && <Row big title="相手の召喚物" color={C.enemy}>{enemySummons.map(card)}</Row>}
             </div>
+            <AbilityBanner ability={state.lastAbility} big />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {playerSummons.length > 0 && <Row big title="自分の召喚物" color={C.player}>{playerSummons.map(card)}</Row>}
               <Row big title="自分" color={C.player}>{players.map(card)}</Row>
@@ -692,6 +743,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
       <Row title="相手" color={C.enemy}>{enemies.map(card)}</Row>
       {enemySummons.length > 0 && <Row title="相手の召喚物" color={C.enemy}>{enemySummons.map(card)}</Row>}
 
+      <div style={{ marginTop: 12 }}><AbilityBanner ability={state.lastAbility} /></div>
       {logBox}
 
       {playerSummons.length > 0 && <Row title="自分の召喚物" color={C.player}>{playerSummons.map(card)}</Row>}
