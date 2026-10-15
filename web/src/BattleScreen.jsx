@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { addEvents, buildMatch, newStats } from './career.js'
 import { createBattle, applyAction, getActiveUnit, legalActions, getUnit, gaugeOf, calcDamage, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS } from './battle/ai.js'
 import { DEFAULT_PLAYER_IDS, buildCpuTeam, loadCpuCharSetting, saveCpuCharSetting, isTestChar, loadComboMode, saveComboMode } from './battle/teams.js'
@@ -333,6 +334,9 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
   const [speed, setSpeed] = useState(loadSpeed) // 再生の速さ
   const [play, setPlay] = useState(null) // 再生中の記録 { events, i, prevActive, prevAbility }。null なら再生していない
   const playing = !!play
+  const statsRef = useRef(newStats()) // キャリア用: この対戦のダメージの集計
+  const namesRef = useRef({ A: [], B: [] })
+  const savedRef = useRef(null) // 記録ずみの対戦(二重に記録しない)
   const desktop = useIsDesktop() // 画面の幅が広い(PC)ときは、画面全体を使うレイアウトにする
 
   const actor = state ? getActiveUnit(state) : null
@@ -391,6 +395,14 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
     return () => clearTimeout(t)
   }, [play, speed])
 
+  // 対戦が終わって再生も終わったら、キャリア(アカウントの対戦記録)に残す
+  useEffect(() => {
+    if (!state || !state.winner || play || savedRef.current === state) return
+    savedRef.current = state
+    // ログイン中なら、アカウントに記録する(失敗しても対戦には影響しない)
+    if (rewardApi && rewardApi.record) rewardApi.record(buildMatch(state, level, statsRef.current, namesRef.current)).catch((e) => console.error('キャリアの記録に失敗', e))
+  }, [state, play, level, rewardApi])
+
   // 対戦が終わったら、サーバーに結果を送って報酬をもらう(1つの対戦券につき1回だけ)
   useEffect(() => {
     if (!state || !state.winner || !rewardApi || !ticketId) return
@@ -405,6 +417,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
 
   // 新しい状態にする。起きたことの記録があれば、1つずつ再生する
   const commit = (next) => {
+    addEvents(statsRef.current, next.events || [], (uid) => next.units.find((u) => u.uid === uid))
     const evs = next.events || []
     const mult = SPEEDS.find((x) => x.id === speed)?.mult ?? 1
     setPlay(evs.length && mult > 0 ? { events: evs, i: 0, prevActive: state?.active ?? null, prevAbility: state?.lastAbility ?? null } : null)
@@ -433,7 +446,12 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
         .catch((e) => setRewardMsg(`この対戦では報酬がもらえません: ${e.message}`))
     }
     setPlay(null)
-    setState(createBattle(team, buildCpuTeam(ALL_CHARACTERS, cpuChars), { comboMode, pool: ownedPool(cpuChars), spells: { A: spellSet, B: [] } }))
+    const first = createBattle(team, buildCpuTeam(ALL_CHARACTERS, cpuChars), { comboMode, pool: ownedPool(cpuChars), spells: { A: spellSet, B: [] } })
+    statsRef.current = newStats()
+    savedRef.current = null
+    const mains = (t) => first.units.filter((u) => u.team === t && u.field === 'main' && !u.isAmulet).map((u) => u.name)
+    namesRef.current = { A: mains('A'), B: mains('B') }
+    setState(first)
   }
   const act = (action) => {
     reset()
