@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import { auth, googleProvider } from './firebase.js'
 import {
-  fetchMe, drawGacha, claimLoginBonus, startBattleTicket, finishBattle, fetchGifts, claimGift, redeemCode,
+  fetchMe, fetchCareer, recordMatch, clearCareer, drawGacha, claimLoginBonus, startBattleTicket, finishBattle, fetchGifts, claimGift, redeemCode,
 } from './api.js'
 import BattleScreen from './BattleScreen.jsx'
+import CareerScreen from './CareerScreen.jsx'
 import { useIsDesktop, C, FONT } from './ui.js'
 
 const PITY_COUNT = 40
@@ -110,6 +111,7 @@ export default function App() {
   const rewardApi = user
     ? {
         start: startBattleTicket,
+        record: recordMatch,
         finish: async (id, result) => {
           const r = await finishBattle(id, result)
           fetchMe().then(setMe).catch(() => {})
@@ -126,6 +128,10 @@ export default function App() {
     return <BattleScreen onExit={() => setScreen('home')} rewardApi={rewardApi} />
   }
 
+  if (screen === 'career') {
+    return <CareerScreen onExit={() => setScreen('home')} fetchCareer={fetchCareer} clearCareer={clearCareer} />
+  }
+
   // ---- 部品 ----
   const btn = (primary, disabled) => ({
     padding: desktop ? '10px 18px' : '12px 16px', borderRadius: 10, fontSize: desktop ? 15 : 16, fontWeight: 700, fontFamily: FONT,
@@ -137,11 +143,18 @@ export default function App() {
   const card = (bg = C.card) => ({ padding: desktop ? 20 : 14, borderRadius: 14, background: bg, border: `1px solid ${C.line}`, boxShadow: '0 1px 3px rgba(31,42,68,0.06)' })
   const h3 = { margin: '0 0 8px', fontSize: desktop ? 18 : 16 }
 
+  const careerBtn = (
+    <button disabled={!user} onClick={() => setScreen('career')} style={{ ...btn(false, !user), width: '100%', marginTop: 10 }}>
+      キャリア(対戦の記録・勝率){user ? '' : ' ※ログインが必要'}
+    </button>
+  )
+
   const playCard = (
     <div style={card()}>
       <h3 style={h3}>あそぶ</h3>
       <button onClick={() => setScreen('battle')} style={{ ...btn(true, false), width: '100%', fontSize: desktop ? 20 : 18, padding: desktop ? '22px 18px' : '18px 16px' }}>CPU対戦</button>
       <div style={{ fontSize: 12, color: C.mute, marginTop: 6 }}>キャラとスペルを編成して、CPUと対戦します。勝つとジェムがもらえます(ログイン中)。</div>
+      {careerBtn}
     </div>
   )
 
