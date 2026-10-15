@@ -30,6 +30,7 @@ export function sanitizeMatch(m, nowMs) {
     perRound,
     totals: { A: sum('A'), B: sum('B') }, // 合計は、ラウンドごとの数字から計算し直す
     heal: { A: num(m.heal?.A), B: num(m.heal?.B) },
+    turns: { A: num(m.turns?.A, 10000), B: num(m.turns?.B, 10000) },
     units: list(m.units, MAX_UNITS).map((u) => ({ name: str(u?.name, 40), team: u?.team === 'B' ? 'B' : 'A', dealt: num(u?.dealt) })),
     log: list(m.log, MAX_LOG).map((l) => str(l, 120)),
   }
