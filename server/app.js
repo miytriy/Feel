@@ -2,6 +2,7 @@
 import express from 'express'
 import cors from 'cors'
 import { drawGacha } from './gacha.js'
+import { sanitizeMatch, addMatch } from './career.js'
 import { CONFIG } from './config.js'
 import {
   dayKey, loginBonusStatus, claimLoginBonus, isValidBattleLevel, judgeBattleReward,
@@ -255,6 +256,46 @@ export function createApp({ db, auth, FieldValue, allowedOrigins = [], now = () 
       })
       if (out.status !== 200) return res.status(out.status).json({ error: out.error })
       res.json({ amount: out.amount, gems: out.gems })
+    } catch (e) {
+      handleError(res, e)
+    }
+  })
+
+  // ---------- キャリア(対戦の記録): ログイン中の人のぶんを、サーバーに残す ----------
+  const careerRefOf = (uid) => db.collection('careers').doc(uid)
+
+  app.get('/api/career', requireAuth, async (req, res) => {
+    try {
+      const snap = await careerRefOf(req.user.uid).get()
+      res.json({ matches: (snap.exists && snap.data().matches) || [] })
+    } catch (e) {
+      handleError(res, e)
+    }
+  })
+
+  app.post('/api/career', requireAuth, async (req, res) => {
+    try {
+      const match = sanitizeMatch(req.body?.match, now())
+      if (!match) throw new HttpError(400, '対戦の記録が正しくありません')
+      const ref = careerRefOf(req.user.uid)
+      const matches = await db.runTransaction(async (t) => {
+        const snap = await t.get(ref)
+        const next = addMatch(snap.exists ? snap.data().matches : [], match)
+        t.set(ref, { matches: next, updatedAt: FieldValue.serverTimestamp() })
+        return next
+      })
+      res.json({ count: matches.length })
+    } catch (e) {
+      handleError(res, e)
+    }
+  })
+
+  // 自分の記録を全部消す
+  app.delete('/api/career', requireAuth, async (req, res) => {
+    try {
+      const ref = careerRefOf(req.user.uid)
+      await db.runTransaction(async (t) => { t.set(ref, { matches: [], updatedAt: FieldValue.serverTimestamp() }) })
+      res.json({ ok: true })
     } catch (e) {
       handleError(res, e)
     }
