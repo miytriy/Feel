@@ -18,7 +18,7 @@ class HttpError extends Error {
 
 export function createApp({ db, auth, FieldValue, allowedOrigins = [], now = () => Date.now(), randomId = () => Math.random().toString(36).slice(2) + Date.now().toString(36) }) {
   const app = express()
-  app.use(express.json())
+  app.use(express.json({ limit: '300kb' })) // キャリアの記録(対戦ログつき)が入る大きさ
   app.use(cors({ origin: allowedOrigins }))
 
   const handleError = (res, e) => {
