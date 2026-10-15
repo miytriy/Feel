@@ -315,7 +315,7 @@ const SPEEDS = [
   { id: 'fast', label: 'はやい', mult: 0.5 },
   { id: 'skip', label: 'とばす', mult: 0 },
 ]
-const EVENT_MS = { turn: 700, ability: 2200, attack: 900, damage: 900, heal: 800, summon: 800, block: 800, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, sync: 300 }
 const loadSpeed = () => { try { const v = localStorage.getItem('feel-play-speed'); return SPEEDS.some((x) => x.id === v) ? v : 'normal' } catch { return 'normal' } }
 
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null }) {
@@ -843,7 +843,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
     </div>
   )
   const nameOf = (uid) => state.units.find((u) => u.uid === uid)?.name ?? ''
-  const nowText = !ev ? '' : ev.type === 'attack' ? `⚔ ${nameOf(ev.src)} の ${ev.skill} → ${nameOf(ev.target)}` : ev.type === 'turn' ? `${ev.team === 'B' ? '相手' : 'あなた'}のターン: ${ev.name}` : ''
+  const nowText = !ev ? '' : ev.type === 'damage' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}に${ev.amount}ダメージ${ev.crit ? '(クリティカル!)' : ''}` : ev.type === 'block' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}のバリアが防いだ(0ダメージ)` : ev.type === 'turn' ? `${ev.team === 'B' ? '相手' : 'あなた'}のターン: ${ev.name}` : ''
   const errBox = cpuError && <div style={{ marginTop: 6, padding: 6, borderRadius: 6, background: '#fde8e8', color: C.hpLow, fontSize: 12 }}>{cpuError}</div>
 
   // ---- PC: 画面全体を使う(左=盤面、右=詳細・ログ・操作) ----
