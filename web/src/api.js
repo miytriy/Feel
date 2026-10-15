@@ -2,6 +2,26 @@ import { auth } from './firebase.js'
 
 const API_URL = import.meta.env.VITE_API_URL
 
+// ---- 開発中の入口(マスターパスワード) ----
+const GATE_KEY = 'feel.gate.v1'
+export const getGateToken = () => { try { return localStorage.getItem(GATE_KEY) || '' } catch { return '' } }
+export const setGateToken = (t) => { try { t ? localStorage.setItem(GATE_KEY, t) : localStorage.removeItem(GATE_KEY) } catch { /* 保存できなくても動く */ } }
+
+async function plain(path, options = {}) {
+  const res = await fetch(`${API_URL}${path}`, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || '通信に失敗しました')
+  return data
+}
+export const gateStatus = () => plain('/api/gate/status') // { required }
+export const gateEnter = async (password) => { const r = await plain('/api/gate/enter', { method: 'POST', body: JSON.stringify({ password }) }); setGateToken(r.token); return r }
+export const gateCheck = (token) => plain('/api/gate/check', { method: 'POST', body: JSON.stringify({ token }) }) // { ok }
+export const gateMe = async () => { // ログイン中の人が、すでにアカウントを持っているか(持っていれば、パスワード免除)
+  const user = auth.currentUser
+  if (!user) throw new Error('ログインしてください')
+  return plain('/api/gate/me', { headers: { Authorization: `Bearer ${await user.getIdToken()}` } })
+}
+
 async function request(path, options = {}) {
   const user = auth.currentUser
   if (!user) throw new Error('ログインしてください')
@@ -11,6 +31,7 @@ async function request(path, options = {}) {
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
+      ...(getGateToken() ? { 'X-Gate-Token': getGateToken() } : {}),
     },
   })
   const data = await res.json().catch(() => ({}))
