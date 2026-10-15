@@ -37,7 +37,7 @@ export function buildMatch(state, level, stats, names) {
     totals: { A: sum('A'), B: sum('B') },
     heal: stats.heal,
     units: Object.values(stats.units).sort((a, b) => b.dealt - a.dealt),
-    log: state.log.slice(-400),
+    log: state.log.slice(-150).map((l) => String(l).slice(0, 120)), // サーバーに送れる大きさに収める
   }
 }
 
