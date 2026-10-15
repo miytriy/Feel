@@ -123,7 +123,7 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
     // スペル(プレイヤー能力): opts.spells = { A: [スペル定義...], B: [...] }(同じスペルを何回入れてもよい。最大 MAX_SPELL_SLOTS 回分)
     // 自分のキャラのターン中に、枠1つにつき1回、MPを払って使える
     spells: { A: (opts.spells?.A || []).slice(0, MAX_SPELL_SLOTS).map(makeSpell), B: (opts.spells?.B || []).slice(0, MAX_SPELL_SLOTS).map(makeSpell) },
-    casting: null,
+    casting: null, lastAbility: null, abilitySeq: 0,
   }
   startRound(state)
   recalc(state)
@@ -327,6 +327,12 @@ function heal(state, unit, amount) {
   unit.hp = Math.min(unit.maxHp, unit.hp + amount)
   const gained = Math.round(unit.hp - before)
   if (gained > 0) state.log.push(`${unit.name}は${gained}回復した`)
+}
+
+// 直近に発動した能力(画面に説明を出すための記録): kind=種類(ファンファーレ・特性・スペルなど) owner=持ち主の名前 name=能力名 desc=説明
+function noteAbility(state, kind, owner, name, desc, team) {
+  state.abilitySeq += 1
+  state.lastAbility = { seq: state.abilitySeq, kind, owner, name: name || '', desc: desc || '', team: team ?? null }
 }
 
 // ---------- 効果の実行 ----------
@@ -647,6 +653,7 @@ function fire(state, trigger, unit, ctx = {}, from = 0) {
     if (p.trigger !== trigger || !checkCond(state, unit, p.condition)) continue
     if (p.enterType && ctx.other?.type !== p.enterType) continue
     state.log.push(`${unit.name}の【${p.name || TRIGGER_LABELS[trigger]}】`)
+    noteAbility(state, TRIGGER_LABELS[trigger] ?? trigger, unit.name, p.name && p.name !== TRIGGER_LABELS[trigger] ? p.name : '', p.desc, unit.team)
     runEffects(state, unit, p.effects, { ...ctx, trigger, nextPassive: i + 1 })
     if (state.pending) return // 選ぶのを待つ。続きは、選ばれたあとに行う
   }
@@ -660,6 +667,7 @@ function fireCrests(state, team, trigger, subject, opts) {
       const source = trigger === 'allyTurnStart' ? subject : crestSource(state, crest)
       if (!source || !checkCond(state, source, p.condition)) continue
       state.log.push(`クレスト【${crest.name}】が働いた`)
+      noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team)
       runEffects(state, source, p.effects, { opts })
     }
   }
@@ -679,6 +687,7 @@ function tickCrest(state, crest, opts) {
       const src = crestSource(state, crest)
       if (!src) continue
       state.log.push(`クレスト【${crest.name}】の【ラストワード】`)
+      noteAbility(state, 'クレスト・ラストワード', crest.name, p.name, p.desc ?? crest.desc, crest.team)
       runEffects(state, src, p.effects, { opts, crest })
     }
   }
@@ -1063,6 +1072,7 @@ function doTrait(state, actor, action, opts) {
   if (trait.charges != null) trait.charges -= 1
   recalc(state)
   state.log.push(`${actor.name}の特性【${trait.name}】(MP${trait.cost})`)
+  noteAbility(state, '特性', actor.name, trait.name, trait.desc, actor.team)
   runEffects(state, actor, trait.effects, { opts, chosen: action.target })
   countCombos(state, actor, opts)
   resolveDeaths(state, opts)
@@ -1076,6 +1086,7 @@ function doSpell(state, actor, action, opts) {
   sp.used = true
   state.log.push(`${actor.team === 'A' ? '自分' : '相手'}のスペル【${sp.name}】(MP${sp.cost})`)
   state.casting = sp.name
+  noteAbility(state, 'スペル', actor.team === 'A' ? '自分' : '相手', sp.name, sp.desc, actor.team)
   recalc(state)
   runEffects(state, actor, sp.effects, { opts, spell: true })
   state.casting = null
@@ -1090,6 +1101,7 @@ function doAccelerate(state, actor, action, opts) {
   state.traitCount[actor.team] += 1
   recalc(state)
   state.log.push(`${actor.name}の【${ac.name}】(MP${ac.cost ?? 0})`)
+  noteAbility(state, `アクセラレート_${ac.speed}`, actor.name, ac.name, ac.desc, actor.team)
   runEffects(state, actor, ac.effects, { opts, chosen: action.target })
   countCombos(state, actor, opts)
   resolveDeaths(state, opts)
@@ -1104,6 +1116,7 @@ function doEvolve(state, actor, opts) {
   actor.buffs.push({ stat: 'atk', pct: 100, flat: 0, turns: null })
   if (!actor.keywords.includes('rush')) actor.keywords.push('rush')
   state.log.push(`${actor.name}は進化した!(体力と攻撃力が2倍に)`)
+  noteAbility(state, '進化', actor.name, '', '体力と攻撃力が2倍になり、【突進】を得る。', actor.team)
   recalc(state)
   fire(state, 'onEvolve', actor, { opts, allowPending: true }) // 選ぶ効果は、プレイヤーが選ぶまで待つ
   if (!state.pending) resolveDeaths(state, opts)
