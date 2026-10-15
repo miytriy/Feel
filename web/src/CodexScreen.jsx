@@ -262,7 +262,9 @@ function ListItem({ tab, def, selected, onClick }) {
       onClick={onClick}
       style={{
         textAlign: 'left', width: '100%', padding: '10px 12px', borderRadius: 10, fontFamily: FONT, cursor: 'pointer',
-        border: `1.5px solid ${selected ? C.player : C.line}`, borderLeft: `6px solid ${r?.color || C.line}`,
+        // 左の色帯(レアリティ)は、選んでも消えないようにする。border と borderLeft を混ぜると、再描画のときに左の色が上書きされて消えるため、長さ・種類・色を別々に指定する
+        borderStyle: 'solid', borderWidth: '1.5px 1.5px 1.5px 6px',
+        borderColor: `${selected ? C.player : C.line} ${selected ? C.player : C.line} ${selected ? C.player : C.line} ${r?.color || C.line}`,
         background: selected ? '#f3f6ff' : C.card, color: C.ink,
       }}
     >
