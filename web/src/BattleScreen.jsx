@@ -400,7 +400,11 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
     if (!state || !state.winner || play || savedRef.current === state) return
     savedRef.current = state
     // ログイン中なら、アカウントに記録する(失敗しても対戦には影響しない)
-    if (rewardApi && rewardApi.record) rewardApi.record(buildMatch(state, level, statsRef.current, namesRef.current)).catch((e) => console.error('キャリアの記録に失敗', e))
+    try {
+      if (rewardApi && typeof rewardApi.record === 'function') Promise.resolve(rewardApi.record(buildMatch(state, level, statsRef.current, namesRef.current))).catch((e) => console.error('キャリアの記録に失敗', e))
+    } catch (e) {
+      console.error('キャリアの記録に失敗', e)
+    }
   }, [state, play, level, rewardApi])
 
   // 対戦が終わったら、サーバーに結果を送って報酬をもらう(1つの対戦券につき1回だけ)
@@ -417,7 +421,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
 
   // 新しい状態にする。起きたことの記録があれば、1つずつ再生する
   const commit = (next) => {
-    addEvents(statsRef.current, next.events || [], (uid) => next.units.find((u) => u.uid === uid))
+    try { addEvents(statsRef.current, next.events || [], (uid) => next.units.find((u) => u.uid === uid)) } catch (e) { console.error('キャリアの集計に失敗', e) } // 記録が失敗しても、対戦は止めない
     const evs = next.events || []
     const mult = SPEEDS.find((x) => x.id === speed)?.mult ?? 1
     setPlay(evs.length && mult > 0 ? { events: evs, i: 0, prevActive: state?.active ?? null, prevAbility: state?.lastAbility ?? null } : null)
