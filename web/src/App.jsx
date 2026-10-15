@@ -6,6 +6,7 @@ import {
 } from './api.js'
 import BattleScreen from './BattleScreen.jsx'
 import CareerScreen from './CareerScreen.jsx'
+import CodexScreen from './CodexScreen.jsx'
 import ErrorBoundary from './ErrorBoundary.jsx'
 import { useIsDesktop, C, FONT } from './ui.js'
 
@@ -133,6 +134,10 @@ export default function App() {
     return <ErrorBoundary onExit={() => setScreen('home')}><CareerScreen onExit={() => setScreen('home')} fetchCareer={fetchCareer} clearCareer={clearCareer} /></ErrorBoundary>
   }
 
+  if (screen === 'codex') {
+    return <ErrorBoundary onExit={() => setScreen('home')}><CodexScreen onExit={() => setScreen('home')} /></ErrorBoundary>
+  }
+
   // ---- 部品 ----
   const btn = (primary, disabled) => ({
     padding: desktop ? '10px 18px' : '12px 16px', borderRadius: 10, fontSize: desktop ? 15 : 16, fontWeight: 700, fontFamily: FONT,
@@ -156,6 +161,9 @@ export default function App() {
       <button onClick={() => setScreen('battle')} style={{ ...btn(true, false), width: '100%', fontSize: desktop ? 20 : 18, padding: desktop ? '22px 18px' : '18px 16px' }}>CPU対戦</button>
       <div style={{ fontSize: 12, color: C.mute, marginTop: 6 }}>キャラとスペルを編成して、CPUと対戦します。勝つとジェムがもらえます(ログイン中)。</div>
       {careerBtn}
+      <button onClick={() => setScreen('codex')} style={{ ...btn(false, false), width: '100%', marginTop: 10 }}>
+        資料集(キャラクター・スペルの一覧と検索)
+      </button>
     </div>
   )
 
