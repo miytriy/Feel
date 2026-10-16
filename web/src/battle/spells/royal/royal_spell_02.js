@@ -1,4 +1,4 @@
-import steelKnight from '../characters/royal/tokens/royal_token_02.js' // 召喚する「スティールナイト」
+import steelKnight from '../../characters/royal/tokens/royal_token_02.js' // 召喚する「スティールナイト」
 
 // スペル(プレイヤー能力): 相手の場のキャラ1体を選んで物理ダメージ → 「スティールナイト」を召喚
 export default {
