@@ -6,7 +6,7 @@
 import { validateCharacter } from './validate.js'
 
 // ./フォルダ名/ファイル名.js をすべて読み込む(Viteの機能)
-const modules = import.meta.glob('./*/*.js', { eager: true })
+const modules = import.meta.glob(['./*/*.js', './*/tokens/*.js', './*/amulets/*.js'], { eager: true }) // tokens フォルダ: 召喚専用のトークン(ファイル名とidが違ってもOK) / amulets フォルダ: アミュレット(編成に入れられる。ファイル名=id)
 
 const list = []
 for (const [path, mod] of Object.entries(modules)) {
@@ -15,7 +15,7 @@ for (const [path, mod] of Object.entries(modules)) {
   const fileId = path.split('/').pop().replace(/\.js$/, '')
   for (const def of defs) {
     // 1体だけのファイルは、idとファイル名が同じかもチェックする
-    const errors = validateCharacter(def, { expectedId: defs.length === 1 ? fileId : undefined })
+    const errors = validateCharacter(def, { expectedId: defs.length === 1 && !path.includes('/tokens/') ? fileId : undefined })
     if (errors.length) {
       // 書き間違いがあっても画面は止めず、原因をコンソールに出す(そのキャラは一覧に入れない)
       console.error(`[キャラデータの問題] ${path}\n - ${errors.join('\n - ')}`)
