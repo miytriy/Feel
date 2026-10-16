@@ -9,10 +9,10 @@ import { CLASSES } from './battle/characters/validate.js'
 // データは characters/ と spells/ から自動で集まるので、キャラやスペルを足すと、ここにも自動で載る。
 
 const RARITY = {
-  legend: { label: 'レジェンド', color: '#c026d3', order: 0 },
-  gold: { label: 'ゴールド', color: '#d4a017', order: 1 },
-  silver: { label: 'シルバー', color: '#6b7280', order: 2 },
-  bronze: { label: 'ブロンズ', color: '#92400e', order: 3 },
+  legend: { label: 'レジェンド', color: '#e879f9', order: 0 },
+  gold: { label: 'ゴールド', color: '#facc15', order: 1 },
+  silver: { label: 'シルバー', color: '#cbd5e1', order: 2 },
+  bronze: { label: 'ブロンズ', color: '#fb923c', order: 3 },
 }
 const TARGET_LABELS = {
   self: '自分', opponent: '相手', allies: '味方全体', otherAllies: '自分以外の味方全体', allyOne: '味方1体', otherAllyOne: '自分以外の味方1体',
@@ -86,7 +86,7 @@ const spellClassName = (sp) => String(sp.class || '').split('/')[0]
 // ---------- 小さな部品 ----------
 const chip = (active) => ({
   padding: '6px 12px', borderRadius: 999, fontSize: 13, fontWeight: 700, fontFamily: FONT, whiteSpace: 'nowrap', flex: '0 0 auto',
-  border: `1.5px solid ${active ? C.player : C.line}`, background: active ? C.player : C.card, color: active ? '#fff' : C.ink, cursor: 'pointer',
+  border: `1.5px solid ${active ? C.player : C.line}`, background: active ? C.player : C.card, color: active ? C.onAccent : C.ink, cursor: 'pointer',
 })
 const tabBtn = (active) => ({
   flex: 1, padding: '12px 8px', fontSize: 16, fontWeight: 800, fontFamily: FONT, cursor: 'pointer',
@@ -96,7 +96,7 @@ const tabBtn = (active) => ({
 function RarityBadge({ rarity }) {
   const r = RARITY[rarity]
   if (!r) return null
-  return <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', background: r.color, borderRadius: 4, padding: '1px 6px' }}>{r.label}</span>
+  return <span style={{ fontSize: 11, fontWeight: 800, color: C.onAccent, background: r.color, borderRadius: 4, padding: '1px 6px' }}>{r.label}</span>
 }
 
 function Section({ title, children }) {
@@ -266,7 +266,7 @@ function ListItem({ tab, def, selected, onClick, count = null }) {
         // 左の色帯(レアリティ)は、選んでも消えないようにする。border と borderLeft を混ぜると、再描画のときに左の色が上書きされて消えるため、長さ・種類・色を別々に指定する
         borderStyle: 'solid', borderWidth: '1.5px 1.5px 1.5px 6px',
         borderColor: `${selected ? C.player : C.line} ${selected ? C.player : C.line} ${selected ? C.player : C.line} ${r?.color || C.line}`,
-        background: selected ? '#f3f6ff' : C.card, color: C.ink,
+        background: selected ? C.soft : C.card, color: C.ink,
       }}
     >
       <div style={{ fontWeight: 800, fontSize: 14, display: 'flex', justifyContent: 'space-between', gap: 8 }}><span>{def.name}</span>{count != null && <span style={{ color: C.player }}>×{count}</span>}</div>
