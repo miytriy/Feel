@@ -1,65 +1,85 @@
-import { useIsDesktop, C, FONT } from './ui.js'
+import { useIsDesktop, C, FONT, DISPLAY } from './ui.js'
 
-// ホーム画面: 項目の名前だけを並べる(説明文はなし)。選ぶと、それぞれの画面が開く。
-// locked の項目は、アカウント(ログイン)がある人だけが使える。
+// ホーム画面: 暗いティールの背景に、白い大きな項目名だけを縦に並べる(説明文はなし)。
+// PLAY だけ赤くて一回り大きい。カーソルを乗せると、ネオン色になって右に少し動く(見た目は ui.js の .feel-menu-item)。
+// account の項目は、アカウント(ログイン)がある人だけが使える。
 
 export const HOME_ITEMS = [
-  { key: 'play', label: 'PLAY', color: '#2f5bea', account: false },
-  { key: 'career', label: 'CAREER', color: '#1a7f4b', account: true },
-  { key: 'codex', label: 'COLLECTION', color: '#8b5cf6', account: false },
-  { key: 'agents', label: 'AGENTS', color: '#b83a6b', account: true },
-  { key: 'party', label: 'PARTY', color: '#e0a100', account: true },
-  { key: 'store', label: 'STORE', color: '#c2570c', account: true },
+  { key: 'play', label: 'PLAY', primary: true, account: false },
+  { key: 'career', label: 'CAREER', account: true },
+  { key: 'codex', label: 'COLLECTION', account: false },
+  { key: 'agents', label: 'AGENTS', account: true },
+  { key: 'party', label: 'PARTY', account: true },
+  { key: 'store', label: 'STORE', account: true },
 ]
 export const ACCOUNT_SCREENS = HOME_ITEMS.filter((i) => i.account).map((i) => i.key)
 
-const pill = (primary) => ({
-  padding: '8px 14px', borderRadius: 10, fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: 'pointer',
-  border: `1.5px solid ${primary ? C.player : C.line}`, background: primary ? C.player : C.card, color: primary ? '#fff' : C.ink,
+// 背景(暗いティール)。ホームと、PLAYのメニューで共通
+export const backdrop = {
+  minHeight: '100vh', color: C.ink, fontFamily: FONT, position: 'relative', overflow: 'hidden',
+  background: 'radial-gradient(900px 620px at 24% 38%, rgba(38,150,150,0.55) 0%, rgba(20,90,100,0.18) 55%, rgba(0,0,0,0) 100%), linear-gradient(165deg, #0d4048 0%, #08252c 48%, #050f13 100%)',
+}
+
+const ghost = (primary) => ({
+  padding: '8px 14px', borderRadius: 4, fontSize: 14, fontWeight: 700, fontFamily: DISPLAY, letterSpacing: '0.06em', cursor: 'pointer', minHeight: 0,
+  border: `1.5px solid ${primary ? C.neon : 'rgba(255,255,255,0.35)'}`, background: primary ? C.neon : 'rgba(0,0,0,0.25)', color: primary ? C.onAccent : '#fff',
 })
+
+function Brand() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <svg width="34" height="30" viewBox="0 0 34 30" aria-hidden="true"><polygon points="0,0 12,0 34,30 22,30" fill={C.red} /><polygon points="22,0 34,0 28,8" fill={C.red} opacity="0.85" /></svg>
+      <h1 style={{ margin: 0, fontSize: 40, lineHeight: 1, color: '#fff', textTransform: 'uppercase' }}>Feel</h1>
+    </div>
+  )
+}
+
+// 項目のリスト(ホームとPLAYで共通)。items: { key, label, primary, locked }
+export function MenuList({ items, onSelect }) {
+  return (
+    <nav aria-label="メニュー">
+      <ul className="feel-menu">
+        {items.map((it) => (
+          <li key={it.key}>
+            <button
+              type="button"
+              data-testid={`home-${it.key}`}
+              className={`feel-menu-item${it.primary ? ' primary' : ''}${it.locked ? ' locked' : ''}`}
+              onClick={() => onSelect(it.key)}
+            >
+              <span className="bullet" />
+              <span className="label">{it.label}{it.locked && <span aria-label="ログインが必要" style={{ fontSize: '0.4em', marginLeft: 12, verticalAlign: 'middle' }}>🔒</span>}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
 
 export default function HomeScreen({ user, me, lockedKey, onSelect, onLogin, onLogout }) {
   const desktop = useIsDesktop()
+  const items = HOME_ITEMS.map((it) => ({ ...it, locked: it.account && !user }))
   return (
-    <div style={{ minHeight: '100vh', background: C.paper, color: C.ink, fontFamily: FONT }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: desktop ? '14px 36px' : '12px 14px', background: C.card, borderBottom: `1px solid ${C.line}` }}>
-        <h1 style={{ margin: 0, fontSize: desktop ? 30 : 26, letterSpacing: 1 }}>Feel</h1>
+    <div style={backdrop}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: desktop ? '18px 40px' : '14px 16px' }}>
+        <Brand />
         <div style={{ flex: 1 }} />
-        {user && me && <div style={{ fontSize: 15 }}>通貨 <b>{me.gems}</b></div>}
+        {user && me && <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 20, color: '#fff', letterSpacing: '0.04em' }}><span style={{ color: C.neon }}>◆</span> {me.gems}</div>}
         {user
-          ? <button onClick={onLogout} style={{ ...pill(false), padding: '6px 10px', fontSize: 12 }}>ログアウト</button>
-          : <button onClick={onLogin} style={pill(true)}>Googleでログイン</button>}
+          ? <button onClick={onLogout} style={ghost(false)}>LOGOUT</button>
+          : <button onClick={onLogin} style={ghost(true)}>GOOGLEでログイン</button>}
       </div>
 
-      <div style={{ maxWidth: desktop ? 980 : 560, margin: '0 auto', padding: desktop ? '36px 36px' : '16px 12px calc(20px + env(safe-area-inset-bottom))' }}>
-        <div style={{ display: 'grid', gap: desktop ? 20 : 12, gridTemplateColumns: desktop ? 'repeat(3, minmax(0, 1fr))' : 'repeat(2, minmax(0, 1fr))' }}>
-          {HOME_ITEMS.map((it) => {
-            const locked = it.account && !user
-            return (
-              <button
-                key={it.key}
-                data-testid={`home-${it.key}`}
-                onClick={() => onSelect(it.key)}
-                style={{
-                  position: 'relative', textAlign: 'left', cursor: 'pointer', fontFamily: FONT,
-                  padding: desktop ? '44px 24px' : '30px 14px', borderRadius: 14, color: C.ink,
-                  border: `1px solid ${C.line}`, borderLeft: `8px solid ${it.color}`, background: C.card,
-                  boxShadow: '0 1px 3px rgba(31,42,68,0.06)', opacity: locked ? 0.5 : 1,
-                }}
-              >
-                <span style={{ fontSize: desktop ? 26 : 19, fontWeight: 800, letterSpacing: 1.5 }}>{it.label}</span>
-                {locked && <span aria-label="ログインが必要" style={{ position: 'absolute', right: 12, top: 10, fontSize: 16 }}>🔒</span>}
-              </button>
-            )
-          })}
-        </div>
+      <div style={{ padding: desktop ? '5vh 0 40px 6vw' : '3vh 0 40px 6vw', display: 'flex', flexDirection: 'column', gap: 28 }}>
+        <MenuList items={items} onSelect={onSelect} />
 
         {lockedKey && !user && (
-          <div style={{ marginTop: 16, padding: 14, borderRadius: 12, background: C.card, border: `1px solid ${C.line}`, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 14, flex: 1, minWidth: 160 }}>
-              <b>{HOME_ITEMS.find((i) => i.key === lockedKey)?.label}</b> はログインが必要です
+          <div style={{ alignSelf: 'flex-start', maxWidth: 'min(420px, 88vw)', padding: '14px 16px', borderLeft: `4px solid ${C.neon}`, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 14, flex: 1, minWidth: 150, color: '#fff' }}>
+              <b style={{ fontFamily: DISPLAY, fontSize: 18, letterSpacing: '0.04em' }}>{HOME_ITEMS.find((i) => i.key === lockedKey)?.label}</b> はログインが必要です
             </span>
-            <button onClick={onLogin} style={pill(true)}>Googleでログイン</button>
+            <button onClick={onLogin} style={ghost(true)}>GOOGLEでログイン</button>
           </div>
         )}
       </div>
@@ -67,19 +87,19 @@ export default function HomeScreen({ user, me, lockedKey, onSelect, onLogin, onL
   )
 }
 
-// PLAY: 対戦メニュー
+// PLAY: 対戦メニュー(ホームと同じ見た目)
 export function PlayMenu({ onBattle, onRules, onExit }) {
   const desktop = useIsDesktop()
-  const big = { width: '100%', padding: desktop ? '26px 20px' : '22px 16px', borderRadius: 14, fontSize: desktop ? 22 : 19, fontWeight: 800, fontFamily: FONT, letterSpacing: 1, cursor: 'pointer' }
   return (
-    <div style={{ minHeight: '100vh', background: C.paper, color: C.ink, fontFamily: FONT }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: desktop ? '14px 36px' : '12px 14px', background: C.card, borderBottom: `1px solid ${C.line}` }}>
-        <button onClick={onExit} style={pill(false)}>← もどる</button>
-        <h1 style={{ margin: 0, fontSize: desktop ? 24 : 20 }}>PLAY</h1>
+    <div style={backdrop}>
+      <div style={{ padding: desktop ? '18px 40px' : '14px 16px' }}>
+        <button className="feel-back" onClick={onExit}>← BACK</button>
       </div>
-      <div style={{ maxWidth: 560, margin: '0 auto', padding: desktop ? '36px 24px' : '16px 12px', display: 'grid', gap: 12 }}>
-        <button onClick={onBattle} style={{ ...big, border: `1.5px solid ${C.player}`, background: C.player, color: '#fff' }}>CPU対戦</button>
-        <button onClick={onRules} style={{ ...big, border: `1.5px solid ${C.line}`, background: C.card, color: C.ink, fontSize: desktop ? 17 : 16 }}>ルール説明</button>
+      <div style={{ padding: desktop ? '5vh 0 40px 6vw' : '3vh 0 40px 6vw' }}>
+        <MenuList
+          items={[{ key: 'battle', label: 'CPU対戦', primary: true }, { key: 'rules', label: 'ルール説明' }]}
+          onSelect={(k) => (k === 'battle' ? onBattle() : onRules())}
+        />
       </div>
     </div>
   )
