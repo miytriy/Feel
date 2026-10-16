@@ -8,6 +8,11 @@ import {
 import BattleScreen from './BattleScreen.jsx'
 import CareerScreen from './CareerScreen.jsx'
 import CodexScreen from './CodexScreen.jsx'
+import FormationScreen from './FormationScreen.jsx'
+import HomeScreen, { PlayMenu, ACCOUNT_SCREENS } from './HomeScreen.jsx'
+import { ALL_CHARACTERS } from './battle/characters/index.js'
+import { ALL_SPELLS } from './battle/spells/index.js'
+import { loadParties, saveParty, getActiveParty, setActiveParty } from './battle/parties.js'
 import ErrorBoundary from './ErrorBoundary.jsx'
 import GateScreen from './GateScreen.jsx'
 import { useIsDesktop, C, FONT } from './ui.js'
@@ -33,6 +38,9 @@ export default function App() {
   const [notice, setNotice] = useState('') // 受け取りに成功したときの表示
   const [gifts, setGifts] = useState([])
   const [code, setCode] = useState('')
+  const [lockedKey, setLockedKey] = useState(null) // ログインが必要な項目を、ログインなしで押したとき
+  const [parties, setParties] = useState(null) // パーティー(最大5つ。ログイン中だけ)
+  const [activeIdx, setActiveIdx] = useState(null) // 最後に選んだパーティーの番号
   const desktop = useIsDesktop() // 画面の幅が広い(PC)ときは、画面全体を使うレイアウトにする
   // 開発中の入口(マスターパスワード): checking=確認中 / locked=パスワードが必要 / open=入れる / offline=サーバーにつながらない
   const [gate, setGate] = useState('checking')
@@ -86,6 +94,13 @@ export default function App() {
     })()
     return () => { alive = false }
   }, [authLoading, user, gateTry])
+
+  // パーティーは、アカウントごとに、この端末のブラウザに保存してある
+  useEffect(() => {
+    if (!user) { setParties(null); setActiveIdx(null); return }
+    setParties(loadParties(user.uid))
+    setActiveIdx(getActiveParty(user.uid))
+  }, [user])
 
   useEffect(() => {
     if (!user || !gateOpen) return
@@ -191,19 +206,64 @@ export default function App() {
     )
   }
 
-  if (screen === 'battle') {
-    return <ErrorBoundary onExit={() => setScreen('home')}><BattleScreen onExit={() => setScreen('home')} rewardApi={rewardApi} /></ErrorBoundary>
+  // ログインしていない人は、アカウント限定の画面にいられない(ホームに戻す)
+  const current = !user && ACCOUNT_SCREENS.includes(screen) ? 'home' : screen
+  const goHome = () => setScreen('home')
+
+  const partyApi = user && parties
+    ? {
+        parties,
+        activeIdx,
+        save: (i, slots, spellSet) => {
+          const all = saveParty(user.uid, i, slots, spellSet)
+          if (!all) return false
+          setParties(all)
+          return true
+        },
+        setActive: (i) => { setActiveIdx(i); setActiveParty(user.uid, i) },
+      }
+    : null
+
+  if (current === 'play') {
+    return <PlayMenu onBattle={() => setScreen('battle')} onRules={() => setScreen('rules')} onExit={goHome} />
   }
 
-  if (screen === 'career') {
+  if (current === 'battle') {
+    return <ErrorBoundary onExit={() => setScreen('play')}><BattleScreen onExit={() => setScreen('play')} rewardApi={rewardApi} partyApi={partyApi} /></ErrorBoundary>
+  }
+
+  if (current === 'agents') {
+    if (!me) return <div style={{ padding: 20, fontFamily: FONT }}>読み込み中...</div>
+    return <ErrorBoundary onExit={goHome}><CodexScreen title="AGENTS" ownedMap={me.owned || {}} onExit={goHome} /></ErrorBoundary>
+  }
+
+  if (current === 'party') {
+    if (!partyApi) return <div style={{ padding: 20, fontFamily: FONT }}>読み込み中...</div>
+    return (
+      <ErrorBoundary onExit={goHome}>
+        <FormationScreen
+          title="PARTY"
+          allChars={ALL_CHARACTERS}
+          allSpells={ALL_SPELLS.filter((sp) => sp.type !== 'トークン')}
+          parties={partyApi.parties}
+          partyIdxInit={activeIdx ?? 0}
+          onSaveParty={partyApi.save}
+          onPartyChange={partyApi.setActive}
+          onExit={goHome}
+        />
+      </ErrorBoundary>
+    )
+  }
+
+  if (current === 'career') {
     return <ErrorBoundary onExit={() => setScreen('home')}><CareerScreen onExit={() => setScreen('home')} fetchCareer={fetchCareer} clearCareer={clearCareer} /></ErrorBoundary>
   }
 
-  if (screen === 'rules') {
-    return <ErrorBoundary onExit={() => setScreen('home')}><RulesScreen first={rulesFirst} onExit={() => { setRulesFirst(false); setScreen('home') }} /></ErrorBoundary>
+  if (current === 'rules') {
+    return <ErrorBoundary onExit={() => setScreen('home')}><RulesScreen first={rulesFirst} onExit={() => { setRulesFirst(false); setScreen(rulesFirst ? 'home' : 'play') }} /></ErrorBoundary>
   }
 
-  if (screen === 'codex') {
+  if (current === 'codex') {
     return <ErrorBoundary onExit={() => setScreen('home')}><CodexScreen onExit={() => setScreen('home')} /></ErrorBoundary>
   }
 
@@ -218,63 +278,22 @@ export default function App() {
   const card = (bg = C.card) => ({ padding: desktop ? 20 : 14, borderRadius: 14, background: bg, border: `1px solid ${C.line}`, boxShadow: '0 1px 3px rgba(31,42,68,0.06)' })
   const h3 = { margin: '0 0 8px', fontSize: desktop ? 18 : 16 }
 
-  const careerBtn = (
-    <button disabled={!user} onClick={() => setScreen('career')} style={{ ...btn(false, !user), width: '100%', marginTop: 10 }}>
-      キャリア(対戦の記録・勝率){user ? '' : ' ※ログインが必要'}
-    </button>
-  )
-
-  const playCard = (
+  const bonusCard = user && me && (
     <div style={card()}>
-      <h3 style={h3}>あそぶ</h3>
-      <button onClick={() => setScreen('battle')} style={{ ...btn(true, false), width: '100%', fontSize: desktop ? 20 : 18, padding: desktop ? '22px 18px' : '18px 16px' }}>CPU対戦</button>
-      <div style={{ fontSize: 12, color: C.mute, marginTop: 6 }}>キャラとスペルを編成して、CPUと対戦します。勝つとジェムがもらえます(ログイン中)。</div>
-      <button onClick={() => setScreen('rules')} style={{ ...btn(false, false), width: '100%', marginTop: 10 }}>
-        ルール説明(はじめての人はここから)
-      </button>
-      {careerBtn}
-      <button onClick={() => setScreen('codex')} style={{ ...btn(false, false), width: '100%', marginTop: 10 }}>
-        資料集(キャラクター・スペルの一覧と検索)
-      </button>
-    </div>
-  )
-
-  const loginCard = (
-    <div style={card()}>
-      <h3 style={h3}>ログイン</h3>
-      <p style={{ margin: '0 0 10px', fontSize: 14 }}>ガチャを引くにはログインしてください</p>
-      <button onClick={handleLogin} style={btn(true, false)}>Googleでログイン</button>
-    </div>
-  )
-
-  const accountCard = user && (
-    <div style={card()}>
-      <h3 style={h3}>アカウント</h3>
-      <div style={{ fontSize: 14, marginBottom: 8 }}>
-        ログイン中: <b>{user.displayName}</b>{' '}
-        <button onClick={handleLogout} style={{ ...btn(false, false), padding: '4px 10px', fontSize: 12 }}>ログアウト</button>
-      </div>
-      {me && (
-        <div>
-          <div style={{ fontSize: desktop ? 30 : 26, fontWeight: 800, margin: '4px 0' }}>通貨: {me.gems}</div>
-          <div style={{ padding: 10, margin: '8px 0', borderRadius: 10, background: '#f3f6ff', fontSize: 14 }}>
-            {me.loginBonus.canClaim ? (
-              <button disabled={busy} onClick={handleLoginBonus} style={btn(true, busy)}>
-                ログインボーナスを受け取る(+{me.loginBonus.nextAmount})
-              </button>
-            ) : (
-              <span>
-                ログインボーナス: 今日は受け取り済み(連続{me.loginBonus.streak}日)。明日は +{me.loginBonus.nextAmount}
-              </span>
-            )}
-            <div style={{ fontSize: 12, color: C.mute, marginTop: 4 }}>
-              今日の対戦報酬: {me.battle.todayCount}/{me.battle.dailyLimit}回(CPU対戦に勝つともらえます)
-            </div>
-          </div>
-          <div style={{ fontSize: 14 }}>天井まで: あと{PITY_COUNT - me.pityCount}回</div>
-          <div style={{ fontSize: 14 }}>所持キャラ: {Object.keys(me.owned).length}種類</div>
+      <h3 style={h3}>ログインボーナス</h3>
+      <div style={{ padding: 10, borderRadius: 10, background: '#f3f6ff', fontSize: 14 }}>
+        {me.loginBonus.canClaim ? (
+          <button disabled={busy} onClick={handleLoginBonus} style={btn(true, busy)}>
+            ログインボーナスを受け取る(+{me.loginBonus.nextAmount})
+          </button>
+        ) : (
+          <span>今日は受け取り済み(連続{me.loginBonus.streak}日)。明日は +{me.loginBonus.nextAmount}</span>
+        )}
+        <div style={{ fontSize: 12, color: C.mute, marginTop: 4 }}>
+          今日の対戦報酬: {me.battle.todayCount}/{me.battle.dailyLimit}回(CPU対戦に勝つともらえます)
         </div>
-      )}
+      </div>
+      <div style={{ fontSize: 14, marginTop: 8 }}>天井まで: あと{PITY_COUNT - me.pityCount}回</div>
     </div>
   )
 
@@ -355,54 +374,46 @@ export default function App() {
     </div>
   )
 
-  const page = { minHeight: '100vh', background: C.paper, color: C.ink, fontFamily: FONT, boxSizing: 'border-box' }
-
-  // ---- PC: 画面全体を使う(上=タイトル帯、下=3列のカード) ----
-  if (desktop) {
+  // ---- STORE: ガチャ・ログインボーナス・プレゼント・合言葉 ----
+  if (current === 'store') {
+    const body = (
+      <div style={{ display: 'grid', gap: desktop ? 20 : 12 }}>
+        {gachaCard}
+        {messages}
+        {resultsCard}
+        {bonusCard}
+        {giftCard}
+        {codeCard}
+      </div>
+    )
     return (
-      <div style={page}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 36px', background: C.card, borderBottom: `1px solid ${C.line}` }}>
-          <h1 style={{ margin: 0, fontSize: 30, letterSpacing: 1 }}>Feel</h1>
+      <div style={{ minHeight: '100vh', background: C.paper, color: C.ink, fontFamily: FONT }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: desktop ? '14px 36px' : '12px 14px', background: C.card, borderBottom: `1px solid ${C.line}` }}>
+          <button onClick={goHome} style={{ ...btn(false, false), padding: '8px 14px', fontSize: 14 }}>← もどる</button>
+          <h1 style={{ margin: 0, fontSize: desktop ? 24 : 20 }}>STORE</h1>
           <div style={{ flex: 1 }} />
-          {user && me && <div style={{ fontSize: 16 }}>通貨 <b>{me.gems}</b></div>}
-          {user ? <div style={{ fontSize: 14, color: C.mute }}>{user.displayName}</div> : <button onClick={handleLogin} style={btn(true, false)}>Googleでログイン</button>}
+          {me && <div style={{ fontSize: 15 }}>通貨 <b>{me.gems}</b></div>}
         </div>
-        <div style={{ padding: '24px 36px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 20, alignItems: 'start' }}>
-            <div style={{ display: 'grid', gap: 20 }}>
-              {playCard}
-              {!user && loginCard}
-              {accountCard}
-            </div>
-            <div style={{ display: 'grid', gap: 20 }}>
-              {gachaCard}
-              {resultsCard}
-            </div>
-            <div style={{ display: 'grid', gap: 20 }}>
-              {giftCard}
-              {codeCard}
-            </div>
-          </div>
-          {messages}
-        </div>
+        <div style={{ maxWidth: 720, margin: '0 auto', padding: desktop ? '28px 24px' : '12px 12px calc(20px + env(safe-area-inset-bottom))' }}>{body}</div>
       </div>
     )
   }
 
-  // ---- スマホ: 1列。押しやすい大きなボタンと、カードで区切った表示 ----
+  // ---- ホーム: 項目の名前だけ。選ぶと、それぞれの画面が開く(ログイン限定の項目は、ログインなしだと開かない) ----
   return (
-    <div style={{ ...page, padding: '12px 12px calc(20px + env(safe-area-inset-bottom))', maxWidth: 560, margin: '0 auto' }}>
-      <h1 style={{ margin: '4px 0 12px', fontSize: 28 }}>Feel</h1>
-      <div style={{ display: 'grid', gap: 12 }}>
-        {playCard}
-        {!user && loginCard}
-        {accountCard}
-        {gachaCard}
-        {messages}
-        {resultsCard}
-        {giftCard}
-        {codeCard}
-      </div>
-    </div>
+    <HomeScreen
+      user={user}
+      me={me}
+      lockedKey={lockedKey}
+      onSelect={(key) => {
+        if (ACCOUNT_SCREENS.includes(key) && !user) { setLockedKey(key); return }
+        setLockedKey(null)
+        setError('')
+        setNotice('')
+        setScreen(key)
+      }}
+      onLogin={handleLogin}
+      onLogout={handleLogout}
+    />
   )
 }
