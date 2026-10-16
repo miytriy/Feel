@@ -1,4 +1,4 @@
-import knight from './royal_01.js' // 召喚する「ナイト」
+import knight from './tokens/royal_token_01.js' // 召喚する「ナイト」
 
 export default {
   id: 'royal_17', name: 'レヴィオンアックス・ジェノ', class: 'ロイヤル', rarity: 'gold', type: 'レヴィオン',
