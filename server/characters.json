@@ -36,5 +36,6 @@
   { "id": "royal_16", "name": "白銀の騎士団長・エミリア", "class": "ロイヤル", "rarity": "legend" },
   { "id": "royal_17", "name": "レヴィオンアックス・ジェノ", "class": "ロイヤル", "rarity": "gold" },
   { "id": "royal_18", "name": "煌刃の勇者・アマリア", "class": "ロイヤル", "rarity": "gold" },
-  { "id": "witch_01", "name": "見習い占星術師", "class": "ウィッチ", "rarity": "bronze" }
+  { "id": "witch_01", "name": "見習い占星術師", "class": "ウィッチ", "rarity": "bronze" },
+  { "id": "witch_02", "name": "アドラブルティーチャー・ミラ", "class": "ウィッチ", "rarity": "silver" }
 ]
