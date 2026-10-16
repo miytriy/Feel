@@ -6,7 +6,7 @@ import { DEFAULT_PLAYER_IDS, buildCpuTeam, loadCpuCharSetting, saveCpuCharSettin
 import { ALL_CHARACTERS, charById } from './battle/characters/index.js'
 import { ALL_SPELLS } from './battle/spells/index.js'
 import FormationScreen from './FormationScreen.jsx'
-import { useIsDesktop, C as BASE } from './ui.js'
+import { useIsDesktop, C as BASE, alpha } from './ui.js'
 
 // 色: 自分=青、相手=赤紫、行動中=琥珀
 const C = { ...BASE, hp: '#3ddc97', hpMid: '#ffd24a', hpLow: '#ff5a5a' } // 色は ui.js の共通の色 + HPバー
@@ -144,7 +144,7 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
         background: unit.alive ? C.card : '#0a161a',
         opacity: unit.alive ? 1 : 0.5,
         border: `2px solid ${selected ? C.active : selectable ? C.ink : active ? TEAM_COLOR[unit.team] : inspected ? C.mute : C.line}`,
-        boxShadow: selected ? `0 0 0 3px ${C.active}55` : active ? `0 0 0 3px ${TEAM_COLOR[unit.team]}33` : 'none',
+        boxShadow: selected ? `0 0 0 3px ${alpha(C.active, 33)}` : active ? `0 0 0 3px ${alpha(TEAM_COLOR[unit.team], 20)}` : 'none',
         cursor: 'pointer', position: 'relative',
         ...(hl ? { boxShadow: `0 0 0 4px ${C.active}`, transform: 'scale(1.03)', zIndex: 2 } : {}),
         ...(fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s` } : {}),
