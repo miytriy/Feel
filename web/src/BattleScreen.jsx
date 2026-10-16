@@ -320,7 +320,7 @@ const SPEEDS = [
 const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, sync: 300 }
 const loadSpeed = () => { try { const v = localStorage.getItem('feel-play-speed'); return SPEEDS.some((x) => x.id === v) ? v : 'normal' } catch { return 'normal' } }
 
-export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null }) {
+export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null }) {
   const [spellSet, setSpellSet] = useState([]) // 編成画面で決めたスペルセット(スペル定義の配列。同じスペルを複数入れてよい)
   const [team, setTeam] = useState(null) // 編成画面で決めた自分のチーム(キャラ定義の配列)。nullなら編成画面を出す
   const [level, setLevel] = useState(2)
@@ -515,6 +515,10 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null 
         allChars={ALL_CHARACTERS}
         defaultIds={DEFAULT_PLAYER_IDS}
         allSpells={ALL_SPELLS.filter((sp) => sp.type !== 'トークン')}
+        parties={partyApi ? partyApi.parties : null}
+        partyIdxInit={partyApi ? partyApi.activeIdx : null}
+        onSaveParty={partyApi ? partyApi.save : null}
+        onPartyChange={partyApi ? partyApi.setActive : null}
         onStart={(chars, spells) => { setTeam(chars); setSpellSet(spells || []) }}
         onExit={onExit}
       />
