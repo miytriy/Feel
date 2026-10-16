@@ -466,7 +466,7 @@ function runEffects(state, source, effects, ctx = {}) {
       if (ctx.answer === undefined) {
         if (e.mpCost && state.mp[source.team] < e.mpCost) { state.log.push(`MPが足りないので、追加の効果はなし`); continue }
         if (ctx.allowPending) {
-          state.pending = { uid: source.uid, effects: effects.slice(idx), candidates: ['yes', 'no'], confirm: true, prompt: e.prompt || '追加の効果を使いますか?', trigger: ctx.trigger || null, nextPassive: ctx.nextPassive ?? null }
+          state.pending = { uid: source.uid, effects: effects.slice(idx), candidates: ['yes', 'no'], confirm: true, prompt: e.prompt || '追加の効果を使いますか?', trigger: ctx.trigger || null, nextPassive: ctx.nextPassive ?? null, spell: !!ctx.spell }
           state.log.push(`${source.name}の効果: ${state.pending.prompt}`)
           recalc(state)
           return
@@ -482,7 +482,7 @@ function runEffects(state, source, effects, ctx = {}) {
       if (cands.length === 0) { state.log.push(`${source.name}の効果の対象がいなかった`); continue }
       if (cands.length > 1) {
         // 選んでもらうために止まる(残りの効果と、あとに続くパッシブは、選ばれたあとに続けて行う)
-        state.pending = { uid: source.uid, effects: effects.slice(idx), candidates: cands.map((u) => u.uid), trigger: ctx.trigger || null, nextPassive: ctx.nextPassive ?? null }
+        state.pending = { uid: source.uid, effects: effects.slice(idx), candidates: cands.map((u) => u.uid), trigger: ctx.trigger || null, nextPassive: ctx.nextPassive ?? null, spell: !!ctx.spell }
         state.log.push(`${source.name}の効果: 対象を選んでください`)
         recalc(state)
         return
@@ -1210,10 +1210,12 @@ export function applyAction(prev, action, opts = {}) {
       if (p.spell && !state.pending) countCombos(state, actor, opts) // スペルは特性として数える
     } else if (p.confirm) {
       state.log.push(action.target === 'yes' ? '使うことにした' : '使わないことにした')
-      runEffects(state, actor, p.effects, { opts, answer: action.target, trigger: p.trigger })
+      runEffects(state, actor, p.effects, { opts, answer: action.target, trigger: p.trigger, spell: p.spell, allowPending: !!p.spell })
+      if (p.spell && !state.pending) countCombos(state, actor, opts)
     } else {
       state.log.push(`${getUnit(state, action.target).name}を選んだ`)
-      runEffects(state, actor, p.effects, { opts, chosen: action.target, trigger: p.trigger })
+      runEffects(state, actor, p.effects, { opts, chosen: action.target, trigger: p.trigger, spell: p.spell, allowPending: !!p.spell })
+      if (p.spell && !state.pending) countCombos(state, actor, opts)
     }
     if (p.trigger && p.nextPassive != null) fire(state, p.trigger, actor, { opts, allowPending: true }, p.nextPassive) // 続きのパッシブ
     if (!state.pending) resolveDeaths(state, opts)
