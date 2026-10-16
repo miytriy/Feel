@@ -92,7 +92,7 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
     evolvable: !(field === 'summon' && def.amulet) && def.evolvable !== false, evolved: false, charDef: def, // 召喚物も進化できる(アミュレットだけ進化しない)。def: 「自分と同じキャラを召喚」のために元の定義を持つ
     accel: def.accelerate ? makeAccel(def.accelerate) : null,
     countdown: def.countdown ?? null,
-    comboCount: 0,
+    comboCount: 0, boost: 0,
     buffs: [], usedTraits: [],
     hasActed: false, alive: true, deathHandled: false, killedBy: null,
   }
@@ -117,7 +117,7 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
   const state = {
     units, totalAV: 0, round: 0, turns: 0, actionsThisTurn: 0,
     mp: { A: 0, B: 0 }, mpMax: { A: 0, B: 0 }, ep: { A: 0, B: 0 },
-    faith: { A: 0, B: 0 }, earth: { A: 0, B: 0 }, crests: { A: [], B: [] }, graveyard: { A: 0, B: 0 },
+    faith: { A: 0, B: 0 }, boost: { A: 0, B: 0 }, earth: { A: 0, B: 0 }, crests: { A: [], B: [] }, graveyard: { A: 0, B: 0 },
     link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 }, summonSeq: 0, pending: null,
     active: null, activeKind: null, winner: null, log: ['バトル開始!'],
     comboMode: opts.comboMode === 'reset' ? 'reset' : 'old', comboReset: { A: null, B: null }, comboCount: { A: 0, B: 0 },
@@ -164,6 +164,7 @@ function checkCond(state, unit, c) {
   if (c.ultimate && gaugeOf(state, unit.team) < ULTIMATE_GAUGE) return false
   if (c.liberation && gaugeOf(state, unit.team) < LIBERATION_GAUGE) return false
   if (c.faith != null && state.faith[unit.team] < c.faith) return false
+  if (c.boost != null && (state.boost?.[unit.team] ?? 0) < c.boost) return false
   if (c.earth != null && (state.earth?.[unit.team] ?? 0) < c.earth) return false
   if (c.graveyard != null && state.graveyard[unit.team] < c.graveyard) return false
   if (c.hpBelow != null && (unit.hp / unit.maxHp) * 100 > c.hpBelow) return false
@@ -522,6 +523,20 @@ function runEffects(state, source, effects, ctx = {}) {
       const next = Math.max(0, state.faith[source.team] + (e.amount ?? 1))
       state.log.push(`信仰値が${(e.amount ?? 1) >= 0 ? '+' : ''}${e.amount ?? 1}(${next})`)
       state.faith[source.team] = next
+      continue
+    }
+    if (e.type === 'boost' && e.target) { // 対象つき: 場のキャラ(と召喚物)それぞれが、ブーストされた回数を数える
+      const n = e.amount ?? 1
+      for (const t of resolveTargets(state, source, e.target, ctx)) {
+        t.boost = (t.boost || 0) + n
+        state.log.push(`${t.name}はスペルブーストした(${t.boost}回)`)
+      }
+      continue
+    }
+    if (e.type === 'boost') { // 対象なし: 手札(スペルセット)のスペルが、ブーストされた回数(チーム共通)
+      const n = e.amount ?? 1
+      state.boost[source.team] += n
+      state.log.push(`スペルブースト+${n}(${state.boost[source.team]}回)`)
       continue
     }
     if (e.type === 'earth') { // 土の印: 場の土の印の合計(チーム共通)。マイナスで消費(土の秘術)
