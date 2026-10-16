@@ -1,5 +1,5 @@
 export default {
-  id: 'elf_13', name: 'フロストクリスタシア・エリン', class: 'エルフ', rarity: 'silver',
+  id: 'elf_11', name: 'フロストクリスタシア・エリン', class: 'エルフ', rarity: 'silver',
   stats: { hp: 800, atk: 621, def: 201, spd: 40 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
