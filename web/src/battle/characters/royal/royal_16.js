@@ -1,5 +1,5 @@
-import knight from './royal_01.js' // 「ナイト」
-import steelKnight from './royal_02.js' // 「スティールナイト」
+import knight from './tokens/royal_token_01.js' // 「ナイト」
+import steelKnight from './tokens/royal_token_02.js' // 「スティールナイト」
 
 export default {
   id: 'royal_16', name: '白銀の騎士団長・エミリア', class: 'ロイヤル', rarity: 'legend',
