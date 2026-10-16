@@ -6,14 +6,10 @@ import { DEFAULT_PLAYER_IDS, buildCpuTeam, loadCpuCharSetting, saveCpuCharSettin
 import { ALL_CHARACTERS, charById } from './battle/characters/index.js'
 import { ALL_SPELLS } from './battle/spells/index.js'
 import FormationScreen from './FormationScreen.jsx'
-import { useIsDesktop } from './ui.js'
+import { useIsDesktop, C as BASE } from './ui.js'
 
 // 色: 自分=青、相手=赤紫、行動中=琥珀
-const C = {
-  ink: '#1f2a44', paper: '#eef1f6', card: '#ffffff', line: '#cdd3df', mute: '#6b7488',
-  player: '#2f5bea', enemy: '#b83a6b', active: '#e0a100',
-  hp: '#2f9e6b', hpMid: '#d9a400', hpLow: '#d1403f',
-}
+const C = { ...BASE, hp: '#3ddc97', hpMid: '#ffd24a', hpLow: '#ff5a5a' } // 色は ui.js の共通の色 + HPバー
 const FONT = '"Hiragino Sans","Noto Sans JP",system-ui,sans-serif'
 const TEAM_COLOR = { A: C.player, B: C.enemy }
 const TYPE_LABEL = { physical: '物理', magic: '魔法', true: '確定' }
@@ -64,7 +60,7 @@ function ActionBar({ state, big = false }) {
             title={`クレスト【${it.crest.name}】のカウントダウン(持ち主の速度で進む)`}
             style={{
               flex: '0 0 auto', width: W, height: H, boxSizing: 'border-box', padding: '3px 4px', borderRadius: 6, fontSize: big ? 11 : 9, lineHeight: 1.25,
-              overflow: 'hidden', background: '#e8e1ff', color: '#3d2b8f', border: `2px dotted ${TEAM_COLOR[it.crestTeam]}`,
+              overflow: 'hidden', background: '#2a2350', color: '#c9b8ff', border: `2px dotted ${TEAM_COLOR[it.crestTeam]}`,
             }}
           >
             CD{it.left} {it.crest.name}
@@ -75,7 +71,7 @@ function ActionBar({ state, big = false }) {
             title="コンボリセット(システムターン): 味方のコンボ数が0に戻ります"
             style={{
               flex: '0 0 auto', width: W, height: H, boxSizing: 'border-box', padding: '3px 4px', borderRadius: 6, fontSize: big ? 11 : 9, lineHeight: 1.25,
-              overflow: 'hidden', background: '#fff3d1', color: '#7a5a00', border: `2px dotted ${TEAM_COLOR[it.sys]}`,
+              overflow: 'hidden', background: C.softWarn, color: C.active, border: `2px dotted ${TEAM_COLOR[it.sys]}`,
             }}
           >
             コンボリセット
@@ -86,7 +82,7 @@ function ActionBar({ state, big = false }) {
             style={{
               flex: '0 0 auto', width: i === 0 ? W + (big ? 20 : 12) : W, height: H, boxSizing: 'border-box', padding: '3px 4px',
               borderRadius: 6, fontSize: F, lineHeight: 1.25, overflow: 'hidden',
-              color: it.accel ? TEAM_COLOR[it.unit.team] : '#fff',
+              color: it.accel ? TEAM_COLOR[it.unit.team] : it.unit.team === 'A' ? C.onAccent : '#fff',
               background: it.accel ? C.card : TEAM_COLOR[it.unit.team],
               border: i === 0 ? `2px solid ${C.active}` : it.accel ? `2px dashed ${TEAM_COLOR[it.unit.team]}` : '2px solid transparent',
               fontWeight: i === 0 ? 700 : 400,
@@ -145,7 +141,7 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
       onClick={onClick}
       style={{
         minWidth: 0, boxSizing: 'border-box', padding: big ? 10 : 4, borderRadius: big ? 10 : 8, fontSize: big ? 13 : 10, lineHeight: 1.3,
-        background: unit.alive ? C.card : '#dfe3ea',
+        background: unit.alive ? C.card : '#0a161a',
         opacity: unit.alive ? 1 : 0.5,
         border: `2px solid ${selected ? C.active : selectable ? C.ink : active ? TEAM_COLOR[unit.team] : inspected ? C.mute : C.line}`,
         boxShadow: selected ? `0 0 0 3px ${C.active}55` : active ? `0 0 0 3px ${TEAM_COLOR[unit.team]}33` : 'none',
@@ -155,13 +151,13 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
       }}
     >
       {fx && (
-        <span key={tick} style={{ position: 'absolute', left: '50%', top: '30%', zIndex: 5, pointerEvents: 'none', fontWeight: 800, fontSize: fx.crit ? (big ? 26 : 20) : (big ? 22 : 17), color: fx.kind === 'heal' ? '#1a9b55' : fx.kind === 'damage' ? '#d12a2a' : C.player, textShadow: '0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff', whiteSpace: 'nowrap', animation: 'feel-float 1.2s ease-out forwards' }}>
+        <span key={tick} style={{ position: 'absolute', left: '50%', top: '30%', zIndex: 5, pointerEvents: 'none', fontWeight: 800, fontSize: fx.crit ? (big ? 26 : 20) : (big ? 22 : 17), color: fx.kind === 'heal' ? '#3ddc97' : fx.kind === 'damage' ? '#ff5a5a' : C.player, textShadow: '0 0 3px #000, 0 0 3px #000, 0 0 3px #000', whiteSpace: 'nowrap', animation: 'feel-float 1.2s ease-out forwards' }}>
           {fx.text}
         </span>
       )}
       <div style={{ height: big ? 36 : 26, overflow: 'hidden', fontWeight: big ? 700 : 400 }}>{unit.name}</div>
       {!unit.isAmulet && (
-        <div style={{ background: '#e3e7ef', height: big ? 9 : 6, borderRadius: 3, marginTop: 3, position: 'relative' }}>
+        <div style={{ background: '#1b3a43', height: big ? 9 : 6, borderRadius: 3, marginTop: 3, position: 'relative' }}>
           <div style={{ width: `${ratio * 100}%`, height: '100%', borderRadius: 3, background: hpColor, transition: 'width 0.3s' }} />
           <LossBlink unit={unit} loss={loss} />
         </div>
@@ -171,7 +167,7 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
       {badges.length > 0 && (
         <div style={{ marginTop: 2, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           {badges.map((b) => (
-            <span key={b} style={{ fontSize: big ? 11 : 9, padding: '0 3px', borderRadius: 3, background: '#e6ecff', color: C.player }}>{b}</span>
+            <span key={b} style={{ fontSize: big ? 11 : 9, padding: '0 3px', borderRadius: 3, background: C.soft, color: C.player }}>{b}</span>
           ))}
         </div>
       )}
@@ -200,7 +196,7 @@ function TeamStatus({ state, team, big = false }) {
         <span>
           {' ・ クレスト '}
           {crests.map((c) => (
-            <span key={c.name} title={c.desc} style={{ marginRight: 4, padding: '0 4px', borderRadius: 3, background: '#fff3d1', color: '#7a5a00' }}>
+            <span key={c.name} title={c.desc} style={{ marginRight: 4, padding: '0 4px', borderRadius: 3, background: C.softWarn, color: C.active }}>
               {c.name}{c.countdown != null ? `(${c.countdown})` : ''}
             </span>
           ))}
@@ -278,12 +274,12 @@ function TargetInfo({ unit, expected, loss = 0, big = false }) {
   for (const p of unit.passiveObjs) lines.push(passiveLine(p))
   for (const t of unit.traits) lines.push(`【特性 MP${t.cost}】${t.name}: ${t.desc ?? ''}`)
   return (
-    <div data-testid="target-info" style={{ marginBottom: 8, padding: big ? 12 : 8, borderRadius: 10, background: '#fffaf0', border: `2px solid ${C.active}`, fontSize: big ? 13 : 12, lineHeight: 1.5 }}>
+    <div data-testid="target-info" style={{ marginBottom: 8, padding: big ? 12 : 8, borderRadius: 10, background: C.softWarn, border: `2px solid ${C.active}`, fontSize: big ? 13 : 12, lineHeight: 1.5 }}>
       <div style={{ fontSize: big ? 11 : 10, color: C.mute }}>選択中の{unit.team === 'B' ? '相手' : '味方'}</div>
       <div style={{ fontWeight: 700, fontSize: big ? 15 : 13 }}>{unit.name}{unit.evolved ? '(進化済)' : ''}{unit.field === 'summon' ? '(召喚物)' : ''}</div>
       {!unit.isAmulet && (
         <>
-          <div style={{ background: '#e3e7ef', height: 10, borderRadius: 4, margin: '4px 0', position: 'relative' }}>
+          <div style={{ background: '#1b3a43', height: 10, borderRadius: 4, margin: '4px 0', position: 'relative' }}>
             <div style={{ width: `${ratio * 100}%`, height: '100%', borderRadius: 4, background: ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow }} />
             <LossBlink unit={unit} loss={loss} radius={4} />
           </div>
@@ -305,8 +301,8 @@ function TargetInfo({ unit, expected, loss = 0, big = false }) {
 const buttonStyle = (primary, disabled) => ({
   padding: '10px 14px', borderRadius: 8, fontSize: 14, fontFamily: FONT, cursor: disabled ? 'default' : 'pointer',
   border: `1px solid ${primary ? C.ink : C.line}`,
-  background: disabled ? '#d7dce6' : primary ? C.ink : C.card,
-  color: disabled ? '#8a93a6' : primary ? '#fff' : C.ink,
+  background: disabled ? C.disabledBg : primary ? C.player : C.card,
+  color: disabled ? C.disabledInk : primary ? C.onAccent : C.ink,
 })
 
 // rewardApi: ログイン中だけ渡される。{ start(level) → { ticketId }, finish(ticketId, 'win'|'lose') → { reward, reason } }
@@ -540,7 +536,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
               display: 'block', width: '100%', textAlign: 'left', marginBottom: 6, padding: '10px 12px', borderRadius: 8,
               fontFamily: FONT, cursor: 'pointer', color: C.ink,
               border: `2px solid ${level === l.level ? C.player : C.line}`,
-              background: level === l.level ? '#e6ecff' : C.card,
+              background: level === l.level ? C.soft : C.card,
             }}
           >
             <div style={{ fontWeight: 700, fontSize: 14 }}>Lv{l.level} {l.name}</div>
@@ -664,7 +660,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>{resultText}</div>
             {rewardMsg && <div style={{ fontSize: 13, color: C.player, marginBottom: 8 }}>{rewardMsg}</div>}
-            {careerMsg && <div data-testid="career-msg" style={{ fontSize: 12, color: careerMsg.includes('できませんでした') ? '#c0392b' : C.mute, marginBottom: 8 }}>{careerMsg}</div>}
+            {careerMsg && <div data-testid="career-msg" style={{ fontSize: 12, color: careerMsg.includes('できませんでした') ? C.bad : C.mute, marginBottom: 8 }}>{careerMsg}</div>}
             <button onClick={startBattle} style={buttonStyle(true, false)}>もう一度</button>{' '}
             <button onClick={() => setState(null)} style={buttonStyle(false, false)}>強さを選び直す</button>
           </div>
@@ -850,7 +846,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   )
   const nameOf = (uid) => state.units.find((u) => u.uid === uid)?.name ?? ''
   const nowText = !ev ? '' : ev.type === 'damage' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}に${ev.amount}ダメージ${ev.crit ? '(クリティカル!)' : ''}` : ev.type === 'block' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}のバリアが防いだ(0ダメージ)` : ev.type === 'turn' ? `${ev.team === 'B' ? '相手' : 'あなた'}のターン: ${ev.name}` : ''
-  const errBox = cpuError && <div style={{ marginTop: 6, padding: 6, borderRadius: 6, background: '#fde8e8', color: C.hpLow, fontSize: 12 }}>{cpuError}</div>
+  const errBox = cpuError && <div style={{ marginTop: 6, padding: 6, borderRadius: 6, background: C.dangerBg, color: C.hpLow, fontSize: 12 }}>{cpuError}</div>
 
   // ---- PC: 画面全体を使う(左=盤面、右=詳細・ログ・操作) ----
   if (desktop) {
