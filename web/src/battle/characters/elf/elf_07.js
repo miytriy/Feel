@@ -1,5 +1,5 @@
 export default {
-  id: 'elf_08', name: '殺戮のリノセウス', class: 'エルフ', rarity: 'gold',
+  id: 'elf_07', name: '殺戮のリノセウス', class: 'エルフ', rarity: 'gold',
   stats: { hp: 202, atk: 0, def: 200, spd: 80 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
