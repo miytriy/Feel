@@ -188,7 +188,9 @@ function crestSource(state, crest) {
 // 【コンボ_◯】を持っているキャラ(コンボのパッシブ、または条件 combo を持つ能力がある、場の生きているキャラ)
 export const hasComboAbility = (u) => u.passiveObjs.some((p) => p.trigger === 'combo' || p.condition?.combo != null || p.usesCombo || p.effects?.some((e) => e.fromOwned || e.perCombo || e.comboCount))
 // 自分の場(場のキャラ + 召喚物フィールド)にいる、指定のタイプのキャラの数
-const typeCount = (state, source, type) => state.units.filter((u) => u.alive && u.team === source.team && u.type === type).length
+// タイプの判定: 「トークン/兵士」のように「/」でつないだタイプは、どの部分にも当てはまる(兵士でもあり、トークンでもある)
+const hasType = (u, type) => !!u && !!u.type && String(u.type).split('/').includes(type)
+const typeCount = (state, source, type) => state.units.filter((u) => u.alive && u.team === source.team && hasType(u, type)).length
 const comboHolders = (state, team) => state.units.filter((u) => u.alive && u.field === 'main' && u.team === team && hasComboAbility(u))
 
 // βのコンボリセット(システムターン)の行動値を、味方のコンボ持ちの数Nに合わせる: Tr = K × N
@@ -436,7 +438,7 @@ function summon(state, source, def) {
   // クレストの onEnter: 自分のチームの(指定のタイプの)キャラが場に出たとき、キーワード能力(疾走など)を持つ
   for (const crest of state.crests[u.team]) {
     const oe = crest.onEnter
-    if (!oe || (oe.type && u.type !== oe.type) || !oe.gainKeyword || u.keywords.includes(oe.gainKeyword)) continue
+    if (!oe || (oe.type && !hasType(u, oe.type)) || !oe.gainKeyword || u.keywords.includes(oe.gainKeyword)) continue
     u.keywords.push(oe.gainKeyword)
     state.log.push(`【${crest.name}】の効果で、${u.name}は【${KEYWORDS[oe.gainKeyword]?.label || oe.gainKeyword}】を持つ`)
   }
@@ -662,8 +664,10 @@ function runEffects(state, source, effects, ctx = {}) {
         }
         case 'enableSpell': { // スペルを1回分有効化する(スペルセットの最大回数には数えない。すぐに使える)
           const list = state.spells[source.team]
-          list.push(makeSpell(e.spell, list.length))
-          state.log.push(`スペル【${e.spell.name}】が1回使えるようになった`)
+          // perAllySpeed: 指定した速度の味方(自分以外・場のキャラと召喚物)の数だけ、使えるようにする
+          const n = e.perAllySpeed ? allyFieldOf(state, source).filter((u) => u.uid !== source.uid && e.perAllySpeed.includes(Math.round(u.spd))).length : (e.count ?? 1)
+          for (let i = 0; i < n; i++) list.push(makeSpell(e.spell, list.length))
+          state.log.push(`スペル【${e.spell.name}】が${n}回使えるようになった`)
           break
         }
         case 'gainDoubleSkill': // 【アクティブ】1ターンに2回スキルを発動できる(2回目はMPを消費)
@@ -722,7 +726,7 @@ function fire(state, trigger, unit, ctx = {}, from = 0) {
   for (let i = from; i < unit.passiveObjs.length; i++) {
     const p = unit.passiveObjs[i]
     if (p.trigger !== trigger || !checkCond(state, unit, p.condition)) continue
-    if (p.enterType && ctx.other?.type !== p.enterType) continue
+    if (p.enterType && !hasType(ctx.other, p.enterType)) continue
     state.log.push(`${unit.name}の【${p.name || TRIGGER_LABELS[trigger]}】`)
     noteAbility(state, TRIGGER_LABELS[trigger] ?? trigger, unit.name, p.name && p.name !== TRIGGER_LABELS[trigger] ? p.name : '', p.desc, unit.team)
     runEffects(state, unit, p.effects, { ...ctx, trigger, nextPassive: i + 1 })
