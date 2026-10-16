@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useIsDesktop, C, FONT } from './ui.js'
 import { summarize } from './career.js'
 
-const RES = { win: { label: '勝利', mark: '○', color: '#1a7f4b' }, lose: { label: '敗北', mark: '×', color: '#c0392b' }, draw: { label: '引き分け', mark: '△', color: C.mute } }
+const RES = { win: { label: '勝利', mark: '○', color: '#3ddc97' }, lose: { label: '敗北', mark: '×', color: '#ff6b6b' }, draw: { label: '引き分け', mark: '△', color: C.mute } }
 const LEVEL = { 1: 'かんたん', 2: 'ふつう', 3: 'つよい', 4: 'とてもつよい' }
 const fmtDate = (t) => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` }
 const n0 = (v) => Math.round(v).toLocaleString('ja-JP')
@@ -123,7 +123,7 @@ export default function CareerScreen({ onExit, fetchCareer, clearCareer }) {
       {matches.length > 0 && (
         <div data-testid="form-strip" style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 10 }}>
           {matches.slice(0, 10).reverse().map((m) => (
-            <span key={m.id} style={{ width: 26, height: 26, borderRadius: 13, background: RES[m.result].color, color: '#fff', fontWeight: 700, fontSize: 13, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{RES[m.result].mark}</span>
+            <span key={m.id} style={{ width: 26, height: 26, borderRadius: 13, background: RES[m.result].color, color: C.onAccent, fontWeight: 700, fontSize: 13, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{RES[m.result].mark}</span>
           ))}
           <span style={{ fontSize: 11, color: C.mute, alignSelf: 'center' }}>← 古い ・ 新しい →</span>
         </div>
@@ -133,7 +133,7 @@ export default function CareerScreen({ onExit, fetchCareer, clearCareer }) {
   const list = (
     <div data-testid="match-list">
       {status === 'loading' && <div style={{ padding: 16, fontSize: 14, color: C.mute }}>読み込み中…</div>}
-      {status === 'error' && <div style={{ padding: 12, borderRadius: 10, background: '#fde8e8', color: '#c0392b', fontSize: 13 }}>記録を読み込めませんでした: {errMsg}</div>}
+      {status === 'error' && <div style={{ padding: 12, borderRadius: 10, background: C.dangerBg, color: '#ff6b6b', fontSize: 13 }}>記録を読み込めませんでした: {errMsg}</div>}
       {status === 'ok' && matches.length === 0 && <div style={{ padding: 16, borderRadius: 12, background: C.card, border: `1px solid ${C.line}`, fontSize: 14 }}>まだ対戦の記録がありません。CPU対戦を終えると、ここに残ります。</div>}
       {matches.map((m) => (
         <div key={m.id} onClick={() => setOpenId(m.id)} style={{ cursor: 'pointer', padding: 10, marginBottom: 6, borderRadius: 10, background: C.card, border: `2px solid ${m.id === openId ? C.player : C.line}`, display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -147,7 +147,7 @@ export default function CareerScreen({ onExit, fetchCareer, clearCareer }) {
       {matches.length > 0 && (
         <div style={{ marginTop: 12 }}>
           {confirmClear ? (
-            <span style={{ fontSize: 13 }}>全部消しますか? <button onClick={() => { clearCareer().then(() => { setMatches([]); setOpenId(null) }).catch((e) => setErrMsg(e.message)); setConfirmClear(false) }} style={{ ...btn, color: '#c0392b' }}>消す</button> <button onClick={() => setConfirmClear(false)} style={btn}>やめる</button></span>
+            <span style={{ fontSize: 13 }}>全部消しますか? <button onClick={() => { clearCareer().then(() => { setMatches([]); setOpenId(null) }).catch((e) => setErrMsg(e.message)); setConfirmClear(false) }} style={{ ...btn, color: '#ff6b6b' }}>消す</button> <button onClick={() => setConfirmClear(false)} style={btn}>やめる</button></span>
           ) : (
             <button onClick={() => setConfirmClear(true)} style={{ ...btn, fontSize: 12 }}>記録を全部消す</button>
           )}
