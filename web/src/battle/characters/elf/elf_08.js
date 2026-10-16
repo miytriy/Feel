@@ -1,5 +1,5 @@
 export default {
-  id: 'elf_09', name: 'ビギンズブレイダー・アマツ', class: 'エルフ', rarity: 'legend',
+  id: 'elf_08', name: 'ビギンズブレイダー・アマツ', class: 'エルフ', rarity: 'legend',
   stats: { hp: 210, atk: 208, def: 90, spd: 80 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
