@@ -3,9 +3,16 @@ import { useEffect, useState } from 'react'
 
 export const DESKTOP_MIN = 900 // この幅(px)以上ならPC用の画面にする
 export const FONT = '"Hiragino Sans","Noto Sans JP",system-ui,sans-serif'
+export const DISPLAY = '"Barlow Condensed","Oswald","Arial Narrow","Impact","Hiragino Sans","Noto Sans JP",sans-serif' // 見出し・メニュー用の、細長くて太い文字
+// 色(暗いティール基調 + ネオン)。画面はすべてこの色を使う。色を変えるときは、ここだけ直せばよい
 export const C = {
-  ink: '#1f2a44', paper: '#eef1f6', card: '#ffffff', line: '#cdd3df', mute: '#6b7488',
-  player: '#2f5bea', enemy: '#b83a6b', active: '#e0a100', warn: '#c2570c', ok: '#1a7f4b',
+  ink: '#e8f4f2', paper: '#08171c', card: '#102730', line: '#25505b', mute: '#82a3aa',
+  player: '#34f0c8', // ネオン(ボタン・選択・自分のチーム)。この上に文字を置くときは onAccent
+  enemy: '#ff4655', active: '#ffd24a', warn: '#ff9a4d', ok: '#3ddc97', bad: '#ff6b6b',
+  onAccent: '#032320', // ネオンの上の文字色
+  soft: '#16363f', softWarn: '#352a14', softOk: '#10342a', dangerBg: '#3a1a22', // 薄い面
+  disabledBg: '#122a31', disabledInk: '#5d7c83',
+  neon: '#34f0c8', red: '#ff4655',
 }
 
 const query = `(min-width: ${DESKTOP_MIN}px)`
@@ -37,8 +44,31 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
   st.id = 'feel-base-style'
   st.textContent = `
     *, *::before, *::after { box-sizing: border-box; }
+    html { color-scheme: dark; }
     html, body { margin: 0; background: ${C.paper}; -webkit-text-size-adjust: 100%; }
     body { font-family: ${FONT}; color: ${C.ink}; }
+    h1, h2 { font-family: ${DISPLAY}; letter-spacing: 0.04em; }
+    input, select, textarea { background: ${C.card}; color: ${C.ink}; border: 1px solid ${C.line}; border-radius: 8px; }
+    input::placeholder { color: ${C.mute}; }
+    /* ホームのメニュー: 白い大きな文字。カーソルを乗せる(押す・キーで選ぶ)と、ネオン色になって右に少し動く */
+    .feel-menu { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: clamp(2px, 1vh, 10px); }
+    .feel-menu-item { display: flex; align-items: center; gap: 18px; background: none; border: 0; padding: 4px 0; cursor: pointer; text-align: left; color: #fff;
+      font-family: ${DISPLAY}; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.05; font-size: clamp(34px, 5.2vw, 58px); min-height: 0; }
+    .feel-menu-item.primary { color: ${C.red}; font-size: clamp(56px, 8.6vw, 96px); }
+    .feel-menu-item .bullet { flex: none; width: 9px; height: 9px; margin-left: 4px; background: #fff; transform: rotate(45deg); transition: background 0.16s; }
+    .feel-menu-item.primary .bullet { background: ${C.red}; }
+    .feel-menu-item .label { display: inline-block; transition: transform 0.16s ease, color 0.16s ease, text-shadow 0.16s ease; }
+    .feel-menu-item.locked { opacity: 0.45; }
+    .feel-menu-item:focus-visible, .feel-menu-item:active { outline: none; }
+    .feel-menu-item:focus-visible .label, .feel-menu-item:active .label { color: ${C.neon}; transform: translateX(12px); text-shadow: 0 0 18px rgba(52,240,200,0.55); }
+    .feel-menu-item:focus-visible .bullet, .feel-menu-item:active .bullet { background: ${C.neon}; }
+    @media (hover: hover) {
+      .feel-menu-item:hover .label { color: ${C.neon}; transform: translateX(12px); text-shadow: 0 0 18px rgba(52,240,200,0.55); }
+      .feel-menu-item:hover .bullet { background: ${C.neon}; }
+      .feel-menu-item.locked:hover { opacity: 0.75; }
+    }
+    .feel-back { background: none; border: 0; cursor: pointer; color: ${C.mute}; font-family: ${DISPLAY}; font-weight: 700; font-size: 20px; letter-spacing: 0.06em; padding: 6px 0; min-height: 0; transition: color 0.16s, transform 0.16s; }
+    .feel-back:hover, .feel-back:focus-visible { color: ${C.neon}; transform: translateX(-4px); outline: none; }
     button { font-family: inherit; touch-action: manipulation; }
     input { font-family: inherit; }
     @keyframes feel-float { 0% { opacity: 0; transform: translate(-50%, 8px) scale(0.8); } 15% { opacity: 1; transform: translate(-50%, 0) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -38px) scale(1); } }
