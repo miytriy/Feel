@@ -110,15 +110,23 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
   if (teamADefs.length < 1 || teamADefs.length > 5 || teamBDefs.length < 1 || teamBDefs.length > 5) {
     throw new Error('編成は1〜5体にしてください')
   }
-  const units = [
-    ...teamADefs.map((d, i) => makeUnit(d, 'A', i)),
-    ...teamBDefs.map((d, i) => makeUnit(d, 'B', i)),
-  ]
+  // アミュレット(amulet: true)を編成に入れた場合は、バトル開始時から召喚物の場(アミュレット置き場)にいる。キャラは最低1体必要
+  const build = (defs, team) => {
+    const mains = defs.filter((d) => !d.amulet)
+    if (mains.length < 1) throw new Error('キャラを1体以上編成してください(アミュレットだけでは戦えません)')
+    let seq = 0
+    return [
+      ...mains.map((d, i) => makeUnit(d, team, i)),
+      ...defs.filter((d) => d.amulet).map((d, i) => makeUnit(d, team, mains.length + i, 'summon', `${team}s${++seq}`)),
+    ]
+  }
+  const units = [...build(teamADefs, 'A'), ...build(teamBDefs, 'B')]
+  const startSummons = { A: units.filter((u) => u.team === 'A' && u.field === 'summon').length, B: units.filter((u) => u.team === 'B' && u.field === 'summon').length }
   const state = {
     units, totalAV: 0, round: 0, turns: 0, actionsThisTurn: 0,
     mp: { A: 0, B: 0 }, mpMax: { A: 0, B: 0 }, ep: { A: 0, B: 0 },
     faith: { A: 0, B: 0 }, boost: { A: 0, B: 0 }, earth: { A: 0, B: 0 }, crests: { A: [], B: [] }, graveyard: { A: 0, B: 0 },
-    link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 }, summonSeq: 0, pending: null,
+    link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 }, summonSeq: Math.max(startSummons.A, startSummons.B), pending: null,
     active: null, activeKind: null, winner: null, log: ['バトル開始!'],
     comboMode: opts.comboMode === 'reset' ? 'reset' : 'old', comboReset: { A: null, B: null }, comboCount: { A: 0, B: 0 },
     pool: { A: opts.pool?.A || [], B: opts.pool?.B || [] }, // 所持キャラクター(「所持キャラから召喚する」能力の候補)
