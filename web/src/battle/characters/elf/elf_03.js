@@ -1,5 +1,5 @@
 export default {
-  id: 'elf_04', name: 'ベビーカーバンクル', class: 'エルフ', rarity: 'silver',
+  id: 'elf_03', name: 'ベビーカーバンクル', class: 'エルフ', rarity: 'silver',
   stats: { hp: 226, atk: 231, def: 128, spd: 80 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
