@@ -1,5 +1,5 @@
 export default {
-  id: 'royal_06', name: '忍びのムササビ', class: 'ロイヤル', rarity: 'silver',
+  id: 'royal_04', name: '忍びのムササビ', class: 'ロイヤル', rarity: 'silver',
   stats: { hp: 111, atk: 216, def: 120, spd: 90 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
