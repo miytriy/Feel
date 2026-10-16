@@ -2,10 +2,10 @@
 // スペルを増やすには、このフォルダに「スペルのid.js」を1つ作るだけです(1つにつき1ファイル)。
 import { validateSpell } from './validate.js'
 
-const modules = import.meta.glob('./*.js', { eager: true })
+const modules = import.meta.glob(['./*.js', './*/*.js'], { eager: true }) // クラスごとのフォルダ(例: ./royal/xxx.js)に置いてもOK
 const list = []
 for (const [path, mod] of Object.entries(modules)) {
-  if (path === './index.js' || path === './validate.js') continue
+  if (path === './index.js' || path === './validate.js') continue // (./validate.js 以外のフォルダ内のファイルは、すべてスペルとして読む)
   const def = mod.default
   const fileId = path.split('/').pop().replace(/\.js$/, '')
   const errors = validateSpell(def, { expectedId: fileId })
