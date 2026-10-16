@@ -2,7 +2,7 @@ import knight from './tokens/royal_token_01.js' // 「ナイト」
 import steelKnight from './tokens/royal_token_02.js' // 「スティールナイト」
 
 export default {
-  id: 'royal_16', name: '白銀の騎士団長・エミリア', class: 'ロイヤル', rarity: 'legend',
+  id: 'royal_14', name: '白銀の騎士団長・エミリア', class: 'ロイヤル', rarity: 'legend',
   stats: { hp: 403, atk: 400, def: 90, spd: 50 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
