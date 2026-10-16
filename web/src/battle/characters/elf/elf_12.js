@@ -1,5 +1,5 @@
 // ※ elf_11 の番号は空けてあります(あとで使うため)
-import fairy from './elf_01.js' // 召喚する「フェアリー」は elf_01.js のキャラです
+import fairy from './tokens/elf_token_01.js' // 召喚する「フェアリー」は elf_token_01.js のキャラです
 
 export default {
   id: 'elf_12', name: '自然の妖精姫・アリア', class: 'エルフ', rarity: 'legend',
