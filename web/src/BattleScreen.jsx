@@ -191,6 +191,7 @@ function TeamStatus({ state, team, big = false }) {
       <span> MP {state.mp[team]}/{state.mpMax[team]}</span>
       <span> ・ EP {state.ep[team]}</span>
       <span> ・ 信仰 {state.faith[team]}</span>
+      {(state.boost?.[team] ?? 0) > 0 && <span> ・ スペルブースト {state.boost[team]}</span>}
       {(state.earth?.[team] ?? 0) > 0 && <span> ・ 土の印 {state.earth[team]}</span>}
       <span> ・ 墓場 {state.graveyard[team]}</span>
       <span> ・ 連携 {state.link[team]}</span>
