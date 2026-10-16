@@ -1,7 +1,7 @@
 import knight from './tokens/royal_token_01.js' // 召喚する「ナイト」
 
 export default {
-  id: 'royal_12', name: '王断の天宮・スタチウム', class: 'ロイヤル', rarity: 'gold',
+  id: 'royal_10', name: '王断の天宮・スタチウム', class: 'ロイヤル', rarity: 'gold',
   stats: { hp: 403, atk: 410, def: 90, spd: 70 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
