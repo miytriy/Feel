@@ -1,7 +1,7 @@
-import { useIsDesktop, C, FONT, DISPLAY } from './ui.js'
+import { useIsDesktop, C, FONT, DISPLAY, NEON_RGB } from './ui.js'
 
 // ホーム画面: 暗いティールの背景に、白い大きな項目名だけを縦に並べる(説明文はなし)。
-// PLAY だけ赤くて一回り大きい。カーソルを乗せると、ネオン色になって右に少し動く(見た目は ui.js の .feel-menu-item)。
+// PLAY だけ赤くて一回り大きい。カーソルを乗せると、ネオン色になって右に少し動き、左の線が伸びる(見た目は ui.js の .feel-menu-item)。
 // account の項目は、アカウント(ログイン)がある人だけが使える。
 
 export const HOME_ITEMS = [
@@ -17,19 +17,19 @@ export const ACCOUNT_SCREENS = HOME_ITEMS.filter((i) => i.account).map((i) => i.
 // 背景(暗いティール)。ホームと、PLAYのメニューで共通
 export const backdrop = {
   minHeight: '100vh', color: C.ink, fontFamily: FONT, position: 'relative', overflow: 'hidden',
-  background: 'radial-gradient(900px 620px at 24% 38%, rgba(38,150,150,0.55) 0%, rgba(20,90,100,0.18) 55%, rgba(0,0,0,0) 100%), linear-gradient(165deg, #0d4048 0%, #08252c 48%, #050f13 100%)',
+  background: `radial-gradient(1000px 700px at 82% 8%, rgba(110,90,255,0.32) 0%, rgba(110,90,255,0) 62%), radial-gradient(rgba(${NEON_RGB},0.10) 1px, transparent 1.2px) 0 0 / 28px 28px, linear-gradient(170deg, #141c3d 0%, #0b1128 52%, #070a16 100%)`,
 }
 
 const ghost = (primary) => ({
-  padding: '8px 14px', borderRadius: 4, fontSize: 14, fontWeight: 700, fontFamily: DISPLAY, letterSpacing: '0.06em', cursor: 'pointer', minHeight: 0,
-  border: `1.5px solid ${primary ? C.neon : 'rgba(255,255,255,0.35)'}`, background: primary ? C.neon : 'rgba(0,0,0,0.25)', color: primary ? C.onAccent : '#fff',
+  padding: '8px 18px', borderRadius: 999, fontSize: 13, fontWeight: 600, fontFamily: DISPLAY, letterSpacing: '0.1em', cursor: 'pointer', minHeight: 0,
+  border: `1.5px solid ${primary ? C.neon : 'rgba(255,255,255,0.3)'}`, background: primary ? C.neon : 'rgba(255,255,255,0.06)', color: primary ? C.onAccent : '#fff',
 })
 
 function Brand() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <svg width="34" height="30" viewBox="0 0 34 30" aria-hidden="true"><polygon points="0,0 12,0 34,30 22,30" fill={C.red} /><polygon points="22,0 34,0 28,8" fill={C.red} opacity="0.85" /></svg>
-      <h1 style={{ margin: 0, fontSize: 40, lineHeight: 1, color: '#fff', textTransform: 'uppercase' }}>Feel</h1>
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="4" fill={C.red} /><circle cx="17" cy="17" r="9.5" fill="none" stroke={C.neon} strokeWidth="2" /><circle cx="17" cy="17" r="15" fill="none" stroke={C.neon} strokeWidth="1.2" opacity="0.5" /></svg>
+      <h1 style={{ margin: 0, fontSize: 34, lineHeight: 1, color: '#fff', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Feel</h1>
     </div>
   )
 }
@@ -65,7 +65,7 @@ export default function HomeScreen({ user, me, lockedKey, onSelect, onLogin, onL
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: desktop ? '18px 40px' : '14px 16px' }}>
         <Brand />
         <div style={{ flex: 1 }} />
-        {user && me && <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 20, color: '#fff', letterSpacing: '0.04em' }}><span style={{ color: C.neon }}>◆</span> {me.gems}</div>}
+        {user && me && <div style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 18, color: '#fff', letterSpacing: '0.06em' }}><span style={{ color: C.neon }}>●</span> {me.gems}</div>}
         {user
           ? <button onClick={onLogout} style={ghost(false)}>LOGOUT</button>
           : <button onClick={onLogin} style={ghost(true)}>GOOGLEでログイン</button>}
@@ -75,9 +75,9 @@ export default function HomeScreen({ user, me, lockedKey, onSelect, onLogin, onL
         <MenuList items={items} onSelect={onSelect} />
 
         {lockedKey && !user && (
-          <div style={{ alignSelf: 'flex-start', maxWidth: 'min(420px, 88vw)', padding: '14px 16px', borderLeft: `4px solid ${C.neon}`, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+          <div style={{ alignSelf: 'flex-start', maxWidth: 'min(420px, 88vw)', padding: '14px 16px', border: `1px solid rgba(${NEON_RGB},0.45)`, borderRadius: 14, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 14, flex: 1, minWidth: 150, color: '#fff' }}>
-              <b style={{ fontFamily: DISPLAY, fontSize: 18, letterSpacing: '0.04em' }}>{HOME_ITEMS.find((i) => i.key === lockedKey)?.label}</b> はログインが必要です
+              <b style={{ fontFamily: DISPLAY, fontSize: 16, letterSpacing: '0.08em' }}>{HOME_ITEMS.find((i) => i.key === lockedKey)?.label}</b> はログインが必要です
             </span>
             <button onClick={onLogin} style={ghost(true)}>GOOGLEでログイン</button>
           </div>
