@@ -1,4 +1,4 @@
-import fairy from './elf_01.js'
+import fairy from './tokens/elf_token_01.js'
 
 export default {
   id: 'elf_14', name: '深奥のフェアリービースト', class: 'エルフ', rarity: 'bronze',
