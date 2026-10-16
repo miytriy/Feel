@@ -5,7 +5,7 @@
   { "id": "neutral_04", "name": "迸る光明・アポロン", "class": "ニュートラル", "rarity": "silver" },
   { "id": "elf_01", "name": "純粋なるウォーターフェアリー", "class": "エルフ", "rarity": "silver" },
   { "id": "elf_02", "name": "舞い踊る妖精", "class": "エルフ", "rarity": "bronze" },
-  { "id": "elf_04", "name": "ベビーカーバンクル", "class": "エルフ", "rarity": "silver" },
+  { "id": "elf_03", "name": "ベビーカーバンクル", "class": "エルフ", "rarity": "silver" },
   { "id": "elf_05", "name": "ピュアクリスタリア・リリィ", "class": "エルフ", "rarity": "gold" },
   { "id": "elf_06", "name": "コンタクトフェアリー", "class": "エルフ", "rarity": "bronze" },
   { "id": "elf_07", "name": "働きバッタ", "class": "エルフ", "rarity": "bronze" },
