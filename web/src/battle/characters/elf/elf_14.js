@@ -6,7 +6,7 @@ const roseStrike = {
 }
 
 export default {
-  id: 'elf_16', name: '豊麗なるローズクイーン', class: 'エルフ', rarity: 'legend',
+  id: 'elf_14', name: '豊麗なるローズクイーン', class: 'エルフ', rarity: 'legend',
   stats: { hp: 608, atk: 601, def: 90, spd: 10 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
