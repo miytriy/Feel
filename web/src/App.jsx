@@ -10,6 +10,8 @@ import CareerScreen from './CareerScreen.jsx'
 import CodexScreen from './CodexScreen.jsx'
 import FormationScreen from './FormationScreen.jsx'
 import HomeScreen, { PlayMenu, ACCOUNT_SCREENS } from './HomeScreen.jsx'
+import { ScreenHeader, PillTabs, Chip, LoadingScreen } from './chrome.jsx'
+import { IconGem } from './icons.jsx'
 import { ALL_CHARACTERS } from './battle/characters/index.js'
 import { ALL_SPELLS } from './battle/spells/index.js'
 import { loadParties, saveParty, getActiveParty, setActiveParty } from './battle/parties.js'
@@ -21,10 +23,10 @@ const PITY_COUNT = 40
 const COST = 100
 
 const RARITY = {
-  legend: { label: 'レジェンド', color: '#e879f9' },
-  gold: { label: 'ゴールド', color: '#facc15' },
-  silver: { label: 'シルバー', color: '#cbd5e1' },
-  bronze: { label: 'ブロンズ', color: '#fb923c' },
+  legend: { label: 'レジェンド', color: '#a21caf' },
+  gold: { label: 'ゴールド', color: '#a16207' },
+  silver: { label: 'シルバー', color: '#5b6472' },
+  bronze: { label: 'ブロンズ', color: '#b45309' },
 }
 
 export default function App() {
@@ -38,6 +40,7 @@ export default function App() {
   const [notice, setNotice] = useState('') // 受け取りに成功したときの表示
   const [gifts, setGifts] = useState([])
   const [code, setCode] = useState('')
+  const [storeTab, setStoreTab] = useState('gacha') // STORE のタブ
   const [lockedKey, setLockedKey] = useState(null) // ログインが必要な項目を、ログインなしで押したとき
   const [parties, setParties] = useState(null) // パーティー(最大5つ。ログイン中だけ)
   const [activeIdx, setActiveIdx] = useState(null) // 最後に選んだパーティーの番号
@@ -180,11 +183,11 @@ export default function App() {
     : null
 
   if (authLoading) {
-    return <div style={{ padding: 20, fontFamily: FONT }}>読み込み中...</div>
+    return <LoadingScreen />
   }
 
   if (gate === 'checking') {
-    return <div style={{ padding: 20, fontFamily: FONT }}>読み込み中...(サーバーが眠っていると、1分ほどかかることがあります)</div>
+    return <LoadingScreen note="サーバーが眠っていると、1分ほどかかることがあります" />
   }
   if (gate === 'offline') {
     return (
@@ -233,12 +236,12 @@ export default function App() {
   }
 
   if (current === 'agents') {
-    if (!me) return <div style={{ padding: 20, fontFamily: FONT }}>読み込み中...</div>
+    if (!me) return <LoadingScreen />
     return <ErrorBoundary onExit={goHome}><CodexScreen title="AGENTS" ownedMap={me.owned || {}} onExit={goHome} /></ErrorBoundary>
   }
 
   if (current === 'party') {
-    if (!partyApi) return <div style={{ padding: 20, fontFamily: FONT }}>読み込み中...</div>
+    if (!partyApi) return <LoadingScreen />
     return (
       <ErrorBoundary onExit={goHome}>
         <FormationScreen
@@ -376,25 +379,23 @@ export default function App() {
 
   // ---- STORE: ガチャ・ログインボーナス・プレゼント・合言葉 ----
   if (current === 'store') {
+    const tabs = [{ key: 'gacha', label: 'GACHA' }, { key: 'bonus', label: 'BONUS' }, { key: 'mail', label: 'MAIL' }, { key: 'code', label: 'CODE' }]
     const body = (
       <div style={{ display: 'grid', gap: desktop ? 20 : 12 }}>
-        {gachaCard}
         {messages}
-        {resultsCard}
-        {bonusCard}
-        {giftCard}
-        {codeCard}
+        {storeTab === 'gacha' && <>{gachaCard}{resultsCard}</>}
+        {storeTab === 'bonus' && bonusCard}
+        {storeTab === 'mail' && giftCard}
+        {storeTab === 'code' && codeCard}
       </div>
     )
     return (
-      <div style={{ minHeight: '100vh', background: C.paper, color: C.ink, fontFamily: FONT }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: desktop ? '14px 36px' : '12px 14px', background: C.card, borderBottom: `1px solid ${C.line}` }}>
-          <button onClick={goHome} style={{ ...btn(false, false), padding: '8px 14px', fontSize: 14 }}>← もどる</button>
-          <h1 style={{ margin: 0, fontSize: desktop ? 24 : 20 }}>STORE</h1>
-          <div style={{ flex: 1 }} />
-          {me && <div style={{ fontSize: 15 }}>通貨 <b>{me.gems}</b></div>}
+      <div className="theme-light" style={{ minHeight: '100vh', background: C.paper, color: C.ink, fontFamily: FONT }}>
+        <div style={{ position: 'sticky', top: 0, zIndex: 6 }}>
+          <ScreenHeader title="STORE" onClose={goHome} right={me && <Chip><IconGem style={{ color: '#ffe600' }} />{me.gems}</Chip>} />
+          <PillTabs tabs={tabs} value={storeTab} onChange={setStoreTab} />
         </div>
-        <div style={{ maxWidth: 720, margin: '0 auto', padding: desktop ? '28px 24px' : '12px 12px calc(20px + env(safe-area-inset-bottom))' }}>{body}</div>
+        <div style={{ maxWidth: 720, margin: '0 auto', padding: desktop ? '28px 24px' : '14px 12px calc(20px + env(safe-area-inset-bottom))' }}>{body}</div>
       </div>
     )
   }
