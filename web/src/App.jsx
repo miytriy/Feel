@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import RulesScreen from './RulesScreen.jsx'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import { auth, googleProvider } from './firebase.js'
 import {
@@ -36,6 +37,17 @@ export default function App() {
   // 開発中の入口(マスターパスワード): checking=確認中 / locked=パスワードが必要 / open=入れる / offline=サーバーにつながらない
   const [gate, setGate] = useState('checking')
   const [gateTry, setGateTry] = useState(0)
+  const [rulesFirst, setRulesFirst] = useState(false) // 初回だけ、ルール説明を自動で開く
+  useEffect(() => {
+    if (gate !== 'open') return
+    try {
+      if (!localStorage.getItem('feel.rules.seen')) {
+        localStorage.setItem('feel.rules.seen', '1')
+        setRulesFirst(true)
+        setScreen('rules')
+      }
+    } catch { /* 保存できない環境では出さない */ }
+  }, [gate])
   const gateOpen = gate === 'open'
 
   useEffect(() => {
@@ -187,6 +199,10 @@ export default function App() {
     return <ErrorBoundary onExit={() => setScreen('home')}><CareerScreen onExit={() => setScreen('home')} fetchCareer={fetchCareer} clearCareer={clearCareer} /></ErrorBoundary>
   }
 
+  if (screen === 'rules') {
+    return <ErrorBoundary onExit={() => setScreen('home')}><RulesScreen first={rulesFirst} onExit={() => { setRulesFirst(false); setScreen('home') }} /></ErrorBoundary>
+  }
+
   if (screen === 'codex') {
     return <ErrorBoundary onExit={() => setScreen('home')}><CodexScreen onExit={() => setScreen('home')} /></ErrorBoundary>
   }
@@ -213,6 +229,9 @@ export default function App() {
       <h3 style={h3}>あそぶ</h3>
       <button onClick={() => setScreen('battle')} style={{ ...btn(true, false), width: '100%', fontSize: desktop ? 20 : 18, padding: desktop ? '22px 18px' : '18px 16px' }}>CPU対戦</button>
       <div style={{ fontSize: 12, color: C.mute, marginTop: 6 }}>キャラとスペルを編成して、CPUと対戦します。勝つとジェムがもらえます(ログイン中)。</div>
+      <button onClick={() => setScreen('rules')} style={{ ...btn(false, false), width: '100%', marginTop: 10 }}>
+        ルール説明(はじめての人はここから)
+      </button>
       {careerBtn}
       <button onClick={() => setScreen('codex')} style={{ ...btn(false, false), width: '100%', marginTop: 10 }}>
         資料集(キャラクター・スペルの一覧と検索)
