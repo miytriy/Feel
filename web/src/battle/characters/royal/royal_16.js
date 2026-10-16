@@ -1,7 +1,7 @@
 import steelKnight from './tokens/royal_token_02.js' // 召喚する「スティールナイト」
 
 export default {
-  id: 'royal_18', name: '煌刃の勇者・アマリア', class: 'ロイヤル', rarity: 'gold',
+  id: 'royal_16', name: '煌刃の勇者・アマリア', class: 'ロイヤル', rarity: 'gold',
   stats: { hp: 600, atk: 580, def: 90, spd: 30 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
