@@ -16,7 +16,7 @@ const classesOf = (chars) => [...new Set(chars.filter(Boolean).map((c) => c.clas
 // この編成が正しいかを調べる。問題がなければ { ok: true }、あれば { ok: false, reason }
 export function validateFormation(chars) {
   const list = chars.filter(Boolean)
-  if (list.length < 1) return { ok: false, reason: 'キャラを1体以上編成してください' }
+  if (list.length < 1 || list.every((c) => c.amulet)) return { ok: false, reason: 'キャラを1体以上編成してください(アミュレットだけでは戦えません)' }
   if (list.length > MAX_SLOTS) return { ok: false, reason: `編成できるのは${MAX_SLOTS}体までです` }
   if (new Set(list.map((c) => c.id)).size !== list.length) return { ok: false, reason: '同じキャラは1体までです' }
   const classes = classesOf(list)
