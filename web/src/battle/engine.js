@@ -29,6 +29,7 @@ export const KEYWORDS = {
   finisher: { label: '必殺', desc: 'スキルでダメージを与えたとき、相手の現在HP35%の固定ダメージ(防御無視)' },
   drain: { label: 'ドレイン', desc: 'スキルで与えたダメージと同じだけ自身を回復' },
   barrier: { label: 'バリア', desc: '攻撃を一回0ダメージにして壊れる' },
+  earthSign: { label: '土の印', desc: '自分の場の土の印の数は合算される。土の印は土の秘術によって消費される。これは能力で破壊できず、相手の能力で選ばれない' },
 }
 export const TRIGGER_LABELS = {
   fanfare: 'ファンファーレ', constant: '常時', active: 'アクティブ', lastWord: 'ラストワード',
@@ -115,7 +116,7 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
   const state = {
     units, totalAV: 0, round: 0, turns: 0, actionsThisTurn: 0,
     mp: { A: 0, B: 0 }, mpMax: { A: 0, B: 0 }, ep: { A: 0, B: 0 },
-    faith: { A: 0, B: 0 }, crests: { A: [], B: [] }, graveyard: { A: 0, B: 0 },
+    faith: { A: 0, B: 0 }, earth: { A: 0, B: 0 }, crests: { A: [], B: [] }, graveyard: { A: 0, B: 0 },
     link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 }, summonSeq: 0, pending: null,
     active: null, activeKind: null, winner: null, log: ['バトル開始!'],
     comboMode: opts.comboMode === 'reset' ? 'reset' : 'old', comboReset: { A: null, B: null }, comboCount: { A: 0, B: 0 },
@@ -144,7 +145,7 @@ const abilityTargetable = (u) => u.alive && !u.stealth && !hasKw(u, 'aura')
 // 単体を選ぶ能力の候補: 相手の場のキャラ + 相手のアミュレット(アミュレットは、単体指定の能力で消滅させられる)
 const enemyOneList = (state, u) => [
   ...enemiesOf(state, u).filter(abilityTargetable),
-  ...state.units.filter((x) => x.alive && x.field === 'summon' && x.isAmulet && x.team !== u.team),
+  ...state.units.filter((x) => x.alive && x.field === 'summon' && x.isAmulet && x.team !== u.team && !hasKw(x, 'earthSign')),
 ]
 
 // 奥義ゲージ = 現在のターン数(ラウンド数) + 特性の発動回数(チーム全体)
@@ -162,6 +163,7 @@ function checkCond(state, unit, c) {
   if (c.ultimate && gaugeOf(state, unit.team) < ULTIMATE_GAUGE) return false
   if (c.liberation && gaugeOf(state, unit.team) < LIBERATION_GAUGE) return false
   if (c.faith != null && state.faith[unit.team] < c.faith) return false
+  if (c.earth != null && (state.earth?.[unit.team] ?? 0) < c.earth) return false
   if (c.graveyard != null && state.graveyard[unit.team] < c.graveyard) return false
   if (c.hpBelow != null && (unit.hp / unit.maxHp) * 100 > c.hpBelow) return false
   if (c.hpAbove != null && (unit.hp / unit.maxHp) * 100 < c.hpAbove) return false
@@ -521,6 +523,13 @@ function runEffects(state, source, effects, ctx = {}) {
       state.faith[source.team] = next
       continue
     }
+    if (e.type === 'earth') { // 土の印: 場の土の印の合計(チーム共通)。マイナスで消費(土の秘術)
+      const amount = e.amount ?? 1
+      const next = Math.max(0, state.earth[source.team] + amount)
+      state.log.push(`土の印が${amount >= 0 ? '+' : ''}${amount}(${next})`)
+      state.earth[source.team] = next
+      continue
+    }
     if (e.type === 'graveyard') {
       const amount = e.amount ?? 1
       const next = Math.max(0, state.graveyard[source.team] + amount)
@@ -669,6 +678,7 @@ function runEffects(state, source, effects, ctx = {}) {
           }
           break
         case 'destroy': // 破壊する(召喚物の「自身を破壊」など)
+          if (hasKw(t, 'earthSign')) break // 土の印は、能力で破壊できない
           if (t.alive) { t.hp = 0; t.alive = false; state.log.push(`${t.name}は破壊された`) }
           break
         case 'reenter': // 入場し直す: 入場直後の状態に戻る(次の自分のターン開始時にファンファーレがもう一度働き、そのターンはスキル攻撃ができない)
