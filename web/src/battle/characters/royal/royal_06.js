@@ -1,7 +1,7 @@
 import steelKnight from './tokens/royal_token_02.js' // 召喚する「スティールナイト」
 
 export default {
-  id: 'royal_08', name: '救援のルミナスヒーラー', class: 'ロイヤル', rarity: 'bronze', type: 'ルミナス',
+  id: 'royal_06', name: '救援のルミナスヒーラー', class: 'ロイヤル', rarity: 'bronze', type: 'ルミナス',
   stats: { hp: 219, atk: 114, def: 153, spd: 70 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
