@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useIsDesktop, C, FONT } from './ui.js'
+import { ScreenHeader } from './chrome.jsx'
 import { ALL_CHARACTERS, charById } from './battle/characters/index.js'
 import { ALL_SPELLS, spellById } from './battle/spells/index.js'
 import { KEYWORDS, TRIGGER_LABELS, RELICS } from './battle/engine.js'
@@ -343,12 +344,11 @@ export default function CodexScreen({ onExit, title = '資料集', ownedMap = nu
 
   const header = (
     <div style={{ background: C.card, borderBottom: `1px solid ${C.line}`, position: 'sticky', top: 0, zIndex: 5 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: desktop ? '12px 36px 0' : '10px 12px 0' }}>
-        <button onClick={onExit} style={{ ...chip(false), padding: '8px 14px' }}>← もどる</button>
-        <h1 style={{ margin: 0, fontSize: desktop ? 24 : 20 }}>{title}</h1>
-        <div style={{ flex: 1 }} />
-        <div style={{ fontSize: 12, color: C.mute }}>{agents ? `所持 ${indexed.chars.length}種 / 全${ALL_CHARACTERS.length}種` : `${ALL_CHARACTERS.length}キャラ ・ ${ALL_SPELLS.length}スペル`}</div>
-      </div>
+      <ScreenHeader
+        title={title}
+        onClose={onExit}
+        right={<span style={{ fontSize: 12, color: C.mute }}>{agents ? `所持 ${indexed.chars.length}種 / 全${ALL_CHARACTERS.length}種` : `${ALL_CHARACTERS.length}キャラ ・ ${ALL_SPELLS.length}スペル`}</span>}
+      />
       {!agents && (
         <div style={{ display: 'flex', padding: desktop ? '0 36px' : '0 12px' }}>
           <button style={tabBtn(!isSpell)} onClick={() => switchTab('chars')}>キャラクター</button>
@@ -376,10 +376,11 @@ export default function CodexScreen({ onExit, title = '資料集', ownedMap = nu
   )
 
   const page = { minHeight: '100vh', background: C.paper, color: C.ink, fontFamily: FONT }
+  const themeClass = agents ? '' : 'theme-light' // 資料集(COLLECTION)は明るい灰色、AGENTSは暗い画面
 
   if (desktop) {
     return (
-      <div style={page}>
+      <div className={themeClass} style={page}>
         {header}
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 420px) 1fr', gap: 20, padding: '16px 36px', alignItems: 'start' }}>
           <div>
@@ -395,7 +396,7 @@ export default function CodexScreen({ onExit, title = '資料集', ownedMap = nu
   }
 
   return (
-    <div style={page}>
+    <div className={themeClass} style={page}>
       {header}
       <div style={{ padding: '10px 12px calc(20px + env(safe-area-inset-bottom))', maxWidth: 720, margin: '0 auto' }}>
         {filters}
