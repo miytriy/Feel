@@ -1,5 +1,5 @@
 export default {
-  id: 'royal_07', name: '愛の騎士・イアン', class: 'ロイヤル', rarity: 'bronze',
+  id: 'royal_05', name: '愛の騎士・イアン', class: 'ロイヤル', rarity: 'bronze',
   stats: { hp: 264, atk: 211, def: 103, spd: 80 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
