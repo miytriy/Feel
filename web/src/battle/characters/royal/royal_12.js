@@ -1,5 +1,5 @@
 export default {
-  id: 'royal_14', name: 'レヴィオンの迅雷・アルベール', class: 'ロイヤル', rarity: 'legend', type: 'レヴィオン',
+  id: 'royal_12', name: 'レヴィオンの迅雷・アルベール', class: 'ロイヤル', rarity: 'legend', type: 'レヴィオン',
   stats: { hp: 505, atk: 501, def: 90, spd: 60 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
