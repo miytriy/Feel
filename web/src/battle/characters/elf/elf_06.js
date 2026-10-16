@@ -1,5 +1,5 @@
 export default {
-  id: 'elf_07', name: '働きバッタ', class: 'エルフ', rarity: 'bronze',
+  id: 'elf_06', name: '働きバッタ', class: 'エルフ', rarity: 'bronze',
   stats: { hp: 110, atk: 207, def: 105, spd: 80 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [{
