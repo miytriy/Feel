@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useIsDesktop, C, FONT } from './ui.js'
+import { useIsDesktop, C, FONT, alpha } from './ui.js'
 import {
   MAX_SLOTS, validateFormation, canPlace, placeChar, removeChar, swapSlots, quickFill,
   saveFormation, loadFormation, defaultFormation, MAX_SPELL_SLOTS, saveSpellSet, loadSpellSet, validateSpellSet, canUseSpell, spellClassOf, teamClassOf,
@@ -172,7 +172,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
           display: 'flex', alignItems: 'center', gap: 8, padding: desktop ? '12px 14px' : '8px 10px', marginBottom: 6, borderRadius: 10,
           background: C.card, cursor: quick ? 'default' : 'pointer',
           border: `2px solid ${active ? C.active : C.line}`,
-          boxShadow: active ? `0 0 0 3px ${C.active}44` : 'none',
+          boxShadow: active ? `0 0 0 3px ${alpha(C.active, 27)}` : 'none',
         }}
       >
         <div style={{ width: 22, fontWeight: 700, color: C.mute, textAlign: 'center' }}>{i + 1}</div>
