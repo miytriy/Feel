@@ -1,0 +1,36 @@
+# キャラのファイルを保存すると、ガチャの排出リスト(server/characters.json)を自動で作り直して保存する
+name: キャラ一覧を自動で更新
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/src/battle/characters/**'
+      - 'scripts/**'
+  workflow_dispatch: # 手動で動かしたいとき(Actionsタブ → このワークフロー → Run workflow)
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: characters.json を作る
+        run: node scripts/generate-characters.mjs
+      - name: 変わっていたら保存する
+        run: |
+          if git diff --quiet -- server/characters.json; then
+            echo "characters.json に変更はありません"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add server/characters.json
+          git commit -m "chore: characters.json をキャラのファイルから自動更新"
+          git pull --rebase origin main
+          git push
