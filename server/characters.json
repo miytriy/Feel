@@ -20,7 +20,7 @@
   { "id": "royal_01", "name": "統率のルミナスナイト", "class": "ロイヤル", "rarity": "silver" },
   { "id": "royal_02", "name": "異端の侍", "class": "ロイヤル", "rarity": "bronze" },
   { "id": "royal_03", "name": "勇猛のルミナスランサー", "class": "ロイヤル", "rarity": "silver" },
-  { "id": "royal_06", "name": "忍びのムササビ", "class": "ロイヤル", "rarity": "silver" },
+  { "id": "royal_04", "name": "忍びのムササビ", "class": "ロイヤル", "rarity": "silver" },
   { "id": "royal_07", "name": "愛の騎士・イアン", "class": "ロイヤル", "rarity": "bronze" },
   { "id": "royal_08", "name": "救援のルミナスヒーラー", "class": "ロイヤル", "rarity": "bronze" },
   { "id": "royal_09", "name": "ミリタリードッグ", "class": "ロイヤル", "rarity": "bronze" },
