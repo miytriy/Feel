@@ -1,4 +1,4 @@
-import knight from './royal_01.js' // 召喚する「ナイト」
+import knight from './tokens/royal_token_01.js' // 召喚する「ナイト」
 
 export default {
   id: 'royal_05', name: '勇猛のルミナスランサー', class: 'ロイヤル', rarity: 'silver', type: 'ルミナス',
