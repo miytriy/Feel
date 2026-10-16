@@ -1,5 +1,5 @@
 export default {
-  id: 'elf_10', name: '言の葉のエルダーウィードマン', class: 'エルフ', rarity: 'bronze',
+  id: 'elf_09', name: '言の葉のエルダーウィードマン', class: 'エルフ', rarity: 'bronze',
   stats: { hp: 301, atk: 300, def: 90, spd: 70 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [{
