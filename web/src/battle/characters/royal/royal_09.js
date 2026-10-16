@@ -1,5 +1,5 @@
 export default {
-  id: 'royal_11', name: '常在戦場・カゲミツ', class: 'ロイヤル', rarity: 'legend',
+  id: 'royal_09', name: '常在戦場・カゲミツ', class: 'ロイヤル', rarity: 'legend',
   stats: { hp: 220, atk: 201, def: 90, spd: 80 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
