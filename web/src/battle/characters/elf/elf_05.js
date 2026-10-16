@@ -8,7 +8,7 @@ const summonFairies = [
 ]
 
 export default {
-  id: 'elf_06', name: 'コンタクトフェアリー', class: 'エルフ', rarity: 'bronze',
+  id: 'elf_05', name: 'コンタクトフェアリー', class: 'エルフ', rarity: 'bronze',
   stats: { hp: 131, atk: 122, def: 90, spd: 80 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
