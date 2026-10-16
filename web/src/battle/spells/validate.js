@@ -3,7 +3,7 @@ import { validateEffects, RARITIES, CLASSES } from '../characters/validate.js'
 
 const isStr = (x) => typeof x === 'string' && x.length > 0
 // スペルは「キャラ」ではなくプレイヤーの能力なので、キャラ自身を指す対象や、対象を選ぶ効果は使えない
-const BAD_TARGETS = ['self', 'allyOne', 'otherAllyOne', 'enemyOne', 'entered']
+const BAD_TARGETS = ['self', 'allyOne', 'otherAllyOne', 'entered']
 
 export function validateSpell(def, opts = {}) {
   const depth = opts.depth || 0
@@ -29,7 +29,7 @@ export function validateSpell(def, opts = {}) {
     checkBad(def.effects, '')
     def.effects.forEach((e, i) => {
       if (e && e.type === 'enableSpell' && e.spell && depth < 2) errs.push(...validateSpell(e.spell, { depth: depth + 1 }).map((m) => `${label}の有効化するスペル → ${m}`))
-      if (e && e.choose) add(`効果${i + 1}: スペルでは「対象を選ぶ(choose)」効果はまだ使えません`)
+      if (e && e.choose && e.target !== 'enemyOne') add(`効果${i + 1}: スペルでは「対象を選ぶ(choose)」は、相手1体(enemyOne)のときだけ使えます`)
     })
   }
   return errs
