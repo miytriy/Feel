@@ -234,7 +234,7 @@ function Related({ rel, onOpen }) {
   )
 }
 
-function Detail({ tab, def, onOpen, onClose, desktop }) {
+function Detail({ tab, def, onOpen, onClose, desktop, count = null }) {
   if (!def) {
     return <div style={{ color: C.mute, padding: 24, textAlign: 'center', fontSize: 14 }}>左の一覧から選ぶと、くわしい情報が見られます</div>
   }
@@ -246,7 +246,7 @@ function Detail({ tab, def, onOpen, onClose, desktop }) {
             <h2 style={{ margin: 0, fontSize: 20 }}>{def.name}</h2>
             <RarityBadge rarity={def.rarity} />
           </div>
-          <div style={{ fontSize: 12, color: C.mute, marginTop: 2 }}>{def.class} ・ {def.id}</div>
+          <div style={{ fontSize: 12, color: C.mute, marginTop: 2 }}>{def.class} ・ {def.id}{count != null ? ` ・ 所持 ×${count}` : ''}</div>
         </div>
         {!desktop && <button onClick={onClose} style={{ ...chip(false), padding: '8px 14px' }}>閉じる</button>}
       </div>
@@ -256,7 +256,7 @@ function Detail({ tab, def, onOpen, onClose, desktop }) {
 }
 
 // ---------- 一覧の1件 ----------
-function ListItem({ tab, def, selected, onClick }) {
+function ListItem({ tab, def, selected, onClick, count = null }) {
   const r = RARITY[def.rarity]
   return (
     <button
@@ -269,7 +269,7 @@ function ListItem({ tab, def, selected, onClick }) {
         background: selected ? '#f3f6ff' : C.card, color: C.ink,
       }}
     >
-      <div style={{ fontWeight: 800, fontSize: 14 }}>{def.name}</div>
+      <div style={{ fontWeight: 800, fontSize: 14, display: 'flex', justifyContent: 'space-between', gap: 8 }}><span>{def.name}</span>{count != null && <span style={{ color: C.player }}>×{count}</span>}</div>
       <div style={{ fontSize: 11, color: C.mute, marginTop: 2 }}>
         {tab === 'chars'
           ? `${def.class}${def.type ? ' / ' + def.type : ''} ・ HP ${def.stats.hp} ・ 攻撃 ${def.stats.atk} ・ 防御 ${def.stats.def} ・ 速度 ${def.stats.spd}`
@@ -281,8 +281,10 @@ function ListItem({ tab, def, selected, onClick }) {
 }
 
 // ---------- 画面 ----------
-export default function CodexScreen({ onExit }) {
+// ownedMap を渡すと「所持キャラクター」になる(持っているキャラだけ・キャラのタブだけ・所持数つき)
+export default function CodexScreen({ onExit, title = '資料集', ownedMap = null }) {
   const desktop = useIsDesktop()
+  const agents = !!ownedMap
   const [tab, setTab] = useState('chars') // chars | spells
   const [cls, setCls] = useState('all')
   const [rarity, setRarity] = useState('all')
@@ -295,9 +297,9 @@ export default function CodexScreen({ onExit }) {
 
   // 検索用の文字は最初に1回だけ作る
   const indexed = useMemo(() => ({
-    chars: ALL_CHARACTERS.map((d) => ({ d, t: searchText(d, false) })),
+    chars: ALL_CHARACTERS.filter((d) => !agents || ownedMap[d.id] > 0).map((d) => ({ d, t: searchText(d, false) })),
     spells: ALL_SPELLS.map((d) => ({ d, t: searchText(d, true) })),
-  }), [])
+  }), [agents, ownedMap])
 
   // クラスごとの件数(検索・レアリティの結果に合わせて数える)
   const terms = fold(query).split(/\s+/).filter(Boolean)
@@ -334,8 +336,8 @@ export default function CodexScreen({ onExit }) {
 
   const list = (
     <div style={{ display: 'grid', gap: 8, gridTemplateColumns: desktop ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))' }}>
-      {shown.length === 0 && <div style={{ color: C.mute, fontSize: 14, padding: 16 }}>見つかりませんでした。検索の言葉やクラス・レアリティの絞り込みを変えてみてください。</div>}
-      {shown.map((d) => <ListItem key={d.id} tab={tab} def={d} selected={d.id === selId} onClick={() => setSelId(d.id)} />)}
+      {shown.length === 0 && <div style={{ color: C.mute, fontSize: 14, padding: 16 }}>{agents && indexed.chars.length === 0 ? 'まだキャラクターを持っていません。STOREで手に入れましょう。' : '見つかりませんでした。検索の言葉やクラス・レアリティの絞り込みを変えてみてください。'}</div>}
+      {shown.map((d) => <ListItem key={d.id} tab={tab} def={d} selected={d.id === selId} onClick={() => setSelId(d.id)} count={agents ? ownedMap[d.id] : null} />)}
     </div>
   )
 
@@ -343,14 +345,17 @@ export default function CodexScreen({ onExit }) {
     <div style={{ background: C.card, borderBottom: `1px solid ${C.line}`, position: 'sticky', top: 0, zIndex: 5 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: desktop ? '12px 36px 0' : '10px 12px 0' }}>
         <button onClick={onExit} style={{ ...chip(false), padding: '8px 14px' }}>← もどる</button>
-        <h1 style={{ margin: 0, fontSize: desktop ? 24 : 20 }}>資料集</h1>
+        <h1 style={{ margin: 0, fontSize: desktop ? 24 : 20 }}>{title}</h1>
         <div style={{ flex: 1 }} />
-        <div style={{ fontSize: 12, color: C.mute }}>{ALL_CHARACTERS.length}キャラ ・ {ALL_SPELLS.length}スペル</div>
+        <div style={{ fontSize: 12, color: C.mute }}>{agents ? `所持 ${indexed.chars.length}種 / 全${ALL_CHARACTERS.length}種` : `${ALL_CHARACTERS.length}キャラ ・ ${ALL_SPELLS.length}スペル`}</div>
       </div>
-      <div style={{ display: 'flex', padding: desktop ? '0 36px' : '0 12px' }}>
-        <button style={tabBtn(!isSpell)} onClick={() => switchTab('chars')}>キャラクター</button>
-        <button style={tabBtn(isSpell)} onClick={() => switchTab('spells')}>スペル</button>
-      </div>
+      {!agents && (
+        <div style={{ display: 'flex', padding: desktop ? '0 36px' : '0 12px' }}>
+          <button style={tabBtn(!isSpell)} onClick={() => switchTab('chars')}>キャラクター</button>
+          <button style={tabBtn(isSpell)} onClick={() => switchTab('spells')}>スペル</button>
+        </div>
+      )}
+      {agents && <div style={{ height: 8 }} />}
     </div>
   )
 
@@ -382,7 +387,7 @@ export default function CodexScreen({ onExit }) {
             <div style={{ maxHeight: 'calc(100vh - 290px)', overflowY: 'auto', paddingRight: 4 }}>{list}</div>
           </div>
           <div style={{ position: 'sticky', top: 120, background: C.card, border: `1px solid ${C.line}`, borderRadius: 14, maxHeight: 'calc(100vh - 150px)', overflowY: 'auto' }}>
-            <Detail tab={tab} def={selected} onOpen={open} desktop />
+            <Detail tab={tab} def={selected} onOpen={open} desktop count={agents && selected ? ownedMap[selected.id] ?? null : null} />
           </div>
         </div>
       </div>
@@ -398,7 +403,7 @@ export default function CodexScreen({ onExit }) {
       </div>
       {selected && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 20, background: C.card, overflowY: 'auto', paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          <Detail tab={tab} def={selected} onOpen={open} onClose={() => setSelId(null)} desktop={false} />
+          <Detail tab={tab} def={selected} onOpen={open} onClose={() => setSelId(null)} desktop={false} count={agents && selected ? ownedMap[selected.id] ?? null : null} />
         </div>
       )}
     </div>
