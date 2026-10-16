@@ -4,6 +4,7 @@ import {
   MAX_SLOTS, validateFormation, canPlace, placeChar, removeChar, swapSlots, quickFill,
   saveFormation, loadFormation, defaultFormation, MAX_SPELL_SLOTS, saveSpellSet, loadSpellSet, validateSpellSet, canUseSpell, spellClassOf, teamClassOf,
 } from './battle/formation.js'
+import { MAX_PARTIES, partyToSlots, partyToSpells, partyCount } from './battle/parties.js'
 
 // 編成画面: スロット(最大5)にキャラを入れる。順番は、行動値が同じときの優先順(1番目が最優先)
 const C = {
@@ -36,16 +37,20 @@ function CharLine({ c }) {
   )
 }
 
-export default function FormationScreen({ allChars, allSpells = [], defaultIds = [], onStart, onExit }) {
-  const [slots, setSlots] = useState(() => loadFormation(allChars) || defaultFormation(allChars, defaultIds))
+// parties: アカウントのパーティー(最大5つ。なければ null)。partyIdxInit: 最初に開くパーティーの番号。onSaveParty(番号, スロット, スペル): 保存して、成功なら true
+// onStart がないときは「保存するだけの編成画面」(PARTY)になる
+export default function FormationScreen({ allChars, allSpells = [], defaultIds = [], onStart, onExit, title = '編成', parties = null, partyIdxInit = null, onSaveParty = null, onPartyChange = null }) {
+  const [partyIdx, setPartyIdx] = useState(parties ? partyIdxInit : null)
+  const startParty = parties && partyIdxInit != null ? parties[partyIdxInit] : null
+  const [slots, setSlots] = useState(() => (startParty ? partyToSlots(startParty, allChars) : loadFormation(allChars) || defaultFormation(allChars, defaultIds)))
   const [savedIds, setSavedIds] = useState(() => JSON.stringify(slots.map((c) => c?.id ?? null)))
   const [activeSlot, setActiveSlot] = useState(null) // 選択中のスロット(キャラを選ぶ)
   const [quick, setQuick] = useState(false) // クイック編成: 選んだ順に1番目から詰める
   const [picks, setPicks] = useState([])
   const [message, setMessage] = useState('')
   // スペルセット: 最大 MAX_SPELL_SLOTS 回分。同じスペルを何回入れてもよい
-  const [spellSet, setSpellSet] = useState(() => loadSpellSet(allSpells))
-  const [savedSpellIds, setSavedSpellIds] = useState(() => JSON.stringify(loadSpellSet(allSpells).map((sp) => sp.id)))
+  const [spellSet, setSpellSet] = useState(() => (startParty ? partyToSpells(startParty, allSpells) : loadSpellSet(allSpells)))
+  const [savedSpellIds, setSavedSpellIds] = useState(() => JSON.stringify((startParty ? partyToSpells(startParty, allSpells) : loadSpellSet(allSpells)).map((sp) => sp.id)))
   const [spellPick, setSpellPick] = useState(false) // スペルの一覧を開いているか
   const desktop = useIsDesktop() // PCでは、キャラの一覧を右に出しっぱなしにして、画面全体を使う
 
@@ -93,14 +98,55 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
     setQuick(true); setPicks([]); setActiveSlot(null); setMessage('')
   }
   const handleSave = () => {
+    if (partyIdx != null && onSaveParty) { // パーティーに保存する
+      if (onSaveParty(partyIdx, slots, spellSet)) { setSavedIds(ids); setSavedSpellIds(spellIds); setMessage(`パーティー${partyIdx + 1}に保存しました`) }
+      else setMessage('この端末では保存できませんでした')
+      return
+    }
     if (saveFormation(slots) && saveSpellSet(spellSet)) { setSavedIds(ids); setSavedSpellIds(spellIds) }
     else setMessage('この端末では保存できませんでした(戦闘は始められます)')
+  }
+  // パーティーを切り替える(未保存の変更があるときは、確認する)
+  const loadParty = (i) => {
+    if (i === partyIdx || !parties) return
+    if (dirty && !window.confirm('未保存の変更があります。破棄してパーティーを切り替えますか?')) return
+    const p = parties[i]
+    const nextSlots = partyToSlots(p, allChars)
+    const nextSpells = partyToSpells(p, allSpells)
+    setSlots(nextSlots)
+    setSpellSet(nextSpells)
+    setSavedIds(JSON.stringify(nextSlots.map((c) => c?.id ?? null)))
+    setSavedSpellIds(JSON.stringify(nextSpells.map((sp) => sp.id)))
+    setPartyIdx(i)
+    setActiveSlot(null); setQuick(false); setPicks([]); setSpellPick(false)
+    setMessage('')
+    if (onPartyChange) onPartyChange(i)
   }
 
   const showList = desktop || quick || activeSlot !== null
   const targetSlot = activeSlot !== null ? activeSlot : slots.findIndex((x) => !x)
 
   // ---- 部品 ----
+  // パーティーの切り替え(アカウントのときだけ)。番号の下は編成済みの体数
+  const partyBar = parties && (
+    <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+      {Array.from({ length: MAX_PARTIES }, (_, i) => {
+        const on = partyIdx === i
+        const n = partyCount(parties[i])
+        return (
+          <button
+            key={i}
+            onClick={() => loadParty(i)}
+            style={{ flex: 1, padding: '6px 2px', borderRadius: 8, fontFamily: FONT, fontWeight: 800, fontSize: 14, cursor: 'pointer', border: `2px solid ${on ? C.player : C.line}`, background: on ? C.player : '#fff', color: on ? '#fff' : C.ink }}
+          >
+            {i + 1}
+            <div style={{ fontSize: 10, fontWeight: 600, opacity: 0.85 }}>{n ? `${n}体` : '空き'}</div>
+          </button>
+        )
+      })}
+    </div>
+  )
+
   const titleRow = (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: desktop ? 14 : 12, color: C.mute }}>
       <span>{filled.length}/{MAX_SLOTS}体 編成済み</span>
@@ -239,8 +285,8 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
   )
   const buttons = (
     <div style={{ display: 'flex', gap: 8 }}>
-      <button onClick={handleSave} disabled={!dirty} style={{ ...btn(false, !dirty), flex: 1 }}>保存</button>
-      <button onClick={() => check.ok && onStart(filled, spellSet)} disabled={!check.ok} style={{ ...btn(true, !check.ok), flex: 2 }}>この編成で対戦へ</button>
+      <button onClick={handleSave} disabled={!dirty || (partyIdx != null && !check.ok)} style={{ ...btn(!onStart, !dirty || (partyIdx != null && !check.ok)), flex: 1 }}>保存</button>
+      {onStart && <button onClick={() => check.ok && onStart(filled, spellSet)} disabled={!check.ok} style={{ ...btn(true, !check.ok), flex: 2 }}>この編成で対戦へ</button>}
     </div>
   )
 
@@ -249,12 +295,13 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
     return (
       <div style={{ height: '100vh', boxSizing: 'border-box', padding: '20px 32px', background: C.paper, color: C.ink, fontFamily: FONT, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 10 }}>
-          <h2 style={{ margin: 0, fontSize: 28 }}>編成</h2>
+          <h2 style={{ margin: 0, fontSize: 28 }}>{title}</h2>
           <div style={{ flex: 1 }} />
           <button onClick={onExit} style={btn(false, false)}>戻る</button>
         </div>
         <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'minmax(420px, 5fr) minmax(0, 7fr)', gap: 24 }}>
           <div style={{ minHeight: 0, overflowY: 'auto', paddingRight: 6 }}>
+            {partyBar}
             {titleRow}
             {quickBox}
             {slotList}
@@ -278,7 +325,8 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
   const sheetOpen = quick || activeSlot !== null
   return (
     <div style={{ maxWidth: 520, margin: '0 auto', padding: 12, paddingBottom: 150, minHeight: '100vh', background: C.paper, color: C.ink, fontFamily: FONT }}>
-      <h2 style={{ margin: '4px 0 6px' }}>編成</h2>
+      <h2 style={{ margin: '4px 0 6px' }}>{title}</h2>
+      {partyBar}
       {titleRow}
       {quickBox}
       {slotList}
