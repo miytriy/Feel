@@ -21,10 +21,10 @@ const PITY_COUNT = 40
 const COST = 100
 
 const RARITY = {
-  legend: { label: 'レジェンド', color: '#c026d3' },
-  gold: { label: 'ゴールド', color: '#d4a017' },
-  silver: { label: 'シルバー', color: '#6b7280' },
-  bronze: { label: 'ブロンズ', color: '#92400e' },
+  legend: { label: 'レジェンド', color: '#e879f9' },
+  gold: { label: 'ゴールド', color: '#facc15' },
+  silver: { label: 'シルバー', color: '#cbd5e1' },
+  bronze: { label: 'ブロンズ', color: '#fb923c' },
 }
 
 export default function App() {
@@ -271,8 +271,8 @@ export default function App() {
   const btn = (primary, disabled) => ({
     padding: desktop ? '10px 18px' : '12px 16px', borderRadius: 10, fontSize: desktop ? 15 : 16, fontWeight: 700, fontFamily: FONT,
     border: `1.5px solid ${disabled ? C.line : primary ? C.player : C.line}`,
-    background: disabled ? '#f3f4f7' : primary ? C.player : C.card,
-    color: disabled ? '#9aa1b2' : primary ? '#fff' : C.ink,
+    background: disabled ? C.disabledBg : primary ? C.player : C.card,
+    color: disabled ? C.disabledInk : primary ? C.onAccent : C.ink,
     cursor: disabled ? 'default' : 'pointer',
   })
   const card = (bg = C.card) => ({ padding: desktop ? 20 : 14, borderRadius: 14, background: bg, border: `1px solid ${C.line}`, boxShadow: '0 1px 3px rgba(31,42,68,0.06)' })
@@ -281,7 +281,7 @@ export default function App() {
   const bonusCard = user && me && (
     <div style={card()}>
       <h3 style={h3}>ログインボーナス</h3>
-      <div style={{ padding: 10, borderRadius: 10, background: '#f3f6ff', fontSize: 14 }}>
+      <div style={{ padding: 10, borderRadius: 10, background: C.soft, fontSize: 14 }}>
         {me.loginBonus.canClaim ? (
           <button disabled={busy} onClick={handleLoginBonus} style={btn(true, busy)}>
             ログインボーナスを受け取る(+{me.loginBonus.nextAmount})
@@ -313,7 +313,7 @@ export default function App() {
   )
 
   const giftCard = user && (
-    <div style={card('#fff8e6')}>
+    <div style={card(C.softWarn)}>
       <h3 style={h3}>プレゼントBOX</h3>
       {gifts.length === 0 ? (
         <p style={{ fontSize: 13, margin: '4px 0' }}>受け取れるプレゼントはありません</p>
@@ -330,7 +330,7 @@ export default function App() {
   )
 
   const codeCard = user && (
-    <div style={card('#f3fff6')}>
+    <div style={card(C.softOk)}>
       <h3 style={h3}>合言葉</h3>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input
@@ -348,7 +348,7 @@ export default function App() {
   const messages = (notice || error) && (
     <div style={{ marginTop: 12 }}>
       {notice && <div style={{ color: C.ok, fontWeight: 700 }}>{notice}</div>}
-      {error && <div style={{ color: 'red' }}>{error}</div>}
+      {error && <div style={{ color: C.bad }}>{error}</div>}
     </div>
   )
 
