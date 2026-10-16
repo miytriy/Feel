@@ -3,17 +3,18 @@ import { useEffect, useState } from 'react'
 
 export const DESKTOP_MIN = 900 // この幅(px)以上ならPC用の画面にする
 export const FONT = '"Hiragino Sans","Noto Sans JP",system-ui,sans-serif'
-export const DISPLAY = '"Barlow Condensed","Oswald","Arial Narrow","Impact","Hiragino Sans","Noto Sans JP",sans-serif' // 見出し・メニュー用の、細長くて太い文字
-// 色(暗いティール基調 + ネオン)。画面はすべてこの色を使う。色を変えるときは、ここだけ直せばよい
+export const DISPLAY = '"Chakra Petch","Rajdhani","Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif' // 見出し・メニュー用の、角ばった未来風の文字
+// 色(夜の藍色 + 青のネオン)。画面はすべてこの色を使う。色を変えるときは、ここだけ直せばよい
 export const C = {
-  ink: '#e8f4f2', paper: '#08171c', card: '#102730', line: '#25505b', mute: '#82a3aa',
-  player: '#34f0c8', // ネオン(ボタン・選択・自分のチーム)。この上に文字を置くときは onAccent
-  enemy: '#ff4655', active: '#ffd24a', warn: '#ff9a4d', ok: '#3ddc97', bad: '#ff6b6b',
-  onAccent: '#032320', // ネオンの上の文字色
-  soft: '#16363f', softWarn: '#352a14', softOk: '#10342a', dangerBg: '#3a1a22', // 薄い面
-  disabledBg: '#122a31', disabledInk: '#5d7c83',
-  neon: '#34f0c8', red: '#ff4655',
+  ink: '#e9eefc', paper: '#0a0f1f', card: '#121a33', line: '#2a3560', mute: '#8d9acb',
+  player: '#4cc9ff', // ネオン(ボタン・選択・自分のチーム)。この上に文字を置くときは onAccent
+  enemy: '#ff4d6d', active: '#ffd24a', warn: '#ff9a4d', ok: '#3ddc97', bad: '#ff6b81',
+  onAccent: '#041423', // ネオンの上の文字色
+  soft: '#1a2550', softWarn: '#352a14', softOk: '#0f2f2a', dangerBg: '#3a1a2a', // 薄い面
+  disabledBg: '#141c38', disabledInk: '#5d6896',
+  neon: '#4cc9ff', red: '#ff4d6d',
 }
+export const NEON_RGB = '76,201,255' // ネオンの光(影)に使う
 
 const query = `(min-width: ${DESKTOP_MIN}px)`
 const detect = () => (typeof window !== 'undefined' && window.matchMedia ? window.matchMedia(query).matches : false)
@@ -52,22 +53,23 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     input::placeholder { color: ${C.mute}; }
     /* ホームのメニュー: 白い大きな文字。カーソルを乗せる(押す・キーで選ぶ)と、ネオン色になって右に少し動く */
     .feel-menu { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: clamp(2px, 1vh, 10px); }
-    .feel-menu-item { display: flex; align-items: center; gap: 18px; background: none; border: 0; padding: 4px 0; cursor: pointer; text-align: left; color: #fff;
-      font-family: ${DISPLAY}; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.05; font-size: clamp(34px, 5.2vw, 58px); min-height: 0; }
-    .feel-menu-item.primary { color: ${C.red}; font-size: clamp(56px, 8.6vw, 96px); }
-    .feel-menu-item .bullet { flex: none; width: 9px; height: 9px; margin-left: 4px; background: #fff; transform: rotate(45deg); transition: background 0.16s; }
-    .feel-menu-item.primary .bullet { background: ${C.red}; }
+    .feel-menu-item { display: flex; align-items: center; gap: 16px; background: none; border: 0; padding: 4px 0; cursor: pointer; text-align: left; color: #fff;
+      font-family: ${DISPLAY}; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; line-height: 1.1; font-size: clamp(26px, 4.2vw, 46px); min-height: 0; }
+    .feel-menu-item.primary { color: ${C.red}; font-weight: 700; font-size: clamp(40px, 6.4vw, 70px); }
+    /* 項目の左の印: 短い線。選ぶと、長くなってネオン色になる */
+    .feel-menu-item .bullet { flex: none; width: 18px; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.7); transition: width 0.18s ease, background 0.16s; }
+    .feel-menu-item.primary .bullet { background: ${C.red}; width: 26px; height: 4px; }
     .feel-menu-item .label { display: inline-block; transition: transform 0.16s ease, color 0.16s ease, text-shadow 0.16s ease; }
     .feel-menu-item.locked { opacity: 0.45; }
     .feel-menu-item:focus-visible, .feel-menu-item:active { outline: none; }
-    .feel-menu-item:focus-visible .label, .feel-menu-item:active .label { color: ${C.neon}; transform: translateX(12px); text-shadow: 0 0 18px rgba(52,240,200,0.55); }
-    .feel-menu-item:focus-visible .bullet, .feel-menu-item:active .bullet { background: ${C.neon}; }
+    .feel-menu-item:focus-visible .label, .feel-menu-item:active .label { color: ${C.neon}; transform: translateX(12px); text-shadow: 0 0 18px rgba(${NEON_RGB},0.55); }
+    .feel-menu-item:focus-visible .bullet, .feel-menu-item:active .bullet { background: ${C.neon}; width: 40px; }
     @media (hover: hover) {
-      .feel-menu-item:hover .label { color: ${C.neon}; transform: translateX(12px); text-shadow: 0 0 18px rgba(52,240,200,0.55); }
-      .feel-menu-item:hover .bullet { background: ${C.neon}; }
+      .feel-menu-item:hover .label { color: ${C.neon}; transform: translateX(12px); text-shadow: 0 0 18px rgba(${NEON_RGB},0.55); }
+      .feel-menu-item:hover .bullet { background: ${C.neon}; width: 40px; }
       .feel-menu-item.locked:hover { opacity: 0.75; }
     }
-    .feel-back { background: none; border: 0; cursor: pointer; color: ${C.mute}; font-family: ${DISPLAY}; font-weight: 700; font-size: 20px; letter-spacing: 0.06em; padding: 6px 0; min-height: 0; transition: color 0.16s, transform 0.16s; }
+    .feel-back { background: none; border: 0; cursor: pointer; color: ${C.mute}; font-family: ${DISPLAY}; font-weight: 600; font-size: 17px; letter-spacing: 0.1em; padding: 6px 0; min-height: 0; transition: color 0.16s, transform 0.16s; }
     .feel-back:hover, .feel-back:focus-visible { color: ${C.neon}; transform: translateX(-4px); outline: none; }
     button { font-family: inherit; touch-action: manipulation; }
     input { font-family: inherit; }
