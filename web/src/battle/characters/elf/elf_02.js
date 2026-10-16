@@ -1,4 +1,4 @@
-import fairy from './elf_01.js' // 召喚する「フェアリー」は、elf_01.js のキャラです(数字を直すときは elf_01.js だけ直せば両方に反映されます)
+import fairy from './tokens/elf_01.js' // 召喚する「フェアリー」は、elf_01.js のキャラです(数字を直すときは elf_01.js だけ直せば両方に反映されます)
 
 export default {
   id: 'elf_02', name: '純粋なるウォーターフェアリー', class: 'エルフ', rarity: 'silver',
