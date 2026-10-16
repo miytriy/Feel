@@ -6,7 +6,7 @@ import { KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 // first=true のときは「はじめて遊ぶ人向け」の見出しになり、下のボタンが「あそびはじめる」になる。
 
 const Box = ({ children, tone }) => (
-  <div style={{ padding: '8px 10px', borderRadius: 8, background: tone === 'warn' ? '#fff4e5' : '#eef3ff', fontSize: 13, margin: '8px 0 0', lineHeight: 1.7 }}>{children}</div>
+  <div style={{ padding: '8px 10px', borderRadius: 8, background: tone === 'warn' ? C.softWarn : C.soft, fontSize: 13, margin: '8px 0 0', lineHeight: 1.7 }}>{children}</div>
 )
 const P = ({ children }) => <p style={{ margin: '6px 0', fontSize: 14, lineHeight: 1.8 }}>{children}</p>
 const Li = ({ children }) => <li style={{ margin: '4px 0', fontSize: 14, lineHeight: 1.7 }}>{children}</li>
@@ -19,7 +19,7 @@ function BarDemo() {
       <div style={{ fontSize: 12, color: C.mute, marginBottom: 6 }}>例: 左にいるほど先に行動(速度が高い=左に近い)</div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {rows.map(([n, spd, o]) => (
-          <div key={n} style={{ padding: '6px 10px', borderRadius: 8, background: '#fff', border: `1.5px solid ${o === 1 ? C.active : C.line}`, fontSize: 12, textAlign: 'center' }}>
+          <div key={n} style={{ padding: '6px 10px', borderRadius: 8, background: C.card, border: `1.5px solid ${o === 1 ? C.active : C.line}`, fontSize: 12, textAlign: 'center' }}>
             <div style={{ fontWeight: 700 }}>{o}番目</div>{n}<div style={{ color: C.mute }}>速度{spd}</div>
           </div>
         ))}
@@ -193,7 +193,7 @@ export default function RulesScreen({ onExit, first = false }) {
           </div>
         ))}
         {first && (
-          <button onClick={onExit} style={{ width: '100%', marginTop: 8, padding: '16px', borderRadius: 12, border: 'none', background: C.player, color: '#fff', fontFamily: FONT, fontWeight: 700, fontSize: 18, cursor: 'pointer' }}>
+          <button onClick={onExit} style={{ width: '100%', marginTop: 8, padding: '16px', borderRadius: 12, border: 'none', background: C.player, color: C.onAccent, fontFamily: FONT, fontWeight: 700, fontSize: 18, cursor: 'pointer' }}>
             あそびはじめる
           </button>
         )}
