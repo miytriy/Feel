@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useIsDesktop } from './ui.js'
+import { useIsDesktop, C, FONT } from './ui.js'
 import {
   MAX_SLOTS, validateFormation, canPlace, placeChar, removeChar, swapSlots, quickFill,
   saveFormation, loadFormation, defaultFormation, MAX_SPELL_SLOTS, saveSpellSet, loadSpellSet, validateSpellSet, canUseSpell, spellClassOf, teamClassOf,
@@ -7,23 +7,18 @@ import {
 import { MAX_PARTIES, partyToSlots, partyToSpells, partyCount } from './battle/parties.js'
 
 // 編成画面: スロット(最大5)にキャラを入れる。順番は、行動値が同じときの優先順(1番目が最優先)
-const C = {
-  ink: '#1f2a44', paper: '#eef1f6', card: '#ffffff', line: '#cdd3df', mute: '#6b7488',
-  player: '#2f5bea', active: '#e0a100', warn: '#c2570c',
-}
-const FONT = '"Hiragino Sans","Noto Sans JP",system-ui,sans-serif'
 
 const btn = (primary, disabled) => ({
   padding: '10px 14px', borderRadius: 8, fontFamily: FONT, fontSize: 14, fontWeight: 700,
   border: `1.5px solid ${disabled ? C.line : C.player}`,
-  background: disabled ? '#f3f4f7' : primary ? C.player : '#fff',
-  color: disabled ? '#9aa1b2' : primary ? '#fff' : C.player,
+  background: disabled ? C.disabledBg : primary ? C.player : C.card,
+  color: disabled ? C.disabledInk : primary ? C.onAccent : C.player,
   cursor: disabled ? 'default' : 'pointer',
 })
 const mini = (disabled) => ({
   width: 34, height: 34, borderRadius: 8, fontSize: 15, fontFamily: FONT, lineHeight: 1,
-  border: `1px solid ${C.line}`, background: disabled ? '#f3f4f7' : '#fff',
-  color: disabled ? '#c0c5d2' : C.ink, cursor: disabled ? 'default' : 'pointer',
+  border: `1px solid ${C.line}`, background: disabled ? C.disabledBg : C.card,
+  color: disabled ? C.disabledInk : C.ink, cursor: disabled ? 'default' : 'pointer',
 })
 
 function CharLine({ c }) {
@@ -137,7 +132,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
           <button
             key={i}
             onClick={() => loadParty(i)}
-            style={{ flex: 1, padding: '6px 2px', borderRadius: 8, fontFamily: FONT, fontWeight: 800, fontSize: 14, cursor: 'pointer', border: `2px solid ${on ? C.player : C.line}`, background: on ? C.player : '#fff', color: on ? '#fff' : C.ink }}
+            style={{ flex: 1, padding: '6px 2px', borderRadius: 8, fontFamily: FONT, fontWeight: 800, fontSize: 14, cursor: 'pointer', border: `2px solid ${on ? C.player : C.line}`, background: on ? C.player : C.card, color: on ? C.onAccent : C.ink }}
           >
             {i + 1}
             <div style={{ fontSize: 10, fontWeight: 600, opacity: 0.85 }}>{n ? `${n}体` : '空き'}</div>
@@ -157,7 +152,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
   )
 
   const quickBox = quick && (
-    <div style={{ padding: 8, borderRadius: 8, background: '#e6ecff', fontSize: 12, marginBottom: 8 }}>
+    <div style={{ padding: 8, borderRadius: 8, background: C.soft, fontSize: 12, marginBottom: 8 }}>
       入れたい順にキャラをタップしてください(最大{MAX_SLOTS}体)。選んだ順に1番目のスロットから入ります。
       <div style={{ marginTop: 6 }}>
         選択中: {picks.length ? picks.map((p, i) => `${i + 1}.${p.name}`).join(' → ') : 'まだありません'}
@@ -182,13 +177,13 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
       >
         <div style={{ width: 22, fontWeight: 700, color: C.mute, textAlign: 'center' }}>{i + 1}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          {c ? <CharLine c={c} /> : <div style={{ color: '#9aa1b2', fontSize: 13 }}>＋ 空き{desktop ? '(クリックで選択。右の一覧のキャラをクリックすると、先頭の空きに入ります)' : '(タップしてキャラを選ぶ)'}</div>}
+          {c ? <CharLine c={c} /> : <div style={{ color: C.mute, fontSize: 13 }}>＋ 空き{desktop ? '(クリックで選択。右の一覧のキャラをクリックすると、先頭の空きに入ります)' : '(タップしてキャラを選ぶ)'}</div>}
         </div>
         {c && (
           <div style={{ display: 'flex', gap: 4 }} onClick={(e) => e.stopPropagation()}>
             <button aria-label="上へ" disabled={i === 0} onClick={() => apply(swapSlots(slots, i, i - 1))} style={mini(i === 0)}>▲</button>
             <button aria-label="下へ" disabled={i === MAX_SLOTS - 1} onClick={() => apply(swapSlots(slots, i, i + 1))} style={mini(i === MAX_SLOTS - 1)}>▼</button>
-            <button aria-label="外す" onClick={() => { apply(removeChar(slots, i)); if (activeSlot === i) setActiveSlot(null) }} style={{ ...mini(false), color: '#c0392b' }}>✕</button>
+            <button aria-label="外す" onClick={() => { apply(removeChar(slots, i)); if (activeSlot === i) setActiveSlot(null) }} style={{ ...mini(false), color: C.bad }}>✕</button>
           </div>
         )}
       </div>
@@ -213,7 +208,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
             <div style={{ fontWeight: 700, fontSize: 13 }}>✦{sp.name}(MP{sp.cost}){!canUseSpell(filled, sp) && <span style={{ fontSize: 11, color: C.warn }}> この編成では使えません</span>}</div>
             <div style={{ fontSize: 11, color: C.mute }}>{sp.class} ・ {sp.desc}</div>
           </div>
-          <button aria-label="外す" onClick={() => setSpellSet(spellSet.filter((_, k) => k !== i))} style={{ ...mini(false), color: '#c0392b' }}>✕</button>
+          <button aria-label="外す" onClick={() => setSpellSet(spellSet.filter((_, k) => k !== i))} style={{ ...mini(false), color: C.bad }}>✕</button>
         </div>
       ))}
       {spellSet.length < MAX_SPELL_SLOTS && (
@@ -239,7 +234,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
     </div>
   )
 
-  const messageBox = message && <div style={{ padding: 8, borderRadius: 8, background: '#fff3e6', color: C.warn, fontSize: 12, marginBottom: 8 }}>{message}</div>
+  const messageBox = message && <div style={{ padding: 8, borderRadius: 8, background: C.softWarn, color: C.warn, fontSize: 12, marginBottom: 8 }}>{message}</div>
 
   // キャラの一覧(PC=右に出しっぱなし / スマホ=スロットをタップすると下から出る)
   const listBox = (
@@ -262,7 +257,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
               onClick={() => ok && handlePick(c)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8,
-                border: `1.5px solid ${selected ? C.player : C.line}`, background: selected ? '#e6ecff' : '#fff',
+                border: `1.5px solid ${selected ? C.player : C.line}`, background: selected ? C.soft : C.card,
                 opacity: ok ? 1 : 0.4, cursor: ok ? 'pointer' : 'default',
               }}
             >
