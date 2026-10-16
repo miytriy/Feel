@@ -1,4 +1,4 @@
-import steelKnight from './royal_02.js' // 召喚する「スティールナイト」
+import steelKnight from './tokens/royal_token_02.js' // 召喚する「スティールナイト」
 
 export default {
   id: 'royal_13', name: '卓越のルミナスメイジ', class: 'ロイヤル', rarity: 'silver', type: 'ルミナス',
