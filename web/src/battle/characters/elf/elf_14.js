@@ -1,9 +1,4 @@
-// 薔薇の閃撃(ファンファーレで使えるようになる特性)。MPは0。1ターンに何回でも使える
-const roseStrike = {
-  id: 'rose_strike', name: '薔薇の閃撃', cost: 0, repeatable: true, target: 'enemyOne',
-  desc: '【薔薇の閃撃】相手のキャラクター1体を選ぶ。それに100の物理ダメージ。',
-  effects: [{ type: 'damage', stat: 'atk', mult: 0, add: 100, dmgType: 'physical', target: 'enemyOne' }],
-}
+import roseStrike from '../../spells/elf/elf_spell_04.js' // 使えるようになるスペル「薔薇の閃撃」
 
 export default {
   id: 'elf_14', name: '豊麗なるローズクイーン', class: 'エルフ', rarity: 'legend',
@@ -13,8 +8,8 @@ export default {
     'guard', // 【守護】
     {
       name: 'ファンファーレ', trigger: 'fanfare',
-      desc: '速度100・90の味方(自分以外)の数だけ、「薔薇の閃撃」を使えるようにする(X回)。',
-      effects: [{ type: 'enableTrait', perAllySpeed: [100, 90], trait: roseStrike, target: 'self' }],
+      desc: '速度100・90の味方(自分以外)の数だけ、スペル「薔薇の閃撃」を使えるようにする(X回)。',
+      effects: [{ type: 'enableSpell', perAllySpeed: [100, 90], spell: roseStrike }],
     },
   ],
 }
