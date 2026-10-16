@@ -19,7 +19,7 @@
   { "id": "elf_14", "name": "豊麗なるローズクイーン", "class": "エルフ", "rarity": "legend" },
   { "id": "royal_01", "name": "統率のルミナスナイト", "class": "ロイヤル", "rarity": "silver" },
   { "id": "royal_02", "name": "異端の侍", "class": "ロイヤル", "rarity": "bronze" },
-  { "id": "royal_05", "name": "勇猛のルミナスランサー", "class": "ロイヤル", "rarity": "silver" },
+  { "id": "royal_03", "name": "勇猛のルミナスランサー", "class": "ロイヤル", "rarity": "silver" },
   { "id": "royal_06", "name": "忍びのムササビ", "class": "ロイヤル", "rarity": "silver" },
   { "id": "royal_07", "name": "愛の騎士・イアン", "class": "ロイヤル", "rarity": "bronze" },
   { "id": "royal_08", "name": "救援のルミナスヒーラー", "class": "ロイヤル", "rarity": "bronze" },
