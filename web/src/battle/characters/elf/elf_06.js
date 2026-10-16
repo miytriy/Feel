@@ -1,4 +1,4 @@
-import fairy from './elf_01.js' // 召喚する「フェアリー」は elf_01.js のキャラです
+import fairy from './tokens/elf_token_01.js' // 召喚する「フェアリー」は elf_token_01.js のキャラです
 
 // 「フェアリー1体を召喚。MPを追加で1消費すると、もう1体召喚」(ファンファーレと進化時で同じ能力)
 // optional: true … 使うか使わないかを、プレイヤーが選べる(CPUは使う)
