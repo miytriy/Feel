@@ -5,7 +5,7 @@ const buffOthers = [
 ]
 
 export default {
-  id: 'royal_15', name: 'ピースディーラー・エルネスタ', class: 'ロイヤル', rarity: 'bronze',
+  id: 'royal_13', name: 'ピースディーラー・エルネスタ', class: 'ロイヤル', rarity: 'bronze',
   stats: { hp: 602, atk: 400, def: 203, spd: 50 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
