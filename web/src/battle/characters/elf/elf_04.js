@@ -1,5 +1,5 @@
 export default {
-  id: 'elf_05', name: 'ピュアクリスタリア・リリィ', class: 'エルフ', rarity: 'gold',
+  id: 'elf_04', name: 'ピュアクリスタリア・リリィ', class: 'エルフ', rarity: 'gold',
   stats: { hp: 353, atk: 107, def: 200, spd: 80 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
