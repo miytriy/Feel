@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useIsDesktop, C, FONT } from './ui.js'
+import { ScreenHeader } from './chrome.jsx'
 import { KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 
 // ルール説明: 初めての人向け。数字や用語はエンジンの実際のルールに合わせてある。
@@ -171,13 +172,8 @@ export default function RulesScreen({ onExit, first = false }) {
   const all = open.size === SECTIONS.length
   return (
     <div style={{ minHeight: '100vh', background: C.paper, color: C.ink, fontFamily: FONT, padding: desktop ? 24 : 12 }}>
+      <div style={{ margin: desktop ? '-24px -24px 16px' : '-12px -12px 12px' }}><ScreenHeader title={first ? 'はじめに' : 'ルール'} onClose={onExit} /></div>
       <div style={{ maxWidth: 820, margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <h2 style={{ margin: 0, fontSize: desktop ? 24 : 20 }}>{first ? 'はじめに:ルール説明' : 'ルール'}</h2>
-          <button onClick={onExit} style={{ padding: '8px 14px', borderRadius: 10, border: `1.5px solid ${C.line}`, background: C.card, fontFamily: FONT, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-            {first ? 'あとで読む(ホームへ)' : '← もどる'}
-          </button>
-        </div>
         <p style={{ fontSize: 14, color: C.mute, lineHeight: 1.7 }}>
           ターン制のバトルです。まずは①〜③を読めば遊べます。気になる項目をタップして開いてください。
         </p>
