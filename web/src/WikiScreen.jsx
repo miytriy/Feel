@@ -345,8 +345,8 @@ export default function WikiScreen({ onExit }) {
     </div>
   )
 
-  const showSide = !!sec // 項目の中だけ、左に分類を出す(全体の検索結果では出さない)
-  const subs = sec ? ['all', ...(sec.subs.length ? sec.subs : [])] : []
+  const showSide = !!sec && sec.subs.length > 0 // 項目の中だけ、左に分類を出す(全体の検索結果では出さない)
+  const subs = sec ? sec.subs : []
   const filters = (!sec || sec.rarity) && (
     <div className="wk-filters">
       <button type="button" className={`wk-fchip${rarity === 'all' ? ' on' : ''}`} onClick={() => setRarity('all')}>全レアリティ</button>
@@ -364,10 +364,10 @@ export default function WikiScreen({ onExit }) {
         {showSide && (
           <nav className="wk-side" aria-label="分類">
             {subs.map((sb, si) => {
-              const n = sb === 'all' ? base.length : counts[sb] || 0
+              const n = counts[sb] || 0
               return (
-                <button key={sb} type="button" className={`wk-sub${nav.sub === sb ? ' on' : ''}${n === 0 ? ' zero' : ''}`} style={{ '--i': si }} onClick={() => setNav({ ...nav, sub: sb, itemId: null })}>
-                  <span>{sb === 'all' ? 'すべて' : sb}</span><span className="wk-n">{n}</span>
+                <button key={sb} type="button" className={`wk-sub${nav.sub === sb ? ' on' : ''}${n === 0 ? ' zero' : ''}`} style={{ '--i': si }} onClick={() => setNav({ ...nav, sub: nav.sub === sb ? 'all' : sb, itemId: null })}>
+                  <span>{sb}</span><span className="wk-n">{n}</span>
                 </button>
               )
             })}
