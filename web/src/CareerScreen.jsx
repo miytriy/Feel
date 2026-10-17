@@ -1,6 +1,7 @@
 // Feel - キャリア画面: 直近の勝率・対戦データ・試合ごとの詳細(1ラウンドごとのダメージ)をふりかえる
 import { useEffect, useState } from 'react'
 import { useIsDesktop, C, FONT } from './ui.js'
+import { ScreenHeader } from './chrome.jsx'
 import { summarize } from './career.js'
 
 const RES = { win: { label: '勝利', mark: '○', color: '#3ddc97' }, lose: { label: '敗北', mark: '×', color: '#ff6b6b' }, draw: { label: '引き分け', mark: '△', color: C.mute } }
@@ -157,17 +158,13 @@ export default function CareerScreen({ onExit, fetchCareer, clearCareer }) {
     </div>
   )
 
-  const header = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-      <h2 style={{ margin: 0, fontSize: desktop ? 24 : 20, flex: 1 }}>キャリア</h2>
-      <button onClick={onExit} style={btn}>戻る</button>
-    </div>
-  )
+  // 上の帯(画面の端まで広げるため、まわりの余白のぶん外に出す)
+  const header = (m) => <div style={{ margin: m }}><ScreenHeader title="足跡" onClose={onExit} /></div>
 
   if (desktop) {
     return (
       <div style={{ minHeight: '100vh', padding: '20px 32px', background: C.paper, color: C.ink, fontFamily: FONT, boxSizing: 'border-box' }}>
-        {header}
+        {header('-20px -32px 16px')}
         {summary}
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 380px) minmax(0, 1fr)', gap: 20, alignItems: 'start' }}>
           {list}
@@ -179,7 +176,7 @@ export default function CareerScreen({ onExit, fetchCareer, clearCareer }) {
   // スマホ: 一覧 → 試合を押すと詳細(「一覧に戻る」で戻る)
   return (
     <div style={{ minHeight: '100vh', padding: 12, background: C.paper, color: C.ink, fontFamily: FONT, boxSizing: 'border-box' }}>
-      {header}
+      {header('-12px -12px 12px')}
       {opened ? (
         <>
           <button onClick={() => setOpenId(null)} style={{ ...btn, marginBottom: 10 }}>← 一覧に戻る</button>
