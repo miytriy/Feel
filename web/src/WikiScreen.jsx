@@ -99,9 +99,6 @@ const CSS = `
 .wk-body.closing .wk-sub { animation: none; }
 .wk-body.closing .wk-main { animation: wk-fadeout 0.26s ease-in forwards; }
 .wk-body.closing .wk-card, .wk-body.closing .wk-filters { animation: none; }
-@media (prefers-reduced-motion: reduce) {
-  .wk *, .wk-corner { animation: none !important; }
-}
 
 /* ホーム: 項目のタイル */
 .wk-home { flex: 1; display: grid; place-items: center; padding: 28px 4vw 60px; }
@@ -164,7 +161,11 @@ const CSS = `
   .wk-path { order: 1; height: 42px; font-size: 15px; }
   .wk-round { order: 2; width: 42px; height: 42px; font-size: 24px; }
   .wk-search { order: 3; width: 100%; height: 42px; }
-  .wk-corner { display: none; }
+  .wk-corner { width: 24px; height: 24px; left: auto; right: auto; }
+  .wk-corner.tl { left: 10px !important; right: auto !important; top: 150px !important; bottom: auto !important; }
+  .wk-corner.tr { right: 10px !important; left: auto !important; top: 150px !important; bottom: auto !important; }
+  .wk-corner.bl { left: 10px !important; right: auto !important; bottom: 14px !important; top: auto !important; }
+  .wk-corner.br { right: 10px !important; left: auto !important; bottom: 14px !important; top: auto !important; }
   .wk-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 8px; }
   .wk-tile.soon { display: none; }
   .wk-home { align-items: start; padding-top: 18px; }
@@ -237,7 +238,7 @@ export default function WikiScreen({ onExit }) {
   // 項目の中からホームへ戻るときは、左の分類が左へ出ていき、一覧はその場で消えてから切り替える
   const leaveToRoot = (after) => {
     if (closing) return
-    if (!nav.section || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { after(); return }
+    if (!nav.section) { after(); return }
     setClosing(true)
     timer.current = setTimeout(() => { setClosing(false); after() }, 260)
   }
