@@ -25,7 +25,7 @@ import GateScreen from './GateScreen.jsx'
 import { useIsDesktop, C, FONT } from './ui.js'
 
 const PITY_COUNT = 40
-const COST = 100
+const COST = 500 // ガチャ1回のジェム(server/config.js の COST_PER_PULL と同じにする)
 
 const RARITY = {
   legend: { label: 'レジェンド', color: '#a21caf' },
