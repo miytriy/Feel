@@ -8,6 +8,7 @@ import {
 import BattleScreen from './BattleScreen.jsx'
 import CareerScreen from './CareerScreen.jsx'
 import CodexScreen from './CodexScreen.jsx'
+import WikiScreen from './WikiScreen.jsx'
 import FormationScreen from './FormationScreen.jsx'
 import HomeScreen, { PlayMenu, ACCOUNT_SCREENS } from './HomeScreen.jsx'
 import { ScreenHeader, PillTabs, Chip, LoadingScreen } from './chrome.jsx'
@@ -270,7 +271,7 @@ export default function App() {
   }
 
   if (current === 'codex') {
-    return <ErrorBoundary onExit={() => setScreen('home')}><CodexScreen onExit={() => setScreen('home')} /></ErrorBoundary>
+    return <ErrorBoundary onExit={() => setScreen('home')}><WikiScreen onExit={() => setScreen('home')} /></ErrorBoundary>
   }
 
   // ---- 部品 ----
