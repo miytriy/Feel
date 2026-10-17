@@ -29,6 +29,7 @@ const SECTIONS = [
 ]
 const SLOTS = 6 // ホームに並べる数(足りないぶんは、準備中のタイル)
 const secOf = (key) => SECTIONS.find((s) => s.key === key)
+const firstSub = (key) => secOf(key)?.subs[0] || 'all' // 項目を開いたときは、いちばん上の分類から始まる(「すべて」は無い)
 
 // ---- カードの絵: 名前から決まる、左右対称のブロック模様 ----
 function hash(str) {
@@ -229,7 +230,7 @@ export default function WikiScreen({ onExit }) {
   const subOf = (x) => secOf(x.sec).subOf(x.d)
   const counts = {}
   for (const x of base) counts[subOf(x)] = (counts[subOf(x)] || 0) + 1
-  const shown = base.filter((x) => nav.sub === 'all' || subOf(x) === nav.sub)
+  const shown = base.filter((x) => nav.sub === 'all' || searching || subOf(x) === nav.sub)
 
   // ---- 移動 ----
   const [closing, setClosing] = useState(false)
@@ -244,23 +245,21 @@ export default function WikiScreen({ onExit }) {
   }
   const goRootNow = () => { setNav({ section: null, sub: 'all', itemId: null }); setQuery(''); setRarity('all') }
   const goRoot = () => leaveToRoot(goRootNow)
-  const goSection = (key, sub = 'all') => { setNav({ section: key, sub, itemId: null }); setQuery(''); setRarity('all') }
+  const goSection = (key, sub = firstSub(key)) => { setNav({ section: key, sub, itemId: null }); setQuery(''); setRarity('all') }
   // 一覧のカードを開くとき(fromList)は、いまの分類・検索・レアリティをそのまま残す(← で、同じ一覧に戻れる)。関連(召喚するキャラなど)から開くときは、リセットする
   const open = (key, id, fromList = false) => {
-    if (fromList) { setNav({ section: key, sub: key === nav.section ? nav.sub : 'all', itemId: id }); return }
-    setNav({ section: key, sub: 'all', itemId: id }); setQuery(''); setRarity('all')
+    if (fromList) { setNav({ section: key, sub: key === nav.section ? nav.sub : firstSub(key), itemId: id }); return }
+    setNav({ section: key, sub: firstSub(key), itemId: id }); setQuery(''); setRarity('all')
   }
   const up = () => {
     if (selected) setNav({ ...nav, itemId: null })
     else if (searching) setQuery('')
-    else if (nav.sub !== 'all') setNav({ ...nav, sub: 'all' })
     else goRoot()
   }
 
   // ---- 上の行(いま居る場所) ----
   const crumbs = [{ label: 'Feel Wiki', go: goRoot }]
   if (sec) crumbs.push({ label: sec.label, go: () => goSection(sec.key) })
-  if (sec && nav.sub !== 'all' && !selected) crumbs.push({ label: nav.sub, go: () => goSection(sec.key, nav.sub) })
   if (searching && !selected) crumbs.push({ label: '検索結果' })
   if (selected) crumbs.push({ label: selected.name })
 
@@ -366,7 +365,7 @@ export default function WikiScreen({ onExit }) {
             {subs.map((sb, si) => {
               const n = counts[sb] || 0
               return (
-                <button key={sb} type="button" className={`wk-sub${nav.sub === sb ? ' on' : ''}${n === 0 ? ' zero' : ''}`} style={{ '--i': si }} onClick={() => setNav({ ...nav, sub: nav.sub === sb ? 'all' : sb, itemId: null })}>
+                <button key={sb} type="button" className={`wk-sub${nav.sub === sb ? ' on' : ''}${n === 0 ? ' zero' : ''}`} style={{ '--i': si }} onClick={() => setNav({ ...nav, sub: sb, itemId: null })}>
                   <span>{sb}</span><span className="wk-n">{n}</span>
                 </button>
               )
