@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { C, FONT, DISPLAY } from './ui.js'
 import { ALL_CHARACTERS } from './battle/characters/index.js'
 import { ALL_SPELLS } from './battle/spells/index.js'
@@ -75,6 +75,34 @@ const CSS = `
 .wk-round { flex: none; width: 46px; height: 46px; border-radius: 50%; border: 0; background: #3a3a3e; color: #fff; font-size: 28px; display: grid; place-items: center; cursor: pointer; padding: 0; min-height: 0; transition: background 0.15s, color 0.15s, transform 0.15s; }
 .wk-round:hover, .wk-round:focus-visible { background: ${C.player}; color: #111; outline: none; transform: scale(1.06); }
 
+/* ---- 出入りのアニメーション(参考: エンドフィールドのWiki) ---- */
+@keyframes wk-in-tl { from { opacity: 0; transform: translate(-90px, -90px); } to { opacity: 1; transform: none; } }
+@keyframes wk-in-tr { from { opacity: 0; transform: translate(90px, -90px); } to { opacity: 1; transform: none; } }
+@keyframes wk-in-bl { from { opacity: 0; transform: translate(-90px, 90px); } to { opacity: 1; transform: none; } }
+@keyframes wk-in-br { from { opacity: 0; transform: translate(90px, 90px); } to { opacity: 1; transform: none; } }
+@keyframes wk-up { from { opacity: 0; transform: translateY(34px); } to { opacity: 1; transform: none; } }
+@keyframes wk-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes wk-fadeout { from { opacity: 1; } to { opacity: 0; } }
+@keyframes wk-left-in { from { opacity: 0; transform: translateX(-60px); } to { opacity: 1; transform: none; } }
+@keyframes wk-left-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(-60px); } }
+.wk-corner.tl { animation: wk-in-tl 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.wk-corner.tr { animation: wk-in-tr 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.wk-corner.bl { animation: wk-in-bl 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.wk-corner.br { animation: wk-in-br 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.wk-tile { animation: wk-up 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(0.25s + var(--i, 0) * 0.07s); }
+.wk-side { animation: wk-left-in 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.wk-sub { animation: wk-left-in 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(var(--i, 0) * 0.04s); }
+.wk-card { animation: wk-fade 0.3s ease-out backwards; animation-delay: calc(min(var(--i, 0) * 0.035s, 0.8s) + 0.12s); }
+.wk-filters { animation: wk-fade 0.3s ease-out backwards; }
+.wk-detail { animation: wk-fade 0.35s ease-out backwards; }
+.wk-body.closing .wk-side { animation: wk-left-out 0.26s ease-in forwards; }
+.wk-body.closing .wk-sub { animation: none; }
+.wk-body.closing .wk-main { animation: wk-fadeout 0.26s ease-in forwards; }
+.wk-body.closing .wk-card, .wk-body.closing .wk-filters { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .wk *, .wk-corner { animation: none !important; }
+}
+
 /* ホーム: 項目のタイル */
 .wk-home { flex: 1; display: grid; place-items: center; padding: 28px 4vw 60px; }
 .wk-tiles { width: min(1100px, 100%); display: grid; grid-template-columns: repeat(${SLOTS}, minmax(0, 1fr)); gap: 8px; }
@@ -149,10 +177,10 @@ const CSS = `
 }
 `
 
-function Card({ sec, d, showTag, onOpen }) {
+function Card({ sec, d, i, showTag, onOpen }) {
   const r = d.rarity ? RARITY[d.rarity] : null
   return (
-    <button type="button" className="wk-card" data-testid={`wk-card-${d.id}`} onClick={() => onOpen(sec, d.id, true)}>
+    <button type="button" className="wk-card" style={{ '--i': i }} data-testid={`wk-card-${d.id}`} onClick={() => onOpen(sec, d.id, true)}>
       <i className="wk-dots" />
       {showTag && <span className="wk-tag">{secOf(sec).label}</span>}
       <Emblem seed={d.id} color={r ? r.color : '#d9d9de'} />
@@ -203,7 +231,18 @@ export default function WikiScreen({ onExit }) {
   const shown = base.filter((x) => nav.sub === 'all' || subOf(x) === nav.sub)
 
   // ---- 移動 ----
-  const goRoot = () => { setNav({ section: null, sub: 'all', itemId: null }); setQuery(''); setRarity('all') }
+  const [closing, setClosing] = useState(false)
+  const timer = useRef(null)
+  useEffect(() => () => clearTimeout(timer.current), [])
+  // 項目の中からホームへ戻るときは、左の分類が左へ出ていき、一覧はその場で消えてから切り替える
+  const leaveToRoot = (after) => {
+    if (closing) return
+    if (!nav.section || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { after(); return }
+    setClosing(true)
+    timer.current = setTimeout(() => { setClosing(false); after() }, 260)
+  }
+  const goRootNow = () => { setNav({ section: null, sub: 'all', itemId: null }); setQuery(''); setRarity('all') }
+  const goRoot = () => leaveToRoot(goRootNow)
   const goSection = (key, sub = 'all') => { setNav({ section: key, sub, itemId: null }); setQuery(''); setRarity('all') }
   // 一覧のカードを開くとき(fromList)は、いまの分類・検索・レアリティをそのまま残す(← で、同じ一覧に戻れる)。関連(召喚するキャラなど)から開くときは、リセットする
   const open = (key, id, fromList = false) => {
@@ -260,19 +299,19 @@ export default function WikiScreen({ onExit }) {
     return (
       <div className="wk theme-light" style={{ background: undefined }}>
         <style>{CSS}</style>
-        {[{ left: 110, top: 150 }, { right: 110, top: 150 }, { left: 110, bottom: 36 }, { right: 110, bottom: 36 }].map((p, i) => <i key={i} className="wk-corner" style={p} />)}
+        {[['tl', { left: 110, top: 150 }], ['tr', { right: 110, top: 150 }], ['bl', { left: 110, bottom: 36 }], ['br', { right: 110, bottom: 36 }]].map(([k, p]) => <i key={k} className={`wk-corner ${k}`} style={p} />)}
         {topBar}
         <div className="wk-home">
           <div className="wk-tiles">
-            {SECTIONS.map((s) => (
-              <button key={s.key} type="button" data-testid={`wk-sec-${s.key}`} className="wk-tile" onClick={() => goSection(s.key)}>
+            {SECTIONS.map((s, i) => (
+              <button key={s.key} type="button" data-testid={`wk-sec-${s.key}`} className="wk-tile" style={{ '--i': i }} onClick={() => goSection(s.key)}>
                 <span className="wk-big">{s.no}</span>
                 <s.Glyph />
                 <span className="wk-name2">{s.label}</span>
               </button>
             ))}
             {Array.from({ length: Math.max(0, SLOTS - SECTIONS.length) }, (_, i) => (
-              <div key={'s' + i} className="wk-tile soon" aria-hidden="true">
+              <div key={'s' + i} className="wk-tile soon" style={{ '--i': SECTIONS.length + i }} aria-hidden="true">
                 <span className="wk-big">{String(SECTIONS.length + i + 1).padStart(2, '0')}</span>
                 <div className="wk-soonbox">COMING SOON</div>
                 <span className="wk-name2">準備中</span>
@@ -320,13 +359,13 @@ export default function WikiScreen({ onExit }) {
     <div className="wk theme-light">
       <style>{CSS}</style>
       {topBar}
-      <div className="wk-body" style={showSide ? undefined : { gridTemplateColumns: '1fr' }}>
+      <div className={`wk-body${closing ? ' closing' : ''}`} style={showSide ? undefined : { gridTemplateColumns: '1fr' }}>
         {showSide && (
           <nav className="wk-side" aria-label="分類">
-            {subs.map((sb) => {
+            {subs.map((sb, si) => {
               const n = sb === 'all' ? base.length : counts[sb] || 0
               return (
-                <button key={sb} type="button" className={`wk-sub${nav.sub === sb ? ' on' : ''}${n === 0 ? ' zero' : ''}`} onClick={() => setNav({ ...nav, sub: sb, itemId: null })}>
+                <button key={sb} type="button" className={`wk-sub${nav.sub === sb ? ' on' : ''}${n === 0 ? ' zero' : ''}`} style={{ '--i': si }} onClick={() => setNav({ ...nav, sub: sb, itemId: null })}>
                   <span>{sb === 'all' ? 'すべて' : sb}</span><span className="wk-n">{n}</span>
                 </button>
               )
@@ -339,7 +378,7 @@ export default function WikiScreen({ onExit }) {
               {filters}
               {shown.length === 0
                 ? <div className="wk-empty">見つかりませんでした。検索の言葉や、分類・レアリティの絞り込みを変えてみてください。</div>
-                : <div className="wk-grid">{shown.map((x) => <Card key={x.sec + x.d.id} sec={x.sec} d={x.d} showTag={!sec} onOpen={open} />)}</div>}
+                : <div className="wk-grid">{shown.map((x, i) => <Card key={x.sec + x.d.id} i={i} sec={x.sec} d={x.d} showTag={!sec} onOpen={open} />)}</div>}
             </>
           )}
         </div>
