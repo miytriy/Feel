@@ -327,7 +327,7 @@ export default function WikiScreen({ onExit }) {
   // ---- 詳細 ----
   const detailSecKey = nav.section
   const detail = selected && (
-    <div className="wk-detail">
+    <div className="wk-detail" key={selected.id}>
       <div className="wk-hero">
         <Emblem seed={selected.id} color={selected.rarity ? RARITY[selected.rarity].color : '#d9d9de'} />
         <i className="wk-rar" style={{ background: selected.rarity ? RARITY[selected.rarity].color : '#8d8d93' }} />
@@ -379,7 +379,7 @@ export default function WikiScreen({ onExit }) {
               {filters}
               {shown.length === 0
                 ? <div className="wk-empty">見つかりませんでした。検索の言葉や、分類・レアリティの絞り込みを変えてみてください。</div>
-                : <div className="wk-grid">{shown.map((x, i) => <Card key={x.sec + x.d.id} i={i} sec={x.sec} d={x.d} showTag={!sec} onOpen={open} />)}</div>}
+                : <div className="wk-grid" key={`${nav.section}|${nav.sub}|${rarity}`}>{shown.map((x, i) => <Card key={x.sec + x.d.id} i={i} sec={x.sec} d={x.d} showTag={!sec} onOpen={open} />)}</div>}
             </>
           )}
         </div>
