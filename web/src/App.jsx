@@ -11,6 +11,7 @@ import CodexScreen from './CodexScreen.jsx'
 import WikiScreen from './WikiScreen.jsx'
 import SettingsScreen from './SettingsScreen.jsx'
 import MailboxScreen from './MailboxScreen.jsx'
+import GachaScreen from './GachaScreen.jsx'
 import FormationScreen from './FormationScreen.jsx'
 import HomeScreen, { PlayMenu, ACCOUNT_SCREENS } from './HomeScreen.jsx'
 import { ScreenHeader, PillTabs, Chip, LoadingScreen } from './chrome.jsx'
@@ -424,7 +425,21 @@ export default function App() {
   )
 
   // ガチャ
-  if (current === 'gacha') return shell('ガチャ', <>{messages}{gachaCard}{resultsCard}</>)
+  if (current === 'gacha') {
+    return (
+      <GachaScreen
+        me={me}
+        busy={busy}
+        error={error}
+        results={results}
+        cost={COST}
+        pityCount={PITY_COUNT}
+        onPull={handleGacha}
+        onCloseResults={() => setResults(null)}
+        onExit={() => { setResults(null); setError(''); goHome() }}
+      />
+    )
+  }
 
   // 購買部(いまは、ログインボーナスと合言葉。あとで買い物の機能を足す)
   if (current === 'store') {
