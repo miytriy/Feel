@@ -10,6 +10,7 @@ import CareerScreen from './CareerScreen.jsx'
 import CodexScreen from './CodexScreen.jsx'
 import WikiScreen from './WikiScreen.jsx'
 import SettingsScreen from './SettingsScreen.jsx'
+import MailboxScreen from './MailboxScreen.jsx'
 import FormationScreen from './FormationScreen.jsx'
 import HomeScreen, { PlayMenu, ACCOUNT_SCREENS } from './HomeScreen.jsx'
 import { ScreenHeader, PillTabs, Chip, LoadingScreen } from './chrome.jsx'
@@ -168,6 +169,14 @@ export default function App() {
   }
   const handleLoginBonus = () => runClaim(claimLoginBonus, (r) => `ログインボーナス +${r.amount} ジェム(連続${r.streak}日目)`)
   const handleGift = (g) => runClaim(() => claimGift(g.id), (r) => `「${g.title}」を受け取りました +${r.amount} ジェム`)
+  const handleGiftAll = () => {
+    const list = [...gifts]
+    return runClaim(async () => {
+      let amount = 0
+      for (const g of list) amount += (await claimGift(g.id)).amount || 0
+      return { amount, n: list.length }
+    }, (r) => `${r.n}通を受け取りました +${r.amount} ジェム`)
+  }
   const handleCode = async () => {
     if (!code.trim()) return
     await runClaim(() => redeemCode(code), (r) => `合言葉を受け取りました +${r.amount} ジェム`)
@@ -405,7 +414,9 @@ export default function App() {
   }
 
   // メールボックス(プレゼント)
-  if (current === 'mail') return shell('メールボックス', <>{messages}{giftCard}</>)
+  if (current === 'mail') {
+    return <MailboxScreen gifts={gifts} busy={busy} notice={notice} error={error} onClaim={handleGift} onClaimAll={handleGiftAll} onExit={() => { setNotice(''); setError(''); goHome() }} />
+  }
 
   // 設定(参考: エンドフィールドの設定)
   if (current === 'settings') {
