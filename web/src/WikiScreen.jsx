@@ -84,6 +84,8 @@ const CSS = `
 @keyframes wk-up { from { opacity: 0; transform: translateY(34px); } to { opacity: 1; transform: none; } }
 @keyframes wk-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes wk-fadeout { from { opacity: 1; } to { opacity: 0; } }
+@keyframes wk-right-in { from { opacity: 0; transform: translateX(60px); } to { opacity: 1; transform: none; } }
+@keyframes wk-right-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(60px); } }
 @keyframes wk-left-in { from { opacity: 0; transform: translateX(-60px); } to { opacity: 1; transform: none; } }
 @keyframes wk-left-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(-60px); } }
 .wk-corner.tl { animation: wk-in-tl 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
@@ -98,7 +100,9 @@ const CSS = `
 .wk-detail { animation: wk-fade 0.35s ease-out backwards; }
 .wk-body.closing .wk-side { animation: wk-left-out 0.26s ease-in forwards; }
 .wk-body.closing .wk-sub { animation: none; }
-.wk-body.closing .wk-main { animation: wk-fadeout 0.26s ease-in forwards; }
+.wk-body.closing .wk-main { animation: wk-right-out 0.26s ease-in forwards; }
+.wk-body.back .wk-main { animation: wk-right-in 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.wk-body.back .wk-card, .wk-body.back .wk-filters { animation: none; }
 .wk-body.closing .wk-card, .wk-body.closing .wk-filters { animation: none; }
 
 /* ホーム: 項目のタイル */
@@ -235,25 +239,27 @@ export default function WikiScreen({ onExit }) {
 
   // ---- 移動 ----
   const [closing, setClosing] = useState(false)
+  const [back, setBack] = useState(false) // 詳細から一覧へ戻ったとき(カードは順番に出さず、左右からそのまま入る)
   const timer = useRef(null)
   useEffect(() => () => clearTimeout(timer.current), [])
-  // 項目の中からホームへ戻るときは、左の分類が左へ出ていき、一覧はその場で消えてから切り替える
+  // 一覧からホームへ戻るとき・カードを開くときは、左の分類は左へ、右のカード部分は右へ出ていってから切り替える
   const leaveToRoot = (after) => {
     if (closing) return
     if (!nav.section) { after(); return }
     setClosing(true)
     timer.current = setTimeout(() => { setClosing(false); after() }, 260)
   }
-  const goRootNow = () => { setNav({ section: null, sub: 'all', itemId: null }); setQuery(''); setRarity('all') }
-  const goRoot = () => leaveToRoot(goRootNow)
-  const goSection = (key, sub = firstSub(key)) => { setNav({ section: key, sub, itemId: null }); setQuery(''); setRarity('all') }
+  const goRootNow = () => { setBack(false); setNav({ section: null, sub: 'all', itemId: null }); setQuery(''); setRarity('all') }
+  const goRoot = () => { setBack(false); leaveToRoot(goRootNow) }
+  const goSection = (key, sub = firstSub(key)) => { setBack(!!selected && key === nav.section); setNav({ section: key, sub, itemId: null }); setQuery(''); setRarity('all') }
   // 一覧のカードを開くとき(fromList)は、いまの分類・検索・レアリティをそのまま残す(← で、同じ一覧に戻れる)。関連(召喚するキャラなど)から開くときは、リセットする
   const open = (key, id, fromList = false) => {
-    if (fromList) { setNav({ section: key, sub: key === nav.section ? nav.sub : firstSub(key), itemId: id }); return }
+    if (fromList) { setBack(false); leaveToRoot(() => setNav({ section: key, sub: key === nav.section ? nav.sub : firstSub(key), itemId: id })); return }
+    setBack(false)
     setNav({ section: key, sub: firstSub(key), itemId: id }); setQuery(''); setRarity('all')
   }
   const up = () => {
-    if (selected) setNav({ ...nav, itemId: null })
+    if (selected) { setBack(true); setNav({ ...nav, itemId: null }) }
     else if (searching) setQuery('')
     else goRoot()
   }
@@ -345,13 +351,13 @@ export default function WikiScreen({ onExit }) {
     </div>
   )
 
-  const showSide = !!sec && sec.subs.length > 0 // 項目の中だけ、左に分類を出す(全体の検索結果では出さない)
+  const showSide = !!sec && sec.subs.length > 0 && !selected // 項目の中だけ、左に分類を出す(全体の検索結果では出さない)
   const subs = sec ? sec.subs : []
   const filters = (!sec || sec.rarity) && (
     <div className="wk-filters">
-      <button type="button" className={`wk-fchip${rarity === 'all' ? ' on' : ''}`} onClick={() => setRarity('all')}>全レアリティ</button>
+      <button type="button" className={`wk-fchip${rarity === 'all' ? ' on' : ''}`} onClick={() => { setBack(false); setRarity('all') }}>全レアリティ</button>
       {Object.entries(RARITY).sort((a, b) => a[1].order - b[1].order).map(([k, r]) => (
-        <button key={k} type="button" className={`wk-fchip${rarity === k ? ' on' : ''}`} onClick={() => setRarity(k)}>{r.label}</button>
+        <button key={k} type="button" className={`wk-fchip${rarity === k ? ' on' : ''}`} onClick={() => { setBack(false); setRarity(k) }}>{r.label}</button>
       ))}
     </div>
   )
@@ -360,13 +366,13 @@ export default function WikiScreen({ onExit }) {
     <div className="wk theme-light">
       <style>{CSS}</style>
       {topBar}
-      <div className={`wk-body${closing ? ' closing' : ''}`} style={showSide ? undefined : { gridTemplateColumns: '1fr' }}>
+      <div className={`wk-body${closing ? ' closing' : ''}${back ? ' back' : ''}`} style={showSide ? undefined : { gridTemplateColumns: '1fr' }}>
         {showSide && (
           <nav className="wk-side" aria-label="分類">
             {subs.map((sb, si) => {
               const n = counts[sb] || 0
               return (
-                <button key={sb} type="button" className={`wk-sub${nav.sub === sb ? ' on' : ''}${n === 0 ? ' zero' : ''}`} style={{ '--i': si }} onClick={() => setNav({ ...nav, sub: sb, itemId: null })}>
+                <button key={sb} type="button" className={`wk-sub${nav.sub === sb ? ' on' : ''}${n === 0 ? ' zero' : ''}`} style={{ '--i': si }} onClick={() => { setBack(false); setNav({ ...nav, sub: sb, itemId: null }) }}>
                   <span>{sb}</span><span className="wk-n">{n}</span>
                 </button>
               )
