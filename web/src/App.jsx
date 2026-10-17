@@ -3,7 +3,7 @@ import RulesScreen from './RulesScreen.jsx'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import { auth, googleProvider } from './firebase.js'
 import {
-  gateStatus, gateEnter, gateCheck, gateMe, getGateToken, setGateToken, fetchMe, fetchCareer, recordMatch, clearCareer, drawGacha, claimLoginBonus, startBattleTicket, finishBattle, fetchGifts, claimGift, redeemCode,
+  gateStatus, gateEnter, gateCheck, gateMe, getGateToken, setGateToken, fetchMe, fetchCareer, recordMatch, clearCareer, drawGacha, claimLoginBonus, startBattleTicket, finishBattle, fetchGifts, claimGift, redeemCode, markMailRead, setMailStar, deleteMail, purgeReadMail,
 } from './api.js'
 import BattleScreen from './BattleScreen.jsx'
 import CareerScreen from './CareerScreen.jsx'
@@ -170,12 +170,31 @@ export default function App() {
   const handleLoginBonus = () => runClaim(claimLoginBonus, (r) => `ログインボーナス +${r.amount} ジェム(連続${r.streak}日目)`)
   const handleGift = (g) => runClaim(() => claimGift(g.id), (r) => `「${g.title}」を受け取りました +${r.amount} ジェム`)
   const handleGiftAll = () => {
-    const list = [...gifts]
+    const list = gifts.filter((g) => !g.claimed)
     return runClaim(async () => {
       let amount = 0
       for (const g of list) amount += (await claimGift(g.id)).amount || 0
       return { amount, n: list.length }
     }, (r) => `${r.n}通を受け取りました +${r.amount} ジェム`)
+  }
+  // メールの既読・★・削除(画面はすぐ変え、サーバーに書く。失敗したら、一覧を読み直す)
+  const syncMail = async (fn) => {
+    try { await fn() } catch (e) { setError(e.message) }
+    try { setGifts((await fetchGifts()).gifts) } catch { /* 次に開いたときに読み直す */ }
+  }
+  const handleMailRead = (g) => {
+    if (g.read) return
+    setGifts((list) => list.map((x) => (x.id === g.id ? { ...x, read: true } : x)))
+    syncMail(() => markMailRead(g.id))
+  }
+  const handleMailStar = (g) => {
+    setGifts((list) => list.map((x) => (x.id === g.id ? { ...x, star: !x.star } : x)))
+    syncMail(() => setMailStar(g.id, !g.star))
+  }
+  const handleMailDelete = (g) => { setGifts((list) => list.filter((x) => x.id !== g.id)); return syncMail(() => deleteMail(g.id)) }
+  const handleMailPurge = () => {
+    setGifts((list) => list.filter((x) => !(x.read && x.claimed && !x.star)))
+    return syncMail(() => purgeReadMail())
   }
   const handleCode = async () => {
     if (!code.trim()) return
@@ -415,7 +434,7 @@ export default function App() {
 
   // メールボックス(プレゼント)
   if (current === 'mail') {
-    return <MailboxScreen gifts={gifts} busy={busy} notice={notice} error={error} onClaim={handleGift} onClaimAll={handleGiftAll} onExit={() => { setNotice(''); setError(''); goHome() }} />
+    return <MailboxScreen gifts={gifts} busy={busy} notice={notice} error={error} onClaim={handleGift} onClaimAll={handleGiftAll} onRead={handleMailRead} onStar={handleMailStar} onDelete={handleMailDelete} onPurge={handleMailPurge} onExit={() => { setNotice(''); setError(''); goHome() }} />
   }
 
   // 設定(参考: エンドフィールドの設定)
@@ -439,7 +458,7 @@ export default function App() {
       user={user}
       me={me}
       lockedKey={lockedKey}
-      giftCount={gifts.length}
+      giftCount={gifts.filter((g) => !g.claimed).length}
       onSelect={(key) => {
         if (ACCOUNT_SCREENS.includes(key) && !user) { setLockedKey(key); return }
         setLockedKey(null)
