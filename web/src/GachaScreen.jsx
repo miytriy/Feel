@@ -118,7 +118,7 @@ const CSS = `
 .gk-btn:hover, .gk-btn:focus-visible { transform: translateY(-2px); filter: brightness(1.12); outline: none; }
 
 .gs { position: fixed; inset: 0; z-index: 40; background: #000; color: #fff; font-family: ${FONT}; display: flex; flex-direction: column; align-items: center; justify-content: center; animation: gc-fade 0.25s ease-out backwards; overflow: hidden; }
-.gs-top { position: absolute; left: 0; right: 0; top: 0; z-index: 4; display: flex; align-items: center; gap: 12px; padding: 12px 16px 8px; padding-top: calc(12px + env(safe-area-inset-top)); }
+.gs-top { position: absolute; left: 0; right: 0; top: 0; z-index: 4; display: flex; align-items: center; gap: 12px; padding: 12px 16px 28px; padding-top: calc(12px + env(safe-area-inset-top)); background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%); }
 .gs-count { font-family: ${DISPLAY}; font-weight: 700; font-size: 18px; letter-spacing: 0.1em; }
 .gs-count small { color: ${C.mute}; font-size: 13px; margin-left: 6px; }
 .gs-pity { padding: 2px 10px; background: #e879f9; color: #111; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; animation: gc-glow 1.6s ease-in-out infinite; }
@@ -128,18 +128,18 @@ const CSS = `
 .gs-x.round { width: 42px; height: 42px; padding: 0; border-radius: 50%; background: #f2f2f3; color: #1c1c1f; font-size: 26px; display: grid; place-items: center; }
 .gs-x.round:hover, .gs-x.round:focus-visible { background: ${C.player}; transform: rotate(90deg); outline: none; }
 
-.gs-row { display: flex; gap: 3px; width: min(1120px, 96vw); height: min(72vh, 620px); position: relative; z-index: 2; }
+.gs-row { position: absolute; inset: 0; display: flex; gap: 2px; z-index: 2; }
 .gs-strip { position: relative; flex: 1; min-width: 0; overflow: hidden; background: #0a0a10; transform-origin: bottom; animation: gs-in 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(var(--i) * 75ms); }
 .gs-strip .bg { position: absolute; inset: 0; background: linear-gradient(180deg, #0a0a10 0%, #0a0a10 38%, color-mix(in srgb, var(--rc) 42%, #0a0a10) 100%); }
 .gs-strip .sil { position: absolute; left: 50%; bottom: 0; height: 46%; width: 90%; transform: translateX(-50%); fill: #000; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--rc) 60%, transparent)); }
 .gs-strip .art { position: absolute; left: 0; right: 0; top: 0; bottom: 46%; background: linear-gradient(165deg, color-mix(in srgb, var(--rc) 55%, #fff) 0%, var(--rc) 38%, #17171d 100%); animation: gs-reveal 0.6s ease-out backwards; animation-delay: calc(var(--rv) * 1ms); }
 .gs-strip .art svg { position: absolute; left: 50%; top: 12%; width: 76%; transform: translateX(-50%); opacity: 0.92; mix-blend-mode: multiply; }
-.gs-strip .art .nm { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-size: clamp(11px, 1.5vw, 15px); font-weight: 700; line-height: 1.3; color: #111; padding: 0 3px; text-shadow: 0 0 6px rgba(255,255,255,0.6); writing-mode: vertical-rl; margin: 0 auto; max-height: 62%; overflow: hidden; }
+.gs-strip .art .nm { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-size: clamp(12px, 1.9vw, 22px); font-weight: 700; line-height: 1.3; color: #111; padding: 0 3px; text-shadow: 0 0 6px rgba(255,255,255,0.6); writing-mode: vertical-rl; margin: 0 auto; max-height: 62%; overflow: hidden; }
 .gs-strip .rl { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; background: var(--rc); }
 .gs-strip .new { position: absolute; right: 4px; top: 6px; z-index: 2; padding: 1px 5px; background: var(--c-badge); color: #fff; font-family: ${DISPLAY}; font-weight: 700; font-size: 10px; letter-spacing: 0.08em; animation: gs-reveal 0.4s ease-out backwards; animation-delay: calc(var(--rv) * 1ms); }
 .gs-flash { position: absolute; inset: 0; z-index: 3; pointer-events: none; mix-blend-mode: screen; background: radial-gradient(ellipse at 50% 55%, var(--rc) 0%, transparent 62%); animation: gs-flash 1s ease-out backwards; animation-delay: calc(var(--rv) * 1ms); }
-.gs-floor { position: absolute; left: 50%; bottom: calc(50% - min(36vh, 310px) - 26px); width: min(1120px, 96vw); height: 34px; transform: translateX(-50%); background: radial-gradient(ellipse at 50% 0%, rgba(150,110,255,0.45) 0%, transparent 70%); z-index: 1; }
-.gs-next { position: absolute; z-index: 4; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 18px); transform: translateX(-50%); min-width: 190px; height: 46px; padding: 0 22px; border-radius: 999px; border: 2px solid #2a2a2e; background: ${C.player}; color: #111; font-family: ${FONT}; font-size: 14px; font-weight: 700; cursor: pointer; min-height: 0; animation: gs-float 0.3s ease-out backwards; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.gs-floor { position: absolute; left: 0; right: 0; bottom: 0; height: 16vh; background: linear-gradient(0deg, rgba(150,110,255,0.4) 0%, transparent 100%); z-index: 3; pointer-events: none; }
+.gs-next { position: absolute; z-index: 4; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 18px); transform: translateX(-50%); min-width: 190px; height: 46px; padding: 0 22px; border-radius: 999px; border: 2px solid #2a2a2e; background: ${C.player}; color: #111; font-family: ${FONT}; font-size: 14px; font-weight: 700; cursor: pointer; min-height: 0; box-shadow: 0 6px 20px rgba(0,0,0,0.6); animation: gs-float 0.3s ease-out backwards; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .gs-next:hover, .gs-next:focus-visible { filter: brightness(1.1); outline: none; }
 .gs.fast .gs-strip, .gs.fast .art, .gs.fast .gs-flash, .gs.fast .new { animation-duration: 0.01s !important; animation-delay: 0s !important; }
 
@@ -162,8 +162,7 @@ const CSS = `
 .gl-ok:hover, .gl-ok:focus-visible { background: ${C.player}; transform: scale(1.08); outline: none; }
 @media (prefers-reduced-motion: reduce) { .gk-band, .gs-strip, .gs .art, .gs-flash, .gl-item { animation: none !important; } }
 @media (max-width: 899px) {
-  .gs-row { gap: 2px; width: 98vw; height: min(66vh, 560px); }
-  .gs-floor { bottom: calc(50% - min(33vh, 280px) - 24px); }
+  .gs-row { gap: 1px; }
   .gk-btn { min-width: 150px; }
   .gl-item { width: 88px; }
 }
