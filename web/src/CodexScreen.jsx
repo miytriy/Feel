@@ -9,7 +9,7 @@ import { CLASSES } from './battle/characters/validate.js'
 // 資料集: キャラクター/スペルをタブで分け、さらにクラスで絞り込み、名前や効果の文字で検索できる。
 // データは characters/ と spells/ から自動で集まるので、キャラやスペルを足すと、ここにも自動で載る。
 
-const RARITY = {
+export const RARITY = {
   legend: { label: 'レジェンド', color: '#e879f9', order: 0 },
   gold: { label: 'ゴールド', color: '#facc15', order: 1 },
   silver: { label: 'シルバー', color: '#cbd5e1', order: 2 },
@@ -27,7 +27,7 @@ const DEFAULTS = { critRate: 5, critDmg: 50 } // ルールの初期値(クリテ
 const DMG_TYPE = { physical: '物理', magic: '魔法', true: '確定' }
 
 // ---------- 検索の下ごしらえ: 全角半角・大文字小文字・ひらがな/カタカナの違いを無視する ----------
-const fold = (s) =>
+export const fold = (s) =>
   String(s ?? '')
     .normalize('NFKC')
     .toLowerCase()
@@ -43,7 +43,7 @@ const passiveDesc = (p) => {
 const triggerLabel = (p) => (typeof p === 'object' && p.trigger ? TRIGGER_LABELS[p.trigger] || p.trigger : '')
 
 // 効果の中から、召喚するキャラ・有効化するスペルを集める(「関連」として詳細に出す)
-function collectRelated(def) {
+export function collectRelated(def) {
   const units = []
   const spells = []
   const walk = (effects) => {
@@ -67,7 +67,7 @@ function collectRelated(def) {
   return { units: uniq(units), spells: uniq(spells) }
 }
 
-function searchText(def, isSpell) {
+export function searchText(def, isSpell) {
   const parts = [def.name, def.id, def.class, def.type, RARITY[def.rarity]?.label, def.desc]
   if (!isSpell) {
     parts.push(def.skill?.name, def.relic)
@@ -82,7 +82,7 @@ function searchText(def, isSpell) {
   return fold(parts.filter(Boolean).join(' '))
 }
 
-const spellClassName = (sp) => String(sp.class || '').split('/')[0]
+export const spellClassName = (sp) => String(sp.class || '').split('/')[0]
 
 // ---------- 小さな部品 ----------
 const chip = (active) => ({
@@ -94,7 +94,7 @@ const tabBtn = (active) => ({
   border: 'none', borderBottom: `3px solid ${active ? C.player : 'transparent'}`, background: 'transparent', color: active ? C.player : C.mute,
 })
 
-function RarityBadge({ rarity }) {
+export function RarityBadge({ rarity }) {
   const r = RARITY[rarity]
   if (!r) return null
   return <span style={{ fontSize: 11, fontWeight: 800, color: C.onAccent, background: r.color, borderRadius: 4, padding: '1px 6px' }}>{r.label}</span>
@@ -123,7 +123,7 @@ function AbilityRow({ head, tag, desc }) {
 }
 
 // ---------- 詳細 ----------
-function CharDetail({ def, onOpen }) {
+export function CharDetail({ def, onOpen }) {
   const rel = collectRelated(def)
   const relic = def.relic ? RELICS[def.relic] : null
   return (
@@ -189,7 +189,7 @@ function CharDetail({ def, onOpen }) {
   )
 }
 
-function SpellDetail({ def, onOpen }) {
+export function SpellDetail({ def, onOpen }) {
   const rel = collectRelated(def)
   const token = def.type === 'トークン'
   return (
