@@ -228,25 +228,92 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
     }
   })
 
-  // ---------- 運営からのプレゼント ----------
-  // 受け取れるプレゼントの一覧(全員向け + 自分宛て、期限内、未受け取り)
+  // ---------- 運営からのプレゼント(メールボックス) ----------
+  // メールの一覧: 全員向け + 自分宛て。受け取れるもの(期限内・未受け取り)と、受け取り済みで、まだ消していないもの。
+  //   claimed: 受け取り済み / read: 既読 / star: ★(「既読削除」で消えない)。消したメール(deleted)は出さない
   app.get('/api/gifts', requireAuth, async (req, res) => {
     try {
       const uid = req.user.uid
       const [snap, giftsSnap] = await Promise.all([userRefOf(uid).get(), db.collection('gifts').get()])
-      const claimed = (snap.exists && snap.data().claimedGifts) || {}
+      const udata = snap.exists ? snap.data() : {}
+      const claimed = udata.claimedGifts || {}
+      const mail = udata.mail || {}
       const t = now()
       const list = []
       for (const d of giftsSnap.docs) {
-        if (claimed[d.id]) continue
         const g = d.data()
+        const st = mail[d.id] || {}
+        if (st.deleted) continue
+        const base = { id: d.id, title: String(g.title || 'プレゼント'), message: g.message ? String(g.message) : '', expiresAt: toMillis(g.expiresAt), read: !!st.read, star: !!st.star }
+        if (claimed[d.id]) {
+          const mine = g.target === 'all' || (Array.isArray(g.target) && g.target.includes(uid))
+          if (mine && Number.isInteger(g.gems) && g.gems > 0) list.push({ ...base, gems: g.gems, claimed: true })
+          continue
+        }
         const c = checkGift(g, uid, claimed, t)
-        if (c.ok) list.push({ id: d.id, title: String(g.title || 'プレゼント'), message: g.message ? String(g.message) : '', gems: c.amount, expiresAt: toMillis(g.expiresAt) })
+        if (c.ok) list.push({ ...base, gems: c.amount, claimed: false })
       }
       res.json({ gifts: list })
     } catch (e) {
       handleError(res, e)
     }
+  })
+
+  // メールの状態(既読・★・削除)を、自分のデータに書く
+  const patchMail = async (uid, fn) => {
+    const userRef = userRefOf(uid)
+    await db.runTransaction(async (t) => {
+      const uSnap = await t.get(userRef)
+      const data = uSnap.exists ? uSnap.data() : newUserData()
+      const patch = fn(data.mail || {}, data.claimedGifts || {})
+      if (!patch || Object.keys(patch).length === 0) return
+      t.set(userRef, { ...(uSnap.exists ? {} : newUserData()), mail: patch, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+    })
+  }
+  const giftIdOf = (body) => {
+    const id = body?.giftId
+    if (typeof id !== 'string' || !id || id.includes('/')) throw new HttpError(400, 'リクエストが正しくありません')
+    return id
+  }
+  app.post('/api/mail/read', requireAuth, async (req, res) => {
+    try {
+      const id = giftIdOf(req.body)
+      await patchMail(req.user.uid, (mail) => (mail[id]?.read ? null : { [id]: { read: true } }))
+      res.json({ ok: true })
+    } catch (e) { handleError(res, e) }
+  })
+  app.post('/api/mail/star', requireAuth, async (req, res) => {
+    try {
+      const id = giftIdOf(req.body)
+      const star = req.body?.star === true
+      await patchMail(req.user.uid, () => ({ [id]: { star } }))
+      res.json({ ok: true })
+    } catch (e) { handleError(res, e) }
+  })
+  // 1通を消す(受け取り済みのものだけ。受け取っていないプレゼントは、消せない)
+  app.post('/api/mail/delete', requireAuth, async (req, res) => {
+    try {
+      const id = giftIdOf(req.body)
+      await patchMail(req.user.uid, (mail, claimed) => {
+        if (!claimed[id]) throw new HttpError(400, '受け取ってから消してください')
+        return { [id]: { deleted: true } }
+      })
+      res.json({ ok: true })
+    } catch (e) { handleError(res, e) }
+  })
+  // 既読削除: 受け取り済み・既読・★なし のメールをまとめて消す
+  app.post('/api/mail/purge-read', requireAuth, async (req, res) => {
+    try {
+      let n = 0
+      await patchMail(req.user.uid, (mail, claimed) => {
+        const patch = {}
+        for (const [id, st] of Object.entries(mail)) {
+          if (st && st.read && !st.star && !st.deleted && claimed[id]) { patch[id] = { deleted: true }; n++ }
+        }
+        return patch
+      })
+      res.json({ ok: true, deleted: n })
+    } catch (e) { handleError(res, e) }
   })
 
   app.post('/api/gifts/claim', requireAuth, async (req, res) => {
@@ -264,7 +331,7 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
         const c = checkGift(gSnap.exists ? gSnap.data() : null, uid, claimed, now())
         if (!c.ok) throw new HttpError(400, c.error)
         const gems = grantGems(t, uid, data, c.amount, 'gift', giftId)
-        t.set(userRef, { ...(uSnap.exists ? {} : newUserData()), gems, claimedGifts: { [giftId]: now() }, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+        t.set(userRef, { ...(uSnap.exists ? {} : newUserData()), gems, claimedGifts: { [giftId]: now() }, mail: { [giftId]: { read: true } }, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
         return { amount: c.amount, gems }
       })
       res.json(out)
