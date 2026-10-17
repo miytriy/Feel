@@ -117,29 +117,31 @@ const CSS = `
 .gk-btn.ok { background: ${C.player}; border-color: #2a2a2e; color: #111; }
 .gk-btn:hover, .gk-btn:focus-visible { transform: translateY(-2px); filter: brightness(1.12); outline: none; }
 
-.gs { position: fixed; inset: 0; z-index: 40; background: #000; color: #fff; font-family: ${FONT}; display: flex; flex-direction: column; align-items: center; justify-content: center; animation: gc-fade 0.25s ease-out backwards; overflow: hidden; }
-.gs-top { position: absolute; left: 0; right: 0; top: 0; z-index: 4; display: flex; align-items: center; gap: 12px; padding: 12px 16px 28px; padding-top: calc(12px + env(safe-area-inset-top)); background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%); }
-.gs-count { font-family: ${DISPLAY}; font-weight: 700; font-size: 18px; letter-spacing: 0.1em; }
-.gs-count small { color: ${C.mute}; font-size: 13px; margin-left: 6px; }
-.gs-pity { padding: 2px 10px; background: #e879f9; color: #111; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; animation: gc-glow 1.6s ease-in-out infinite; }
+/* 開示画面: 1920×1080(フルHD・16:9)の舞台を作り、画面に収まるように拡大・縮小する。外側は黒 */
+.gs { position: fixed; inset: 0; z-index: 40; background: #000; color: #fff; font-family: ${FONT}; overflow: hidden; animation: gc-fade 0.25s ease-out backwards; }
+.gs-stage { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: center center; overflow: hidden; background: #000; }
+.gs-top { position: absolute; left: 0; right: 0; top: 0; z-index: 4; display: flex; align-items: center; gap: 24px; padding: 28px 48px 64px; background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%); }
+.gs-count { font-family: ${DISPLAY}; font-weight: 700; font-size: 40px; letter-spacing: 0.1em; }
+.gs-count small { color: ${C.mute}; font-size: 26px; margin-left: 12px; }
+.gs-pity { padding: 4px 20px; background: #e879f9; color: #111; font-size: 24px; font-weight: 700; letter-spacing: 0.12em; animation: gc-glow 1.6s ease-in-out infinite; }
 .gs-x { margin-left: auto; min-height: 0; border: 0; cursor: pointer; transition: background 0.15s, transform 0.15s; }
-.gs-x.skip { padding: 8px 20px; border-radius: 999px; background: rgba(255,255,255,0.14); color: #fff; font-family: ${DISPLAY}; font-weight: 700; font-size: 13px; letter-spacing: 0.14em; }
+.gs-x.skip { padding: 14px 44px; border-radius: 999px; background: rgba(255,255,255,0.14); color: #fff; font-family: ${DISPLAY}; font-weight: 700; font-size: 24px; letter-spacing: 0.14em; }
 .gs-x.skip:hover, .gs-x.skip:focus-visible { background: #f2f2f3; color: #111; outline: none; }
-.gs-x.round { width: 42px; height: 42px; padding: 0; border-radius: 50%; background: #f2f2f3; color: #1c1c1f; font-size: 26px; display: grid; place-items: center; }
+.gs-x.round { width: 80px; height: 80px; padding: 0; border-radius: 50%; background: #f2f2f3; color: #1c1c1f; font-size: 48px; display: grid; place-items: center; }
 .gs-x.round:hover, .gs-x.round:focus-visible { background: ${C.player}; transform: rotate(90deg); outline: none; }
 
-.gs-row { position: absolute; inset: 0; display: flex; gap: 2px; z-index: 2; }
+.gs-row { position: absolute; inset: 0; display: flex; gap: 4px; z-index: 2; }
 .gs-strip { position: relative; flex: 1; min-width: 0; overflow: hidden; background: #0a0a10; transform-origin: bottom; animation: gs-in 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(var(--i) * 75ms); }
 .gs-strip .bg { position: absolute; inset: 0; background: linear-gradient(180deg, #0a0a10 0%, #0a0a10 38%, color-mix(in srgb, var(--rc) 42%, #0a0a10) 100%); }
-.gs-strip .sil { position: absolute; left: 50%; bottom: 0; height: 46%; width: 90%; transform: translateX(-50%); fill: #000; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--rc) 60%, transparent)); }
+.gs-strip .sil { position: absolute; left: 50%; bottom: 0; height: 46%; width: 90%; transform: translateX(-50%); fill: #000; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--rc) 60%, transparent)); }
 .gs-strip .art { position: absolute; left: 0; right: 0; top: 0; bottom: 46%; background: linear-gradient(165deg, color-mix(in srgb, var(--rc) 55%, #fff) 0%, var(--rc) 38%, #17171d 100%); animation: gs-reveal 0.6s ease-out backwards; animation-delay: calc(var(--rv) * 1ms); }
 .gs-strip .art svg { position: absolute; left: 50%; top: 12%; width: 76%; transform: translateX(-50%); opacity: 0.92; mix-blend-mode: multiply; }
-.gs-strip .art .nm { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-size: clamp(12px, 1.9vw, 22px); font-weight: 700; line-height: 1.3; color: #111; padding: 0 3px; text-shadow: 0 0 6px rgba(255,255,255,0.6); writing-mode: vertical-rl; margin: 0 auto; max-height: 62%; overflow: hidden; }
-.gs-strip .rl { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; background: var(--rc); }
-.gs-strip .new { position: absolute; right: 4px; top: 6px; z-index: 2; padding: 1px 5px; background: var(--c-badge); color: #fff; font-family: ${DISPLAY}; font-weight: 700; font-size: 10px; letter-spacing: 0.08em; animation: gs-reveal 0.4s ease-out backwards; animation-delay: calc(var(--rv) * 1ms); }
+.gs-strip .art .nm { position: absolute; left: 0; right: 0; bottom: 24px; text-align: center; font-size: 40px; font-weight: 700; line-height: 1.3; color: #111; padding: 0 6px; text-shadow: 0 0 10px rgba(255,255,255,0.6); writing-mode: vertical-rl; margin: 0 auto; max-height: 62%; overflow: hidden; }
+.gs-strip .rl { position: absolute; left: 0; right: 0; bottom: 0; height: 14px; background: var(--rc); }
+.gs-strip .new { position: absolute; right: 8px; top: 12px; z-index: 2; padding: 2px 10px; background: var(--c-badge); color: #fff; font-family: ${DISPLAY}; font-weight: 700; font-size: 22px; letter-spacing: 0.08em; animation: gs-reveal 0.4s ease-out backwards; animation-delay: calc(var(--rv) * 1ms); }
 .gs-flash { position: absolute; inset: 0; z-index: 3; pointer-events: none; mix-blend-mode: screen; background: radial-gradient(ellipse at 50% 55%, var(--rc) 0%, transparent 62%); animation: gs-flash 1s ease-out backwards; animation-delay: calc(var(--rv) * 1ms); }
-.gs-floor { position: absolute; left: 0; right: 0; bottom: 0; height: 16vh; background: linear-gradient(0deg, rgba(150,110,255,0.4) 0%, transparent 100%); z-index: 3; pointer-events: none; }
-.gs-next { position: absolute; z-index: 4; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 18px); transform: translateX(-50%); min-width: 190px; height: 46px; padding: 0 22px; border-radius: 999px; border: 2px solid #2a2a2e; background: ${C.player}; color: #111; font-family: ${FONT}; font-size: 14px; font-weight: 700; cursor: pointer; min-height: 0; box-shadow: 0 6px 20px rgba(0,0,0,0.6); animation: gs-float 0.3s ease-out backwards; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.gs-floor { position: absolute; left: 0; right: 0; bottom: 0; height: 170px; background: linear-gradient(0deg, rgba(150,110,255,0.4) 0%, transparent 100%); z-index: 3; pointer-events: none; }
+.gs-next { position: absolute; z-index: 4; left: 50%; bottom: 56px; transform: translateX(-50%); min-width: 380px; height: 88px; padding: 0 44px; border-radius: 999px; border: 3px solid #2a2a2e; background: ${C.player}; color: #111; font-family: ${FONT}; font-size: 30px; font-weight: 700; cursor: pointer; min-height: 0; box-shadow: 0 12px 40px rgba(0,0,0,0.6); animation: gs-float 0.3s ease-out backwards; display: inline-flex; align-items: center; justify-content: center; gap: 12px; }
 .gs-next:hover, .gs-next:focus-visible { filter: brightness(1.1); outline: none; }
 .gs.fast .gs-strip, .gs.fast .art, .gs.fast .gs-flash, .gs.fast .new { animation-duration: 0.01s !important; animation-delay: 0s !important; }
 
@@ -162,7 +164,6 @@ const CSS = `
 .gl-ok:hover, .gl-ok:focus-visible { background: ${C.player}; transform: scale(1.08); outline: none; }
 @media (prefers-reduced-motion: reduce) { .gk-band, .gs-strip, .gs .art, .gs-flash, .gl-item { animation: none !important; } }
 @media (max-width: 899px) {
-  .gs-row { gap: 1px; }
   .gk-btn { min-width: 150px; }
   .gl-item { width: 88px; }
 }
@@ -242,6 +243,18 @@ const revealAt = (items) => {
   return items.map((c) => { const at = t; t += 120 + (c.rarity === 'legend' ? 520 : c.rarity === 'gold' ? 260 : 0); return at })
 }
 
+// 開示画面は1920×1080の舞台で作って、画面に収まるように拡大・縮小する
+const stageScale = () => Math.min(window.innerWidth / 1920, window.innerHeight / 1080)
+function useStageScale() {
+  const [s, setS] = useState(stageScale)
+  useEffect(() => {
+    const f = () => setS(stageScale())
+    window.addEventListener('resize', f)
+    return () => window.removeEventListener('resize', f)
+  }, [])
+  return s
+}
+
 export default function GachaScreen({ me, busy, error, results, cost, pityCount, onPull, onCloseResults, onExit }) {
   const [dialog, setDialog] = useState(null) // 'rates' / null
   const [leaving, setLeaving] = useState(false)
@@ -251,6 +264,7 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
   const [fast, setFast] = useState(false) // SKIP: いまの回を、すぐ最後まで進める
   const [done, setDone] = useState(false) // いまの回の開示が終わった
   const [listLeaving, setListLeaving] = useState(false)
+  const scale = useStageScale()
   const timer = useRef(null)
   const ownedBefore = useRef({})
   useEffect(() => () => clearTimeout(timer.current), [])
@@ -386,33 +400,35 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
         </div>
       )}
 
-      {/* 演出: 黒い画面に、縦の帯が左から順に現れて、1本ずつ開く */}
+      {/* 演出: 黒い画面に、縦の帯が左から順に現れて、1本ずつ開く(1920×1080の舞台を、画面に合わせて拡大・縮小) */}
       {pull && (
         <div className={`gs${fast ? ' fast' : ''}`} data-testid="gacha-show" role="dialog" aria-label="ガチャの演出">
-          <div className="gs-top">
-            <span className="gs-count">{pi + 1}<small>/ {show.pulls.length} 回目</small></span>
-            {pull.pity && <span className="gs-pity">天井!</span>}
-            {done
-              ? <button type="button" className="gs-x round" onClick={() => setPhase('list')} aria-label="報酬一覧へ"><IconClose /></button>
-              : <button type="button" className="gs-x skip" data-testid="gs-skip" onClick={() => setFast(true)}>SKIP</button>}
-          </div>
-          <div className="gs-row" key={pi}>
-            {pull.items.map((c, i) => (
-              <div key={i} className={`gs-strip ${c.rarity}`} style={{ '--rc': RARITY[c.rarity].color, '--i': i, '--rv': at[i], '--fa': c.rarity === 'legend' ? 0.7 : 0.4 }}>
-                <div className="bg" />
-                <Silhouette seed={c.id + i} />
-                <div className="art">
-                  <Emblem seed={c.id} />
-                  <span className="nm">{c.name}</span>
+          <div className="gs-stage" style={{ transform: `translate(-50%, -50%) scale(${scale})` }}>
+            <div className="gs-top">
+              <span className="gs-count">{pi + 1}<small>/ {show.pulls.length} 回目</small></span>
+              {pull.pity && <span className="gs-pity">天井!</span>}
+              {done
+                ? <button type="button" className="gs-x round" onClick={() => setPhase('list')} aria-label="報酬一覧へ"><IconClose /></button>
+                : <button type="button" className="gs-x skip" data-testid="gs-skip" onClick={() => setFast(true)}>SKIP</button>}
+            </div>
+            <div className="gs-row" key={pi}>
+              {pull.items.map((c, i) => (
+                <div key={i} className={`gs-strip ${c.rarity}`} style={{ '--rc': RARITY[c.rarity].color, '--i': i, '--rv': at[i], '--fa': c.rarity === 'legend' ? 0.7 : 0.4 }}>
+                  <div className="bg" />
+                  <Silhouette seed={c.id + i} />
+                  <div className="art">
+                    <Emblem seed={c.id} />
+                    <span className="nm">{c.name}</span>
+                  </div>
+                  {c.isNew && <span className="new">NEW</span>}
+                  <i className="rl" />
+                  {(c.rarity === 'legend' || c.rarity === 'gold') && <i className="gs-flash" />}
                 </div>
-                {c.isNew && <span className="new">NEW</span>}
-                <i className="rl" />
-                {(c.rarity === 'legend' || c.rarity === 'gold') && <i className="gs-flash" />}
-              </div>
-            ))}
+              ))}
+            </div>
+            <div className="gs-floor" aria-hidden="true" />
+            {done && <button type="button" className="gs-next" data-testid="gs-next" onClick={nextPull}>{pi < show.pulls.length - 1 ? '次へ' : '報酬一覧へ'}</button>}
           </div>
-          <div className="gs-floor" aria-hidden="true" />
-          {done && <button type="button" className="gs-next" data-testid="gs-next" onClick={nextPull}>{pi < show.pulls.length - 1 ? '次へ' : '報酬一覧へ'}</button>}
         </div>
       )}
 
