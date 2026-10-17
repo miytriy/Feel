@@ -12,6 +12,7 @@ import FormationScreen from './FormationScreen.jsx'
 import HomeScreen, { PlayMenu, ACCOUNT_SCREENS } from './HomeScreen.jsx'
 import { ScreenHeader, PillTabs, Chip, LoadingScreen } from './chrome.jsx'
 import { IconGem } from './icons.jsx'
+import { loadSettings, saveSettings, cpuDelayOf, SPEEDS } from './settings.js'
 import { ALL_CHARACTERS } from './battle/characters/index.js'
 import { ALL_SPELLS } from './battle/spells/index.js'
 import { loadParties, saveParty, getActiveParty, setActiveParty } from './battle/parties.js'
@@ -40,7 +41,9 @@ export default function App() {
   const [notice, setNotice] = useState('') // 受け取りに成功したときの表示
   const [gifts, setGifts] = useState([])
   const [code, setCode] = useState('')
-  const [storeTab, setStoreTab] = useState('gacha') // STORE のタブ
+  const [storeTab, setStoreTab] = useState('bonus') // 購買部のタブ
+  const [settings, setSettings] = useState(loadSettings) // 設定(この端末に保存)
+  const [rulesBack, setRulesBack] = useState('play') // ルールを閉じたときに戻る画面
   const [lockedKey, setLockedKey] = useState(null) // ログインが必要な項目を、ログインなしで押したとき
   const [parties, setParties] = useState(null) // パーティー(最大5つ。ログイン中だけ)
   const [activeIdx, setActiveIdx] = useState(null) // 最後に選んだパーティーの番号
@@ -228,16 +231,16 @@ export default function App() {
     : null
 
   if (current === 'play') {
-    return <PlayMenu onBattle={() => setScreen('battle')} onRules={() => setScreen('rules')} onExit={goHome} />
+    return <PlayMenu onBattle={() => setScreen('battle')} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
   }
 
   if (current === 'battle') {
-    return <ErrorBoundary onExit={() => setScreen('play')}><BattleScreen onExit={() => setScreen('play')} rewardApi={rewardApi} partyApi={partyApi} /></ErrorBoundary>
+    return <ErrorBoundary onExit={() => setScreen('play')}><BattleScreen onExit={() => setScreen('play')} rewardApi={rewardApi} partyApi={partyApi} cpuDelay={cpuDelayOf(settings)} /></ErrorBoundary>
   }
 
   if (current === 'agents') {
     if (!me) return <LoadingScreen />
-    return <ErrorBoundary onExit={goHome}><CodexScreen title="AGENTS" ownedMap={me.owned || {}} onExit={goHome} /></ErrorBoundary>
+    return <ErrorBoundary onExit={goHome}><CodexScreen title="人事" ownedMap={me.owned || {}} onExit={goHome} /></ErrorBoundary>
   }
 
   if (current === 'party') {
@@ -245,7 +248,7 @@ export default function App() {
     return (
       <ErrorBoundary onExit={goHome}>
         <FormationScreen
-          title="PARTY"
+          title="編成"
           allChars={ALL_CHARACTERS}
           allSpells={ALL_SPELLS.filter((sp) => sp.type !== 'トークン')}
           parties={partyApi.parties}
@@ -263,7 +266,7 @@ export default function App() {
   }
 
   if (current === 'rules') {
-    return <ErrorBoundary onExit={() => setScreen('home')}><RulesScreen first={rulesFirst} onExit={() => { setRulesFirst(false); setScreen(rulesFirst ? 'home' : 'play') }} /></ErrorBoundary>
+    return <ErrorBoundary onExit={() => setScreen('home')}><RulesScreen first={rulesFirst} onExit={() => { setRulesFirst(false); setScreen(rulesFirst ? 'home' : rulesBack) }} /></ErrorBoundary>
   }
 
   if (current === 'codex') {
@@ -377,27 +380,62 @@ export default function App() {
     </div>
   )
 
-  // ---- STORE: ガチャ・ログインボーナス・プレゼント・合言葉 ----
+  // ---- 共通の枠: 上の帯(// タイトル と 丸い ×)+ 中身。light=明るい灰色の画面 ----
+  const shell = (title, body, { light = false, tabs = null, tab = null, setTab = null } = {}) => (
+    <div className={light ? 'theme-light' : 'theme-dark'} style={{ minHeight: '100vh', background: C.paper, color: C.ink, fontFamily: FONT }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 6 }}>
+        <ScreenHeader title={title} onClose={goHome} right={me && <Chip><IconGem style={{ color: '#ffe600' }} />{me.gems}</Chip>} />
+        {tabs && <PillTabs tabs={tabs} value={tab} onChange={setTab} />}
+      </div>
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: desktop ? '28px 24px' : '14px 12px calc(20px + env(safe-area-inset-bottom))' }}>
+        <div style={{ display: 'grid', gap: desktop ? 20 : 12 }}>{body}</div>
+      </div>
+    </div>
+  )
+
+  // ガチャ
+  if (current === 'gacha') return shell('ガチャ', <>{messages}{gachaCard}{resultsCard}</>)
+
+  // 購買部(いまは、ログインボーナスと合言葉。あとで買い物の機能を足す)
   if (current === 'store') {
-    const tabs = [{ key: 'gacha', label: 'GACHA' }, { key: 'bonus', label: 'BONUS' }, { key: 'mail', label: 'MAIL' }, { key: 'code', label: 'CODE' }]
-    const body = (
-      <div style={{ display: 'grid', gap: desktop ? 20 : 12 }}>
-        {messages}
-        {storeTab === 'gacha' && <>{gachaCard}{resultsCard}</>}
-        {storeTab === 'bonus' && bonusCard}
-        {storeTab === 'mail' && giftCard}
-        {storeTab === 'code' && codeCard}
-      </div>
-    )
-    return (
-      <div className="theme-light" style={{ minHeight: '100vh', background: C.paper, color: C.ink, fontFamily: FONT }}>
-        <div style={{ position: 'sticky', top: 0, zIndex: 6 }}>
-          <ScreenHeader title="STORE" onClose={goHome} right={me && <Chip><IconGem style={{ color: '#ffe600' }} />{me.gems}</Chip>} />
-          <PillTabs tabs={tabs} value={storeTab} onChange={setStoreTab} />
+    const tabs = [{ key: 'bonus', label: 'ログインボーナス' }, { key: 'code', label: '合言葉' }]
+    return shell('購買部', <>{messages}{storeTab === 'bonus' ? bonusCard : codeCard}</>, { light: true, tabs, tab: storeTab, setTab: setStoreTab })
+  }
+
+  // メールボックス(プレゼント)
+  if (current === 'mail') return shell('メールボックス', <>{messages}{giftCard}</>)
+
+  // 設定
+  if (current === 'settings') {
+    const row = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '10px 0', borderBottom: `1px solid ${C.line}` }
+    return shell('設定', (
+      <>
+        <div style={card()}>
+          <h3 style={h3}>アカウント</h3>
+          <div style={row}><span style={{ color: C.mute }}>名前</span><b>{user ? user.displayName || user.email || 'PLAYER' : 'GUEST(ログインしていません)'}</b></div>
+          <div style={row}><span style={{ color: C.mute }}>UID</span><b style={{ fontSize: 13 }}>{user ? user.uid : '-'}</b></div>
+          <div style={{ paddingTop: 12 }}>
+            {user ? <button onClick={handleLogout} style={btn(false, false)}>ログアウト</button> : <button onClick={handleLogin} style={btn(true, false)}>Googleでログイン</button>}
+          </div>
         </div>
-        <div style={{ maxWidth: 720, margin: '0 auto', padding: desktop ? '28px 24px' : '14px 12px calc(20px + env(safe-area-inset-bottom))' }}>{body}</div>
-      </div>
-    )
+        <div style={card()}>
+          <h3 style={h3}>対戦</h3>
+          <div style={{ ...row, borderBottom: 'none' }}>
+            <span>CPUの行動の待ち時間</span>
+            <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {SPEEDS.map((sp) => (
+                <button key={sp.key} onClick={() => { const next = { ...settings, speed: sp.key }; setSettings(next); saveSettings(next) }} style={btn(settings.speed === sp.key, false)}>{sp.label}</button>
+              ))}
+            </span>
+          </div>
+          <div style={{ fontSize: 12, color: C.mute }}>この端末のブラウザに保存されます。</div>
+        </div>
+        <div style={card()}>
+          <h3 style={h3}>ルール</h3>
+          <button onClick={() => { setRulesBack('settings'); setScreen('rules') }} style={btn(false, false)}>ルール説明を開く</button>
+        </div>
+      </>
+    ))
   }
 
   // ---- ホーム: 項目の名前だけ。選ぶと、それぞれの画面が開く(ログイン限定の項目は、ログインなしだと開かない) ----
@@ -406,6 +444,7 @@ export default function App() {
       user={user}
       me={me}
       lockedKey={lockedKey}
+      giftCount={gifts.length}
       onSelect={(key) => {
         if (ACCOUNT_SCREENS.includes(key) && !user) { setLockedKey(key); return }
         setLockedKey(null)
