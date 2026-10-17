@@ -123,7 +123,8 @@ const CSS = `
 
 /* 項目の中: 左に分類、右に一覧・詳細 */
 .wk-body { flex: 1; display: grid; grid-template-columns: minmax(200px, 270px) 1fr; gap: 22px; padding: 22px 4vw 40px; align-items: start; }
-.wk-side { display: flex; flex-direction: column; gap: 6px; position: sticky; top: 14px; max-height: calc(100vh - 110px); overflow-y: auto; }
+.wk-side { display: flex; flex-direction: column; gap: 6px; position: sticky; top: 14px; max-height: calc(100vh - 110px); overflow-y: auto; overflow-x: hidden; padding-right: 6px; scrollbar-width: none; }
+.wk-side::-webkit-scrollbar { display: none; }
 .wk-sub { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 16px 0 18px; height: 52px; border: 0; cursor: pointer; text-align: left; min-height: 0;
   background: linear-gradient(135deg, #cfcfd3, #bfbfc4); color: #3a3a3e; font-size: 18px; font-family: ${FONT}; transition: background 0.15s, transform 0.15s; }
 .wk-sub .wk-n { font-family: ${DISPLAY}; font-weight: 600; font-size: 14px; color: rgba(0,0,0,0.45); }
