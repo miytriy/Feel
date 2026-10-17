@@ -12,3 +12,9 @@ export const IconRules = (p) => <svg {...base} {...p}><path d="M5 2h11l4 4v16H5z
 export const IconGem = (p) => <svg {...base} {...p}><path d="M12 2l9 7-9 13L3 9z" /></svg>
 // 閉じるボタンの × (まん中に点のある円)
 export const IconClose = (p) => <svg {...base} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" {...p}><path d="M6 6l12 12M18 6L6 18" /><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" /></svg>
+export const IconEvent = (p) => <svg {...base} {...p}><path d="M12 1.5l2.6 6.2 6.7.5-5.1 4.4 1.6 6.5L12 15.7l-5.8 3.4 1.6-6.5L2.7 8.2l6.7-.5z" /><path d="M4 21h16v1.6H4z" /></svg>
+export const IconGacha = (p) => <svg {...base} {...p}><path d="M13.5 1.5l9 9-4.2 4.2-9-9zM9.4 7.6l7 7-8.3 8.3a2.4 2.4 0 0 1-3.4 0l-3.6-3.6a2.4 2.4 0 0 1 0-3.4z" /><circle cx="13.5" cy="10.5" r="1.6" fill="#000" opacity="0.35" /></svg>
+export const IconGear = (p) => <svg {...base} {...p}><path d="M10.3 2h3.4l.6 2.7 1.7.7 2.3-1.5 2.4 2.4-1.5 2.3.7 1.7 2.7.6v3.4l-2.7.6-.7 1.7 1.5 2.3-2.4 2.4-2.3-1.5-1.7.7-.6 2.7h-3.4l-.6-2.7-1.7-.7-2.3 1.5-2.4-2.4 1.5-2.3-.7-1.7L2 13.7v-3.4l2.7-.6.7-1.7-1.5-2.3 2.4-2.4 2.3 1.5 1.7-.7zM12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8z" fillRule="evenodd" /></svg>
+export const IconMail = (p) => <svg {...base} {...p}><path d="M2 5h20v2.2l-10 6.3L2 7.2zM2 9.7l10 6.3 10-6.3V19H2z" /></svg>
+export const IconPower = (p) => <svg {...base} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" {...p}><path d="M12 3v9M6.3 6.8a8 8 0 1 0 11.4 0" /></svg>
+export const IconPlus = (p) => <svg {...base} fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" {...p}><path d="M12 5v14M5 12h14" /></svg>
