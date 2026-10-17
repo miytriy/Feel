@@ -18,3 +18,6 @@ export const IconGear = (p) => <svg {...base} {...p}><path d="M10.3 2h3.4l.6 2.7
 export const IconMail = (p) => <svg {...base} {...p}><path d="M2 5h20v2.2l-10 6.3L2 7.2zM2 9.7l10 6.3 10-6.3V19H2z" /></svg>
 export const IconPower = (p) => <svg {...base} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" {...p}><path d="M12 3v9M6.3 6.8a8 8 0 1 0 11.4 0" /></svg>
 export const IconPlus = (p) => <svg {...base} fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" {...p}><path d="M12 5v14M5 12h14" /></svg>
+export const IconBack = (p) => <svg {...base} fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M20 12H5M11 5l-7 7 7 7" /></svg>
+export const IconSearch = (p) => <svg {...base} fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" {...p}><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.5 15.5L21 21" /></svg>
+export const IconFolder = (p) => <svg {...base} {...p}><path d="M2 5.5A1.5 1.5 0 0 1 3.5 4H9l2 2.5h9.5A1.5 1.5 0 0 1 22 8v10.5a1.5 1.5 0 0 1-1.5 1.5h-17A1.5 1.5 0 0 1 2 18.5z" /></svg>
