@@ -9,11 +9,12 @@ import BattleScreen from './BattleScreen.jsx'
 import CareerScreen from './CareerScreen.jsx'
 import CodexScreen from './CodexScreen.jsx'
 import WikiScreen from './WikiScreen.jsx'
+import SettingsScreen from './SettingsScreen.jsx'
 import FormationScreen from './FormationScreen.jsx'
 import HomeScreen, { PlayMenu, ACCOUNT_SCREENS } from './HomeScreen.jsx'
 import { ScreenHeader, PillTabs, Chip, LoadingScreen } from './chrome.jsx'
 import { IconGem } from './icons.jsx'
-import { loadSettings, saveSettings, cpuDelayOf, SPEEDS } from './settings.js'
+import { loadSettings, saveSettings, cpuDelayOf } from './settings.js'
 import { ALL_CHARACTERS } from './battle/characters/index.js'
 import { ALL_SPELLS } from './battle/spells/index.js'
 import { loadParties, saveParty, getActiveParty, setActiveParty } from './battle/parties.js'
@@ -406,37 +407,19 @@ export default function App() {
   // メールボックス(プレゼント)
   if (current === 'mail') return shell('メールボックス', <>{messages}{giftCard}</>)
 
-  // 設定
+  // 設定(参考: エンドフィールドの設定)
   if (current === 'settings') {
-    const row = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '10px 0', borderBottom: `1px solid ${C.line}` }
-    return shell('設定', (
-      <>
-        <div style={card()}>
-          <h3 style={h3}>アカウント</h3>
-          <div style={row}><span style={{ color: C.mute }}>名前</span><b>{user ? user.displayName || user.email || 'PLAYER' : 'GUEST(ログインしていません)'}</b></div>
-          <div style={row}><span style={{ color: C.mute }}>UID</span><b style={{ fontSize: 13 }}>{user ? user.uid : '-'}</b></div>
-          <div style={{ paddingTop: 12 }}>
-            {user ? <button onClick={handleLogout} style={btn(false, false)}>ログアウト</button> : <button onClick={handleLogin} style={btn(true, false)}>Googleでログイン</button>}
-          </div>
-        </div>
-        <div style={card()}>
-          <h3 style={h3}>対戦</h3>
-          <div style={{ ...row, borderBottom: 'none' }}>
-            <span>CPUの行動の待ち時間</span>
-            <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {SPEEDS.map((sp) => (
-                <button key={sp.key} onClick={() => { const next = { ...settings, speed: sp.key }; setSettings(next); saveSettings(next) }} style={btn(settings.speed === sp.key, false)}>{sp.label}</button>
-              ))}
-            </span>
-          </div>
-          <div style={{ fontSize: 12, color: C.mute }}>この端末のブラウザに保存されます。</div>
-        </div>
-        <div style={card()}>
-          <h3 style={h3}>ルール</h3>
-          <button onClick={() => { setRulesBack('settings'); setScreen('rules') }} style={btn(false, false)}>ルール説明を開く</button>
-        </div>
-      </>
-    ))
+    return (
+      <SettingsScreen
+        user={user}
+        settings={settings}
+        onChange={(next) => { setSettings(next); saveSettings(next) }}
+        onLogin={handleLogin}
+        onLogout={handleLogout}
+        onOpenRules={() => { setRulesBack('settings'); setScreen('rules') }}
+        onExit={goHome}
+      />
+    )
   }
 
   // ---- ホーム: 項目の名前だけ。選ぶと、それぞれの画面が開く(ログイン限定の項目は、ログインなしだと開かない) ----
