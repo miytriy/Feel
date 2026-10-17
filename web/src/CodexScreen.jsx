@@ -283,7 +283,7 @@ function ListItem({ tab, def, selected, onClick, count = null }) {
 
 // ---------- 画面 ----------
 // ownedMap を渡すと「所持キャラクター」になる(持っているキャラだけ・キャラのタブだけ・所持数つき)
-export default function CodexScreen({ onExit, title = '資料集', ownedMap = null }) {
+export default function CodexScreen({ onExit, title = 'Wiki', ownedMap = null }) {
   const desktop = useIsDesktop()
   const agents = !!ownedMap
   const [tab, setTab] = useState('chars') // chars | spells
