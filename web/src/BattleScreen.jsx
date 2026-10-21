@@ -903,7 +903,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
           </div>
           <div style={{ minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {inspected && <div style={{ flex: '0 1 auto', maxHeight: '30%', overflowY: 'auto' }}><InspectBox unit={inspected} big /></div>}
-            <div style={{ flex: '0 1 auto', maxHeight: '58%', overflowY: 'auto', padding: 14, borderRadius: 10, background: C.card, border: `1px solid ${C.line}`, fontSize: 14 }}>
+            <div style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', padding: 14, borderRadius: 10, background: C.card, border: `1px solid ${C.line}`, fontSize: 14 }}>
               {panelInner}
             </div>
           </div>
