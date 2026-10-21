@@ -1,0 +1,283 @@
+// Feel Battle - CPUの頭脳(レベル1〜5)
+import { legalActions, applyAction, calcDamage, refStatValue, getUnit, getActiveUnit } from './engine.js'
+
+export const CPU_LEVELS = [
+  { level: 1, name: 'Lv.1', description: '何も考えずに行動する' },
+  { level: 2, name: 'Lv.2', description: 'ダメージの大きい相手を狙うが、ときどきミスをする' },
+  { level: 3, name: 'Lv.3', description: '倒せる相手や危険な相手を優先し、特性も有効に使う' },
+  { level: 4, name: 'Lv.4', description: '数手先まで読んで選ぶ' },
+  { level: 5, name: 'Lv.5', description: 'Lv.4の読みに加えて、シナジーのある編成と、それに合う強いスペルを、有効に使う', rule: 'CPUは、キャラクター同士のシナジー(相性のよい組み合わせ)がある編成を使い、その編成に合う強いスペルを、効果が出る場面で使います。' },
+]
+export const SPELL_LEVEL = 5 // このレベル以上のCPUは、スペルセットを持って、スペルを使う
+
+const MISTAKE_RATE_LV2 = 0.3 // レベル2がランダムに行動してしまう確率
+const TRAIT_RATE_LV2 = 0.5 // レベル2が特性を使う確率(使えるとき)
+const TRAIT_MIN_GAIN = 0.01 // レベル3: 盤面が これ以上よくなる特性だけ使う
+const LOOKAHEAD = 50 // レベル4: 最大何回先の行動まで読むか
+const SAMPLES = 3 // レベル4: 乱数(クリティカル)を入れた試行の回数
+const SPELL_MIN_GAIN = 0.01 // レベル5: 盤面がこれ以上よくなるスペルだけ使う
+const MARGIN = 0.15 // レベル4: レベル3の選択より、これ以上よいときだけ選び直す
+const TEMPO_WEIGHT = 0.1 // 行動バーの進み具合を、盤面の評価にどれだけ入れるか
+
+const pickRandom = (list, rng) => list[Math.floor(rng() * list.length)]
+
+// 期待ダメージ(クリティカルは確率の平均で計算)
+function expectedDamage(state, action) {
+  const actor = getActiveUnit(state)
+  const target = getUnit(state, action.target)
+  return calcDamage(actor, target, actor.skill, { expected: true }).damage
+}
+
+// 攻撃対象の評価: 削れるHPの割合 + 倒せるボーナス + 相手の危険度
+function scoreTarget(state, action) {
+  const actor = getActiveUnit(state)
+  const target = getUnit(state, action.target)
+  const dmg = expectedDamage(state, action)
+  const remaining = target.hp + target.armor
+  const effective = Math.min(dmg, remaining)
+  const canKill = dmg >= remaining
+
+  const enemies = state.units.filter((u) => u.alive && u.team !== actor.team)
+  const threat = (u) => (Math.max(u.atk, u.mag) * u.spd) / 100
+  const maxThreat = Math.max(...enemies.map(threat), 1)
+  const barrierPenalty = target.barrier > 0 ? 0.5 : 0 // バリアがあると攻撃が無駄になる
+
+  const summonPenalty = target.field === 'summon' ? 0.6 : 0 // 召喚物を倒しても勝利には近づかないので、少し後回し
+  return effective / target.maxHp + (canKill ? 1 : 0) + 0.3 * (threat(target) / maxThreat) - barrierPenalty - summonPenalty
+}
+
+function pickBest(actions, scoreFn) {
+  let best = actions[0]
+  let bestScore = -Infinity
+  for (const a of actions) {
+    const s = scoreFn(a)
+    if (s > bestScore) {
+      bestScore = s
+      best = a
+    }
+  }
+  return best
+}
+
+// ---- 盤面の有利さ(自分のチーム視点) ----
+// チームの強さ = 残り体力の合計 × 1ターンあたりの攻撃力の合計(バリア・信仰値・クレストは少し加点)。
+function unitPower(u) {
+  const sk = u.skill
+  const perHit = (refStatValue(u, sk) * sk.mult + (sk.add || 0)) * (1 + (u.critRate / 100) * (u.critDmg / 100))
+  return (perHit * u.spd) / 100
+}
+
+function teamPower(state, team) {
+  let hp = 0
+  let power = 0
+  let barriers = 0
+  for (const u of state.units) {
+    if (!u.alive || u.team !== team) continue
+    hp += u.hp + u.armor
+    power += unitPower(u)
+    barriers += u.barrier
+  }
+  return hp * power * (1 + 0.08 * barriers)
+}
+
+function evaluate(state, team) {
+  if (state.winner) {
+    if (state.winner === 'draw') return 0
+    let mine = 0
+    let theirs = 0
+    for (const u of state.units) {
+      if (!u.alive) continue
+      if (u.team === team) mine += (u.hp + u.armor) / u.maxHp
+      else theirs += (u.hp + u.armor) / u.maxHp
+    }
+    return (state.winner === team ? 100 : -100) + (mine - theirs)
+  }
+  const enemy = team === 'A' ? 'B' : 'A'
+  const power = Math.log((teamPower(state, team) + 1) / (teamPower(state, enemy) + 1))
+  // 信仰値とクレストも、少しだけ価値があるものとして数える
+  const faith = state.faith[team] - state.faith[enemy] + 0.5 * (state.graveyard[team] - state.graveyard[enemy])
+  const crests = state.crests[team].length - state.crests[enemy].length
+  // 行動バーでの進み具合(次の番まであと少しなほど有利)。アクセラレートで本体の番を消費する損得も、これで見積もる
+  let tempo = 0
+  for (const u of state.units) {
+    if (!u.alive) continue
+    const progress = Math.min(1, Math.max(0, 1 - u.curAV / u.baseAV))
+    tempo += u.team === team ? progress : -progress
+  }
+  return power + 0.03 * faith + 0.12 * crests + TEMPO_WEIGHT * tempo
+}
+
+// ---- レベル3: 特性は「盤面がよくなるなら使う」、攻撃は対象の評価で選ぶ ----
+function chooseLv3(state, actions) {
+  const skills = actions.filter((a) => a.type === 'skill')
+  const traits = actions.filter((a) => a.type === 'trait' || a.type === 'evolve')
+  const endAction = actions.find((a) => a.type === 'endTurn')
+  const team = getActiveUnit(state).team
+
+  if (traits.length) {
+    const base = evaluate(state, team)
+    let best = null
+    let bestGain = TRAIT_MIN_GAIN
+    for (const t of traits) {
+      const gain = evaluate(applyAction(state, t, { expected: true }), team) - base
+      if (gain > bestGain) {
+        best = t
+        bestGain = gain
+      }
+    }
+    if (best) return best
+  }
+  return skills.length ? pickBest(skills, (a) => scoreTarget(state, a)) : endAction
+}
+
+// ---- レベル4: 先読み ----
+function seededRng(seed) {
+  let a = seed >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0
+    let t = a
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+// 先読み中の動き方(軽い): 使える特性は全部使い、そのあと一番よい対象を攻撃する
+// 効果の対象を選ぶ(ファンファーレなど)。入場し直させる効果なら、ファンファーレを持つ味方を優先する
+function pickChoice(state, actions, rng, level = 1) {
+  if (state.pending?.confirm) return actions.find((a) => a.target === 'yes') || actions[0] // 使うかどうか: CPUは使う
+  const effects = state.pending ? state.pending.effects : []
+  const reenter = effects.some((e) => e.type === 'reenter')
+  // Lv.5: スペルのモードや、対象(だれに撃つか・どれを選ぶか)は、選んだあとの盤面がいちばんよくなるものを選ぶ
+  if (level >= SPELL_LEVEL && !reenter && actions.length > 1) {
+    const team = getActiveUnit(state).team
+    return pickBest(actions, (a) => evaluate(applyAction(state, a, { expected: true }), team))
+  }
+  if (state.pending?.modes) return actions[0] // モード: 先頭を選ぶ(Lv.4まで)
+  return pickBest(actions, (act) => {
+    const u = getUnit(state, act.target)
+    if (!u) return -Infinity
+    const fanfares = u.passiveObjs.filter((p) => p.trigger === 'fanfare').length
+    return (reenter ? fanfares * 10 - (u.hasActed ? 0 : 5) : 0) + u.hp / u.maxHp * 0.1 + rng() * 0.01
+  })
+}
+
+function quickPolicy(state) {
+  const actions = legalActions(state)
+  if (actions[0] && actions[0].type === 'choose') return pickChoice(state, actions, () => 0.5)
+  const accel = actions.find((a) => a.type === 'accelerate')
+  if (accel) return accel
+  const trait = actions.find((a) => a.type === 'trait' || a.type === 'evolve')
+  if (trait) return trait
+  const skills = actions.filter((a) => a.type === 'skill')
+  return skills.length ? pickBest(skills, (a) => scoreTarget(state, a)) : actions[0]
+}
+
+function rollout(state, action, team, seed) {
+  const opts = { rng: seededRng(seed) }
+  let s = applyAction(state, action, opts)
+  for (let i = 0; i < LOOKAHEAD && !s.winner; i++) s = applyAction(s, quickPolicy(s), opts)
+  return evaluate(s, team)
+}
+
+function chooseLv4(state, actions) {
+  const team = getActiveUnit(state).team
+  const base = chooseLv3(state, actions)
+  const candidates = actions.filter((a) => a.type !== 'endTurn' || !actions.some((x) => x.type === 'skill'))
+  const seeds = Array.from({ length: SAMPLES }, () => Math.floor(Math.random() * 1e9))
+  const value = (a) => seeds.reduce((sum, seed) => sum + rollout(state, a, team, seed), 0) / SAMPLES
+
+  const baseValue = value(base)
+  let best = base
+  let bestValue = baseValue
+  for (const a of candidates) {
+    if (a === base) continue
+    const v = value(a)
+    if (v > bestValue) {
+      bestValue = v
+      best = a
+    }
+  }
+  return bestValue > baseValue + MARGIN ? best : base
+}
+
+// スペルを使って、対象やモードを選び終えたあとの盤面の価値。
+// (スペルは「使う → 対象・モードを選ぶ」の2段階。選ぶ前の途中の盤面では、効果がまだ出ていないので、
+//  最後まで進めてから比べる。選ぶところは、選んだあとの盤面がいちばんよいものを選ぶ)
+function completedValue(state, action, team) {
+  let s = applyAction(state, action, { expected: true })
+  for (let i = 0; i < 4 && s.pending && !s.winner; i++) {
+    const opts = legalActions(s)
+    if (!opts.length || opts[0].type !== 'choose') break
+    const yes = s.pending.confirm ? opts.find((a) => a.target === 'yes') : null
+    const pick = yes || pickBest(opts, (a) => evaluate(applyAction(s, a, { expected: true }), team))
+    s = applyAction(s, pick, { expected: true })
+  }
+  return evaluate(s, team)
+}
+
+// ---- レベル5: 使えるスペルのうち、盤面が一番よくなるものを使う(よくならなければ使わない)。使わないときはレベル4と同じ ----
+function chooseLv5(state, actions) {
+  const spells = actions.filter((a) => a.type === 'spell')
+  if (spells.length) {
+    const team = getActiveUnit(state).team
+    const base = evaluate(state, team)
+    let best = null
+    let bestGain = SPELL_MIN_GAIN
+    for (const sp of spells) {
+      const gain = completedValue(state, sp, team) - base
+      if (gain > bestGain) {
+        best = sp
+        bestGain = gain
+      }
+    }
+    if (best) return best
+  }
+  return chooseLv4(state, actions.filter((a) => a.type !== 'spell'))
+}
+
+// アクセラレートの番: 実行する(本体の番を消費する)か、見送るか
+function chooseAccel(state, actions, level, rng) {
+  const accels = actions.filter((a) => a.type === 'accelerate')
+  const skip = actions.find((a) => a.type === 'endTurn')
+  if (!accels.length) return skip
+  if (level <= 1) return pickRandom(actions, rng)
+  if (level === 2) return rng() < MISTAKE_RATE_LV2 ? pickRandom(actions, rng) : pickRandom(accels, rng)
+
+  // レベル3以上: 実行したあとの盤面(本体の番を失う分も含む)が、見送るよりよいときだけ実行する
+  const team = getActiveUnit(state).team
+  const base = evaluate(applyAction(state, skip, { expected: true }), team)
+  let best = skip
+  let bestValue = base + TRAIT_MIN_GAIN
+  for (const a of accels) {
+    const v = evaluate(applyAction(state, a, { expected: true }), team)
+    if (v > bestValue) {
+      best = a
+      bestValue = v
+    }
+  }
+  return best
+}
+
+// 今の状態で、CPUが選ぶ行動を返す(特性を使ったあとも、同じキャラの番が続くので何度か呼ばれる)
+export function chooseAction(state, level = 1, rng = Math.random) {
+  const actions = legalActions(state)
+  if (actions.length <= 1) return actions[0]
+  if (actions[0].type === 'choose') return level <= 1 ? pickRandom(actions, rng) : pickChoice(state, actions, rng, level) // 効果の対象を選ぶ場面
+  if (state.activeKind === 'accel') return chooseAccel(state, actions, level, rng)
+
+  const skills = actions.filter((a) => a.type === 'skill')
+  const traits = actions.filter((a) => a.type === 'trait' || a.type === 'evolve')
+  const endAction = actions.find((a) => a.type === 'endTurn')
+  const anything = skills.length ? [...skills, ...traits] : [...traits, endAction].filter(Boolean)
+
+  if (level <= 1) return pickRandom(anything, rng)
+  if (level === 2) {
+    if (rng() < MISTAKE_RATE_LV2) return pickRandom(anything, rng)
+    if (traits.length && rng() < TRAIT_RATE_LV2) return pickRandom(traits, rng)
+    return skills.length ? pickBest(skills, (a) => expectedDamage(state, a)) : endAction
+  }
+  if (level === 3) return chooseLv3(state, actions)
+  if (level === 4) return chooseLv4(state, actions.filter((a) => a.type !== 'spell'))
+  return chooseLv5(state, actions)
+}
