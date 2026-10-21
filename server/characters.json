@@ -17,6 +17,7 @@
   { "id": "elf_12", "name": "深奥のフェアリービースト", "class": "エルフ", "rarity": "bronze" },
   { "id": "elf_13", "name": "煌撃の戦士・ベイル", "class": "エルフ", "rarity": "gold" },
   { "id": "elf_14", "name": "豊麗なるローズクイーン", "class": "エルフ", "rarity": "legend" },
+  { "id": "elf_amulet_01", "name": "燐光の岩", "class": "エルフ", "rarity": "silver" },
   { "id": "royal_01", "name": "統率のルミナスナイト", "class": "ロイヤル", "rarity": "silver" },
   { "id": "royal_02", "name": "異端の侍", "class": "ロイヤル", "rarity": "bronze" },
   { "id": "royal_03", "name": "勇猛のルミナスランサー", "class": "ロイヤル", "rarity": "silver" },
