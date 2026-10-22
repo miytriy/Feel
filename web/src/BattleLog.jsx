@@ -87,6 +87,7 @@ function UnitDetail({ u, color, first }) {
     u.barrier > 0 && ['バリア', 'あり'],
     u.stealth && ['潜伏', 'あり'],
     u.comboCount > 0 && ['コンボ', u.comboCount],
+    u.boost > 0 && ['スペルブースト(X)', `${u.boost}回`],
     u.countdown != null && ['カウントダウン', `あと${u.countdown}回`],
     u.evolvable && ['進化', u.evolved ? '進化済み' : 'まだ(EP1で進化)'],
     u.accel && ['アクセラレート', `速度${u.accel.speed}`],
