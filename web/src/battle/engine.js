@@ -34,7 +34,7 @@ export const KEYWORDS = {
 }
 export const TRIGGER_LABELS = {
   fanfare: 'ファンファーレ', constant: '常時', active: 'アクティブ', lastWord: 'ラストワード',
-  onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時', onEvolved: '進化したとき', turnEnd: 'ターン終了時', enemyTurnEnd: '相手のターン終了時',
+  onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時', onEvolved: '進化したとき', turnEnd: 'ターン終了時', onEnter: '場に出たとき', enemyTurnEnd: '相手のターン終了時',
   roundStart: 'ラウンド開始時', allyDeath: '味方が戦闘不能になったとき', allyEnter: '味方が場に出たとき', allyTurnStart: '味方のターン開始時', link: '連携', onBoost: 'スペルブースト時',
 }
 
@@ -444,6 +444,11 @@ function resolveTargets(state, source, key, ctx) {
       if (ctx.chosen) return [getUnit(state, ctx.chosen)]
       return [[...allies].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]].filter(Boolean)
     }
+    case 'allyFieldOne': { // 自分の場(場のキャラ + 召喚物)から1体(選ぶ効果用)
+      const field = [...allies, ...summonsOf(state, source)]
+      if (ctx.chosen) return field.filter((u) => u.uid === ctx.chosen)
+      return field.slice(0, 1)
+    }
     case 'enemies': return enemies
     case 'enemyOne': return ctx.chosen ? [getUnit(state, ctx.chosen)] : pickRandom(enemies)
     case 'enemyRandom': return pickRandom(enemies)
@@ -505,16 +510,20 @@ function summon(state, source, def) {
   // 自分の場の「味方が場に出たとき」(enterType があれば、そのタイプのキャラが出たときだけ)
   for (const a of state.units.filter((x) => x.alive && x.team === u.team && x.uid !== u.uid)) fire(state, 'allyEnter', a, { other: u })
   recalc(state)
+  fire(state, 'onEnter', u, {}) // 【場に出たとき】: ファンファーレ(最初の自分のターン開始時)とは違い、出た瞬間に働く
   return u
 }
 
 // 選択が必要な効果(choose: true)の、選べる対象の一覧
 function candidatesOf(state, source, e) {
   const key = e.target || 'self'
-  if (key === 'otherAllyOne') return alliesOf(state, source).filter((u) => u.uid !== source.uid)
-  if (key === 'allyOne') return alliesOf(state, source)
-  if (key === 'enemyOne') return enemyOneList(state, source)
-  return resolveTargets(state, source, key, {})
+  let list
+  if (key === 'otherAllyOne') list = alliesOf(state, source).filter((u) => u.uid !== source.uid)
+  else if (key === 'allyOne') list = alliesOf(state, source)
+  else if (key === 'allyFieldOne') list = [...alliesOf(state, source), ...summonsOf(state, source)]
+  else if (key === 'enemyOne') list = enemyOneList(state, source)
+  else list = resolveTargets(state, source, key, {})
+  return e.onlyType ? list.filter((u) => hasType(u, e.onlyType)) : list // onlyType: 指定のタイプ(式神など)だけ
 }
 
 // 候補が0体 → 何もしない / 1体 → 自動で選ぶ / 2体以上 → state.pending に残して、選ばれるまで待つ(ファンファーレのときだけ)
@@ -685,6 +694,16 @@ function runEffects(state, source, effects, ctx = {}) {
       state.ep[source.team] = Math.min(EP_MAX, state.ep[source.team] + (e.amount ?? 1))
       continue
     }
+    if (e.type === 'growByDead') { // 攻撃力+X / 体力+Y: X・Y は、このターン中に倒された自分の(deadType)タイプのキャラの、元の攻撃力・体力の合計
+      const dead = (state.deaths || []).filter((d) => d.turn === state.turns && d.team === source.team && String(d.type || '').split('/').includes(e.deadType))
+      const a = dead.reduce((n, d) => n + d.atk, 0)
+      const h = dead.reduce((n, d) => n + d.hp, 0)
+      if (a > 0) source.buffs.push({ stat: 'atk', pct: 0, flat: a, turns: null })
+      if (h > 0 && !source.isAmulet) { source.maxHp += h; source.hp += h }
+      state.log.push(`このターンに倒された「${e.deadType}」は${dead.length}体: 攻撃力+${a} / 体力+${h}`)
+      recalc(state)
+      continue
+    }
     if (e.type === 'evolve') { // これは進化する(EPは使わない。すでに進化済み・進化できないキャラ・場にいないときは何もしない)
       if (source.alive && source.field === 'main' && source.evolvable && !source.evolved) doEvolve(state, source, ctx.opts, true)
       continue
@@ -696,6 +715,7 @@ function runEffects(state, source, effects, ctx = {}) {
 
     let targets = resolveTargets(state, source, e.target || 'self', ctx)
     if (e.onlyClass) targets = targets.filter((t) => t.class === e.onlyClass) // 指定のクラス(ロイヤルなど)だけ
+    if (e.onlyType) targets = targets.filter((t) => hasType(t, e.onlyType)) // 指定のタイプ(式神など)だけ
     // ランダムな相手の人数: count(基本は1体)。comboCount: { combo: 3, count: 3 } なら、コンボが3以上のとき3体(重ならないように選ぶ)
     if ((e.target || 'self') === 'enemyRandom' && (e.count != null || e.comboCount)) {
       let n = e.count ?? 1
@@ -803,6 +823,7 @@ function runEffects(state, source, effects, ctx = {}) {
         case 'destroy': // 破壊する(召喚物の「自身を破壊」など)
           if (hasKw(t, 'earthSign')) break // 土の印は、能力で破壊できない
           if (t.alive) { t.hp = 0; t.alive = false; state.log.push(`${t.name}は破壊された`) }
+          if (e.settle) resolveDeaths(state, ctx.opts) // settle: 破壊の処理(ラストワード・倒された記録)を、次の効果より先に済ませる
           break
         case 'reenter': // 入場し直す: 入場直後の状態に戻る(次の自分のターン開始時にファンファーレがもう一度働き、そのターンはスキル攻撃ができない)
           t.hasActed = false
@@ -881,6 +902,9 @@ function resolveDeaths(state, opts) {
       u.barrier = 0
       u.stealth = false
       state.log.push(`${u.name}は倒れた`)
+      // このターン中に倒されたキャラの記録(元の攻撃力・体力つき)。【場に出たとき】の growByDead が使う。前のターンの記録は捨てる
+      state.deaths = (state.deaths || []).filter((d) => d.turn === state.turns)
+      state.deaths.push({ turn: state.turns, team: u.team, type: u.type, atk: u.charDef?.stats?.atk ?? u.base.atk, hp: u.charDef?.stats?.hp ?? u.baseMaxHp })
       if (u.field === 'main') state.graveyard[u.team] += GRAVE_PER_DEATH // 倒されると墓場が大きく増える
       const killer = u.killedBy ? getUnit(state, u.killedBy) : null
       fire(state, 'lastWord', u, { other: killer, opts })
