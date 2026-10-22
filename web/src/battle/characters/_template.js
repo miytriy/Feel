@@ -16,7 +16,7 @@
 //             'guard'守護 'stealth'潜伏 'aura'オーラ 'intimidate'威圧 'rush'突進 'dash'疾走
 //             'finisher'必殺 'drain'ドレイン 'barrier'バリア
 //           効果つきは { name, trigger, desc, effects, min(連携・コンボの回数), condition }
-//             trigger: fanfare / constant / active / lastWord / onAttack / onEngage / combo / onEvolve / roundStart / allyTurnStart / link
+//             trigger: fanfare / constant / active / lastWord / onAttack / onEngage / combo / onEvolve(EP進化のときだけ) / onEvolved(進化したとき。効果での進化でも働く) / roundStart / allyTurnStart / link
 // traits  : 特性(MPを使う) { id, name, cost, target, desc, effects, repeatable, condition }
 //             target: self / allies / otherAllies / allyOne / enemies / enemyOne / enemyRandom / summons
 // accelerate: { id, name, speed, cost, target, desc, effects }  本体とは別の速度で番が回る特性
@@ -27,7 +27,7 @@
 //   { type:'heal', stat:'atk'|'maxHp', mult, flat, target }
 //   { type:'buff', stat, pct, flat, turns, target }   turns を省くと戦闘中ずっと
 //   { type:'armor', stat, mult, flat, rate(吸収レート0.6〜1), target }   barrier: { type:'barrier', target }
-//   { type:'advance', pct, target }   { type:'mp', amount }   { type:'ep', amount }
+//   { type:'advance', pct, target }   { type:'mp', amount }   { type:'ep', amount }   { type:'evolve' }(これは進化する。EPは使わない)
 //   { type:'faith', amount }   { type:'graveyard', amount }(マイナスで消費)
 //   { type:'summon', unit:{ キャラのデータ }, count }   { type:'crest', crest:{ name, passives, countdown } }
 //   perGraveyard: 墓場1つにつき、効果が(heal/buff/armor/damageのadd)その分だけ増える
