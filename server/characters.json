@@ -42,5 +42,6 @@
   { "id": "witch_06", "name": "理光の天宮・エーデルワイス", "class": "ウィッチ", "rarity": "gold" },
   { "id": "witch_07", "name": "ルーンブレイドコンダクター", "class": "ウィッチ", "rarity": "bronze" },
   { "id": "witch_08", "name": "ワンダーウィッチ・エミル", "class": "ウィッチ", "rarity": "silver" },
-  { "id": "witch_09", "name": "黎明の錬金術師・ノノ", "class": "ウィッチ", "rarity": "gold" }
+  { "id": "witch_09", "name": "黎明の錬金術師・ノノ", "class": "ウィッチ", "rarity": "gold" },
+  { "id": "witch_10", "name": "マナリアフレンズ・アン&グレア", "class": "ウィッチ", "rarity": "legend" }
 ]
