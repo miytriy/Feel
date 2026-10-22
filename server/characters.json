@@ -39,5 +39,6 @@
   { "id": "witch_03", "name": "魔法の薬剤師・ペネロピー", "class": "ウィッチ", "rarity": "gold" },
   { "id": "witch_04", "name": "オウルサモナー", "class": "ウィッチ", "rarity": "bronze" },
   { "id": "witch_05", "name": "夢想のペンギンウィザード", "class": "ウィッチ", "rarity": "bronze" },
-  { "id": "witch_06", "name": "理光の天宮・エーデルワイス", "class": "ウィッチ", "rarity": "gold" }
+  { "id": "witch_06", "name": "理光の天宮・エーデルワイス", "class": "ウィッチ", "rarity": "gold" },
+  { "id": "witch_07", "name": "ルーンブレイドコンダクター", "class": "ウィッチ", "rarity": "bronze" }
 ]
