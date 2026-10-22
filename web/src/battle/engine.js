@@ -34,7 +34,7 @@ export const KEYWORDS = {
 }
 export const TRIGGER_LABELS = {
   fanfare: 'ファンファーレ', constant: '常時', active: 'アクティブ', lastWord: 'ラストワード',
-  onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時', onEvolved: '進化したとき',
+  onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時', onEvolved: '進化したとき', turnEnd: 'ターン終了時', enemyTurnEnd: '相手のターン終了時',
   roundStart: 'ラウンド開始時', allyDeath: '味方が戦闘不能になったとき', allyEnter: '味方が場に出たとき', allyTurnStart: '味方のターン開始時', link: '連携', onBoost: 'スペルブースト時',
 }
 
@@ -709,7 +709,7 @@ function runEffects(state, source, effects, ctx = {}) {
       if (!t) continue
       switch (e.type) {
         case 'damage': {
-          const skill = { stat: e.stat || 'atk', mult: e.mult ?? 1, add: (e.add || 0) + graveBonus(state, source, e) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0), type: e.dmgType || 'physical' } // perType: 自分の場の「そのタイプ」のキャラ1体につき、add が perTypeFlat(省くと1)ずつ増える
+          const skill = { stat: e.stat || 'atk', mult: e.mult ?? 1, add: (e.add || 0) + graveBonus(state, source, e) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0) + (e.perEarth ? e.perEarth * state.earth[source.team] : 0), type: e.dmgType || 'physical' } // perEarth: 自分の場の土の印1つにつき、add が perEarth ずつ増える / perType: 自分の場の「そのタイプ」のキャラ1体につき、add が perTypeFlat(省くと1)ずつ増える
           const { damage } = calcDamage(source, t, skill, ctx.opts)
           const dealt = applyDamage(state, source, t, damage, skill.type === 'true')
           loseStealth(source) // 能力でダメージを与えたら潜伏を失う
@@ -1020,6 +1020,23 @@ function beginTurn(state, unit, opts) {
 
 function endTurn(state, actor) {
   actor.hasActed = true
+  if (actor.alive) { // クレストの【ターン終了時】: そのクレストを持つキャラ自身のターンが終わるときに働く
+    for (const crest of [...state.crests[actor.team]]) {
+      if (crest.sourceUid !== actor.uid) continue
+      for (const p of crest.passives) {
+        if (p.trigger !== 'turnEnd' || !checkCond(state, actor, p.condition)) continue
+        state.log.push(`クレスト【${crest.name}】が働いた`)
+        noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team)
+        runEffects(state, actor, p.effects, {})
+      }
+    }
+    resolveDeaths(state)
+  }
+  for (const u of [...state.units]) { // 【相手のターン終了時】: 相手のキャラのターンが終わるときに、場のキャラ・召喚物の能力が働く
+    if (!u.alive || u.team === actor.team) continue
+    fire(state, 'enemyTurnEnd', u, {})
+  }
+  resolveDeaths(state)
   actor.curAV = actor.baseAV
   if (state.comboMode !== 'reset') actor.comboCount = 0 // 従来: コンボは、自分のターンが終わった後から数え直す(βでは、コンボリセットのターンで数え直す)
   actor.buffs = actor.buffs
