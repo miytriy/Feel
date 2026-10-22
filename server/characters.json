@@ -37,5 +37,6 @@
   { "id": "witch_01", "name": "見習い占星術師", "class": "ウィッチ", "rarity": "bronze" },
   { "id": "witch_02", "name": "アドラブルティーチャー・ミラ", "class": "ウィッチ", "rarity": "silver" },
   { "id": "witch_03", "name": "魔法の薬剤師・ペネロピー", "class": "ウィッチ", "rarity": "gold" },
-  { "id": "witch_04", "name": "オウルサモナー", "class": "ウィッチ", "rarity": "bronze" }
+  { "id": "witch_04", "name": "オウルサモナー", "class": "ウィッチ", "rarity": "bronze" },
+  { "id": "witch_05", "name": "夢想のペンギンウィザード", "class": "ウィッチ", "rarity": "bronze" }
 ]
