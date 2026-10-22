@@ -34,7 +34,7 @@ export const KEYWORDS = {
 }
 export const TRIGGER_LABELS = {
   fanfare: 'ファンファーレ', constant: '常時', active: 'アクティブ', lastWord: 'ラストワード',
-  onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時',
+  onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時', onEvolved: '進化したとき',
   roundStart: 'ラウンド開始時', allyDeath: '味方が戦闘不能になったとき', allyEnter: '味方が場に出たとき', allyTurnStart: '味方のターン開始時', link: '連携', onBoost: 'スペルブースト時',
 }
 
@@ -685,6 +685,10 @@ function runEffects(state, source, effects, ctx = {}) {
       state.ep[source.team] = Math.min(EP_MAX, state.ep[source.team] + (e.amount ?? 1))
       continue
     }
+    if (e.type === 'evolve') { // これは進化する(EPは使わない。すでに進化済み・進化できないキャラ・場にいないときは何もしない)
+      if (source.alive && source.field === 'main' && source.evolvable && !source.evolved) doEvolve(state, source, ctx.opts, true)
+      continue
+    }
     if (e.type === 'mp') {
       state.mp[source.team] = Math.min(state.mpMax[source.team], state.mp[source.team] + (e.amount ?? 1))
       continue
@@ -1297,8 +1301,8 @@ function doAccelerate(state, actor, action, opts) {
 }
 
 // 進化: EPを1つ使い、HPと攻撃力が+100%、突進と同じ効果(進化したターンからスキルを使える)を得る
-function doEvolve(state, actor, opts) {
-  state.ep[actor.team] -= 1
+function doEvolve(state, actor, opts, free = false) { // free: 能力の効果で進化する(EPは使わない。死亡の処理は、呼び出し元がまとめて行う)
+  if (!free) state.ep[actor.team] -= 1
   actor.evolved = true
   actor.maxHp += actor.baseMaxHp
   actor.hp += actor.baseMaxHp
@@ -1307,8 +1311,9 @@ function doEvolve(state, actor, opts) {
   state.log.push(`${actor.name}は進化した!(体力と攻撃力が2倍に)`)
   noteAbility(state, '進化', actor.name, '', '体力と攻撃力が2倍になり、【突進】を得る。', actor.team)
   recalc(state)
-  fire(state, 'onEvolve', actor, { opts, allowPending: true }) // 選ぶ効果は、プレイヤーが選ぶまで待つ
-  if (!state.pending) resolveDeaths(state, opts)
+  if (!free) fire(state, 'onEvolve', actor, { opts, allowPending: true }) // 【進化時】は、EPを使った進化のときだけ働く。選ぶ効果は、プレイヤーが選ぶまで待つ
+  if (!state.pending) fire(state, 'onEvolved', actor, { opts, allowPending: true }) // 【進化したとき】(これが進化したとき)は、EPを使わない進化でも働く
+  if (!free && !state.pending) resolveDeaths(state, opts)
   emit(state, 'sync')
 }
 
