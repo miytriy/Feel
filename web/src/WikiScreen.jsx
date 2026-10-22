@@ -146,7 +146,7 @@ const CSS = `
 .wk-badge { position: absolute; right: 18%; top: 38px; width: 13px; height: 13px; background: var(--c-badge); transform: rotate(45deg); }
 
 /* 項目の中: 左に分類、右に一覧・詳細 */
-.wk-body { flex: 1; display: grid; grid-template-columns: minmax(200px, 270px) 1fr; gap: 22px; padding: 22px 4vw 40px; align-items: start; }
+.wk-body { flex: 1; display: grid; grid-template-columns: minmax(200px, 270px) 1fr; gap: 22px; padding: 22px 4vw 40px; align-items: start; align-content: start; } /* align-content: start = 行(分類・一覧)の高さを、中身だけにする。入れないと、余った高さが行に配られて、分類と一覧の間が空く */
 .wk-side { display: flex; flex-direction: column; gap: 6px; position: sticky; top: 14px; max-height: calc(100vh - 110px); overflow-y: auto; overflow-x: hidden; padding-right: 6px; scrollbar-width: none; }
 .wk-side::-webkit-scrollbar { display: none; }
 .wk-sub { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 16px 0 18px; height: 52px; border: 0; cursor: pointer; text-align: left; min-height: 0;
