@@ -709,7 +709,7 @@ function runEffects(state, source, effects, ctx = {}) {
       if (!t) continue
       switch (e.type) {
         case 'damage': {
-          const skill = { stat: e.stat || 'atk', mult: e.mult ?? 1, add: (e.add || 0) + graveBonus(state, source, e), type: e.dmgType || 'physical' }
+          const skill = { stat: e.stat || 'atk', mult: e.mult ?? 1, add: (e.add || 0) + graveBonus(state, source, e) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0), type: e.dmgType || 'physical' } // perType: 自分の場の「そのタイプ」のキャラ1体につき、add が perTypeFlat(省くと1)ずつ増える
           const { damage } = calcDamage(source, t, skill, ctx.opts)
           const dealt = applyDamage(state, source, t, damage, skill.type === 'true')
           loseStealth(source) // 能力でダメージを与えたら潜伏を失う
