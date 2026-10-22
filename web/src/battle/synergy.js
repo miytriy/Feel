@@ -52,7 +52,7 @@ export function charFeatures(c) {
     else if (p.trigger === 'allyEnter') f.reactEnter += 1
     else if (p.trigger === 'allyDeath') f.reactDeath += 1
     else if (p.trigger === 'lastWord') f.lastWord += 1
-    else if (p.trigger === 'onEvolve') f.evolve += 1
+    else if (p.trigger === 'onEvolve' || p.trigger === 'onEvolved') f.evolve += 1
     if (p.trigger === 'combo' || /コンボ_\d/.test(p.name || '')) f.combo += 1
     scanEffects(p.effects, acc)
   }
