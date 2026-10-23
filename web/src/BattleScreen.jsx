@@ -692,11 +692,11 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
           <div style={{ fontSize: 13, color: C.mute }}>{actor.name}(相手)が考えています…</div>
         ) : choosing && modePicking ? (
           <div>
-            <div style={{ fontSize: 13, marginBottom: 6 }}>【モード】{state.pending.prompt}</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 13, marginBottom: 6 }}>{state.pending.mpPick ? `【${actor.name}】` : '【モード】'}{state.pending.prompt}</div>
+            <div style={state.pending.mpPick ? { display: 'flex', flexWrap: 'wrap', gap: 6 } : { display: 'flex', flexDirection: 'column', gap: 6 }}>
               {state.pending.modes.map((m, i) => (
                 <button key={i} onClick={() => act({ type: 'choose', target: `mode${i}` })} style={{ ...buttonStyle(true, false), textAlign: 'left' }}>
-                  ({i + 1}) {m.name}{m.desc ? ` — ${m.desc}` : ''}
+                  {state.pending.mpPick ? `${m.name}${m.desc ? `(${m.desc})` : ''}` : `(${i + 1}) ${m.name}${m.desc ? ` — ${m.desc}` : ''}`}
                 </button>
               ))}
             </div>

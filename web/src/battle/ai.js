@@ -153,6 +153,7 @@ function pickChoice(state, actions, rng, level = 1) {
     const team = getActiveUnit(state).team
     return pickBest(actions, (a) => evaluate(applyAction(state, a, { expected: true }), team))
   }
+  if (state.pending?.mpPick) return actions[actions.length - 1] // MPを好きな数だけ消費: CPUはあるだけ使う(Lv.4まで)
   if (state.pending?.modes) return actions[0] // モード: 先頭を選ぶ(Lv.4まで)
   return pickBest(actions, (act) => {
     const u = getUnit(state, act.target)

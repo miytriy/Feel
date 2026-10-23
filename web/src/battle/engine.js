@@ -36,7 +36,7 @@ export const KEYWORDS = {
 export const TRIGGER_LABELS = {
   fanfare: 'ファンファーレ', constant: '常時', active: 'アクティブ', lastWord: 'ラストワード',
   onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時', onEvolved: '進化したとき', turnEnd: 'ターン終了時', onEnter: '場に出たとき', enemyTurnEnd: '相手のターン終了時',
-  roundStart: 'ラウンド開始時', allyDeath: '味方が戦闘不能になったとき', allyEnter: '味方が場に出たとき', allyTurnStart: '味方のターン開始時', link: '連携', onBoost: 'スペルブースト時',
+  roundStart: 'ラウンド開始時', allyDeath: '味方が戦闘不能になったとき', allyEnter: '味方が場に出たとき', allyTurnStart: '味方のターン開始時', link: '連携', onBoost: 'スペルブースト時', allyHeal: '味方が回復したとき',
 }
 
 // ---------- 遺物(頭・胴・脚・靴のセットを装備したキャラに、セット効果がつく) ----------
@@ -397,7 +397,27 @@ function heal(state, unit, amount) {
   const before = unit.hp
   unit.hp = Math.min(unit.maxHp, unit.hp + amount)
   const gained = Math.round(unit.hp - before)
-  if (gained > 0) { state.log.push(`${unit.name}は${gained}回復した`); emit(state, 'heal', { target: unit.uid, amount: gained }) }
+  if (gained > 0) {
+    state.log.push(`${unit.name}は${gained}回復した`)
+    emit(state, 'heal', { target: unit.uid, amount: gained })
+    fireCrestsOnHeal(state, unit.team)
+  }
+}
+
+// クレストの【味方が回復したとき】。oncePerTurn: true のものは、そのチームのターン開始ごとに1回まで
+function fireCrestsOnHeal(state, team) {
+  for (const crest of [...state.crests[team]]) {
+    for (const p of crest.passives) {
+      if (p.trigger !== 'allyHeal') continue
+      if (p.oncePerTurn && crest.healUsed) continue
+      const source = crestSource(state, crest)
+      if (!source) continue
+      crest.healUsed = true
+      state.log.push(`クレスト【${crest.name}】が働いた`)
+      noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team)
+      runEffects(state, source, p.effects, {})
+    }
+  }
 }
 
 // 起きたことの記録(画面で、1つずつ順番に見せるため)。そのときの盤面の要約(体力など)つき。AIの先読み(expected)のときは記録しない
@@ -464,8 +484,9 @@ function statLabel(stat) {
 }
 
 // クレストを置く(最大5つ、同名は置けない)
-function placeCrest(state, source, def) {
-  const area = state.crests[source.team]
+function placeCrest(state, source, def, onEnemy = false) {
+  const holder = onEnemy ? (source.team === 'A' ? 'B' : 'A') : source.team // onEnemy: 相手がこのクレストを持つ
+  const area = state.crests[holder]
   if (area.length >= CREST_MAX) {
     state.log.push(`クレストは${CREST_MAX}つまでしか置けない(【${def.name}】は置けなかった)`)
     return
@@ -477,8 +498,8 @@ function placeCrest(state, source, def) {
   const crest = JSON.parse(JSON.stringify(def))
   crest.passives = crest.passives || []
   crest.countdown = def.countdown ?? null
-  crest.sourceUid = source.uid
-  crest.team = source.team
+  crest.sourceUid = onEnemy ? null : source.uid // 相手に置くクレストは、持つ側の生きているキャラが効果を出す役になる
+  crest.team = holder
   crest.ownerSpd = source.spd // 持ち主が倒れたあとは、この速度で行動バーに並ぶ
   crest.slot = null
   crest.originDef = source.charDef // 置いたキャラの元の定義(「置いたキャラと同じキャラを召喚」のため)
@@ -573,6 +594,27 @@ function runEffects(state, source, effects, ctx = {}) {
       ctx = { ...ctx, chosen: cands[0].uid } // 1体だけなら自動で選ぶ
     }
 
+    if (e.type === 'spendMp') { // MPを好きな数(0〜いまのMP)だけ消費する。消費した数Xは、あとの効果の perMpSpent(damage)で使う
+      let x = ctx.mpSpent
+      if (x === undefined) {
+        const have = state.mp[source.team]
+        if (ctx.allowPending && have > 0) {
+          state.pending = {
+            uid: source.uid, effects: effects.slice(idx), candidates: Array.from({ length: have + 1 }, (_, i) => `mode${i}`), mpPick: true,
+            modes: Array.from({ length: have + 1 }, (_, i) => ({ name: `MP${i}`, desc: i === 0 ? '消費しない' : '' })), prompt: e.prompt || '消費するMPの数を選んでください',
+            trigger: ctx.trigger || null, nextPassive: ctx.nextPassive ?? null, spell: !!ctx.spell,
+          }
+          state.log.push(`${source.name}の効果: 消費するMPを選んでください`)
+          recalc(state)
+          return
+        }
+        x = have // 選べない場面(CPUの先読みなど)は、あるだけ消費する
+      }
+      state.mp[source.team] -= x
+      state.log.push(`MPを${x}消費した`)
+      ctx = { ...ctx, mpSpent: x }
+      continue
+    }
     if (e.type === 'mode') { // 【モード】1つ選んで、その能力が働く(選ぶまで待つ。選べない場面では先頭のモード)
       let pick = ctx.mode
       if (pick === undefined) {
@@ -690,7 +732,7 @@ function runEffects(state, source, effects, ctx = {}) {
       continue
     }
     if (e.type === 'crest') {
-      placeCrest(state, source, e.crest)
+      placeCrest(state, source, e.crest, !!e.onEnemy) // onEnemy: true なら、相手が持つクレストになる
       continue
     }
     if (e.type === 'ep') {
@@ -737,7 +779,8 @@ function runEffects(state, source, effects, ctx = {}) {
       if (!t) continue
       switch (e.type) {
         case 'damage': {
-          const skill = { stat: e.stat || 'atk', mult: e.mult ?? 1, add: (e.add || 0) + graveBonus(state, source, e) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0) + (e.perEarth ? e.perEarth * state.earth[source.team] : 0), type: e.dmgType || 'physical' } // perEarth: 自分の場の土の印1つにつき、add が perEarth ずつ増える / perType: 自分の場の「そのタイプ」のキャラ1体につき、add が perTypeFlat(省くと1)ずつ増える
+          if (e.perMpSpent != null && !(ctx.mpSpent > 0)) break // perMpSpent: 消費したMP1つにつき、倍率が perMpSpent ずつ増える(MPを使わなかったら何もしない)
+          const skill = { stat: e.stat || 'atk', mult: (e.perMpSpent != null ? (e.mult ?? 0) + e.perMpSpent * ctx.mpSpent : e.mult ?? 1), add: (e.add || 0) + graveBonus(state, source, e) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0) + (e.perEarth ? e.perEarth * state.earth[source.team] : 0), type: e.dmgType || 'physical' } // perEarth: 自分の場の土の印1つにつき、add が perEarth ずつ増える / perType: 自分の場の「そのタイプ」のキャラ1体につき、add が perTypeFlat(省くと1)ずつ増える
           const { damage } = calcDamage(source, t, skill, ctx.opts)
           const dealt = applyDamage(state, source, t, damage, skill.type === 'true')
           loseStealth(source) // 能力でダメージを与えたら潜伏を失う
@@ -866,6 +909,7 @@ function fire(state, trigger, unit, ctx = {}, from = 0) {
 
 // クレストのトリガー(ラウンド開始時・味方のターン開始時)
 function fireCrests(state, team, trigger, subject, opts) {
+  if (trigger === 'allyTurnStart') for (const c of state.crests[team]) c.healUsed = false // 【味方が回復したとき】(oncePerTurn)の回数をリセット
   for (const crest of [...state.crests[team]]) {
     for (const p of crest.passives) {
       if (p.trigger !== trigger) continue
@@ -1395,8 +1439,8 @@ export function applyAction(prev, action, opts = {}) {
     state.pending = null
     if (p.modes) {
       const idx = Number(String(action.target).replace('mode', ''))
-      state.log.push(`モード【${p.modes[idx]?.name}】を選んだ`)
-      runEffects(state, actor, p.effects, { opts, mode: idx, trigger: p.trigger, spell: p.spell })
+      state.log.push(p.mpPick ? `MPを${idx}消費することにした` : `モード【${p.modes[idx]?.name}】を選んだ`)
+      runEffects(state, actor, p.effects, { opts, mode: p.mpPick ? undefined : idx, mpSpent: p.mpPick ? idx : undefined, trigger: p.trigger, spell: p.spell })
       if (p.spell && !state.pending) countCombos(state, actor, opts) // スペルは特性として数える
     } else if (p.confirm) {
       state.log.push(action.target === 'yes' ? '使うことにした' : '使わないことにした')

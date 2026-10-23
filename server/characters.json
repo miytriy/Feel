@@ -45,6 +45,7 @@
   { "id": "dragon_09", "name": "煌牙の義勇・キット", "class": "ドラゴン", "rarity": "silver" },
   { "id": "dragon_10", "name": "荒波のドラグーン・ハザール", "class": "ドラゴン", "rarity": "gold" },
   { "id": "dragon_11", "name": "覇道の竜翼・フォルテ", "class": "ドラゴン", "rarity": "legend" },
+  { "id": "dragon_12", "name": "灼熱のアナテマ・バーンドナイト", "class": "ドラゴン", "rarity": "legend" },
   { "id": "dragon_13", "name": "雲海の騎竜兵", "class": "ドラゴン", "rarity": "bronze" },
   { "id": "witch_01", "name": "見習い占星術師", "class": "ウィッチ", "rarity": "bronze" },
   { "id": "witch_02", "name": "アドラブルティーチャー・ミラ", "class": "ウィッチ", "rarity": "silver" },
