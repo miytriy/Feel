@@ -986,6 +986,7 @@ function traitTargets(state, actor, trait) {
   switch (trait.target) {
     case 'allyOne': return alliesOf(state, actor).map((u) => u.uid)
     case 'otherAllyOne': return alliesOf(state, actor).filter((u) => u.uid !== actor.uid).map((u) => u.uid)
+    case 'allyFieldOne': return [...alliesOf(state, actor), ...summonsOf(state, actor)].map((u) => u.uid) // 自分の場(場のキャラ + 召喚物・アミュレット)から1体
     case 'enemyOne': return enemyOneList(state, actor).map((u) => u.uid)
     case 'enemies': return enemiesOf(state, actor).some(abilityTargetable) ? [null] : []
     default: return [null]
