@@ -7,7 +7,7 @@ export const RARITIES = ['legend', 'gold', 'silver', 'bronze']
 const SKILL_STATS = ['atk', 'mag']
 const DMG_TYPES = ['physical', 'magic', 'true']
 const EFFECT_TYPES = ['damage', 'heal', 'buff', 'armor', 'shield', 'barrier', 'advance', 'mp', 'ep', 'faith', 'earth', 'boost', 'boostPick', 'graveyard', 'crest', 'summon', 'reenter', 'loseKeyword', 'destroy', 'vanish', 'maxHp', 'loseHp', 'enableTrait', 'gainKeyword', 'gainDoubleSkill', 'enableSpell', 'mode', 'evolve', 'growByDead', 'mpMax']
-const EFFECT_TARGETS = ['self', 'opponent', 'allies', 'otherAllies', 'allyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons', 'otherAllyOne', 'allyField', 'allyFieldOne', 'otherAllyField', 'entered']
+const EFFECT_TARGETS = ['self', 'opponent', 'allies', 'otherAllies', 'allyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons', 'otherAllyOne', 'allyField', 'allyFieldOne', 'allyFieldRandom', 'otherAllyField', 'entered']
 const TRAIT_TARGETS = ['self', 'allies', 'otherAllies', 'allyOne', 'otherAllyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons']
 const BUFF_STATS = ['atk', 'mag', 'def', 'spd', 'critRate', 'critDmg', 'dmgResist']
 const CONDITION_KEYS = ['link', 'gauge', 'ultimate', 'liberation', 'faith', 'earth', 'boost', 'graveyard', 'hpBelow', 'hpAbove', 'evolved', 'crests', 'combo', 'evolveTurn', 'awaken']
@@ -95,7 +95,8 @@ export function validateCharacter(def, opts = {}) {
       if (!TRIGGER_LABELS[p.trigger]) errs.push(`${label}: ${w}: 知らない trigger「${p.trigger}」(使えるもの: ${Object.keys(TRIGGER_LABELS).join(' / ')})`)
       if (p.trigger === 'combo' || p.trigger === 'link') if (!isNum(p.min)) errs.push(`${label}: ${w}: ${p.trigger} には min(回数)が必要です`)
       checkCondition(p.condition, `${label}: ${w}`, errs)
-      checkEffects(p.effects, `${label}: ${w}`, errs)
+      // onBoost は「Xを数えるだけ」のパッシブなので、effects が空でもよい
+      if (!(p.trigger === 'onBoost' && Array.isArray(p.effects) && p.effects.length === 0)) checkEffects(p.effects, `${label}: ${w}`, errs)
     } else add(`passives の${i + 1}番目が文字列でもオブジェクトでもありません`)
   })
 

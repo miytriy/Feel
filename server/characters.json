@@ -34,6 +34,15 @@
   { "id": "royal_14", "name": "白銀の騎士団長・エミリア", "class": "ロイヤル", "rarity": "legend" },
   { "id": "royal_15", "name": "レヴィオンアックス・ジェノ", "class": "ロイヤル", "rarity": "gold" },
   { "id": "royal_16", "name": "煌刃の勇者・アマリア", "class": "ロイヤル", "rarity": "gold" },
+  { "id": "dragon_01", "name": "竜育の少女", "class": "ドラゴン", "rarity": "bronze" },
+  { "id": "dragon_02", "name": "風を駆る者・エイファ", "class": "ドラゴン", "rarity": "silver" },
+  { "id": "dragon_03", "name": "風を読む者・ゼル", "class": "ドラゴン", "rarity": "silver" },
+  { "id": "dragon_04", "name": "栄弦の天宮・リュウフウ", "class": "ドラゴン", "rarity": "gold" },
+  { "id": "dragon_05", "name": "駆け出しのドラゴンスレイヤー", "class": "ドラゴン", "rarity": "bronze" },
+  { "id": "dragon_06", "name": "白鱗の御使い", "class": "ドラゴン", "rarity": "bronze" },
+  { "id": "dragon_07", "name": "艶麗なる竜人・マリオン", "class": "ドラゴン", "rarity": "silver" },
+  { "id": "dragon_08", "name": "海溝の大剣竜", "class": "ドラゴン", "rarity": "bronze" },
+  { "id": "dragon_09", "name": "煌牙の義勇・キット", "class": "ドラゴン", "rarity": "silver" },
   { "id": "witch_01", "name": "見習い占星術師", "class": "ウィッチ", "rarity": "bronze" },
   { "id": "witch_02", "name": "アドラブルティーチャー・ミラ", "class": "ウィッチ", "rarity": "silver" },
   { "id": "witch_03", "name": "魔法の薬剤師・ペネロピー", "class": "ウィッチ", "rarity": "gold" },
@@ -43,5 +52,7 @@
   { "id": "witch_07", "name": "ルーンブレイドコンダクター", "class": "ウィッチ", "rarity": "bronze" },
   { "id": "witch_08", "name": "ワンダーウィッチ・エミル", "class": "ウィッチ", "rarity": "silver" },
   { "id": "witch_09", "name": "黎明の錬金術師・ノノ", "class": "ウィッチ", "rarity": "gold" },
-  { "id": "witch_10", "name": "マナリアフレンズ・アン&グレア", "class": "ウィッチ", "rarity": "legend" }
+  { "id": "witch_10", "name": "マナリアフレンズ・アン&グレア", "class": "ウィッチ", "rarity": "legend" },
+  { "id": "witch_11", "name": "マナリアの学徒・ウィリアム", "class": "ウィッチ", "rarity": "silver" },
+  { "id": "witch_12", "name": "五行の果て・クオン", "class": "ウィッチ", "rarity": "legend" }
 ]
