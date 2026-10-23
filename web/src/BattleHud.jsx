@@ -36,12 +36,15 @@ const CSS = `
 .bh-leave:hover, .bh-leave:focus-visible { background: ${C.player}; outline: none; }
 .bh-icon { width: 36px; height: 36px; display: grid; place-items: center; border: 0; background: rgba(255,255,255,0.12); color: #fff; font-size: 22px; cursor: pointer; padding: 0; min-height: 0; transition: background 0.15s, color 0.15s; }
 .bh-icon:hover, .bh-icon:focus-visible { background: ${C.player}; color: #111; outline: none; }
-.bh-auto { width: 60px; height: 40px; min-height: 0; padding: 0; display: grid; place-items: center; border: 0; border-radius: 8px; background: rgba(255,255,255,0.14); color: #fff; cursor: pointer; transition: background 0.15s, color 0.15s; }
-.bh-auto svg { width: 42px; height: 20px; overflow: visible; }
-.bh-auto .ba-base { fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }
-.bh-auto .ba-run { display: none; fill: none; stroke: ${C.player}; stroke-width: 3.4; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 16 84; filter: drop-shadow(0 0 3px ${C.player}) drop-shadow(0 0 7px ${C.player}); }
-.bh-auto[aria-pressed="true"] { background: rgba(255,230,0,0.12); color: ${C.player}; box-shadow: inset 0 0 0 1px rgba(255,230,0,0.45); }
-.bh-auto[aria-pressed="true"] .ba-base { opacity: 0.45; } /* 走る光が目立つように、線は少し暗くする */
+.bh-auto { position: relative; width: 78px; height: 36px; min-height: 0; padding: 0; display: grid; place-items: center; border: 1px solid rgba(214,206,240,0.8); border-radius: 0; background: rgba(8,8,22,0.4); color: #f4f4f8; cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s; } /* 参考: 細い枠の横長の四角(約2.2:1)。中に細い線の⋈ */
+.bh-auto:hover, .bh-auto:focus-visible { background: rgba(255,255,255,0.14); outline: none; }
+.bh-auto svg { width: 38px; height: 22px; overflow: visible; }
+.bh-auto .ba-base { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linejoin: miter; stroke-linecap: butt; }
+.bh-auto .ba-run { display: none; fill: none; stroke: #fff3a0; stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 14 86; filter: drop-shadow(0 0 2px ${C.player}) drop-shadow(0 0 6px ${C.player}); }
+.bh-auto::after { content: ''; display: none; position: absolute; left: 50%; bottom: -4px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: #f6e6ee; box-shadow: 0 0 4px rgba(255,255,255,0.8); } /* 枠の下の中央の小さな点(ONの印) */
+.bh-auto[aria-pressed="true"] { color: #e6c35a; border-color: rgba(214,206,240,0.95); }
+.bh-auto[aria-pressed="true"]::after { display: block; }
+.bh-auto[aria-pressed="true"] .ba-base { filter: drop-shadow(0 0 3px rgba(255,214,90,0.7)); }
 .bh-auto[aria-pressed="true"] .ba-run { display: block; animation: bh-run 2.4s linear infinite; }
 @keyframes bh-run { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -100; } }
 .bh-stage { display: inline-flex; align-items: stretch; background: rgba(0,0,0,0.6); border-left: 4px solid ${C.player}; }
@@ -103,7 +106,7 @@ export function BattleHud({ view, level, levelInfo, desktop, onLeave, onIntro, o
       <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flex: 'none' }}>
         {onAuto && <button type="button" className="bh-auto" data-testid="hud-auto" aria-pressed={auto} aria-label="オート" title={auto ? 'オート: ON(おすと止まる)' : 'オート: OFF(おすと自分の番も自動で進む)'} onClick={onAuto}>
           {/* ⋈(横に1.5倍)。線は、上の左→中央→上の右→下の右→中央→下の左→もどる、の8の字になる。ONのときは、黄色の光がその線の上を走る */}
-          <svg viewBox="0 0 60 28" aria-hidden="true"><path className="ba-base" d="M3 3 L30 14 L57 3 L57 25 L30 14 L3 25 Z" /><path className="ba-run" pathLength="100" d="M3 3 L30 14 L57 3 L57 25 L30 14 L3 25 Z" /></svg>
+          <svg viewBox="0 0 56 32" aria-hidden="true"><path className="ba-base" d="M2 2 L28 16 L54 2 L54 30 L28 16 L2 30 Z" /><path className="ba-run" pathLength="100" d="M2 2 L28 16 L54 2 L54 30 L28 16 L2 30 Z" /></svg>
         </button>}
         {onCommentary && <CommentaryButton onClick={onCommentary} />}
       </div>
