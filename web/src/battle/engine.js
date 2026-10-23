@@ -547,6 +547,7 @@ function candidatesOf(state, source, e) {
   else if (key === 'allyFieldOne') list = [...alliesOf(state, source), ...summonsOf(state, source)]
   else if (key === 'enemyOne') list = enemyOneList(state, source)
   else list = resolveTargets(state, source, key, {})
+  if (e.onlyName) list = list.filter((u) => u.name === e.onlyName) // onlyName: 指定の名前のキャラだけ
   return e.onlyType ? list.filter((u) => hasType(u, e.onlyType)) : list // onlyType: 指定のタイプ(式神など)だけ
 }
 
@@ -766,6 +767,7 @@ function runEffects(state, source, effects, ctx = {}) {
     let targets = resolveTargets(state, source, e.target || 'self', ctx)
     if (e.onlyClass) targets = targets.filter((t) => t.class === e.onlyClass) // 指定のクラス(ロイヤルなど)だけ
     if (e.onlyType) targets = targets.filter((t) => hasType(t, e.onlyType)) // 指定のタイプ(式神など)だけ
+    if (e.onlyName) targets = targets.filter((t) => t.name === e.onlyName) // 指定の名前のキャラ(トークンなど)だけ
     // ランダムな相手の人数: count(基本は1体)。comboCount: { combo: 3, count: 3 } なら、コンボが3以上のとき3体(重ならないように選ぶ)
     if ((e.target || 'self') === 'enemyRandom' && (e.count != null || e.comboCount)) {
       let n = e.count ?? 1
