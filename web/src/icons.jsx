@@ -33,16 +33,16 @@ const STAR16 = starPts(8, 11, 6.2, -90)
 
 export const StatIcon = ({ stat, ...p }) => {
   switch (stat) {
-    case 'hp': // 十字(中に、欠け)
-      return <svg {...base} {...p}><path d="M8.5 1.5h7v7h7v7h-7v7h-7v-7h-7v-7h7zM10.5 11.5v3h3z" fillRule="evenodd" /></svg>
-    case 'atk': // 交差した剣
-      return <svg {...base} fill="none" stroke="currentColor" strokeLinecap="butt" {...p}><path d="M4.5 4.5l11 11M19.5 4.5l-11 11" strokeWidth="4.2" /><path d="M6 15l3 3M18 15l-3 3M5.5 20.5l3-3M18.5 20.5l-3-3" strokeWidth="2.6" /></svg>
-    case 'def': // 盾(中に、欠け)
-      return <svg {...base} {...p}><path d="M4.5 2.5h15v11l-7.5 8-7.5-8zM8 7v7h7z" fillRule="evenodd" /></svg>
-    case 'critRate': // 欠けのある星
-      return <svg {...base} {...p}><path d={`M${STAR16.split(' ').join('L')}Z M12 12L8.5 3.5L12.8 7.5Z`} fillRule="evenodd" /></svg>
-    case 'critDmg': // 外へ向かう矢じり
-      return <svg {...base} {...p}><polygon points={STAR8} /><path d="M12 2l3 5h-6zM12 22l-3-5h6zM2 12l5-3v6zM22 12l-5 3v-6z" /></svg>
+    case 'hp':
+      return <svg {...base} viewBox="0 0 130 130" {...p}><path d="M49 9H83L84 47L85 48H120L123 83L122 85H85L84 86V95L83 96V124H47V86L46 85H8V49H39L47 47V10Z M46 48L49 49L84 85L83 86H47L46 85Z" fillRule="evenodd" /></svg>
+    case 'atk':
+      return <svg {...base} viewBox="0 0 140 140" {...p}><path d="M13 17H32L69 53L102 23L108 17H127V37L91 73V76L109 93V95L89 113L72 95H69L51 113L32 95V93L50 75V74L15 39L13 36Z M33 105L39 111L24 129L15 130L14 122L28 109Z M108 105L126 122L126 124L120 130L118 130L101 113Z" /></svg>
+    case 'def':
+      return <svg {...base} viewBox="0 0 120 140" {...p}><path d="M17 14H96V97L72 117L57 131L52 128L43 120L42 118L17 97Z M26 39L29 38L85 95L84 97H28L26 94Z" fillRule="evenodd" /></svg>
+    case 'critRate':
+      return <svg {...base} viewBox="0 0 150 155" {...p}><path d="M107 11L75 42H35L34 43H13L42 73L43 75V139L61 122L73 109L75 108H91L92 107H138L107 75L138 43H115V63L114 66L107 75Z M43 11V34H68L50 17Z M36 83L12 107H36Z M84 114L107 139V114Z" /></svg>
+    case 'critDmg':
+      return <svg {...base} viewBox="0 0 150 150" {...p}><path d="M43 17L71 44V76H41L12 48H42L43 47Z M107 17V47L108 48H138L112 75L109 76H80V43Z M71 84V115L44 143H43V113L13 113L30 94L39 85H48Z M80 84H106L107 85L112 85L139 112H108L107 113V143L105 142L80 117Z" /></svg>
     case 'spd': // 進む山形
       return <svg {...base} {...p}><path d="M3 4l8 8-8 8V4zM12 4l8 8-8 8z" /></svg>
     case 'mag': // 魔力のきらめき
