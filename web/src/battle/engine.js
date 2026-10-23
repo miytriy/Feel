@@ -7,6 +7,7 @@ const ROUND_AV = 100 // 行動値が100進むごとに1ラウンド
 const EPS = 1e-9
 const COMBO_RESET_K = 150 // コンボリセットの行動値 Tr = K × N (N = 【コンボ_◯】を持つ味方の数)
 const MP_CAP = 10 // MPの最大値の上限
+const AWAKEN_MP = 7 // 【覚醒】: 自分のMP最大値がこれ以上のとき(数字を変えるときは、ここだけ直す)
 const EP_MAX = 2 // EPの最大ストック
 const EP_GRANT_ROUND = 5 // このラウンドの開始時にEPをもらう
 const EP_GRANT = 2 // もらえるEPの数
@@ -229,6 +230,7 @@ function checkCond(state, unit, c) {
   if (c.graveyard != null && state.graveyard[unit.team] < c.graveyard) return false
   if (c.hpBelow != null && (unit.hp / unit.maxHp) * 100 > c.hpBelow) return false
   if (c.hpAbove != null && (unit.hp / unit.maxHp) * 100 < c.hpAbove) return false
+  if (c.awaken && state.mpMax[unit.team] < AWAKEN_MP) return false // 【覚醒】
   if (c.evolved != null && unit.evolved !== c.evolved) return false
   if (c.evolveTurn && state.round < EP_GRANT_ROUND) return false // 進化可能ターン: EPが配られたラウンドから戦闘終了まで
   if (c.crests != null && state.crests[unit.team].length < c.crests) return false
@@ -706,6 +708,11 @@ function runEffects(state, source, effects, ctx = {}) {
     }
     if (e.type === 'evolve') { // これは進化する(EPは使わない。すでに進化済み・進化できないキャラ・場にいないときは何もしない)
       if (source.alive && source.field === 'main' && source.evolvable && !source.evolved) doEvolve(state, source, ctx.opts, true)
+      continue
+    }
+    if (e.type === 'mpMax') { // 自分のMP最大値を増やす(上限 MP_CAP まで。いまのMPは変わらない)
+      state.mpMax[source.team] = Math.min(MP_CAP, state.mpMax[source.team] + (e.amount ?? 1))
+      state.log.push(`MP最大値が${state.mpMax[source.team]}になった`)
       continue
     }
     if (e.type === 'mp') {
