@@ -6,7 +6,7 @@ export default {
   skill: { name: '-', stat: 'atk', type: 'physical', mult: 0 },
   passives: ['earthSign'],
   traits: [{
-    id: 'act', name: 'アクト', cost: 1, target: 'self', repeatable: true,
+    id: 'act', name: 'アクト', cost: 1, target: 'self', // repeatable を付けない = 1ターンに1回まで
     desc: '【アクト】自分の場の土の印を+1する。',
     effects: [{ type: 'earth', amount: 1 }],
   }],
