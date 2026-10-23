@@ -203,6 +203,7 @@ const enemiesOf = (state, u) => state.units.filter((x) => x.alive && x.field ===
 const allyFieldOf = (state, u) => state.units.filter((x) => x.alive && x.team === u.team)
 const summonsOf = (state, u) => state.units.filter((x) => x.alive && x.field === 'summon' && x.team === u.team)
 const SUMMON_MAX = 5 // 召喚物フィールドは最大5体
+const enemiesSummonsOf = (state, u) => state.units.filter((x) => x.alive && x.field === 'summon' && x.team !== u.team)
 const abilityTargetable = (u) => u.alive && !u.stealth && !hasKw(u, 'aura')
 // 単体を選ぶ能力の候補: 相手の場のキャラ + 相手のアミュレット(アミュレットは、単体指定の能力で消滅させられる)
 const enemyOneList = (state, u) => [
@@ -473,6 +474,7 @@ function resolveTargets(state, source, key, ctx) {
       return field.slice(0, 1)
     }
     case 'enemies': return enemies
+    case 'enemyField': return [...enemies, ...enemiesSummonsOf(state, source).filter(abilityTargetable)] // 相手の場すべて(場のキャラ + 召喚物)
     case 'enemyOne': return ctx.chosen ? [getUnit(state, ctx.chosen)] : pickRandom(enemies)
     case 'enemyRandom': return pickRandom(enemies)
     default: return []
