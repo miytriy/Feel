@@ -155,7 +155,7 @@ const CSS = `
 .fm-quick { margin-bottom: 12px; padding: 12px 18px; background: rgba(255,255,255,0.1); font-size: 22px; line-height: 1.6; }
 .fm-quick b { color: ${C.player}; }
 
-.fm-amulets { position: absolute; left: 56px; top: 700px; z-index: 6; width: 300px; }
+.fm-amulets { position: absolute; left: 440px; top: 140px; z-index: 6; width: 300px; }
 .fm-amulets .hd { margin-bottom: 10px; font-size: 24px; font-weight: 700; color: #e6e6ea; }
 .fm-amulets .hd b { font-family: ${DISPLAY}; font-size: 30px; color: ${C.player}; }
 .fm-am { display: flex; align-items: stretch; margin-bottom: 8px; background: rgba(0,0,0,0.55); border-left: 5px solid ${C.player}; }
@@ -180,6 +180,14 @@ const CSS = `
 .fm-spell button:hover, .fm-spell button:focus-visible { background: ${C.bad}; color: #fff; outline: none; }
 .fm-add { width: 100%; height: 62px; padding: 0; min-height: 0; border: 3px dashed rgba(255,255,255,0.4); background: none; color: #e6e6ea; font-size: 24px; font-weight: 700; cursor: pointer; }
 .fm-add:hover, .fm-add:focus-visible { border-color: ${C.player}; color: ${C.player}; outline: none; }
+.fm-sinfo { flex: none; margin-top: 10px; padding: 14px 18px; background: rgba(0,0,0,0.72); border-left: 5px solid ${C.player}; display: flex; align-items: center; gap: 16px; min-height: 120px; }
+.fm-sinfo .tx { flex: 1; min-width: 0; }
+.fm-sinfo .nm { font-size: 24px; font-weight: 700; }
+.fm-sinfo .ds { margin-top: 4px; font-size: 20px; line-height: 1.55; color: #e6e6ea; }
+.fm-sinfo .ng-t { margin-top: 4px; font-size: 18px; color: ${C.warn}; }
+.fm-sinfo .add { flex: none; height: 64px; min-height: 0; padding: 0 26px; border: 0; background: ${C.player}; color: ${C.onAccent}; font-size: 24px; font-weight: 700; cursor: pointer; }
+.fm-sinfo .add:disabled { background: #3a3a3f; color: #77777e; cursor: default; }
+.fm-sinfo.empty { color: ${C.mute}; font-size: 20px; border-left-color: rgba(255,255,255,0.2); }
 .fm-note { margin-top: 12px; font-size: 17px; line-height: 1.55; color: ${C.mute}; }
 
 /* 確認: 白い帯がまん中からひらく */
@@ -238,6 +246,10 @@ const CSS = `
 .fm.p .fm-card .st { font-size: 16px; }
 .fm.p .fm-card .tag { font-size: 16px; }
 .fm.p .fm-card.sp .st { font-size: 18px; }
+.fm.p .fm-sinfo { min-height: 110px; padding: 10px 14px; }
+.fm.p .fm-sinfo .nm { font-size: 22px; }
+.fm.p .fm-sinfo .ds { font-size: 18px; }
+.fm.p .fm-sinfo .add { height: 60px; padding: 0 20px; font-size: 22px; }
 .fm.p .fm-team { left: 48px; bottom: auto; top: 1566px; }
 .fm.p .fm-chip { margin-bottom: 10px; }
 .fm.p .fm-chip .nm { min-width: 220px; font-size: 26px; }
@@ -354,6 +366,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
   const [spellSet, setSpellSet] = useState(() => (startParty ? partyToSpells(startParty, allSpells) : loadSpellSet(allSpells)))
   const [savedSpellIds, setSavedSpellIds] = useState(() => JSON.stringify((startParty ? partyToSpells(startParty, allSpells) : loadSpellSet(allSpells)).map((sp) => sp.id)))
   const [spellPick, setSpellPick] = useState(false) // スペルの一覧を開いているか
+  const [spellInfo, setSpellInfo] = useState(null) // 一覧でタップして、説明を出しているスペル
   const [confirm, setConfirm] = useState(false) // 「対戦へ」の確認
 
   const ids = JSON.stringify(slots.map((c) => c?.id ?? null))
@@ -511,7 +524,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
                 </div>
               )
             })}
-            {spellSet.length < MAX_SPELL_SLOTS && <button type="button" className="fm-add" onClick={() => { setSpellPick(true); setActiveSlot(null) }}>＋ スペルを追加</button>}
+            {spellSet.length < MAX_SPELL_SLOTS && <button type="button" className="fm-add" onClick={() => { setSpellPick(true); setSpellInfo(null); setActiveSlot(null) }}>＋ スペルを追加</button>}
             <div className="fm-note">スペルにもクラス制限があります(編成と同じクラス、またはニュートラルのスペルだけ入れられます)。戦闘中、自分のキャラのターンならいつでも使えます(キャラの行動は消えません)。使うたびにコスト(MP)を払います。同じスペルを複数回入れられます。</div>
           </div>
         )}
@@ -589,19 +602,31 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
                   <button
                     key={sp.id}
                     type="button"
-                    className="fm-card sp"
+                    className={`fm-card sp${spellInfo && spellInfo.id === sp.id ? ' sel' : ''}`}
+                    data-testid={`fm-spell-${sp.id}`}
                     style={{ opacity: ok ? 1 : 0.4 }}
-                    onClick={() => {
-                      if (!ok) { setMessage(`「${sp.name}」は${spellClassOf(sp)}のスペルなので、いまの編成(${teamClassOf(filled) || 'ニュートラルのみ'})では入れられません`); return }
-                      setMessage(''); setSpellSet([...spellSet, sp]); setSpellPick(false)
-                    }}
+                    onClick={() => { setSpellInfo(sp); setMessage('') }}
                   >
                     <div className="nm">✦{sp.name}(MP{sp.cost}){!ok && <span style={{ fontSize: 20, color: C.warn }}> クラス違い</span>}</div>
-                    <div className="st">{sp.class} ・ {sp.desc}</div>
+                    <div className="st">{sp.class}</div>
                   </button>
                 )
               })}
             </div>
+            {/* 説明: タップしたスペルの説明を、ここに出す */}
+            {spellInfo ? (() => {
+              const ok = canUseSpell(filled, spellInfo)
+              return (
+                <div className="fm-sinfo" data-testid="fm-spell-info">
+                  <div className="tx">
+                    <div className="nm">✦{spellInfo.name}(MP{spellInfo.cost}) ・ {spellInfo.class}</div>
+                    <div className="ds">{spellInfo.desc}</div>
+                    {!ok && <div className="ng-t">{spellClassOf(spellInfo)}のスペルなので、いまの編成({teamClassOf(filled) || 'ニュートラルのみ'})では入れられません</div>}
+                  </div>
+                  <button type="button" className="add" data-testid="fm-spell-add" disabled={!ok} onClick={() => { setMessage(''); setSpellSet([...spellSet, spellInfo]); setSpellInfo(null); setSpellPick(false) }}>追加</button>
+                </div>
+              )
+            })() : <div className="fm-sinfo empty">スペルをタップすると、説明が出ます</div>}
           </div>
         )}
 
