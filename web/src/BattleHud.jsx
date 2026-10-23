@@ -36,8 +36,14 @@ const CSS = `
 .bh-leave:hover, .bh-leave:focus-visible { background: ${C.player}; outline: none; }
 .bh-icon { width: 36px; height: 36px; display: grid; place-items: center; border: 0; background: rgba(255,255,255,0.12); color: #fff; font-size: 22px; cursor: pointer; padding: 0; min-height: 0; transition: background 0.15s, color 0.15s; }
 .bh-icon:hover, .bh-icon:focus-visible { background: ${C.player}; color: #111; outline: none; }
-.bh-auto { width: 40px; height: 40px; min-height: 0; padding: 0; display: grid; place-items: center; border: 0; border-radius: 8px; background: rgba(255,255,255,0.14); color: #fff; font-size: 26px; line-height: 1; font-weight: 700; cursor: pointer; transition: background 0.15s, color 0.15s; }
-.bh-auto[aria-pressed="true"] { background: ${C.player}; color: #111; box-shadow: 0 0 10px ${C.player}; }
+.bh-auto { width: 60px; height: 40px; min-height: 0; padding: 0; display: grid; place-items: center; border: 0; border-radius: 8px; background: rgba(255,255,255,0.14); color: #fff; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.bh-auto svg { width: 42px; height: 20px; overflow: visible; }
+.bh-auto .ba-base { fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }
+.bh-auto .ba-run { display: none; fill: none; stroke: ${C.player}; stroke-width: 3.4; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 16 84; filter: drop-shadow(0 0 3px ${C.player}) drop-shadow(0 0 7px ${C.player}); }
+.bh-auto[aria-pressed="true"] { background: rgba(255,230,0,0.12); color: ${C.player}; box-shadow: inset 0 0 0 1px rgba(255,230,0,0.45); }
+.bh-auto[aria-pressed="true"] .ba-base { opacity: 0.45; } /* 走る光が目立つように、線は少し暗くする */
+.bh-auto[aria-pressed="true"] .ba-run { display: block; animation: bh-run 2.4s linear infinite; }
+@keyframes bh-run { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -100; } }
 .bh-stage { display: inline-flex; align-items: stretch; background: rgba(0,0,0,0.6); border-left: 4px solid ${C.player}; }
 .bh-stage b { padding: 4px 12px; font-family: ${DISPLAY}; font-weight: 700; font-size: 16px; letter-spacing: 0.06em; }
 .bh-stage span { padding: 4px 12px; background: rgba(255,255,255,0.12); font-size: 12px; display: grid; place-items: center; letter-spacing: 0.08em; }
@@ -84,7 +90,7 @@ const CSS = `
 .br-btn.ok { background: ${C.player}; border-color: ${C.player}; color: #111; }
 .br-btn:hover, .br-btn:focus-visible { background: #f2f2f3; color: #111; outline: none; }
 .br-btn.ok:hover, .br-btn.ok:focus-visible { background: #fff35a; }
-@media (prefers-reduced-motion: reduce) { .bm, .bm-win, .br, .br-band, .br-title, .br-sub, .br-msg, .br-btns, .bh-p.act .bh-face { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .bh-auto[aria-pressed="true"] .ba-run { animation: none; stroke-dasharray: none; } .bm, .bm-win, .br, .br-band, .br-title, .br-sub, .br-msg, .br-btns, .bh-p.act .bh-face { animation: none !important; } }
 `
 
 export function BattleHud({ view, level, levelInfo, desktop, onLeave, onIntro, onCommentary, auto = false, onAuto }) {
@@ -95,7 +101,10 @@ export function BattleHud({ view, level, levelInfo, desktop, onLeave, onIntro, o
       <button type="button" className="bh-icon" data-testid="hud-intro" onClick={onIntro} aria-label="ステージ説明" title="ステージ説明"><InfoIcon /></button>
       <div className="bh-stage"><b>CPU戦 Lv.{level}</b><span>{nameOf(levelInfo) ? `${nameOf(levelInfo)} ・ ` : ''}ラウンド {view.round}</span></div>
       <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flex: 'none' }}>
-        {onAuto && <button type="button" className="bh-auto" data-testid="hud-auto" aria-pressed={auto} aria-label="オート" title={auto ? 'オート: ON(おすと止まる)' : 'オート: OFF(おすと自分の番も自動で進む)'} onClick={onAuto}>∞</button>}
+        {onAuto && <button type="button" className="bh-auto" data-testid="hud-auto" aria-pressed={auto} aria-label="オート" title={auto ? 'オート: ON(おすと止まる)' : 'オート: OFF(おすと自分の番も自動で進む)'} onClick={onAuto}>
+          {/* ⋈(横に1.5倍)。線は、上の左→中央→上の右→下の右→中央→下の左→もどる、の8の字になる。ONのときは、黄色の光がその線の上を走る */}
+          <svg viewBox="0 0 60 28" aria-hidden="true"><path className="ba-base" d="M3 3 L30 14 L57 3 L57 25 L30 14 L3 25 Z" /><path className="ba-run" pathLength="100" d="M3 3 L30 14 L57 3 L57 25 L30 14 L3 25 Z" /></svg>
+        </button>}
         {onCommentary && <CommentaryButton onClick={onCommentary} />}
       </div>
     </div>
