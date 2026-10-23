@@ -5,7 +5,7 @@ import { KEYWORDS, TRIGGER_LABELS, RELICS } from './battle/engine.js'
 import { RARITY, fold, collectRelated } from './CodexScreen.jsx'
 import { Emblem, hash } from './emblem.jsx'
 import { artOf, useArtStatus } from './charArt.jsx'
-import { IconClose, IconAgents } from './icons.jsx'
+import { IconClose, IconAgents, StatIcon } from './icons.jsx'
 import { classElf, classRoyal, classNeutral, classWitch, classNemesis, classBishop, classNightmare, classDragon } from './classIcons.js'
 
 // 人事(所持キャラクター)。参考: エンドフィールドの「オペレーター」画面
@@ -18,7 +18,7 @@ import { classElf, classRoyal, classNeutral, classWitch, classNemesis, classBish
 
 const LAYOUT = { d: { W: 2560, H: 1440 }, p: { W: 1440, H: 2560 } } // これより画面が細長いときは、舞台を横(縦)に広げる(左右・上下に隙間ができない)
 
-const STAT_LABEL = { hp: 'HP', atk: '攻撃力', def: '防御力', spd: '速度', mag: '魔力', critRate: 'クリ率', critDmg: 'クリダメ', dmgResist: '耐性' }
+const STAT_LABEL = { hp: 'HP', atk: '攻撃力', def: '防御力', spd: '速度', mag: '魔力', critRate: '会心率', critDmg: '会心ダメージ', dmgResist: '耐性' }
 const STAT_DEFAULT = { critRate: 5, critDmg: 50 }
 const DMG_TYPE = { physical: '物理', magic: '魔法', true: '確定' }
 const PIPS = { legend: 4, gold: 3, silver: 2, bronze: 1 }
@@ -410,14 +410,14 @@ export default function JinjiScreen({ ownedMap = {}, onExit }) {
       </div>
       <div className="jp-bar">能力値<em>•••</em></div>
       <div className="jp-stats">
-        {[['hp', '✚'], ['atk', '✕'], ['def', '⛨'], ['spd', '➤']].map(([k, g]) => (
-          <div key={k}><div className="ic">{g}</div><small>{STAT_LABEL[k]}</small><b>{c.stats[k]}</b></div>
+        {['hp', 'atk', 'def', 'spd'].map((k) => (
+          <div key={k}><div className="ic"><StatIcon stat={k} /></div><small>{STAT_LABEL[k]}</small><b>{c.stats[k]}</b></div>
         ))}
       </div>
       <div className="jp-mini">
         {['mag', 'critRate', 'critDmg', 'dmgResist'].map((k) => {
           const v = showStat(k)
-          return <div key={k}><span>{STAT_LABEL[k]}</span><b>{v == null ? '-' : v}{v != null && (k === 'critRate' || k === 'critDmg') ? '%' : ''}</b></div>
+          return <div key={k}><span><StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', marginRight: 4 }} />{STAT_LABEL[k]}</span><b>{v == null ? '-' : v}{v != null && (k === 'critRate' || k === 'critDmg') ? '%' : ''}</b></div>
         })}
       </div>
       <div className="jp-bar" style={{ marginTop: 18 }}>スキル</div>

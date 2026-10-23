@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useIsDesktop, C, FONT, DISPLAY } from './ui.js'
-import { IconClose, IconGem } from './icons.jsx'
+import { IconClose, IconGem, StatIcon } from './icons.jsx'
 
 // CPU戦のレベル選択画面。参考: エンドフィールドの「協約空間」(案内所 → 周回)
 //   左: レベルの一覧(Lv.1〜)。選ぶと、右に詳細(ステージ名・推奨・説明・ステージ説明・敵情報・報酬)が出る
@@ -294,7 +294,7 @@ export default function CpuBattleScreen({ levels = [], title = 'CPU戦', gems = 
                         <span className="tx">
                           <div className="nm">{e.name}</div>
                           {e.class && <div className="cl">{e.class}</div>}
-                          {e.hp != null && <div className="hp">HP {e.hp}</div>}
+                          {e.hp != null && <div className="hp"><StatIcon stat="hp" style={{ fontSize: '1em', verticalAlign: '-0.14em', marginRight: 3 }} />{e.hp}</div>}
                         </span>
                       </div>
                     ))}

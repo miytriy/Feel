@@ -9,6 +9,8 @@ import FormationScreen from './FormationScreen.jsx'
 import { BattleHud, StageIntro, ExitConfirm, ResultBanner } from './BattleHud.jsx'
 import { CommentaryOverlay, collectHistory, addHistory, emptyHistory } from './BattleLog.jsx'
 import { useIsDesktop, C as BASE, alpha } from './ui.js'
+import { StatIcon } from './icons.jsx'
+const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', margin: '0 2px 0 0' }} />
 
 // 色: 自分=青、相手=赤紫、行動中=琥珀
 const C = { ...BASE, hp: '#3ddc97', hpMid: '#ffd24a', hpLow: '#ff5a5a' } // 色は ui.js の共通の色 + HPバー
@@ -238,7 +240,7 @@ function InspectBox({ unit, big = false }) {
     <div data-testid="inspect" style={{ marginTop: 8, padding: 8, borderRadius: 8, background: C.card, border: `1px solid ${C.line}`, fontSize: big ? 13 : 11, lineHeight: 1.6 }}>
       <b>{unit.name}</b>
       <span style={{ color: C.mute }}>
-        {' '}{unit.evolved ? '(進化済) ' : ''}攻撃 {Math.round(unit.atk)} / 防御 {Math.round(unit.def)} / 速度 {Math.round(unit.spd)} / スキル「{unit.skill.name}」({TYPE_LABEL[unit.skill.type]})
+        {' '}{unit.evolved ? '(進化済) ' : ''}<SI k="atk" />{Math.round(unit.atk)} <SI k="def" />{Math.round(unit.def)} <SI k="spd" />{Math.round(unit.spd)} / スキル「{unit.skill.name}」({TYPE_LABEL[unit.skill.type]})
       </span>
       {lines.length === 0 ? <div style={{ color: C.mute }}>能力なし</div> : lines.map((l, i) => <div key={i}>{l}</div>)}
     </div>
@@ -285,8 +287,8 @@ function TargetInfo({ unit, expected, loss = 0, big = false }) {
             <div style={{ width: `${ratio * 100}%`, height: '100%', borderRadius: 4, background: ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow }} />
             <LossBlink unit={unit} loss={loss} radius={4} />
           </div>
-          <div>HP {Math.ceil(unit.hp)}/{unit.maxHp}{unit.armor > 0 ? ` ・ アーマー ${Math.ceil(unit.armor)}` : ''}{unit.barrier > 0 ? ' ・ バリア' : ''}</div>
-          <div style={{ color: C.mute }}>攻撃 {Math.round(unit.atk)} / 防御 {Math.round(unit.def)} / 速度 {Math.round(unit.spd)}</div>
+          <div><SI k="hp" />{Math.ceil(unit.hp)}/{unit.maxHp}{unit.armor > 0 ? ` ・ アーマー ${Math.ceil(unit.armor)}` : ''}{unit.barrier > 0 ? ' ・ バリア' : ''}</div>
+          <div style={{ color: C.mute }}><SI k="atk" />{Math.round(unit.atk)} <SI k="def" />{Math.round(unit.def)} <SI k="spd" />{Math.round(unit.spd)}</div>
         </>
       )}
       {expected != null && (

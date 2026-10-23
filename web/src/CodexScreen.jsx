@@ -219,7 +219,7 @@ function Related({ rel, onOpen }) {
           const known = charById(u.id)
           return (
             <button key={'u' + u.id} disabled={!known} onClick={() => onOpen('chars', u.id)} style={{ ...chip(false), cursor: known ? 'pointer' : 'default' }}>
-              {u.name}(HP{u.stats.hp}/攻{u.stats.atk}){known ? '' : '※召喚専用'}
+              {u.name}(<StatIcon stat="hp" style={{ verticalAlign: '-0.14em' }} />{u.stats.hp} <StatIcon stat="atk" style={{ verticalAlign: '-0.14em' }} />{u.stats.atk}){known ? '' : '※召喚専用'}
             </button>
           )
         })}
@@ -274,7 +274,7 @@ function ListItem({ tab, def, selected, onClick, count = null }) {
       <div style={{ fontWeight: 800, fontSize: 14, display: 'flex', justifyContent: 'space-between', gap: 8 }}><span>{def.name}</span>{count != null && <span style={{ color: C.player }}>×{count}</span>}</div>
       <div style={{ fontSize: 11, color: C.mute, marginTop: 2 }}>
         {tab === 'chars'
-          ? `${def.class}${def.type ? ' / ' + def.type : ''} ・ HP ${def.stats.hp} ・ 攻撃 ${def.stats.atk} ・ 防御 ${def.stats.def} ・ 速度 ${def.stats.spd}`
+          ? <>{`${def.class}${def.type ? ' / ' + def.type : ''} ・ `}<StatIcon stat="hp" style={{ verticalAlign: '-0.14em' }} />{def.stats.hp} <StatIcon stat="atk" style={{ verticalAlign: '-0.14em' }} />{def.stats.atk} <StatIcon stat="def" style={{ verticalAlign: '-0.14em' }} />{def.stats.def} <StatIcon stat="spd" style={{ verticalAlign: '-0.14em' }} />{def.stats.spd}</>
           : `${spellClassName(def)} ・ MP ${def.cost}${def.type ? ' / ' + def.type : ''}`}
       </div>
       {tab === 'spells' && <div style={{ fontSize: 12, marginTop: 3, opacity: 0.85 }}>{def.desc}</div>}
