@@ -308,15 +308,8 @@ const buttonStyle = (primary, disabled) => ({
 })
 
 // rewardApi: ログイン中だけ渡される。{ start(level) → { ticketId }, finish(ticketId, 'win'|'lose') → { reward, reason } }
-// ---- 再生(起きたことを、1つずつ順番に見せる) ----
-const SPEEDS = [
-  { id: 'slow', label: 'ゆっくり', mult: 1.6 },
-  { id: 'normal', label: 'ふつう', mult: 1 },
-  { id: 'fast', label: 'はやい', mult: 0.5 },
-  { id: 'skip', label: 'とばす', mult: 0 },
-]
+// ---- 再生(起きたことを、1つずつ順番に見せる。速さは、設定の「CPUの行動の待ち時間」に合わせる) ----
 const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, sync: 300 }
-const loadSpeed = () => { try { const v = localStorage.getItem('feel-play-speed'); return SPEEDS.some((x) => x.id === v) ? v : 'normal' } catch { return 'normal' } }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null }) {
@@ -339,7 +332,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const [ticketId, setTicketId] = useState(null) // 対戦の報酬用の「対戦券」(サーバーが発行)
   const [rewardMsg, setRewardMsg] = useState('') // 報酬の結果の表示
   const [careerMsg, setCareerMsg] = useState('') // 戦績の記録の結果の表示
-  const [speed, setSpeed] = useState(loadSpeed) // 再生の速さ
+  const mult = cpuDelay / 700 // 再生の速さ(設定の待ち時間に合わせる: 速い≒0.5 / ふつう=1 / ゆっくり≒1.7)
+  const [auto, setAuto] = useState(false) // オート(∞): 自分の番も、CPUと同じ考え方で自動で進める
   const [play, setPlay] = useState(null) // 再生中の記録 { events, i, prevActive, prevAbility }。null なら再生していない
   const playing = !!play
   const statsRef = useRef(newStats()) // キャリア用: この対戦のダメージの集計
@@ -375,7 +369,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   useEffect(() => {
     if (!state || state.winner || play || intro || leaveAsk || logOpen) return // 戦闘実況を開いている間も止める。再生が終わってから・ステージ説明などを閉じてから動く
     const current = getActiveUnit(state)
-    if (!current || current.team !== 'B') return
+    if (!current || (current.team !== 'B' && !auto)) return // オート(∞)のときは、自分の番も進める
     const timer = setTimeout(() => {
       let action
       try {
@@ -396,16 +390,15 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
       }
     }, cpuDelay)
     return () => clearTimeout(timer)
-  }, [state, level, cpuDelay, play, intro, leaveAsk, logOpen])
+  }, [state, level, cpuDelay, play, intro, leaveAsk, logOpen, auto])
 
   // 再生を1つずつ進める
   useEffect(() => {
     if (!play || logOpen) return // 戦闘実況を開いている間は、再生を止める
-    const mult = SPEEDS.find((x) => x.id === speed)?.mult ?? 1
-    if (mult === 0 || play.i >= play.events.length) { setPlay(null); return }
+    if (play.i >= play.events.length) { setPlay(null); return }
     const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: p.i + 1 } : p)), (EVENT_MS[play.events[play.i].type] ?? 500) * mult)
     return () => clearTimeout(t)
-  }, [play, speed, logOpen])
+  }, [play, mult, logOpen])
 
   // 対戦が終わって再生も終わったら、キャリア(アカウントの対戦記録)に残す
   useEffect(() => {
@@ -443,11 +436,9 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     try { const d = collectHistory(state, next); setHist((h) => addHistory(h, d)) } catch (e) { console.error('バトルログの集計に失敗', e) } // 失敗しても、対戦は止めない
     try { addEvents(statsRef.current, next.events || [], (uid) => next.units.find((u) => u.uid === uid)) } catch (e) { console.error('キャリアの集計に失敗', e) } // 記録が失敗しても、対戦は止めない
     const evs = next.events || []
-    const mult = SPEEDS.find((x) => x.id === speed)?.mult ?? 1
-    setPlay(evs.length && mult > 0 ? { events: evs, i: 0, prevActive: state?.active ?? null, prevAbility: state?.lastAbility ?? null } : null)
+    setPlay(evs.length ? { events: evs, i: 0, prevActive: state?.active ?? null, prevAbility: state?.lastAbility ?? null } : null)
     setState(next)
   }
-  const changeSpeed = (id) => { setSpeed(id); try { localStorage.setItem('feel-play-speed', id) } catch { /* 保存できなくても動く */ } if (id === 'skip') setPlay(null) }
   const reset = () => {
     setSelected(null)
     setMode(null)
@@ -459,6 +450,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   }
   const startBattle = () => {
     reset()
+    setAuto(false)
     setInspect(null)
     setCpuError('')
     setRewardMsg('')
@@ -846,18 +838,14 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
         )}
     </>
   )
-  const speedBar = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', fontSize: 11, color: C.mute, marginTop: 4 }}>
-      <span>再生</span>
-      {SPEEDS.map((x) => (
-        <button key={x.id} onClick={() => changeSpeed(x.id)} style={{ ...buttonStyle(speed === x.id, false), padding: '2px 8px', fontSize: 11, minHeight: 0 }}>{x.label}</button>
-      ))}
-      {playing && <button onClick={() => setPlay(null)} style={{ ...buttonStyle(true, false), padding: '2px 10px', fontSize: 11, minHeight: 0 }}>スキップ</button>}
+  const speedBar = playing ? ( // 再生中だけ出す「スキップ」(再生の速さは設定で決める)
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: C.mute, marginTop: 4 }}>
+      <button onClick={() => setPlay(null)} style={{ ...buttonStyle(true, false), padding: '2px 10px', fontSize: 11, minHeight: 0 }}>スキップ</button>
     </div>
-  )
+  ) : null
   const nameOf = (uid) => state.units.find((u) => u.uid === uid)?.name ?? ''
   const nowText = !ev ? '' : ev.type === 'damage' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}に${ev.amount}ダメージ${ev.crit ? '(クリティカル!)' : ''}` : ev.type === 'block' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}のバリアが防いだ(0ダメージ)` : ev.type === 'turn' ? `${ev.team === 'B' ? '相手' : 'あなた'}のターン: ${ev.name}` : ''
-  const hud = <BattleHud view={view} level={level} levelInfo={levelInfo} desktop={desktop} onLeave={() => setLeaveAsk(true)} onIntro={() => { setIntroFirst(false); setIntro(true) }} onCommentary={() => setLogOpen(true)} />
+  const hud = <BattleHud view={view} level={level} levelInfo={levelInfo} desktop={desktop} onLeave={() => setLeaveAsk(true)} onIntro={() => { setIntroFirst(false); setIntro(true) }} onCommentary={() => setLogOpen(true)} auto={auto} onAuto={() => setAuto((v) => !v)} />
   const leave = () => { setLeaveAsk(false); if (flow) onExit(); else setState(null) }
   const backTeam = () => { if (flow && onBackTeam) onBackTeam(); else setTeam(null) }
   const resultButtons = [
