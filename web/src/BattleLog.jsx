@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { C, FONT, alpha } from './ui.js'
 import { KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
+import { StatIcon } from './icons.jsx'
 
 // 戦闘実況(🎙️): 右上の「≡」から開く、全画面のオーバーレイ。開いている間は、対戦(CPUの行動・再生)を止める。
 //   味方 / 相手 = キャラごとの詳細(ステータス・いまの値・強化)とスキル・能力 ・ ログ = 起きたことの文章の記録
@@ -44,7 +45,7 @@ export const addHistory = (h, d) => (d.ab.length || d.dead.length ? { ab: [...h.
 
 
 const TABS = [['ally', '味方'], ['enemy', '相手'], ['log', 'ログ'], ['ab', '発動'], ['dead', '破壊']]
-const STAT_ROWS = [['atk', '攻撃力'], ['mag', '魔力'], ['def', '防御力'], ['spd', '速度'], ['critRate', 'クリティカルレート'], ['critDmg', 'クリティカルダメージ'], ['dmgResist', 'ダメージ耐性']]
+const STAT_ROWS = [['atk', '攻撃力'], ['mag', '魔力'], ['def', '防御力'], ['spd', '速度'], ['critRate', '会心率'], ['critDmg', '会心ダメージ'], ['dmgResist', 'ダメージ耐性']]
 const STAT_LABEL = { atk: '攻撃力', mag: '魔力', def: '防御力', spd: '速度', critRate: 'クリティカルレート', critDmg: 'クリティカルダメージ', dmgResist: 'ダメージ耐性' }
 const TYPE_LABEL = { physical: '物理', magic: '魔法', true: '確定' }
 const tierPrefix = (cond) => (cond?.liberation ? '【解放奥義】' : cond?.ultimate ? '【奥義】' : '')
@@ -79,6 +80,16 @@ function Bar({ pct, color, h = 6 }) {
 function UnitDetail({ u, color, first }) {
   const b = u.base || {}
   const rows = [['HP', u.baseMaxHp ?? u.maxHp, u.maxHp, 'hp'], ...STAT_ROWS.filter(([k]) => k !== 'mag' || (b.mag || 0) > 0 || u.mag > 0).map(([k, l]) => [l, b[k] ?? 0, u[k] ?? 0, k])]
+  const statRow = ([label, base, cur, key], big) => {
+    const d = Math.round(cur - base)
+    return (
+      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: big ? 8 : 4, padding: big ? '10px 14px' : '8px 14px', background: big ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
+        <span style={{ flex: 'none', width: 28, display: 'grid', placeItems: 'center', fontSize: big ? 26 : 22, color: '#f4f4f6' }}><StatIcon stat={key} /></span>
+        <span style={{ flex: 1, minWidth: 0, fontSize: big ? 15 : 14, color: '#e6e6ea' }}>{label}</span>
+        <b style={{ whiteSpace: 'nowrap', fontSize: big ? 16 : 14 }}>{num(cur)}{(key === 'critRate' || key === 'critDmg') ? '%' : ''}{d !== 0 && <span style={{ marginLeft: 6, fontSize: 11, color: d > 0 ? '#3ddc97' : '#ff5a5a' }}>{d > 0 ? '+' : ''}{num(d)}</span>}</b>
+      </div>
+    )
+  }
   const ratio = u.maxHp > 0 ? u.hp / u.maxHp : 0
   const hpc = ratio > 0.5 ? C.hp ?? '#3ddc97' : ratio > 0.25 ? '#ffd24a' : '#ff5a5a'
   const now = [
@@ -95,16 +106,10 @@ function UnitDetail({ u, color, first }) {
   return (
     <div>
       {sec('ステータス(基礎 → いま)')}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-        {rows.map(([label, base, cur]) => {
-          const d = Math.round(cur - base)
-          return (
-            <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 6, padding: '4px 8px', borderRadius: 6, background: C.card, border: `1px solid ${C.line}`, fontSize: 12 }}>
-              <span style={{ color: C.mute }}>{label}</span>
-              <b style={{ whiteSpace: 'nowrap' }}>{num(cur)}{d !== 0 && <span style={{ marginLeft: 4, fontSize: 11, color: d > 0 ? '#3ddc97' : '#ff5a5a' }}>{d > 0 ? '+' : ''}{num(d)}</span>}</b>
-            </div>
-          )
-        })}
+      <div data-testid="stat-list">
+        {rows.filter((r) => ['hp', 'atk', 'def'].includes(r[3])).map((r) => statRow(r, true))}
+        {rows.some((r) => !['hp', 'atk', 'def'].includes(r[3])) && <div style={{ fontSize: 13, color: C.mute, margin: '12px 2px 6px', letterSpacing: 1 }}>その他</div>}
+        {rows.filter((r) => !['hp', 'atk', 'def'].includes(r[3])).map((r) => statRow(r, false))}
       </div>
 
       {sec('いまの状態', color)}

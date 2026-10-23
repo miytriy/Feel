@@ -21,3 +21,35 @@ export const IconPlus = (p) => <svg {...base} fill="none" stroke="currentColor" 
 export const IconBack = (p) => <svg {...base} fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M20 12H5M11 5l-7 7 7 7" /></svg>
 export const IconSearch = (p) => <svg {...base} fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" {...p}><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.5 15.5L21 21" /></svg>
 export const IconFolder = (p) => <svg {...base} {...p}><path d="M2 5.5A1.5 1.5 0 0 1 3.5 4H9l2 2.5h9.5A1.5 1.5 0 0 1 22 8v10.5a1.5 1.5 0 0 1-1.5 1.5h-17A1.5 1.5 0 0 1 2 18.5z" /></svg>
+
+// ---------- ステータスの記号(HP・攻撃力・防御力・会心 など) ----------
+const starPts = (n, ro, ri, rot = -90) => Array.from({ length: n * 2 }, (_, i) => {
+  const a = ((rot + (i * 180) / n) * Math.PI) / 180
+  const r = i % 2 === 0 ? ro : ri
+  return `${(12 + r * Math.cos(a)).toFixed(2)},${(12 + r * Math.sin(a)).toFixed(2)}`
+}).join(' ')
+const STAR8 = starPts(4, 11, 4.2, -90)
+const STAR16 = starPts(8, 11, 6.2, -90)
+
+export const StatIcon = ({ stat, ...p }) => {
+  switch (stat) {
+    case 'hp': // 十字(中に、欠け)
+      return <svg {...base} {...p}><path d="M8.5 1.5h7v7h7v7h-7v7h-7v-7h-7v-7h7zM10.5 11.5v3h3z" fillRule="evenodd" /></svg>
+    case 'atk': // 交差した剣
+      return <svg {...base} fill="none" stroke="currentColor" strokeLinecap="butt" {...p}><path d="M4.5 4.5l11 11M19.5 4.5l-11 11" strokeWidth="4.2" /><path d="M6 15l3 3M18 15l-3 3M5.5 20.5l3-3M18.5 20.5l-3-3" strokeWidth="2.6" /></svg>
+    case 'def': // 盾(中に、欠け)
+      return <svg {...base} {...p}><path d="M4.5 2.5h15v11l-7.5 8-7.5-8zM8 7v7h7z" fillRule="evenodd" /></svg>
+    case 'critRate': // 欠けのある星
+      return <svg {...base} {...p}><path d={`M${STAR16.split(' ').join('L')}Z M12 12L8.5 3.5L12.8 7.5Z`} fillRule="evenodd" /></svg>
+    case 'critDmg': // 外へ向かう矢じり
+      return <svg {...base} {...p}><polygon points={STAR8} /><path d="M12 2l3 5h-6zM12 22l-3-5h6zM2 12l5-3v6zM22 12l-5 3v-6z" /></svg>
+    case 'spd': // 進む山形
+      return <svg {...base} {...p}><path d="M3 4l8 8-8 8V4zM12 4l8 8-8 8z" /></svg>
+    case 'mag': // 魔力のきらめき
+      return <svg {...base} {...p}><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6z" /></svg>
+    case 'dmgResist': // 盾(まん中に縦線)
+      return <svg {...base} {...p}><path d="M4.5 2.5h15v11l-7.5 8-7.5-8zM11 6v11h2V6z" fillRule="evenodd" /></svg>
+    default:
+      return <svg {...base} {...p}><circle cx="12" cy="12" r="5" /></svg>
+  }
+}
