@@ -36,6 +36,8 @@ const CSS = `
 .bh-leave:hover, .bh-leave:focus-visible { background: ${C.player}; outline: none; }
 .bh-icon { width: 36px; height: 36px; display: grid; place-items: center; border: 0; background: rgba(255,255,255,0.12); color: #fff; font-size: 22px; cursor: pointer; padding: 0; min-height: 0; transition: background 0.15s, color 0.15s; }
 .bh-icon:hover, .bh-icon:focus-visible { background: ${C.player}; color: #111; outline: none; }
+.bh-auto { width: 40px; height: 40px; min-height: 0; padding: 0; display: grid; place-items: center; border: 0; border-radius: 8px; background: rgba(255,255,255,0.14); color: #fff; font-size: 26px; line-height: 1; font-weight: 700; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.bh-auto[aria-pressed="true"] { background: ${C.player}; color: #111; box-shadow: 0 0 10px ${C.player}; }
 .bh-stage { display: inline-flex; align-items: stretch; background: rgba(0,0,0,0.6); border-left: 4px solid ${C.player}; }
 .bh-stage b { padding: 4px 12px; font-family: ${DISPLAY}; font-weight: 700; font-size: 16px; letter-spacing: 0.06em; }
 .bh-stage span { padding: 4px 12px; background: rgba(255,255,255,0.12); font-size: 12px; display: grid; place-items: center; letter-spacing: 0.08em; }
@@ -85,14 +87,17 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) { .bm, .bm-win, .br, .br-band, .br-title, .br-sub, .br-msg, .br-btns, .bh-p.act .bh-face { animation: none !important; } }
 `
 
-export function BattleHud({ view, level, levelInfo, desktop, onLeave, onIntro, onCommentary }) {
+export function BattleHud({ view, level, levelInfo, desktop, onLeave, onIntro, onCommentary, auto = false, onAuto }) {
   return (
     <div className={`bh${desktop ? ' big' : ''}`} data-testid="battle-hud">
       <style>{CSS}</style>
       <button type="button" className="bh-leave" data-testid="hud-leave" onClick={onLeave}><ExitIcon />退出</button>
       <button type="button" className="bh-icon" data-testid="hud-intro" onClick={onIntro} aria-label="ステージ説明" title="ステージ説明"><InfoIcon /></button>
       <div className="bh-stage"><b>CPU戦 Lv.{level}</b><span>{nameOf(levelInfo) ? `${nameOf(levelInfo)} ・ ` : ''}ラウンド {view.round}</span></div>
-      {onCommentary && <CommentaryButton onClick={onCommentary} />}
+      <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flex: 'none' }}>
+        {onAuto && <button type="button" className="bh-auto" data-testid="hud-auto" aria-pressed={auto} aria-label="オート" title={auto ? 'オート: ON(おすと止まる)' : 'オート: OFF(おすと自分の番も自動で進む)'} onClick={onAuto}>∞</button>}
+        {onCommentary && <CommentaryButton onClick={onCommentary} />}
+      </div>
     </div>
   )
 }
