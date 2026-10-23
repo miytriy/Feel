@@ -50,6 +50,7 @@
   { "id": "dragon_14", "name": "龍人演義・ガリュウ", "class": "ドラゴン", "rarity": "legend" },
   { "id": "dragon_15", "name": "ナイトフォールドラゴン", "class": "ドラゴン", "rarity": "gold" },
   { "id": "dragon_16", "name": "再臨のジェネシスドラゴン", "class": "ドラゴン", "rarity": "gold" },
+  { "id": "dragon_amulet_01", "name": "乙姫の扇", "class": "ドラゴン", "rarity": "gold" },
   { "id": "witch_01", "name": "見習い占星術師", "class": "ウィッチ", "rarity": "bronze" },
   { "id": "witch_02", "name": "アドラブルティーチャー・ミラ", "class": "ウィッチ", "rarity": "silver" },
   { "id": "witch_03", "name": "魔法の薬剤師・ペネロピー", "class": "ウィッチ", "rarity": "gold" },
