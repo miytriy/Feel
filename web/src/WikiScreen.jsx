@@ -322,7 +322,7 @@ export default function WikiScreen({ onExit }) {
   )
 
   const topBar = (
-    <div className="wk-bar">
+    <div className="wk-bar" key="wk-topbar">
       {path}
       {searchBox}
       <button type="button" className="wk-round" onClick={isRoot ? exitWiki : up} aria-label={isRoot ? '閉じる' : '前の場所へ'}>{isRoot ? <IconClose /> : <IconBack />}</button>
