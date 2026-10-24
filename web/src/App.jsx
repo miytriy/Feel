@@ -87,7 +87,7 @@ export default function App() {
   const [rulesFirst, setRulesFirst] = useState(false) // 初回だけ、ルール説明を自動で開く
   useEffect(() => {
     if (screen !== 'loading') return undefined
-    const t = setTimeout(() => setScreen('battle'), 1600)
+    const t = setTimeout(() => setScreen('battle'), 1900) // バーが100%になる(1400ms)のを見せてから、対戦へ
     return () => clearTimeout(t)
   }, [screen])
 
@@ -163,11 +163,13 @@ export default function App() {
   }, [user, gateOpen])
 
   // 起動の準備ができたら、ロード画面を閉じる(ログイン中は、持ち物の読み込みまで待つ。失敗したときも、先に進む)
+  const bootReady = !authLoading && gate !== 'checking' && !(gate === 'open' && user && !me && !error)
+  const bootProgress = bootReady ? 100 : authLoading ? 8 : gate === 'checking' ? 35 : 70 // ロードバーの進み(実際の準備の段階に合わせる)
   useEffect(() => {
-    if (booted || authLoading || gate === 'checking') return
-    if (gate === 'open' && user && !me && !error) return
-    setBooted(true)
-  }, [booted, authLoading, gate, user, me, error])
+    if (booted || !bootReady) return undefined
+    const t = setTimeout(() => setBooted(true), 450) // バーが100%になるのを見せてから、ロード画面を開ける
+    return () => clearTimeout(t)
+  }, [booted, bootReady])
 
   // ログイン状態の確認が終わってから読み込む(確認の途中で、持ち物が空に戻されないように)
   useEffect(() => {
@@ -279,7 +281,7 @@ export default function App() {
 
   // 起動中は、ロード画面を出しつづける(準備が全部できてから、いちどだけ開ける)
   if (!booted) {
-    return <LoadingScreen note="サーバーが眠っていると、1分ほどかかることがあります" />
+    return <LoadingScreen progress={bootProgress} note="サーバーが眠っていると、1分ほどかかることがあります" />
   }
   if (gate === 'checking') return <LoadingScreen note="サーバーが眠っていると、1分ほどかかることがあります" /> // 「もう一度つなぐ」を押したとき
   if (gate === 'offline') {
@@ -361,7 +363,7 @@ export default function App() {
     )
   }
 
-  if (current === 'loading') return <LoadingScreen duration={1600} />
+  if (current === 'loading') return <LoadingScreen duration={1400} />
 
   if (current === 'battle') {
     if (!cpuRun) return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />

@@ -73,37 +73,40 @@ const TIPS = [
 ]
 // 読み込みバーの進み具合。ロード画面が続けて出ても、0からやり直さず、つづきから進める(1秒以内に出し直したとき)
 let lastProgress = { v: 0, t: 0 }
-function useLoadProgress(duration) {
-  const [v, setV] = useState(() => (Date.now() - lastProgress.t < 1000 ? lastProgress.v : 0))
+function useLoadProgress(duration, target) {
+  const [v, setV] = useState(() => (Date.now() - lastProgress.t < 1000 && lastProgress.v < 99 ? lastProgress.v : 0))
   useEffect(() => {
     const start = Date.now()
     const from = v
     const id = setInterval(() => {
       setV((cur) => {
         let next
-        if (duration) { // 時間がわかっているとき: 時間に合わせて、少しずつ(ときどき止まりながら)100%へ
+        if (target != null) { // 実際の準備の段階: 段階の目標まで進み、次の段階が来るまでは、少しだけ(+18まで)ゆっくり進む
+          const cap = target >= 100 ? 100 : Math.min(95, target + 18)
+          next = Math.max(cur, target) + (cap - Math.max(cur, target)) * (target >= 100 ? 1 : 0.05)
+        } else if (duration) { // 時間がわかっているとき: 時間に合わせて100%へ
           const t = Math.min(1, (Date.now() - start) / duration)
           next = Math.max(cur, from + (100 - from) * t)
-        } else { // 終わる時間がわからないとき: 90%に近づくまで、だんだん小さな歩幅で進む
+        } else { // どちらもわからないとき: 90%に近づくまで、だんだん小さな歩幅で進む
           next = cur + (92 - cur) * (0.06 + Math.random() * 0.1)
         }
         lastProgress = { v: next, t: Date.now() }
         return next
       })
-    }, duration ? 120 : 380)
+    }, target != null || duration ? 120 : 380)
     return () => { clearInterval(id); lastProgress = { v: lastProgress.v, t: Date.now() } }
-  }, [duration]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [duration, target]) // eslint-disable-line react-hooks/exhaustive-deps
   return v
 }
 
-export function LoadingScreen({ note, duration }) {
+export function LoadingScreen({ note, duration, progress }) {
   useChromeStyle()
   const [i, setI] = useState(() => Math.floor(Math.random() * TIPS.length))
   useEffect(() => {
     const t = setInterval(() => setI((n) => (n + 1) % TIPS.length), 4500)
     return () => clearInterval(t)
   }, [])
-  const pct = useLoadProgress(duration)
+  const pct = useLoadProgress(duration, progress)
   const [title, body] = TIPS[i]
   return (
     <div className="theme-dark" style={{ minHeight: '100vh', color: C.ink, fontFamily: FONT, position: 'relative', overflow: 'hidden',
