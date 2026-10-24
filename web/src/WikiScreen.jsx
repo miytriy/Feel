@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { C, FONT, DISPLAY } from './ui.js'
 import { ALL_CHARACTERS } from './battle/characters/index.js'
 import { ALL_SPELLS } from './battle/spells/index.js'
@@ -42,18 +42,27 @@ function hash(str) {
   for (const ch of String(str)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) }
   return h >>> 0
 }
-function Emblem({ seed, color = '#d9d9de' }) {
+function Emblem({ seed, color = '#d9d9de', rainbow = false }) {
   useArtStatus()
+  const gid = `wkr${useId().replace(/:/g, '')}`
   if (artOf(seed)) return <ArtImg id={seed} />
   const h = hash(seed)
   const cells = []
   for (let y = 0; y < 5; y++) for (let x = 0; x < 3; x++) {
     if ((h >> (y * 3 + x)) & 1) { cells.push([x, y]); if (x < 2) cells.push([4 - x, y]) }
   }
+  const fill = rainbow ? `url(#${gid})` : color // レジェンドは、レジェンドの色(虹色)でぬる
   return (
     <svg viewBox="0 0 64 64" aria-hidden="true">
-      <path d="M32 3l29 29-29 29L3 32z" fill="none" stroke={color} strokeOpacity="0.28" strokeWidth="1" />
-      {cells.map(([x, y]) => <rect key={x + '-' + y} x={9 + x * 9.2} y={9 + y * 9.2} width="8" height="8" fill={color} opacity={0.85} />)}
+      {rainbow && (
+        <defs>
+          <linearGradient id={gid} gradientUnits="userSpaceOnUse" x1="3" y1="3" x2="61" y2="61">
+            <stop offset="0" stopColor="#c9a6ff" /><stop offset="0.2" stopColor="#8fb4ff" /><stop offset="0.4" stopColor="#7fe3ff" /><stop offset="0.56" stopColor="#86f0d6" /><stop offset="0.78" stopColor="#ff9fe0" /><stop offset="1" stopColor="#c9a6ff" />
+          </linearGradient>
+        </defs>
+      )}
+      <path d="M32 3l29 29-29 29L3 32z" fill="none" stroke={fill} strokeOpacity="0.4" strokeWidth="1" />
+      {cells.map(([x, y]) => <rect key={x + '-' + y} x={9 + x * 9.2} y={9 + y * 9.2} width="8" height="8" fill={fill} opacity={rainbow ? 1 : 0.85} />)}
     </svg>
   )
 }
@@ -211,7 +220,7 @@ function Card({ sec, d, i, showTag, onOpen }) {
     <button type="button" className="wk-card" style={{ '--i': i }} data-testid={`wk-card-${d.id}`} onClick={() => onOpen(sec, d.id, true)}>
       <i className="wk-dots" />
       {showTag && <span className="wk-tag">{secOf(sec).label}</span>}
-      <Emblem seed={d.id} color={r ? r.color : '#d9d9de'} />
+      <Emblem seed={d.id} color={r ? r.color : '#d9d9de'} rainbow={d.rarity === 'legend'} />
       <span className="wk-cname">{d.name}</span>
       <i className="wk-rar" style={{ background: r ? r.bg || r.color : '#8d8d93' }} />
     </button>
@@ -363,7 +372,7 @@ export default function WikiScreen({ onExit }) {
   const detail = selected && (
     <div className="wk-detail" key={selected.id}>
       <div className="wk-hero">
-        <Emblem seed={selected.id} color={selected.rarity ? RARITY[selected.rarity].color : '#d9d9de'} />
+        <Emblem seed={selected.id} color={selected.rarity ? RARITY[selected.rarity].color : '#d9d9de'} rainbow={selected.rarity === 'legend'} />
         <i className="wk-rar" style={{ background: selected.rarity ? RARITY[selected.rarity].bg || RARITY[selected.rarity].color : '#8d8d93' }} />
       </div>
       <div className="wk-info">
