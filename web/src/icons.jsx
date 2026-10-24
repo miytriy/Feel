@@ -1,3 +1,4 @@
+import { useId } from 'react'
 // Feel - 画面の飾り用アイコン(色は、まわりの文字の色になる)。すべて自前の簡単な図形。
 const base = { width: '1em', height: '1em', viewBox: '0 0 24 24', fill: 'currentColor', 'aria-hidden': true, focusable: false }
 
@@ -31,6 +32,22 @@ const starPts = (n, ro, ri, rot = -90) => Array.from({ length: n * 2 }, (_, i) =
 const STAR8 = starPts(4, 11, 4.2, -90)
 const STAR16 = starPts(8, 11, 6.2, -90)
 
+const DIAMOND = 'M247 145L322 220L314 228L247 161L185 222L247 284L276 255L284 263L247 300L171 222Z'
+const MagIcon = (p) => {
+  const id = `mg${useId().replace(/:/g, '')}`
+  return (
+    <svg {...base} viewBox="0 0 468 494" {...p}>
+      <mask id={id}><rect width="468" height="494" fill="#fff" /><path d={DIAMOND} fill="#000" fillRule="evenodd" /></mask>
+      <g fill="currentColor" mask={`url(#${id})`}>
+        <path d="M39 141L58 141V355L190 388L39 422Z" />
+        <path d="M441 141H458V422L308 388L441 355Z" />
+        <path d="M84 57L247 94L413 57V341L247 375L84 341Z" />
+        <path d="M185 387L206 392L227 387V449L206 444L185 449Z" />
+      </g>
+    </svg>
+  )
+}
+
 export const StatIcon = ({ stat, ...p }) => {
   switch (stat) {
     case 'hp':
@@ -45,8 +62,8 @@ export const StatIcon = ({ stat, ...p }) => {
       return <svg {...base} viewBox="0 0 150 150" {...p}><path d="M43 17L71 44V76H41L12 48H42L43 47Z M107 17V47L108 48H138L112 75L109 76H80V43Z M71 84V115L44 143H43V113L13 113L30 94L39 85H48Z M80 84H106L107 85L112 85L139 112H108L107 113V143L105 142L80 117Z" /></svg>
     case 'spd': // 進む山形
       return <svg {...base} {...p}><path d="M3 4l8 8-8 8V4zM12 4l8 8-8 8z" /></svg>
-    case 'mag': // 魔力のきらめき
-      return <svg {...base} {...p}><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6z" /></svg>
+    case 'mag': // 魔力(開いた本。まん中のひし形は、くりぬき)
+      return <MagIcon {...p} />
     case 'dmgResist': // 盾(まん中に縦線)
       return <svg {...base} {...p}><path d="M4.5 2.5h15v11l-7.5 8-7.5-8zM11 6v11h2V6z" fillRule="evenodd" /></svg>
     default:
