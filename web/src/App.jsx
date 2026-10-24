@@ -355,7 +355,7 @@ export default function App() {
     )
   }
 
-  if (current === 'loading') return <LoadingScreen />
+  if (current === 'loading') return <LoadingScreen duration={1600} />
 
   if (current === 'battle') {
     if (!cpuRun) return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
@@ -385,7 +385,7 @@ export default function App() {
   }
 
   if (current === 'party') {
-    if (!partyApi) return <LoadingScreen />
+    if (!partyApi) return null // パーティーは、この端末から一瞬で読み込まれる(ロード画面を一瞬だけ出すと、ちらつくため、何も出さない)
     return (
       <ErrorBoundary onExit={goHome}>
         <FormationScreen

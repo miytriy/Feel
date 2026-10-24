@@ -71,13 +71,39 @@ const TIPS = [
   ['編成のきまり', '編成は同じクラス同士で組みます。ニュートラルだけは、どのクラスとも組めます。'],
   ['行動順', '行動順は10000÷速度で決まります。速度が高いほど、ターンが早く回ってきます。'],
 ]
-export function LoadingScreen({ note }) {
+// 読み込みバーの進み具合。ロード画面が続けて出ても、0からやり直さず、つづきから進める(1秒以内に出し直したとき)
+let lastProgress = { v: 0, t: 0 }
+function useLoadProgress(duration) {
+  const [v, setV] = useState(() => (Date.now() - lastProgress.t < 1000 ? lastProgress.v : 0))
+  useEffect(() => {
+    const start = Date.now()
+    const from = v
+    const id = setInterval(() => {
+      setV((cur) => {
+        let next
+        if (duration) { // 時間がわかっているとき: 時間に合わせて、少しずつ(ときどき止まりながら)100%へ
+          const t = Math.min(1, (Date.now() - start) / duration)
+          next = Math.max(cur, from + (100 - from) * t)
+        } else { // 終わる時間がわからないとき: 90%に近づくまで、だんだん小さな歩幅で進む
+          next = cur + (92 - cur) * (0.06 + Math.random() * 0.1)
+        }
+        lastProgress = { v: next, t: Date.now() }
+        return next
+      })
+    }, duration ? 120 : 380)
+    return () => { clearInterval(id); lastProgress = { v: lastProgress.v, t: Date.now() } }
+  }, [duration]) // eslint-disable-line react-hooks/exhaustive-deps
+  return v
+}
+
+export function LoadingScreen({ note, duration }) {
   useChromeStyle()
   const [i, setI] = useState(() => Math.floor(Math.random() * TIPS.length))
   useEffect(() => {
     const t = setInterval(() => setI((n) => (n + 1) % TIPS.length), 4500)
     return () => clearInterval(t)
   }, [])
+  const pct = useLoadProgress(duration)
   const [title, body] = TIPS[i]
   return (
     <div className="theme-dark" style={{ minHeight: '100vh', color: C.ink, fontFamily: FONT, position: 'relative', overflow: 'hidden',
@@ -89,11 +115,14 @@ export function LoadingScreen({ note }) {
         <div style={{ fontSize: 15, marginTop: 8, color: C.mute, lineHeight: 1.7, minHeight: 52 }}>{body}</div>
         {note && <div style={{ fontSize: 12, marginTop: 8, color: C.mute }}>{note}</div>}
       </div>
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.18)', overflow: 'hidden', position: 'relative' }}>
-          <div style={{ position: 'absolute', top: 0, bottom: 0, width: '40%', background: '#f2f2f3', animation: 'fx-load 1.4s ease-in-out infinite' }} />
+      <div data-testid="load-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span aria-hidden="true" style={{ width: 4, height: 14, borderLeft: '2px solid #f2f2f3', borderTop: '2px solid #f2f2f3', borderBottom: '2px solid #f2f2f3', boxSizing: 'border-box' }} />
+        <div style={{ flex: 1, height: 4, position: 'relative' }}>
+          <div style={{ position: 'absolute', left: 0, right: 0, top: 1, height: 2, backgroundImage: 'repeating-linear-gradient(135deg, rgba(255,255,255,0.7) 0 1px, transparent 1px 3px)' }} />
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct}%`, background: '#f2f2f3', transition: 'width 0.32s ease-out' }} />
         </div>
-        <span style={{ fontFamily: DISPLAY, fontSize: 12, letterSpacing: '0.12em' }}>NOW LOADING...</span>
+        <span aria-hidden="true" style={{ width: 4, height: 14, borderRight: '2px solid #f2f2f3', borderTop: '2px solid #f2f2f3', borderBottom: '2px solid #f2f2f3', boxSizing: 'border-box' }} />
+        <span style={{ fontFamily: DISPLAY, fontSize: 11, letterSpacing: '0.08em', marginLeft: 4 }}>NOW LOADING...</span>
       </div>
     </div>
   )
