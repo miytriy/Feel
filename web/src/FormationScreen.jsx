@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useIsDesktop, C, FONT, DISPLAY } from './ui.js'
 import {
   MAX_SLOTS, MAX_AMULET_SLOTS, validateFormation, canPlace, placeChar, removeChar, swapSlots, quickFill,
@@ -132,8 +132,11 @@ const CSS = `
 .fm-ph span { flex: 1; }
 .fm-ph button { height: 54px; padding: 0 26px; min-height: 0; border: 0; background: #f2f2f3; color: #1c1c1f; font-size: 24px; font-weight: 700; cursor: pointer; }
 .fm-ph button:hover, .fm-ph button:focus-visible { background: ${C.player}; outline: none; }
-.fm-grid { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: 132px; gap: 10px; align-content: start; padding: 8px; background: rgba(0,0,0,0.4); scrollbar-width: none; }
+.fm-grid { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: max-content; gap: 10px; align-content: start; padding: 8px; background: rgba(0,0,0,0.4); scrollbar-width: none; }
 .fm-grid::-webkit-scrollbar { display: none; }
+.fm-cls { grid-column: 1 / -1; margin-top: 4px; padding: 4px 12px; background: rgba(255,255,255,0.12); border-left: 5px solid ${C.player}; font-size: 22px; font-weight: 700; letter-spacing: 0.06em; color: #f2f2f3; }
+.fm-grid > .fm-cls:first-child { margin-top: 0; }
+.fm.p .fm-cls { font-size: 20px; padding: 3px 10px; }
 .fm-grid.one { grid-template-columns: 1fr; grid-auto-rows: max-content; }
 .fm-card { position: relative; display: flex; align-items: center; gap: 14px; padding: 0 16px 0 0; min-height: 0; overflow: hidden; border: 0; background: #1f2024; color: ${C.ink}; text-align: left; cursor: pointer; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.12); transition: transform 0.12s, box-shadow 0.12s; }
 .fm-card .th { position: relative; flex: none; width: 112px; align-self: stretch; border-bottom: 6px solid transparent; background: linear-gradient(165deg, color-mix(in srgb, var(--rc) 55%, #fff) 0%, var(--rc) 45%, #17171d 100%) padding-box, var(--rbg) border-box; }
@@ -239,7 +242,8 @@ const CSS = `
 .fm.p .fm-ph { margin-bottom: 10px; min-height: 52px; font-size: 24px; }
 .fm.p .fm-ph button { height: 52px; padding: 0 22px; font-size: 22px; }
 .fm.p .fm-quick { margin-bottom: 8px; padding: 8px 14px; font-size: 19px; line-height: 1.5; }
-.fm.p .fm-grid { grid-auto-rows: 124px; }
+.fm-grid > .fm-card:not(.sp) { height: 132px; }
+.fm.p .fm-grid > .fm-card:not(.sp) { height: 124px; }
 .fm.p .fm-grid.one { grid-auto-rows: max-content; }
 .fm.p .fm-card .th { width: 100px; }
 .fm.p .fm-card .nm { font-size: 25px; }
@@ -326,6 +330,7 @@ const RAINBOW = 'linear-gradient(135deg, #c9a6ff 0%, #8fb4ff 20%, #7fe3ff 40%, #
 const rarityBg = (c) => (c && c.rarity === 'legend' ? RAINBOW : `linear-gradient(${(c && RARITY[c.rarity]?.color) || '#cbd5e1'}, ${(c && RARITY[c.rarity]?.color) || '#cbd5e1'})`)
 const isLeg = (c) => !!(c && c.rarity === 'legend')
 const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', marginRight: 2 }} />
+const CLASS_ORDER = ['ニュートラル', 'エルフ', 'ロイヤル', 'ウィッチ', 'ドラゴン', 'ナイトメア', 'ビショップ', 'ネメシス'] // キャラ一覧の、クラスの並び順
 const hasMag = (c) => c.skill?.stat === 'mag' || (c.stats.mag || 0) > 0
 const statLine = (c) => <><SI k="hp" />{c.stats.hp} <SI k="atk" />{c.stats.atk} <SI k="def" />{c.stats.def} <SI k="spd" />{c.stats.spd}{hasMag(c) && <> <SI k="mag" />{c.stats.mag || 0}</>}</>
 
@@ -569,13 +574,20 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
               </div>
             )}
             <div className="fm-grid">
-              {allChars.filter((c) => !String(c.type || '').startsWith('トークン') && (quick ? !c.amulet : amuletPick ? c.amulet : !c.amulet)).map((c) => {
+              {(() => {
+                const list = allChars.filter((c) => !String(c.type || '').startsWith('トークン') && (quick ? !c.amulet : amuletPick ? c.amulet : !c.amulet))
+                const ord = (c) => { const i = CLASS_ORDER.indexOf(c.class); return i === -1 ? CLASS_ORDER.length : i }
+                const sorted = list.map((c, i) => [c, i]).sort((x, y) => ord(x[0]) - ord(y[0]) || x[1] - y[1]).map((x) => x[0]) // クラス順(同じクラスの中は、もとの順)
+                return sorted.map((c, idx) => (idx === 0 || sorted[idx - 1].class !== c.class ? [c, true] : [c, false]))
+              })().map(([c, head]) => {
                 const inSlot = slots.findIndex((x) => x && x.id === c.id)
                 const pickIdx = picks.findIndex((p) => p.id === c.id)
                 const ok = quick ? true : targetSlot === -1 ? true : canPlace(slots, targetSlot, c).ok
                 const selected = quick ? pickIdx !== -1 : activeSlot !== null && inSlot === activeSlot
                 return (
-                  <button key={c.id} type="button" className={`fm-card${selected ? ' sel' : ''}${isLeg(c) ? ' leg' : ''}`} style={{ '--rc': tone(c), '--rbg': rarityBg(c) }} disabled={!ok} onClick={() => handlePick(c)} aria-label={c.name}>
+                  <Fragment key={c.id}>
+                  {head && <div className="fm-cls" data-testid={`fm-cls-${c.class}`}>{c.class}</div>}
+                  <button type="button" className={`fm-card${selected ? ' sel' : ''}${isLeg(c) ? ' leg' : ''}`} style={{ '--rc': tone(c), '--rbg': rarityBg(c) }} disabled={!ok} onClick={() => handlePick(c)} aria-label={c.name}>
                     <span className="th"><Emblem seed={c.id} /></span>
                     <span className="tx">
                       <div className="nm">{c.name}</div>
@@ -586,6 +598,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
                     {!quick && inSlot !== -1 && inSlot !== activeSlot && <span className="tag">{inSlot >= MAX_SLOTS ? 'アミュレット枠' : 'スロット'}{inSlot >= MAX_SLOTS ? inSlot - MAX_SLOTS + 1 : inSlot + 1}</span>}
                     {!quick && !ok && <span className="tag warn">クラス違い</span>}
                   </button>
+                  </Fragment>
                 )
               })}
             </div>
