@@ -634,7 +634,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   }
   const fxFor = (uid) => {
     if (!ev || ev.target !== uid) return null
-    if (ev.type === 'damage') return { kind: 'damage', text: `${ev.crit ? '会心 ' : ''}-${ev.amount}`, crit: !!ev.crit }
+    if (ev.type === 'damage') return { kind: 'damage', text: `${ev.crit ? 'クリティカル ' : ''}-${ev.amount}`, crit: !!ev.crit }
     if (ev.type === 'heal') return { kind: 'heal', text: `+${ev.amount}` }
     if (ev.type === 'summon') return { kind: 'summon', text: '登場!' }
     if (ev.type === 'block') return { kind: 'block', text: 'ガード!' }

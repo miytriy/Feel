@@ -18,7 +18,7 @@ import { classElf, classRoyal, classNeutral, classWitch, classNemesis, classBish
 
 const LAYOUT = { d: { W: 2560, H: 1440 }, p: { W: 1440, H: 2560 } } // これより画面が細長いときは、舞台を横(縦)に広げる(左右・上下に隙間ができない)
 
-const STAT_LABEL = { hp: 'HP', atk: '攻撃力', def: '防御力', spd: '速度', mag: '魔力', critRate: '会心率', critDmg: '会心ダメージ', dmgResist: '耐性' }
+const STAT_LABEL = { hp: 'HP', atk: '攻撃力', def: '防御力', spd: '速度', mag: '魔力', critRate: 'クリティカルレート', critDmg: 'クリティカルダメージ', dmgResist: 'ダメージ耐性' }
 const STAT_DEFAULT = { critRate: 5, critDmg: 50 }
 const DMG_TYPE = { physical: '物理', magic: '魔法', true: '確定' }
 const PIPS = { legend: 4, gold: 3, silver: 2, bronze: 1 }

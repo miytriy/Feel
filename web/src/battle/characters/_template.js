@@ -8,7 +8,7 @@
 //
 // ---- 項目 ----
 // id, name, class(エルフ/ロイヤル/ウィッチ/ドラゴン/ナイトメア/ビショップ/ネメシス/ニュートラル)
-// stats   : hp=体力 atk=攻撃力 def=防御力 spd=速度 mag=魔力(原則0) critRate=クリ率(%) critDmg=クリダメ(%) dmgResist=ダメージ耐性
+// stats   : hp=体力 atk=攻撃力 def=防御力 spd=速度 mag=魔力(原則0) critRate=クリティカルレート(%) critDmg=クリティカルダメージ(%) dmgResist=ダメージ耐性
 // skill   : { name, stat:'atk'|'mag', type:'physical'|'magic'|'true', mult, add }
 // relic   : 遺物のセット名(省略可)ピエロの祝福 / 鬼の形相 / 月と太陽の印字 / 紅血の証 / 少女の物語
 // countdown: カウントダウンの数(省略可)  evolvable: false で進化できない

@@ -22,7 +22,7 @@ const TARGET_LABELS = {
 }
 const STAT_ROWS = [
   ['hp', 'HP'], ['atk', '攻撃力'], ['def', '防御力'], ['spd', '速度'],
-  ['mag', '魔力'], ['critRate', '会心率'], ['critDmg', '会心ダメージ'], ['dmgResist', 'ダメージ耐性'],
+  ['mag', '魔力'], ['critRate', 'クリティカルレート'], ['critDmg', 'クリティカルダメージ'], ['dmgResist', 'ダメージ耐性'],
 ]
 const DEFAULTS = { critRate: 5, critDmg: 50 } // ルールの初期値(クリティカルレート5%/ダメージ50%)
 const DMG_TYPE = { physical: '物理', magic: '魔法', true: '確定' }
@@ -138,7 +138,7 @@ export function CharDetail({ def, onOpen }) {
             const shown = v ?? DEFAULTS[k]
             return (
               <div key={k} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px dotted ${C.line}` }}>
-                <span style={{ color: C.mute, display: 'flex', alignItems: 'center', gap: 6 }}><StatIcon stat={k} style={{ fontSize: 16, color: C.ink }} />{label}{v == null ? '(初期値)' : ''}</span>
+                <span style={{ color: C.mute, display: 'flex', alignItems: 'center', gap: 6 }}><StatIcon stat={k} style={{ fontSize: 16, color: C.ink }} />{label}</span>
                 <b>{shown}{k === 'critRate' || k === 'critDmg' ? '%' : ''}</b>
               </div>
             )

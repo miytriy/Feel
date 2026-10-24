@@ -45,7 +45,7 @@ export const addHistory = (h, d) => (d.ab.length || d.dead.length ? { ab: [...h.
 
 
 const TABS = [['ally', '味方'], ['enemy', '相手'], ['log', 'ログ'], ['ab', '発動'], ['dead', '破壊']]
-const STAT_ROWS = [['atk', '攻撃力'], ['mag', '魔力'], ['def', '防御力'], ['spd', '速度'], ['critRate', '会心率'], ['critDmg', '会心ダメージ'], ['dmgResist', 'ダメージ耐性']]
+const STAT_ROWS = [['atk', '攻撃力'], ['mag', '魔力'], ['def', '防御力'], ['spd', '速度'], ['critRate', 'クリティカルレート'], ['critDmg', 'クリティカルダメージ'], ['dmgResist', 'ダメージ耐性']]
 const STAT_LABEL = { atk: '攻撃力', mag: '魔力', def: '防御力', spd: '速度', critRate: 'クリティカルレート', critDmg: 'クリティカルダメージ', dmgResist: 'ダメージ耐性' }
 const TYPE_LABEL = { physical: '物理', magic: '魔法', true: '確定' }
 const tierPrefix = (cond) => (cond?.liberation ? '【解放奥義】' : cond?.ultimate ? '【奥義】' : '')
