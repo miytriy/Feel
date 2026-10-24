@@ -60,8 +60,8 @@ export const StatIcon = ({ stat, ...p }) => {
       return <svg {...base} viewBox="0 0 150 155" {...p}><path d="M107 11L75 42H35L34 43H13L42 73L43 75V139L61 122L73 109L75 108H91L92 107H138L107 75L138 43H115V63L114 66L107 75Z M43 11V34H68L50 17Z M36 83L12 107H36Z M84 114L107 139V114Z" /></svg>
     case 'critDmg':
       return <svg {...base} viewBox="0 0 150 150" {...p}><path d="M43 17L71 44V76H41L12 48H42L43 47Z M107 17V47L108 48H138L112 75L109 76H80V43Z M71 84V115L44 143H43V113L13 113L30 94L39 85H48Z M80 84H106L107 85L112 85L139 112H108L107 113V143L105 142L80 117Z" /></svg>
-    case 'spd': // 進む山形
-      return <svg {...base} {...p}><path d="M3 4l8 8-8 8V4zM12 4l8 8-8 8z" /></svg>
+    case 'spd': // 速度(敏捷)
+      return <svg {...base} viewBox="0 0 525 495" {...p}><path d="M382 60L499 177L493 190L428 253L416 274L416 344L493 426L491 453L473 473L51 472L52 403L242 402L295 454L344 453L316 426L184 294L186 282L186 267L202 242Z" /><path d="M51 90H295L224 160H51Z" /><path d="M51 194H189L124 264H51Z" /><path d="M51 300H142L207 369H51Z" /></svg>
     case 'mag': // 魔力(開いた本。まん中のひし形は、くりぬき)
       return <MagIcon {...p} />
     case 'dmgResist': // 盾(まん中に縦線)
