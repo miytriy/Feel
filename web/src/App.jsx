@@ -83,6 +83,7 @@ export default function App() {
   // 開発中の入口(マスターパスワード): checking=確認中 / locked=パスワードが必要 / open=入れる / offline=サーバーにつながらない
   const [gate, setGate] = useState('checking')
   const [gateTry, setGateTry] = useState(0)
+  const [booted, setBooted] = useState(false) // 起動の準備(ログイン確認・入口・持ち物の読み込み)が終わったか。いちど終わったら、ロード画面は出さない
   const [rulesFirst, setRulesFirst] = useState(false) // 初回だけ、ルール説明を自動で開く
   useEffect(() => {
     if (screen !== 'loading') return undefined
@@ -118,7 +119,7 @@ export default function App() {
   useEffect(() => {
     if (authLoading) return
     let alive = true
-    setGate('checking') // ログイン・ログアウトのたびに、入れるかを確かめ直す
+    if (!booted) setGate('checking') // 起動中だけ。起動後の確かめ直しは、画面を変えずに裏で行う(ロード画面を出し直さない)
     ;(async () => {
       try {
         const st = await gateStatus()
@@ -160,6 +161,13 @@ export default function App() {
       .then((r) => setGifts(r.gifts))
       .catch(() => {}) // プレゼント一覧が取れなくても、他の機能は使える
   }, [user, gateOpen])
+
+  // 起動の準備ができたら、ロード画面を閉じる(ログイン中は、持ち物の読み込みまで待つ。失敗したときも、先に進む)
+  useEffect(() => {
+    if (booted || authLoading || gate === 'checking') return
+    if (gate === 'open' && user && !me && !error) return
+    setBooted(true)
+  }, [booted, authLoading, gate, user, me, error])
 
   // ログイン状態の確認が終わってから読み込む(確認の途中で、持ち物が空に戻されないように)
   useEffect(() => {
@@ -269,13 +277,11 @@ export default function App() {
       }
     : null
 
-  if (authLoading) {
-    return <LoadingScreen />
-  }
-
-  if (gate === 'checking') {
+  // 起動中は、ロード画面を出しつづける(準備が全部できてから、いちどだけ開ける)
+  if (!booted) {
     return <LoadingScreen note="サーバーが眠っていると、1分ほどかかることがあります" />
   }
+  if (gate === 'checking') return <LoadingScreen note="サーバーが眠っていると、1分ほどかかることがあります" /> // 「もう一度つなぐ」を押したとき
   if (gate === 'offline') {
     return (
       <div style={{ padding: 20, fontFamily: FONT }}>
