@@ -240,7 +240,7 @@ function InspectBox({ unit, big = false }) {
     <div data-testid="inspect" style={{ marginTop: 8, padding: 8, borderRadius: 8, background: C.card, border: `1px solid ${C.line}`, fontSize: big ? 13 : 11, lineHeight: 1.6 }}>
       <b>{unit.name}</b>
       <span style={{ color: C.mute }}>
-        {' '}{unit.evolved ? '(進化済) ' : ''}<SI k="atk" />{Math.round(unit.atk)} <SI k="def" />{Math.round(unit.def)} <SI k="spd" />{Math.round(unit.spd)} / スキル「{unit.skill.name}」({TYPE_LABEL[unit.skill.type]})
+        {' '}{unit.evolved ? '(進化済) ' : ''}<SI k="atk" />{Math.round(unit.atk)} <SI k="def" />{Math.round(unit.def)} <SI k="spd" />{Math.round(unit.spd)}{(unit.skill.stat === 'mag' || unit.mag > 0) && <> <SI k="mag" />{Math.round(unit.mag)}</>} / スキル「{unit.skill.name}」({TYPE_LABEL[unit.skill.type]})
       </span>
       {lines.length === 0 ? <div style={{ color: C.mute }}>能力なし</div> : lines.map((l, i) => <div key={i}>{l}</div>)}
     </div>
@@ -288,7 +288,7 @@ function TargetInfo({ unit, expected, loss = 0, big = false }) {
             <LossBlink unit={unit} loss={loss} radius={4} />
           </div>
           <div><SI k="hp" />{Math.ceil(unit.hp)}/{unit.maxHp}{unit.armor > 0 ? ` ・ アーマー ${Math.ceil(unit.armor)}` : ''}{unit.barrier > 0 ? ' ・ バリア' : ''}</div>
-          <div style={{ color: C.mute }}><SI k="atk" />{Math.round(unit.atk)} <SI k="def" />{Math.round(unit.def)} <SI k="spd" />{Math.round(unit.spd)}</div>
+          <div style={{ color: C.mute }}><SI k="atk" />{Math.round(unit.atk)} <SI k="def" />{Math.round(unit.def)} <SI k="spd" />{Math.round(unit.spd)}{(unit.skill?.stat === 'mag' || unit.mag > 0) && <> <SI k="mag" />{Math.round(unit.mag)}</>}</div>
         </>
       )}
       {expected != null && (

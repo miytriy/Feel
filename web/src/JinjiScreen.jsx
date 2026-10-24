@@ -416,7 +416,7 @@ export default function JinjiScreen({ ownedMap = {}, onExit }) {
       </div>
       <div className="jp-mini">
         {['mag', 'critRate', 'critDmg', 'dmgResist'].map((k) => {
-          const v = showStat(k)
+          const v = k === 'mag' && c.stats.mag == null && c.skill?.stat === 'mag' ? 0 : showStat(k)
           return <div key={k}><span><StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', marginRight: 4 }} />{STAT_LABEL[k]}</span><b>{v == null ? '-' : v}{v != null && (k === 'critRate' || k === 'critDmg') ? '%' : ''}</b></div>
         })}
       </div>

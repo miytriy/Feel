@@ -326,7 +326,8 @@ const RAINBOW = 'linear-gradient(135deg, #c9a6ff 0%, #8fb4ff 20%, #7fe3ff 40%, #
 const rarityBg = (c) => (c && c.rarity === 'legend' ? RAINBOW : `linear-gradient(${(c && RARITY[c.rarity]?.color) || '#cbd5e1'}, ${(c && RARITY[c.rarity]?.color) || '#cbd5e1'})`)
 const isLeg = (c) => !!(c && c.rarity === 'legend')
 const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', marginRight: 2 }} />
-const statLine = (c) => <><SI k="hp" />{c.stats.hp} <SI k="atk" />{c.stats.atk} <SI k="def" />{c.stats.def} <SI k="spd" />{c.stats.spd}</>
+const hasMag = (c) => c.skill?.stat === 'mag' || (c.stats.mag || 0) > 0
+const statLine = (c) => <><SI k="hp" />{c.stats.hp} <SI k="atk" />{c.stats.atk} <SI k="def" />{c.stats.def} <SI k="spd" />{c.stats.spd}{hasMag(c) && <> <SI k="mag" />{c.stats.mag || 0}</>}</>
 
 // ---- 舞台(PC: 1920×1080 / スマホ: 1080×1920)を、画面に収まるように拡大・縮小する ----
 function useStage(W, H) {
@@ -500,7 +501,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
             <div key={`p${c.id}`} className="fm-plate" style={{ left: SLOT_POS[i].x - L.pw / 2, top: SLOT_POS[i].y + L.pt, width: L.pw, zIndex: 20, '--rc': tone(c) }}>
               <div className="nm">{c.name}</div>
               <div className="cl">{c.class}</div>
-              <div className="st">{desktop ? statLine(c) : <><SI k="hp" />{c.stats.hp} <SI k="atk" />{c.stats.atk}<br /><SI k="def" />{c.stats.def} <SI k="spd" />{c.stats.spd}</>}</div>
+              <div className="st">{desktop ? statLine(c) : <><SI k="hp" />{c.stats.hp} <SI k="atk" />{c.stats.atk}<br /><SI k="def" />{c.stats.def} <SI k="spd" />{c.stats.spd}{hasMag(c) && <> <SI k="mag" />{c.stats.mag || 0}</>}</>}</div>
               <div className="fm-ctl">
                 <button type="button" aria-label="前へ" disabled={i === 0} onClick={() => apply(swapSlots(slots, i, i - 1))}><Tri dir="l" /></button>
                 <button type="button" className="rm" aria-label="外す" onClick={() => { apply(removeChar(slots, i)); if (activeSlot === i) setActiveSlot(null) }}><IconX /></button>

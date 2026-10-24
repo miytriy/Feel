@@ -134,6 +134,11 @@ export function CharDetail({ def, onOpen }) {
           {STAT_ROWS.map(([k, label]) => {
             const v = def.stats[k]
             if (v == null && DEFAULTS[k] == null && k !== 'mag' && k !== 'dmgResist') return null
+            if (v == null && k === 'mag' && def.skill?.stat === 'mag') return (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px dotted ${C.line}` }}>
+                <span style={{ color: C.mute, display: 'flex', alignItems: 'center', gap: 6 }}><StatIcon stat={k} style={{ fontSize: 16, color: C.ink }} />{label}</span><b>0</b>
+              </div>
+            )
             if (v == null && ['mag', 'dmgResist'].includes(k)) return null
             const shown = v ?? DEFAULTS[k]
             return (
@@ -274,7 +279,7 @@ function ListItem({ tab, def, selected, onClick, count = null }) {
       <div style={{ fontWeight: 800, fontSize: 14, display: 'flex', justifyContent: 'space-between', gap: 8 }}><span>{def.name}</span>{count != null && <span style={{ color: C.player }}>×{count}</span>}</div>
       <div style={{ fontSize: 11, color: C.mute, marginTop: 2 }}>
         {tab === 'chars'
-          ? <>{`${def.class}${def.type ? ' / ' + def.type : ''} ・ `}<StatIcon stat="hp" style={{ verticalAlign: '-0.14em' }} />{def.stats.hp} <StatIcon stat="atk" style={{ verticalAlign: '-0.14em' }} />{def.stats.atk} <StatIcon stat="def" style={{ verticalAlign: '-0.14em' }} />{def.stats.def} <StatIcon stat="spd" style={{ verticalAlign: '-0.14em' }} />{def.stats.spd}</>
+          ? <>{`${def.class}${def.type ? ' / ' + def.type : ''} ・ `}<StatIcon stat="hp" style={{ verticalAlign: '-0.14em' }} />{def.stats.hp} <StatIcon stat="atk" style={{ verticalAlign: '-0.14em' }} />{def.stats.atk} <StatIcon stat="def" style={{ verticalAlign: '-0.14em' }} />{def.stats.def} <StatIcon stat="spd" style={{ verticalAlign: '-0.14em' }} />{def.stats.spd}{(def.skill?.stat === 'mag' || def.stats.mag > 0) && <> <StatIcon stat="mag" style={{ verticalAlign: '-0.14em' }} />{def.stats.mag || 0}</>}</>
           : `${spellClassName(def)} ・ MP ${def.cost}${def.type ? ' / ' + def.type : ''}`}
       </div>
       {tab === 'spells' && <div style={{ fontSize: 12, marginTop: 3, opacity: 0.85 }}>{def.desc}</div>}

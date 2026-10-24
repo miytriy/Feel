@@ -79,7 +79,7 @@ function Bar({ pct, color, h = 6 }) {
 
 function UnitDetail({ u, color, first }) {
   const b = u.base || {}
-  const rows = [['HP', u.baseMaxHp ?? u.maxHp, u.maxHp, 'hp'], ...STAT_ROWS.filter(([k]) => k !== 'mag' || (b.mag || 0) > 0 || u.mag > 0).map(([k, l]) => [l, b[k] ?? 0, u[k] ?? 0, k])]
+  const rows = [['HP', u.baseMaxHp ?? u.maxHp, u.maxHp, 'hp'], ...STAT_ROWS.filter(([k]) => k !== 'mag' || (b.mag || 0) > 0 || u.mag > 0 || u.skill?.stat === 'mag').map(([k, l]) => [l, b[k] ?? 0, u[k] ?? 0, k])]
   const statRow = ([label, base, cur, key], big) => {
     const d = Math.round(cur - base)
     return (
