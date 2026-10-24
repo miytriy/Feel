@@ -42,7 +42,7 @@ function hash(str) {
   for (const ch of String(str)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) }
   return h >>> 0
 }
-function Emblem({ seed, color = '#d9d9de', rainbow = false }) {
+function Emblem({ seed, color = '#d9d9de', stops = null }) {
   useArtStatus()
   const gid = `wkr${useId().replace(/:/g, '')}`
   if (artOf(seed)) return <ArtImg id={seed} />
@@ -51,13 +51,14 @@ function Emblem({ seed, color = '#d9d9de', rainbow = false }) {
   for (let y = 0; y < 5; y++) for (let x = 0; x < 3; x++) {
     if ((h >> (y * 3 + x)) & 1) { cells.push([x, y]); if (x < 2) cells.push([4 - x, y]) }
   }
-  const fill = rainbow ? `url(#${gid})` : color // レジェンドは、レジェンドの色(虹色)でぬる
+  const rainbow = !!stops
+  const fill = rainbow ? `url(#${gid})` : color // レアリティの色(グラデーション)でぬる
   return (
     <svg viewBox="0 0 64 64" aria-hidden="true">
       {rainbow && (
         <defs>
           <linearGradient id={gid} gradientUnits="userSpaceOnUse" x1="3" y1="3" x2="61" y2="61">
-            <stop offset="0" stopColor="#c9a6ff" /><stop offset="0.2" stopColor="#8fb4ff" /><stop offset="0.4" stopColor="#7fe3ff" /><stop offset="0.56" stopColor="#86f0d6" /><stop offset="0.78" stopColor="#ff9fe0" /><stop offset="1" stopColor="#c9a6ff" />
+            {stops.map((c, k) => <stop key={k} offset={k / (stops.length - 1)} stopColor={c} />)}
           </linearGradient>
         </defs>
       )}
@@ -220,7 +221,7 @@ function Card({ sec, d, i, showTag, onOpen }) {
     <button type="button" className="wk-card" style={{ '--i': i }} data-testid={`wk-card-${d.id}`} onClick={() => onOpen(sec, d.id, true)}>
       <i className="wk-dots" />
       {showTag && <span className="wk-tag">{secOf(sec).label}</span>}
-      <Emblem seed={d.id} color={r ? r.color : '#d9d9de'} rainbow={d.rarity === 'legend'} />
+      <Emblem seed={d.id} color={r ? r.color : '#d9d9de'} stops={r ? r.stops : null} />
       <span className="wk-cname">{d.name}</span>
       <i className="wk-rar" style={{ background: r ? r.bg || r.color : '#8d8d93' }} />
     </button>
@@ -372,7 +373,7 @@ export default function WikiScreen({ onExit }) {
   const detail = selected && (
     <div className="wk-detail" key={selected.id}>
       <div className="wk-hero">
-        <Emblem seed={selected.id} color={selected.rarity ? RARITY[selected.rarity].color : '#d9d9de'} rainbow={selected.rarity === 'legend'} />
+        <Emblem seed={selected.id} color={selected.rarity ? RARITY[selected.rarity].color : '#d9d9de'} stops={selected.rarity ? RARITY[selected.rarity].stops : null} />
         <i className="wk-rar" style={{ background: selected.rarity ? RARITY[selected.rarity].bg || RARITY[selected.rarity].color : '#8d8d93' }} />
       </div>
       <div className="wk-info">

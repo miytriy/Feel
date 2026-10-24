@@ -10,11 +10,19 @@ import { CLASSES } from './battle/characters/validate.js'
 // 資料集: キャラクター/スペルをタブで分け、さらにクラスで絞り込み、名前や効果の文字で検索できる。
 // データは characters/ と spells/ から自動で集まるので、キャラやスペルを足すと、ここにも自動で載る。
 
+// stops: レアリティの色(グラデーション)。ブロック模様・帯・バッジに使う
+const RARITY_STOPS = {
+  legend: ['#c9a6ff', '#8fb4ff', '#7fe3ff', '#86f0d6', '#ff9fe0', '#c9a6ff'],
+  gold: ['#f6dc8a', '#d8b059', '#a87a2a', '#f0cf70', '#d8b059'],
+  silver: ['#f4f6ff', '#abb2cc', '#7f869e', '#e2e6f4', '#abb2cc'],
+  bronze: ['#e8a478', '#b3643b', '#7c4020', '#d98d5c', '#b3643b'],
+}
+const stopsBg = (st) => `linear-gradient(135deg, ${st.map((c, i) => `${c} ${Math.round((i / (st.length - 1)) * 100)}%`).join(', ')})`
 export const RARITY = {
-  legend: { label: 'レジェンド', color: '#b9a8ff', bg: 'linear-gradient(135deg, #c9a6ff 0%, #8fb4ff 20%, #7fe3ff 40%, #86f0d6 56%, #ff9fe0 78%, #c9a6ff 100%)', order: 0 },
-  gold: { label: 'ゴールド', color: '#d8b059', order: 1 },
-  silver: { label: 'シルバー', color: '#abb2cc', order: 2 },
-  bronze: { label: 'ブロンズ', color: '#b3643b', order: 3 },
+  legend: { label: 'レジェンド', color: '#b9a8ff', bg: 'linear-gradient(135deg, #c9a6ff 0%, #8fb4ff 20%, #7fe3ff 40%, #86f0d6 56%, #ff9fe0 78%, #c9a6ff 100%)', stops: RARITY_STOPS.legend, order: 0 },
+  gold: { label: 'ゴールド', color: '#d8b059', bg: stopsBg(RARITY_STOPS.gold), stops: RARITY_STOPS.gold, order: 1 },
+  silver: { label: 'シルバー', color: '#abb2cc', bg: stopsBg(RARITY_STOPS.silver), stops: RARITY_STOPS.silver, order: 2 },
+  bronze: { label: 'ブロンズ', color: '#b3643b', bg: stopsBg(RARITY_STOPS.bronze), stops: RARITY_STOPS.bronze, order: 3 },
 }
 const TARGET_LABELS = {
   self: '自分', opponent: '相手', allies: '味方全体', otherAllies: '自分以外の味方全体', allyOne: '味方1体', otherAllyOne: '自分以外の味方1体',
