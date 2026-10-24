@@ -9,6 +9,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      /* サイト全体で、文字の選択・長押しメニューを無効にする(入力欄だけは、打てるように残す) */
+      html, body, #root, #root * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+      input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-select: text; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
