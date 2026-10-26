@@ -2,6 +2,8 @@
 // (名前の打ち間違い・足りない項目を、戦闘を始める前に見つけるためのものです)
 import { KEYWORDS, TRIGGER_LABELS, RELICS } from '../engine.js'
 
+// 画面で、クラスを並べるときの順番(編成・人事)
+export const CLASS_ORDER = ['ニュートラル', 'エルフ', 'ロイヤル', 'ウィッチ', 'ドラゴン', 'ナイトメア', 'ビショップ', 'ネメシス']
 export const CLASSES = ['エルフ', 'ロイヤル', 'ウィッチ', 'ドラゴン', 'ナイトメア', 'ビショップ', 'ネメシス', 'ニュートラル']
 export const RARITIES = ['legend', 'gold', 'silver', 'bronze']
 const SKILL_STATS = ['atk', 'mag']

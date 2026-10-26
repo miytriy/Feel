@@ -6,6 +6,7 @@ import {
 } from './battle/formation.js'
 import { MAX_PARTIES, partyToSlots, partyToSpells, partyCount } from './battle/parties.js'
 import { RARITY } from './CodexScreen.jsx'
+import { CLASS_ORDER } from './battle/characters/validate.js'
 import { StatIcon } from './icons.jsx'
 import { artOf, ArtImg, useArtStatus } from './charArt.jsx'
 
@@ -330,7 +331,6 @@ const RAINBOW = 'linear-gradient(135deg, #c9a6ff 0%, #8fb4ff 20%, #7fe3ff 40%, #
 const rarityBg = (c) => (c && c.rarity === 'legend' ? RAINBOW : `linear-gradient(${(c && RARITY[c.rarity]?.color) || '#cbd5e1'}, ${(c && RARITY[c.rarity]?.color) || '#cbd5e1'})`)
 const isLeg = (c) => !!(c && c.rarity === 'legend')
 const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', marginRight: 2 }} />
-const CLASS_ORDER = ['ニュートラル', 'エルフ', 'ロイヤル', 'ウィッチ', 'ドラゴン', 'ナイトメア', 'ビショップ', 'ネメシス'] // キャラ一覧の、クラスの並び順
 const hasMag = (c) => c.skill?.stat === 'mag' || (c.stats.mag || 0) > 0
 const statLine = (c) => <><SI k="hp" />{c.stats.hp} <SI k="atk" />{c.stats.atk} <SI k="def" />{c.stats.def} <SI k="spd" />{c.stats.spd}{hasMag(c) && <> <SI k="mag" />{c.stats.mag || 0}</>}</>
 

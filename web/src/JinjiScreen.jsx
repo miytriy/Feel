@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useIsDesktop, C, FONT, DISPLAY } from './ui.js'
 import { ALL_CHARACTERS } from './battle/characters/index.js'
+import { CLASS_ORDER } from './battle/characters/validate.js'
 import { KEYWORDS, TRIGGER_LABELS, RELICS } from './battle/engine.js'
 import { RARITY, fold, collectRelated } from './CodexScreen.jsx'
 import { Emblem, hash } from './emblem.jsx'
@@ -219,7 +220,7 @@ const CSS = `
 .jp-grid.out { animation: jp-fadeout 0.2s ease-in forwards; }
 .jp-grid h3 { margin: 0 0 24px; color: #fff; font-family: ${DISPLAY}; font-size: 44px; letter-spacing: 0.08em; }
 .jp-gc { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 18px; }
-.jp-gcard { position: relative; padding: 0; min-height: 0; border: 0; background: none; cursor: pointer; color: #fff; text-align: center; animation: jp-up 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(min(var(--i), 20) * 25ms); }
+.jp-gcard { position: relative; align-self: start; padding: 0; min-height: 0; border: 0; background: none; cursor: pointer; color: #fff; text-align: center; animation: jp-up 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(min(var(--i), 20) * 25ms); }
 .jp-gcard .pl { position: relative; aspect-ratio: 1; border: 3px solid transparent; background: linear-gradient(165deg, color-mix(in srgb, var(--tc) 55%, #fff), var(--tc) 45%, #15151b) padding-box, var(--rbg) border-box; transition: transform 0.15s; }
 .jp-gcard .pl svg { position: absolute; inset: 12%; width: 76%; height: 76%; mix-blend-mode: multiply; opacity: 0.9; }
 .jp-gcard .ct { position: absolute; right: 6px; bottom: 6px; padding: 0 10px; background: rgba(0,0,0,0.75); font-family: ${DISPLAY}; font-weight: 700; font-size: 26px; }
@@ -307,7 +308,11 @@ export default function JinjiScreen({ ownedMap = {}, onExit }) {
   const { scale, sw, sh } = useStage(L.W, L.H)
   const calm = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-  const owned = useMemo(() => ALL_CHARACTERS.filter((d) => ownedMap[d.id] > 0), [ownedMap])
+  // 持っているキャラ。クラスの順番(編成と同じ)に並べる。同じクラスの中は、もとの順番
+  const owned = useMemo(() => {
+    const ord = (d) => { const i = CLASS_ORDER.indexOf(d.class); return i === -1 ? CLASS_ORDER.length : i }
+    return ALL_CHARACTERS.filter((d) => ownedMap[d.id] > 0).map((d, i) => [d, i]).sort((a, b) => ord(a[0]) - ord(b[0]) || a[1] - b[1]).map((x) => x[0])
+  }, [ownedMap])
   const [query, setQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const list = useMemo(() => {
