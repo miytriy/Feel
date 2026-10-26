@@ -98,7 +98,7 @@ export function validateCharacter(def, opts = {}) {
       if (p.trigger === 'combo' || p.trigger === 'link') if (!isNum(p.min)) errs.push(`${label}: ${w}: ${p.trigger} には min(回数)が必要です`)
       checkCondition(p.condition, `${label}: ${w}`, errs)
       // onBoost は「Xを数えるだけ」のパッシブなので、effects が空でもよい
-      if (!(p.trigger === 'onBoost' && Array.isArray(p.effects) && p.effects.length === 0)) checkEffects(p.effects, `${label}: ${w}`, errs)
+      if (!((p.trigger === 'onBoost' || p.trigger === 'onLeave') && Array.isArray(p.effects) && p.effects.length === 0)) checkEffects(p.effects, `${label}: ${w}`, errs)
     } else add(`passives の${i + 1}番目が文字列でもオブジェクトでもありません`)
   })
 

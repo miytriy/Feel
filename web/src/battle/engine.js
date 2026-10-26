@@ -35,7 +35,7 @@ export const KEYWORDS = {
 }
 export const TRIGGER_LABELS = {
   fanfare: 'ファンファーレ', constant: '常時', active: 'アクティブ', lastWord: 'ラストワード',
-  onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時', onEvolved: '進化したとき', turnEnd: 'ターン終了時', onEnter: '場に出たとき', enemyTurnEnd: '相手のターン終了時',
+  onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時', onEvolved: '進化したとき', turnEnd: 'ターン終了時', onLeave: '場を離れる場合', onEnter: '場に出たとき', enemyTurnEnd: '相手のターン終了時',
   roundStart: 'ラウンド開始時', allyDeath: '味方が戦闘不能になったとき', allyEnter: '味方が場に出たとき', allyTurnStart: '味方のターン開始時', link: '連携', onBoost: 'スペルブースト時', allyHeal: '味方が回復したとき',
 }
 
@@ -952,6 +952,14 @@ function resolveDeaths(state, opts) {
     const dead = state.units.filter((u) => !u.alive && !u.deathHandled)
     if (!dead.length) return
     for (const u of dead) {
+      const leave = (u.passiveObjs || []).find((p) => p.trigger === 'onLeave') // 【場を離れる場合、これを消滅】: 破壊されず、消滅する(倒れた扱いにならない。墓場・ラストワード・味方が倒れたときの能力は働かない)
+      if (leave) {
+        u.deathHandled = true
+        u.buffs = []; u.armor = 0; u.barrier = 0; u.stealth = false
+        state.log.push(`${u.name}は場を離れ、消滅した`)
+        noteAbility(state, TRIGGER_LABELS.onLeave, u.name, leave.name && leave.name !== TRIGGER_LABELS.onLeave ? leave.name : '', leave.desc, u.team)
+        continue
+      }
       u.deathHandled = true
       u.buffs = []
       u.armor = 0
@@ -1111,6 +1119,10 @@ function endTurn(state, actor) {
         runEffects(state, actor, p.effects, {})
       }
     }
+    resolveDeaths(state)
+  }
+  if (actor.alive) { // 【ターン終了時】(自分のターンが終わるとき): 場のキャラ・召喚物自身の能力
+    fire(state, 'turnEnd', actor, {})
     resolveDeaths(state)
   }
   for (const u of [...state.units]) { // 【相手のターン終了時】: 相手のキャラのターンが終わるときに、場のキャラ・召喚物の能力が働く

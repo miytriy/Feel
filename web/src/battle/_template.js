@@ -16,7 +16,7 @@
 //             'guard'守護 'stealth'潜伏 'aura'オーラ 'intimidate'威圧 'rush'突進 'dash'疾走
 //             'finisher'必殺 'drain'ドレイン 'barrier'バリア
 //           効果つきは { name, trigger, desc, effects, min(連携・コンボの回数), condition }
-//             trigger: fanfare / constant / active / lastWord / onAttack / onEngage / combo / onEvolve(EP進化のときだけ) / onEvolved(進化したとき。効果での進化でも働く) / onEnter(場に出たとき。召喚された瞬間に働く。ファンファーレは最初の自分のターン開始時) / roundStart / allyTurnStart / link / onBoost(スペルブースト時)
+//             trigger: fanfare / constant / active / lastWord / onAttack / onEngage / combo / onEvolve(EP進化のときだけ) / onEvolved(進化したとき。効果での進化でも働く) / onEnter(場に出たとき。召喚された瞬間に働く。ファンファーレは最初の自分のターン開始時) / turnEnd(自分のターン終了時) / onLeave(場を離れる場合: 破壊の代わりに消滅する。effects は空で書く) / roundStart / allyTurnStart / link / onBoost(スペルブースト時)
 // traits  : 特性(MPを使う) { id, name, cost, target, desc, effects, repeatable, condition }
 //             target: self / allies / otherAllies / allyOne / enemies / enemyOne / enemyRandom / summons
 // accelerate: { id, name, speed, cost, target, desc, effects }  本体とは別の速度で番が回る特性
