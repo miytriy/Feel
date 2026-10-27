@@ -454,6 +454,10 @@ function resolveTargets(state, source, key, ctx) {
     case 'opponent': return ctx.other && ctx.other.alive ? [ctx.other] : []
     case 'allies': return allies
     case 'otherAllies': return allies.filter((u) => u !== source)
+    case 'nearestAlly': { // 最も近い味方1体: 自分以外の場のキャラのうち、行動順が最も近い(いまの行動値が最も小さい)1体
+      const others = allies.filter((u) => u !== source && u.uid !== source.uid)
+      return [[...others].sort((a, b) => a.curAV - b.curAV)[0]].filter(Boolean)
+    }
     case 'otherAllyOne': {
       const others = allies.filter((u) => u !== source)
       if (ctx.chosen) return others.filter((u) => u.uid === ctx.chosen)
