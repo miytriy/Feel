@@ -22,6 +22,7 @@ export const ROTATIONS_EN = {
   2: 'Infinity Evolved',
   3: 'Heirs of the Omen',
   4: 'Skybound Dragons',
+  5: 'Blossoming Fate',
   6: 'Apocalypse Pact',
   7: "Anathema's Gambit",
   8: 'Chronicle of Destiny',
