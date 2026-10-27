@@ -13,7 +13,7 @@ export const ROTATIONS = {
   7: '神殺しアナテマ',
   8: 'クロニクル・オブ・デスティニー',
   9: 'アズヴォルト・レヴナント',
-  10: '二ーゲルへリア神殺事件',
+  10: 'ニーゲルヘリア神殺事件',
 }
 // 英語の名前(ない(まだ決まっていない)ものは書かない)
 export const ROTATIONS_EN = {
@@ -24,7 +24,7 @@ export const ROTATIONS_EN = {
   4: 'Skybound Dragons',
   6: 'Apocalypse Pact',
   7: "Anathema's Gambit",
-  8: 'Choronicle of Destiny',
+  8: 'Chronicle of Destiny',
   9: 'Revenants of Azvaldt',
   10: 'Deicide in Nacreheim',
 }
