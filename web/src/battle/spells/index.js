@@ -1,6 +1,7 @@
 // Feel Battle - スペル一覧(自動で集めます)
 // スペルを増やすには、クラスのフォルダの下の、ピックアップのフォルダ(例: elf/1/)に「スペルのid.js」を1つ作るだけです(1つにつき1ファイル)。
 import { validateSpell } from './validate.js'
+import { rotationOfPath } from '../rotations.js'
 
 const modules = import.meta.glob(['./*/*.js', './*/tokens/*.js', './*/*/*.js', './*/*/tokens/*.js'], { eager: true }) // スペルは、クラスごとのフォルダ(例: ./royal/royal_spell_01.js)に1つずつ置く。tokens フォルダ(例: ./witch/tokens/)は、変身・召喚などで出てくるトークンのスペル(ファイル名とidが違ってもOK)
 const list = []
@@ -14,7 +15,8 @@ for (const [path, mod] of Object.entries(modules)) {
     continue
   }
   if (list.some((c) => c.id === def.id)) { console.error(`[スペルデータの問題] ${path}: id「${def.id}」が重複しています`); continue }
-  list.push(def)
+  const rotation = def.rotation ?? rotationOfPath(path) // ローテーション(ピックアップの名前)
+  list.push(rotation ? { ...def, rotation } : def)
 }
 export const ALL_SPELLS = list.sort((a, b) => a.id.localeCompare(b.id))
 export const spellById = (id) => ALL_SPELLS.find((c) => c.id === id)

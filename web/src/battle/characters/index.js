@@ -4,6 +4,7 @@
 // 「キャラのid.js」というファイルを1つ作るだけです(1体につき1ファイル)。ここは編集しなくて大丈夫です。
 // 書き方は _template.js を見てください。
 import { validateCharacter } from './validate.js'
+import { rotationOfPath } from '../rotations.js'
 
 // ./フォルダ名/ファイル名.js と、ピックアップごとのフォルダ(./クラス名/1/ファイル名.js など)をすべて読み込む(Viteの機能)
 const modules = import.meta.glob(['./*/*.js', './*/tokens/*.js', './*/*/*.js', './*/*/tokens/*.js', '../amulet/*/*.js', '../amulet/*/tokens/*.js', '../amulet/*/*/*.js', '../amulet/*/*/tokens/*.js'], { eager: true }) // tokens フォルダ: 召喚専用のトークン(ファイル名とidが違ってもOK) / ../amulet フォルダ: アミュレット(amulet/クラス名/id.js。キャラとは別のフォルダ。編成に入れられる。ファイル名=id。召喚専用のものは amulet/クラス名/tokens/)
@@ -25,7 +26,8 @@ for (const [path, mod] of Object.entries(modules)) {
       console.error(`[キャラデータの問題] ${path}: id「${def.id}」が重複しています(後のものは使いません)`)
       continue
     }
-    list.push(def)
+    const rotation = def.rotation ?? rotationOfPath(path) // ローテーション(ピックアップの名前): ファイルに書いてあればそれ、なければフォルダから決まる
+    list.push(rotation ? { ...def, rotation } : def)
   }
 }
 
