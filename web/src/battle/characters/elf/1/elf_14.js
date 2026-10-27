@@ -1,4 +1,4 @@
-import roseStrike from '../../spells/elf/elf_spell_04.js' // 使えるようになるスペル「薔薇の閃撃」
+import roseStrike from '../../../spells/elf/1/elf_spell_04.js' // 使えるようになるスペル「薔薇の閃撃」
 
 export default {
   id: 'elf_14', name: '豊麗なるローズクイーン', class: 'エルフ', rarity: 'legend',

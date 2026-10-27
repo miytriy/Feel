@@ -1,4 +1,4 @@
-import EARTH_SHARD from './amulet/witch/witch_amulet_01.js' // 土の印がないときに召喚される「大地の魔片」
+import EARTH_SHARD from './amulet/witch/1/witch_amulet_01.js' // 土の印がないときに召喚される「大地の魔片」
 // Feel Battle - バトルの処理(段階4: アーマー・墓場・召喚物・アミュレット・遺物 を追加。段階3までの進化・EP・信仰値・カウントダウン・クレスト・連携・奥義・アクセラレートを含む)
 // 画面やFirebaseには依存しません。「状態 + 行動 → 新しい状態」の形で作ってあります。
 

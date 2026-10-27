@@ -1,5 +1,5 @@
-import fairy from '../../characters/elf/tokens/elf_token_01.js' // 召喚する「フェアリー」
-import forestMystery from '../../spells/elf/elf_spell_02.js' // 有効化する「森の神秘」
+import fairy from '../../../characters/elf/1/tokens/elf_token_01.js' // 召喚する「フェアリー」
+import forestMystery from '../../../spells/elf/1/elf_spell_02.js' // 有効化する「森の神秘」
 
 // アミュレット: 編成に入れると、バトル開始時からアミュレット置き場にいる(スキル攻撃はできない)
 export default {

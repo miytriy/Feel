@@ -1,4 +1,4 @@
-import guards from '../../characters/dragon/tokens/dragon_token_03.js' // 召喚する「乙姫お守り隊」は dragon_token_03.js のキャラです
+import guards from '../../../characters/dragon/1/tokens/dragon_token_03.js' // 召喚する「乙姫お守り隊」は dragon_token_03.js のキャラです
 
 // アミュレット: 編成に入れると、バトル開始時からアミュレット置き場にいる(スキル攻撃はできない)
 export default {

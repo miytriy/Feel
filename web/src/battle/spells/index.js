@@ -1,8 +1,8 @@
 // Feel Battle - スペル一覧(自動で集めます)
-// スペルを増やすには、クラスのフォルダ(elf / royal ...)に「スペルのid.js」を1つ作るだけです(1つにつき1ファイル)。
+// スペルを増やすには、クラスのフォルダの下の、ピックアップのフォルダ(例: elf/1/)に「スペルのid.js」を1つ作るだけです(1つにつき1ファイル)。
 import { validateSpell } from './validate.js'
 
-const modules = import.meta.glob(['./*/*.js', './*/tokens/*.js'], { eager: true }) // スペルは、クラスごとのフォルダ(例: ./royal/royal_spell_01.js)に1つずつ置く。tokens フォルダ(例: ./witch/tokens/)は、変身・召喚などで出てくるトークンのスペル(ファイル名とidが違ってもOK)
+const modules = import.meta.glob(['./*/*.js', './*/tokens/*.js', './*/*/*.js', './*/*/tokens/*.js'], { eager: true }) // スペルは、クラスごとのフォルダ(例: ./royal/royal_spell_01.js)に1つずつ置く。tokens フォルダ(例: ./witch/tokens/)は、変身・召喚などで出てくるトークンのスペル(ファイル名とidが違ってもOK)
 const list = []
 for (const [path, mod] of Object.entries(modules)) {
   if (path === './index.js' || path === './validate.js') continue // (./validate.js 以外のフォルダ内のファイルは、すべてスペルとして読む)

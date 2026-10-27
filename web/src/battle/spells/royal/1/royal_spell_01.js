@@ -1,5 +1,5 @@
-import knight from '../../characters/royal/tokens/royal_token_01.js' // 召喚する「ナイト」
-import steelKnight from '../../characters/royal/tokens/royal_token_02.js' // 召喚する「スティールナイト」
+import knight from '../../../characters/royal/1/tokens/royal_token_01.js' // 召喚する「ナイト」
+import steelKnight from '../../../characters/royal/1/tokens/royal_token_02.js' // 召喚する「スティールナイト」
 
 // スペル(プレイヤー能力): 【モード】1つ選んで、その能力が働く
 export default {

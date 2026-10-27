@@ -2,7 +2,7 @@
 //
 // このファイルは読み込まれません(説明用です)。
 // 新しいキャラは、フォルダ(例: test / neutral / elf / royal)の中に「id.js」という名前で作ります。
-//   例: web/src/battle/characters/elf/elf_001.js
+//   例: web/src/battle/characters/elf/1/elf_001.js(1 = ピックアップのフォルダ。スペルは spells/elf/1/、アミュレットは amulet/elf/1/)
 // 中身は「export default { ... }」と書くだけで、一覧には自動で入ります(index.js の編集は不要)。
 // ファイル名と id は同じにしてください。書き間違いは、ブラウザのコンソールに日本語で出ます。
 //
