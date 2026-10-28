@@ -25,7 +25,7 @@ const pickRandom = (list, rng) => list[Math.floor(rng() * list.length)]
 function expectedDamage(state, action) {
   const actor = getActiveUnit(state)
   const target = getUnit(state, action.target)
-  return calcDamage(actor, target, actor.skill, { expected: true }).damage
+  return calcDamage(actor, target, actor.skill, { expected: true, bySkill: true }).damage
 }
 
 // 攻撃対象の評価: 削れるHPの割合 + 倒せるボーナス + 相手の危険度

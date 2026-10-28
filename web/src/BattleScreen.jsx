@@ -652,7 +652,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const selectedUnit = playerTurn && selected ? getUnit(state, selected) : null
   let expectedDmg = null
   if (selectedUnit && !mode && !isAccel && skillTargets.includes(selected)) {
-    try { expectedDmg = calcDamage(actor, selectedUnit, actor.skill, { expected: true }).damage } catch { expectedDmg = null }
+    try { expectedDmg = calcDamage(actor, selectedUnit, actor.skill, { expected: true, bySkill: true }).damage } catch { expectedDmg = null }
   }
 
   const lossShown = selectedUnit && expectedDmg != null ? hpLossOf(selectedUnit, expectedDmg, actor.skill.type === 'true') : 0

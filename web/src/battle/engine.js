@@ -21,6 +21,27 @@ const FINISHER_RATE = 0.35 // 必殺: 相手の現在HPの35%
 const STATS = ['atk', 'mag', 'def', 'spd', 'critRate', 'critDmg', 'dmgResist']
 
 // 画面表示用: キーワード能力の名前と説明
+// ---------- クラス特性 ----------
+// チーム編成を、すべてそのクラスのキャラクターにそろえたときに働く常時特性(ニュートラルを混ぜると、働かない)
+export const CLASS_TRAITS = {
+  'エルフ': { name: 'コンボリセットの初期行動値+20%', desc: 'コンボリセットの初期行動値+20%' },
+  'ロイヤル': { name: '場すべてのスキルダメージ+20%', desc: '自分の場すべてのスキルダメージ+20%' },
+  'ウィッチ': { name: 'スペルブースト・土の印の蓄積効率+25%', desc: 'スペルブースト・土の印の蓄積効率+25%' },
+  'ドラゴン': { name: 'ラウンド1の最大MP増加量+1', desc: 'ラウンド1の最大MP増加量+1' },
+  'ナイトメア': { name: '「死者」のダメージ+29%', desc: '「死者」のキャラクターのダメージ+29%' },
+  'ビショップ': { name: '場すべての防御力+18%', desc: '自分の場すべての防御力+18%' },
+  'ネメシス': { name: '「人形」の体力+15%・速度+3%', desc: '「人形」キャラクターの体力+15%、速度+3%' },
+  'ニュートラル': { name: '物理耐性+15%', desc: '物理耐性+15%' },
+}
+// 編成(キャラの定義の一覧。アミュレットは数えない)が、すべて同じクラスなら、そのクラスを返す。そろっていなければ null
+export function classTraitOf(defs) {
+  const mains = (defs || []).filter((d) => d && !d.amulet)
+  if (!mains.length) return null
+  const cls = mains[0].class
+  return CLASS_TRAITS[cls] && mains.every((d) => d.class === cls) ? cls : null
+}
+const hasTypeName = (u, name) => String(u.type || '').split('/').includes(name)
+
 export const KEYWORDS = {
   guard: { label: '守護', desc: '相手は守護を持つキャラ以外を攻撃できない' },
   stealth: { label: '潜伏', desc: '相手の特性で選ばれず、攻撃もされない。攻撃するか能力でダメージを与えると失う' },
@@ -57,6 +78,24 @@ function makeAccel(a) {
   return { ...JSON.parse(JSON.stringify(a)), id: a.id || 'accelerate', speed: a.speed, baseAV: av, curAV: av }
 }
 
+// クラス特性を、キャラ(召喚されたものも)に反映する。体力は、ここで増やす(ネメシス: 「人形」の体力+15%)
+function applyClassTrait(u, trait) {
+  u.ct = trait || null
+  if (trait === 'ネメシス' && hasTypeName(u, '人形') && !u.isAmulet) {
+    const up = Math.round(u.maxHp * 0.15)
+    u.maxHp += up; u.baseMaxHp += up; u.hp += up
+  }
+}
+// 蓄積効率+25%(ウィッチ): 増えるぶんに25%を足す。端数は、次に持ち越す
+function witchBonus(state, team, kind, n) {
+  if (state.classTrait?.[team] !== 'ウィッチ' || !(n > 0)) return 0
+  const c = state.ctCarry[team]
+  c[kind] += n * 0.25
+  const extra = Math.floor(c[kind] + 1e-9)
+  c[kind] -= extra
+  return extra
+}
+
 function makeUnit(def, team, index, field = 'main', uid = null) {
   const s = { ...def.stats }
   const base = {
@@ -78,6 +117,7 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
   const stealthEvery = Number(rawKw.map((k) => /^stealth_(\d+)$/.exec(k)).find(Boolean)?.[1]) || null
   const clone = (x) => JSON.parse(JSON.stringify(x))
   return {
+    ct: null, // ct: このキャラのチームで働いているクラス特性(クラス名。働いていなければ null)
     uid: uid || `${team}${index}`, defId: def.id, name: def.name, class: def.class, type: def.type || null, team, relic: def.relic || null, // type: キャラのタイプ(妖精など)
     field, // 'main' = 場のキャラ / 'summon' = 召喚物フィールドの召喚物・アミュレット
     isAmulet: field === 'summon' && !!def.amulet, // アミュレット: スキル攻撃はできず、相手のスキル攻撃の対象にもならない
@@ -174,9 +214,11 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
     ]
   }
   const units = [...build(teamADefs, 'A'), ...build(teamBDefs, 'B')]
+  const classTrait = { A: classTraitOf(teamADefs), B: classTraitOf(teamBDefs) }
+  for (const u of units) applyClassTrait(u, classTrait[u.team])
   const startSummons = { A: units.filter((u) => u.team === 'A' && u.field === 'summon').length, B: units.filter((u) => u.team === 'B' && u.field === 'summon').length }
   const state = {
-    units, totalAV: 0, round: 0, turns: 0, actionsThisTurn: 0,
+    units, classTrait, ctCarry: { A: { boost: 0, earth: 0 }, B: { boost: 0, earth: 0 } }, totalAV: 0, round: 0, turns: 0, actionsThisTurn: 0,
     mp: { A: 0, B: 0 }, mpMax: { A: 0, B: 0 }, ep: { A: 0, B: 0 },
     faith: { A: 0, B: 0 }, boost: { A: 0, B: 0 }, earth: { A: 0, B: 0 }, crests: { A: [], B: [] }, graveyard: { A: 0, B: 0 },
     link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 }, summonSeq: Math.max(startSummons.A, startSummons.B), pending: null,
@@ -274,7 +316,7 @@ function syncComboReset(state) {
     const n = state.comboMode === 'reset' ? comboHolders(state, team).length : 0
     const cr = state.comboReset[team]
     if (!n) { state.comboReset[team] = null; continue }
-    const base = COMBO_RESET_K * n
+    const base = COMBO_RESET_K * n * (state.classTrait?.[team] === 'エルフ' ? 1.2 : 1) // エルフ(クラス特性): コンボリセットの初期行動値+20%
     if (!cr) state.comboReset[team] = { baseAV: base, curAV: base }
     else if (Math.abs(cr.baseAV - base) > EPS) { // Nが変わったら、進み具合は保ったまま調整する
       cr.curAV = cr.curAV * (base / cr.baseAV)
@@ -302,6 +344,8 @@ function recalc(state) {
   }
   for (const u of state.units) {
     const mods = [...u.buffs, ...(crestMods.get(u.uid) || [])]
+    if (u.ct === 'ビショップ') mods.push({ stat: 'def', pct: 18 }) // ビショップ(クラス特性): 自分の場すべての防御力+18%
+    if (u.ct === 'ネメシス' && hasTypeName(u, '人形')) mods.push({ stat: 'spd', pct: 3 }) // ネメシス(クラス特性): 「人形」の速度+3%
     for (const p of u.passiveObjs) {
       if (!(p.trigger === 'constant' || (p.trigger === 'active' && u.uid === state.active))) continue
       if (!checkCond(state, u, p.condition)) continue
@@ -355,7 +399,11 @@ export function calcDamage(attacker, defender, skill, opts = {}) {
   const defCoef = skill.type === 'true' ? 1 : 1 - defense / (defense + 200 + 10) // 確定ダメージは防御無視
   const resCoef = 1 - defender.dmgResist / (defender.dmgResist + 800)
 
-  const raw = base * critMul * defCoef * resCoef
+  let ctMul = 1 // クラス特性
+  if (attacker.ct === 'ロイヤル' && opts.bySkill) ctMul *= 1.2 // ロイヤル: 自分の場すべてのスキルダメージ+20%
+  if (attacker.ct === 'ナイトメア' && hasTypeName(attacker, '死者')) ctMul *= 1.29 // ナイトメア: 「死者」のダメージ+29%
+  if (defender.ct === 'ニュートラル' && skill.type === 'physical') ctMul *= 0.85 // ニュートラル: 物理耐性+15%
+  const raw = base * critMul * defCoef * resCoef * ctMul
   return { damage: opts.expected ? raw : Math.max(1, Math.floor(raw)), isCrit }
 }
 
@@ -527,6 +575,7 @@ function summon(state, source, def) {
   }
   state.summonSeq += 1
   const u = makeUnit(def, source.team, 0, 'summon', `${source.team}s${state.summonSeq}`)
+  applyClassTrait(u, state.classTrait?.[source.team])
   state.units.push(u)
   emit(state, 'summon', { target: u.uid, name: def.name, team: u.team })
   state.log.push(state.casting ? `スペル【${state.casting}】で${def.name}を${u.isAmulet ? '設置' : '召喚'}した` : `${source.name}は${def.name}を${u.isAmulet ? '設置' : '召喚'}した`)
@@ -673,7 +722,7 @@ function runEffects(state, source, effects, ctx = {}) {
         pick = 0
       }
       const o = opts[pick] || opts[0]
-      const n = e.amount ?? 1
+      const n = (e.amount ?? 1) + witchBonus(state, source.team, 'boost', e.amount ?? 1)
       if (o.kind === 'spell') {
         state.boost[source.team] += n
         const sp = growSpell(state, source.team, o.sp, n)
@@ -685,14 +734,14 @@ function runEffects(state, source, effects, ctx = {}) {
       continue
     }
     if (e.type === 'boost' && e.target) { // 対象つき: 場のキャラ(と召喚物)それぞれが、ブーストされた回数を数える
-      const n = e.amount ?? 1
+      const n = (e.amount ?? 1) + witchBonus(state, source.team, 'boost', e.amount ?? 1)
       for (const t of resolveTargets(state, source, e.target, ctx)) {
         boostUnit(state, t, n)
       }
       continue
     }
     if (e.type === 'boost') { // 対象なし: 手札(スペルセット)のスペルが、ブーストされた回数(チーム共通)
-      const n = e.amount ?? 1
+      const n = (e.amount ?? 1) + witchBonus(state, source.team, 'boost', e.amount ?? 1)
       state.boost[source.team] += n
       boostSpells(state, source.team, n, ctx.spell ? state.spells[source.team].find((x) => x.slot === state.castingSlot) || null : null) // 発動中のスペル自身は、ブーストされない
       boostFieldUnits(state, source.team, n)
@@ -700,7 +749,7 @@ function runEffects(state, source, effects, ctx = {}) {
       continue
     }
     if (e.type === 'earth') { // 土の印: 場の土の印の合計(チーム共通)。マイナスで消費(土の秘術)
-      const amount = e.amount ?? 1
+      const amount = (e.amount ?? 1) + witchBonus(state, source.team, 'earth', e.amount ?? 1)
       // 場に土の印がないときに土の印が増えるなら、先に「大地の魔片」を召喚する
       if (amount > 0 && !state.units.some((x) => x.alive && x.team === source.team && x.field === 'summon' && hasKw(x, 'earthSign'))) summon(state, source, EARTH_SHARD)
       const next = Math.max(0, state.earth[source.team] + amount)
@@ -1066,7 +1115,7 @@ const sameAction = (a, b) =>
 function startRound(state, opts) {
   state.round += 1
   for (const team of ['A', 'B']) {
-    state.mpMax[team] = Math.min(MP_CAP, state.mpMax[team] + 1)
+    state.mpMax[team] = Math.min(MP_CAP, state.mpMax[team] + 1 + (state.round === 1 && state.classTrait?.[team] === 'ドラゴン' ? 1 : 0)) // ドラゴン(クラス特性): ラウンド1の最大MP増加量+1
     state.mp[team] = state.mpMax[team]
     if (state.round === EP_GRANT_ROUND) state.ep[team] = Math.min(EP_MAX, state.ep[team] + EP_GRANT)
   }
@@ -1301,7 +1350,7 @@ function doSkill(state, actor, targetUid, opts) {
 
   emit(state, 'attack', { src: actor.uid, target: target.uid, skill: skill.name })
   state.means = skill.name // これから与えるダメージの攻撃手段(攻撃時の能力が働いたあとに決める)
-  const { damage, isCrit } = calcDamage(actor, target, skill, opts)
+  const { damage, isCrit } = calcDamage(actor, target, skill, { ...opts, bySkill: true })
   const dealt = applyDamage(state, actor, target, damage, skill.type === 'true')
   if (dealt > 0) {
     if (isCrit && state.rec) { const ev = [...state.events].reverse().find((e) => e.type === 'damage' && e.target === target.uid); if (ev) ev.crit = true }
