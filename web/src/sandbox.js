@@ -28,6 +28,8 @@ export function createSandbox({ characters, cost = 500, grant = SANDBOX_GEMS }) 
   let gems = 0
   let pityCount = 0
   const owned = {}
+  const sig = {}
+  const enh = {}
   let mail = [{
     id: 'sandbox-gift', title: '最高権限のプレゼント',
     message: 'この端末の中だけで使える、仮のジェムです。ページを読み込み直すと消えます。アカウントには入りません。',
@@ -39,7 +41,7 @@ export function createSandbox({ characters, cost = 500, grant = SANDBOX_GEMS }) 
 
   return {
     sandbox: true,
-    fetchMe: () => done({ gems, pityCount, owned: { ...owned }, loginBonus: { canClaim: false, streak: 0 } }),
+    fetchMe: () => done({ gems, pityCount, owned: { ...owned }, sig: { ...sig }, enh: { ...enh }, loginBonus: { canClaim: false, streak: 0 } }),
     fetchGifts: () => done({ gifts: mail.map((g) => ({ ...g })) }),
     drawGacha: (times) => {
       if (times !== 1 && times !== 10) return fail('回数が正しくありません')
@@ -59,8 +61,14 @@ export function createSandbox({ characters, cost = 500, grant = SANDBOX_GEMS }) 
       }
       gems -= total
       pityCount = pityUsed ? 0 : count
-      for (const p of pulls) for (const c of p.characters) owned[c.id] = (owned[c.id] || 0) + 1
+      for (const p of pulls) for (const c of p.characters) { if (owned[c.id]) sig[c.id] = (sig[c.id] || 0) + 1; else owned[c.id] = 1 }
       return done({ pulls, gems, pityCount })
+    },
+    enhanceChar: (id) => {
+      if (!owned[id] || (sig[id] || 0) < 100) return fail('強化できません')
+      sig[id] -= 100
+      enh[id] = (enh[id] || 0) + 1
+      return done({ sig: { ...sig }, enh: { ...enh } })
     },
     claimGift: (id) => {
       const g = find(id)

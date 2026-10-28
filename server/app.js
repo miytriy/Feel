@@ -2,6 +2,7 @@
 import express from 'express'
 import cors from 'cors'
 import { drawGacha } from './gacha.js'
+import { normalizeOwned, applyPulls, enhanceOnce } from './signature.js'
 import { sanitizeMatch, addMatch } from './career.js'
 import { checkPassword, checkToken, gateToken, makeFailLimiter } from './gate.js'
 import { CONFIG } from './config.js'
@@ -64,7 +65,7 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
   const requireAuth = makeAuth(false)
   const authOnly = makeAuth(true)
 
-  const newUserData = () => ({ gems: CONFIG.INITIAL_GEMS, pityCount: 0, owned: {} })
+  const newUserData = () => ({ gems: CONFIG.INITIAL_GEMS, pityCount: 0, owned: {}, sig: {}, enh: {} })
   const userRefOf = (uid) => db.collection('users').doc(uid)
 
   // ジェムを増やす(必ず、トランザクションの中で呼ぶ)。増減の記録(gem_logs)も同時に残す
@@ -82,7 +83,7 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
     const today = dayKey(t)
     const daily = data.battleDaily && data.battleDaily.day === today ? data.battleDaily.count : 0
     return {
-      gems: data.gems, pityCount: data.pityCount, owned: data.owned,
+      gems: data.gems, pityCount: data.pityCount, owned: data.owned, sig: data.sig || {}, enh: data.enh || {},
       loginBonus: { canClaim: lb.canClaim, streak: lb.streak, nextAmount: lb.nextAmount, cycle: CONFIG.LOGIN_BONUS },
       battle: { todayCount: daily, dailyLimit: CONFIG.BATTLE_REWARD_DAILY_LIMIT, rewards: CONFIG.BATTLE_REWARD },
     }
@@ -119,7 +120,13 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
       const userRef = userRefOf(req.user.uid)
       const data = await db.runTransaction(async (t) => {
         const snap = await t.get(userRef)
-        if (snap.exists) return snap.data()
+        if (snap.exists) {
+          const d = snap.data()
+          const n = normalizeOwned(d)
+          if (!n.changed) return d
+          t.set(userRef, { owned: n.owned, sig: n.sig, enh: n.enh, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+          return { ...d, owned: n.owned, sig: n.sig, enh: n.enh }
+        }
         t.set(userRef, { ...newUserData(), createdAt: FieldValue.serverTimestamp() })
         return newUserData()
       })
@@ -144,18 +151,38 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
         const cost = CONFIG.COST_PER_PULL * times
         if (data.gems < cost) throw new HttpError(400, '通貨が足りません')
         const { pulls, newCount } = drawGacha(times, data.pityCount || 0)
-        const owned = { ...(data.owned || {}) }
-        for (const pull of pulls) for (const c of pull.characters) owned[c.id] = (owned[c.id] || 0) + 1
+        const n = normalizeOwned(data)
+        const { owned, sig, gained } = applyPulls(n, pulls)
         const gems = data.gems - cost
-        t.set(userRef, { gems, pityCount: newCount, owned, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+        t.set(userRef, { gems, pityCount: newCount, owned, sig, enh: n.enh, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
         t.set(logRef, {
           uid, times, cost,
           pulls: pulls.map((p) => ({ pity: p.pity, ids: p.characters.map((c) => c.id) })),
           createdAt: FieldValue.serverTimestamp(),
         })
-        return { pulls, gems, pityCount: newCount }
+        return { pulls: pulls.map((p, i) => ({ ...p, gained: gained[i] })), gems, pityCount: newCount }
       })
       res.json(result)
+    } catch (e) {
+      handleError(res, e)
+    }
+  })
+
+  // 署名でキャラクターを強化する(署名100個で1回・全ステータス+10)
+  app.post('/api/enhance', requireAuth, async (req, res) => {
+    try {
+      const id = String(req.body?.id || '')
+      const userRef = userRefOf(req.user.uid)
+      const out = await db.runTransaction(async (t) => {
+        const snap = await t.get(userRef)
+        if (!snap.exists) throw new HttpError(400, 'キャラクターを持っていません')
+        const n = normalizeOwned(snap.data())
+        const r = enhanceOnce(n, id)
+        if (!r) throw new HttpError(400, '強化できません(署名が足りないか、キャラクターを持っていません)')
+        t.set(userRef, { owned: n.owned, sig: r.sig, enh: r.enh, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+        return { sig: r.sig, enh: r.enh }
+      })
+      res.json(out)
     } catch (e) {
       handleError(res, e)
     }

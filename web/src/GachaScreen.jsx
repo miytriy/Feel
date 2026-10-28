@@ -228,15 +228,15 @@ function buildShow(results, ownedBefore) {
     items: pull.characters.map((c) => {
       const isNew = !ownedBefore[c.id] && !seen.has(c.id)
       seen.add(c.id)
-      return { ...c, isNew }
+      return { ...c, isNew, isSig: !isNew } // 持っているキャラが出たら、キャラの代わりに「〇〇の署名」
     }),
   }))
   const map = new Map()
   for (const pull of pulls) for (const c of pull.items) {
-    const e = map.get(c.id) || { ...c, count: 0, isNew: false }
+    const key = c.isSig ? c.id + '|sig' : c.id
+    const e = map.get(key) || { ...c, name: c.isSig ? `${c.name}の署名` : c.name, count: 0 }
     e.count += 1
-    e.isNew = e.isNew || c.isNew
-    map.set(c.id, e)
+    map.set(key, e)
   }
   const list = [...map.values()].sort((a, b) => (RANK[a.rarity] ?? 9) - (RANK[b.rarity] ?? 9) || b.count - a.count || a.name.localeCompare(b.name, 'ja'))
   return { pulls, list }
@@ -410,9 +410,10 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
                 <Silhouette seed={c.id + i} />
                 <div className="art">
                   <Emblem seed={c.id} />
-                  <span className="nm">{c.name}</span>
+                  <span className="nm">{c.isSig ? `${c.name}の署名` : c.name}</span>
                 </div>
                 {c.isNew && <span className="new">NEW</span>}
+                {c.isSig && <span className="new" style={{ background: '#5b6b8c' }}>署名</span>}
                 <i className="rl" />
                 {(c.rarity === 'legend' || c.rarity === 'gold') && <i className="gs-flash" />}
               </div>

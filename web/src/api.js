@@ -44,6 +44,8 @@ export const fetchMe = () => request('/api/me')
 export const drawGacha = (times) =>
   request('/api/gacha', { method: 'POST', body: JSON.stringify({ times }) })
 
+export const enhanceChar = (id) => request('/api/enhance', { method: 'POST', body: JSON.stringify({ id }) })
+
 // ---- 通貨の配布 ----
 export const claimLoginBonus = () => request('/api/login-bonus/claim', { method: 'POST', body: '{}' })
 export const startBattleTicket = (level) => request('/api/battle/start', { method: 'POST', body: JSON.stringify({ level }) })

@@ -179,6 +179,10 @@ const CSS = `
 .jp-yel .relic { position: absolute; left: 30px; right: 0; top: 408px; padding: 12px 18px; background: rgba(0,0,0,0.78); color: #fff; font-size: 22px; line-height: 1.4; }
 .jp-yel .relic small { display: block; color: ${C.player}; font-size: 19px; font-weight: 700; letter-spacing: 0.08em; }
 .jp-yel .relic b { font-size: 28px; }
+.jp-yel .sigbox { position: absolute; left: 30px; right: 0; top: 690px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: rgba(0,0,0,0.78); color: #fff; padding: 8px 14px; font-size: 22px; }
+.jp-yel .sigbox > div { flex: 1; } .jp-yel .sigbox b { font-family: ${DISPLAY}; font-size: 30px; margin: 0 8px; } .jp-yel .sigbox small { font-size: 17px; color: #c9c9ce; }
+.jp-yel .sigbox button { border: 0; padding: 8px 14px; background: ${C.player}; color: #1d1d20; font-size: 20px; font-weight: 700; cursor: pointer; }
+.jp-yel .sigbox button:disabled { opacity: 0.4; cursor: default; } .jp-yel .sigbox .m { width: 100%; }
 .jp-yel .tiles { position: absolute; left: 30px; right: 0; top: 590px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .jp-yel .tiles div { background: rgba(0,0,0,0.78); color: #fff; text-align: center; padding: 10px 0; }
 .jp-yel .tiles small { display: block; font-size: 18px; color: #c9c9ce; } .jp-yel .tiles b { font-family: ${DISPLAY}; font-size: 36px; }
@@ -269,7 +273,7 @@ const CSS = `
 .jp.p .jp-yel .shape { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
 .jp.p .jp-yel .big { left: 26px; top: 8px; font-size: 96px; } .jp.p .jp-yel .cap { left: 30px; top: 116px; font-size: 20px; }
 .jp.p .jp-yel .rar { left: 20px; right: 20px; top: 160px; } .jp.p .jp-yel .relic { left: 20px; right: 20px; top: 252px; padding: 10px 14px; font-size: 20px; }
-.jp.p .jp-yel .relic b { font-size: 24px; } .jp.p .jp-yel .tiles { left: 20px; right: 20px; top: 430px; } .jp.p .jp-yel .tiles b { font-size: 30px; }
+.jp.p .jp-yel .sigbox { left: 20px; right: 20px; top: 530px; } .jp.p .jp-yel .relic b { font-size: 24px; } .jp.p .jp-yel .tiles { left: 20px; right: 20px; top: 430px; } .jp.p .jp-yel .tiles b { font-size: 30px; }
 .jp.p .jp-pane { left: 64px; right: 64px; top: 1440px; width: auto; max-height: 840px; }
 .jp.p .jp-grid { padding: 160px 64px 60px; } .jp.p .jp-gc { grid-template-columns: repeat(4, 1fr); }
 @media (prefers-reduced-motion: reduce) { .jp, .jp * { animation: none !important; transition: none !important; } }
@@ -301,7 +305,7 @@ function Tiles({ cols, rows, close }) {
   )
 }
 
-export default function JinjiScreen({ ownedMap = {}, onExit }) {
+export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, onEnhance = null, onExit }) {
   useArtStatus() // 絵が読み込めないと分かったら、描き直す
   const desktop = useIsDesktop()
   const L = desktop ? LAYOUT.d : LAYOUT.p
@@ -386,6 +390,15 @@ export default function JinjiScreen({ ownedMap = {}, onExit }) {
 
   const c = sel
   const count = c ? ownedMap[c.id] || 0 : 0
+  const sigN = c ? sigMap[c.id] || 0 : 0
+  const enhLv = c ? enhMap[c.id] || 0 : 0
+  const [enhBusy, setEnhBusy] = useState(false)
+  const [enhMsg, setEnhMsg] = useState('')
+  const doEnhance = async () => {
+    if (!c || enhBusy || !onEnhance) return
+    setEnhBusy(true); setEnhMsg('')
+    try { await onEnhance(c.id) } catch (e) { setEnhMsg(e.message || '強化できませんでした') } finally { setEnhBusy(false) }
+  }
   const tabDef = TABS.find((t) => t.k === tab) || TABS[0]
   const dark = tab === 'rl'
   const relic = c && c.relic ? RELICS[c.relic] : null
@@ -443,14 +456,19 @@ export default function JinjiScreen({ ownedMap = {}, onExit }) {
   const yel = c && (
     <div className={`jp-yel${tabGone ? ' gone' : ''}`} style={vars}>
       <div className="shape" />
-      <div className="big"><small>×</small>{count}</div>
-      <div className="cap">所持数 / OWNED</div>
+      <div className="big"><small>×</small>{sigN}</div>
+      <div className="cap">{c.name}の署名 / SIGNATURE</div>
       <div className="rar"><span>{RARITY[c.rarity]?.label || c.rarity}</span><span className="pp">{'◆'.repeat(PIPS[c.rarity] || 0)}</span></div>
       <div className="relic">{relic ? <><small>遺物</small><b>{c.relic}</b><div>{relic.desc}</div></> : <><small>遺物</small><b>なし</b></>}</div>
       <div className="tiles">
         <div><small>パッシブ</small><b>{(c.passives || []).length}</b></div>
         <div><small>特性</small><b>{(c.traits || []).length + (c.accelerate ? 1 : 0)}</b></div>
         <div><small>関連</small><b>{relCount}</b></div>
+      </div>
+      <div className="sigbox">
+        <div>強化 <b>Lv.{enhLv}</b><small>全ステータス +{enhLv * 10}</small></div>
+        <button type="button" data-testid="jp-enhance" disabled={enhBusy || !onEnhance || sigN < 100} onClick={doEnhance}>強化する(署名100)</button>
+        {(enhMsg || sigN < 100) && <small className="m">{enhMsg || `あと${100 - sigN}個`}</small>}
       </div>
     </div>
   )
@@ -535,7 +553,7 @@ export default function JinjiScreen({ ownedMap = {}, onExit }) {
           {list.map((d, i) => (
             <button key={d.id} type="button" data-id={d.id} data-testid={`jp-av-${d.id}`} className={`jp-av${c && d.id === c.id ? ' on' : ''}`} style={{ '--i': Math.min(i, 8), '--rc': rarityColor(d), '--rbg': rarityBg(d), '--tc': tone(d) }} onClick={() => pick(d.id)} aria-label={d.name}>
               <span className="ring"><Emblem seed={d.id} zoom={2.2} /></span>
-              {ownedMap[d.id] > 1 && <span className="tag">×{ownedMap[d.id]}</span>}
+              {enhMap[d.id] > 0 && <span className="tag">Lv.{enhMap[d.id]}</span>}
             </button>
           ))}
         </div>
@@ -580,7 +598,7 @@ export default function JinjiScreen({ ownedMap = {}, onExit }) {
             <div className="jp-gc">
               {owned.map((d, i) => (
                 <button key={d.id} type="button" className={`jp-gcard${c && d.id === c.id ? ' on' : ''}`} style={{ '--i': i, '--rc': rarityColor(d), '--rbg': rarityBg(d), '--tc': tone(d) }} onClick={() => { pick(d.id); closeGrid() }}>
-                  <div className="pl"><Emblem seed={d.id} />{ownedMap[d.id] > 1 && <span className="ct">×{ownedMap[d.id]}</span>}</div>
+                  <div className="pl"><Emblem seed={d.id} />{enhMap[d.id] > 0 && <span className="ct">Lv.{enhMap[d.id]}</span>}</div>
                   <span>{d.name}</span>
                 </button>
               ))}

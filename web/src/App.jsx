@@ -3,7 +3,7 @@ import RulesScreen from './RulesScreen.jsx'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import { auth, googleProvider } from './firebase.js'
 import {
-  gateStatus, gateEnter, gateCheck, gateMe, getGateToken, setGateToken, fetchMe, fetchCareer, recordMatch, clearCareer, drawGacha, claimLoginBonus, startBattleTicket, finishBattle, fetchGifts, claimGift, redeemCode, markMailRead, setMailStar, deleteMail, purgeReadMail,
+  gateStatus, gateEnter, gateCheck, gateMe, getGateToken, setGateToken, fetchMe, enhanceChar, fetchCareer, recordMatch, clearCareer, drawGacha, claimLoginBonus, startBattleTicket, finishBattle, fetchGifts, claimGift, redeemCode, markMailRead, setMailStar, deleteMail, purgeReadMail,
 } from './api.js'
 import BattleScreen from './BattleScreen.jsx'
 import CareerScreen from './CareerScreen.jsx'
@@ -26,6 +26,7 @@ import { ScreenHeader, PillTabs, Chip, LoadingScreen } from './chrome.jsx'
 import { IconGem } from './icons.jsx'
 import { loadSettings, saveSettings, cpuDelayOf } from './settings.js'
 import { ALL_CHARACTERS } from './battle/characters/index.js'
+import { setEnhanceLevels } from './enhance.js'
 import { ALL_SPELLS } from './battle/spells/index.js'
 import { loadParties, saveParty, getActiveParty, setActiveParty } from './battle/parties.js'
 import ErrorBoundary from './ErrorBoundary.jsx'
@@ -60,6 +61,7 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [me, setMe] = useState(null)
+  setEnhanceLevels(me && me.enh) // 署名の強化レベル(戦闘に入るとき、ステータスに反映される)
   const [busy, setBusy] = useState(false)
   const [results, setResults] = useState(null)
   const [error, setError] = useState('')
@@ -76,7 +78,7 @@ export default function App() {
   const [unlockLv, setUnlockLv] = useState(unlockLevel) // 設定でマスターパスワードを打つと、ログインが必要な機能を、ログインなしで使える(1=人事・編成・足跡 / 2=最高権限: ガチャ・メールも体験用)
   // 最高権限(レベル2)でログインしていないときだけ、ガチャとメールを、この端末の中だけの仮のデータで動かす(ページを読み込み直すと、最初から)
   const sandbox = useMemo(() => (!user && unlockLv >= 2 ? createSandbox({ characters: ALL_CHARACTERS, cost: COST }) : null), [!user && unlockLv >= 2]) // eslint-disable-line react-hooks/exhaustive-deps
-  const api = sandbox || { fetchMe, fetchGifts, drawGacha, claimGift, markMailRead, setMailStar, deleteMail, purgeReadMail, claimLoginBonus, redeemCode }
+  const api = sandbox || { fetchMe, enhanceChar, fetchGifts, drawGacha, claimGift, markMailRead, setMailStar, deleteMail, purgeReadMail, claimLoginBonus, redeemCode }
   const [parties, setParties] = useState(null) // パーティー(最大5つ。ログイン中だけ)
   const [activeIdx, setActiveIdx] = useState(null) // 最後に選んだパーティーの番号
   const desktop = useIsDesktop() // 画面の幅が広い(PC)ときは、画面全体を使うレイアウトにする
@@ -389,7 +391,7 @@ export default function App() {
     if (!me && user) return <LoadingScreen />
     // ログインなしで解放しているときは、全キャラを持っているものとして見せる
     const ownedMap = user && me ? me.owned || {} : Object.fromEntries(ALL_CHARACTERS.map((c) => [c.id, 1]))
-    return <ErrorBoundary onExit={goHome}><JinjiScreen ownedMap={ownedMap} onExit={goHome} /></ErrorBoundary>
+    return <ErrorBoundary onExit={goHome}><JinjiScreen ownedMap={ownedMap} sigMap={(user && me && me.sig) || {}} enhMap={(user && me && me.enh) || {}} onEnhance={user ? async (id) => { await api.enhanceChar(id); setMe(await api.fetchMe()) } : null} onExit={goHome} /></ErrorBoundary>
   }
 
   if (current === 'party') {
