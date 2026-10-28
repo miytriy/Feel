@@ -2,6 +2,7 @@
 import express from 'express'
 import cors from 'cors'
 import { drawGacha } from './gacha.js'
+import { bannersInfo, rotationForBanner } from './banner.js'
 import { normalizeOwned, applyPulls, enhanceOnce } from './signature.js'
 import { sanitizeMatch, addMatch } from './career.js'
 import { checkPassword, checkToken, gateToken, makeFailLimiter } from './gate.js'
@@ -77,13 +78,18 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
     return gems
   }
 
+  // ピックアップの天井カウント(ローテーションが変わったら0から)
+  const pickupPityNow = (data) => {
+    const key = bannersInfo(new Date(now())).pickup.rotation
+    return data.pickupPity && data.pickupPity.rotation === key ? data.pickupPity.count : 0
+  }
   const publicMe = (data) => {
     const t = now()
     const lb = loginBonusStatus(data.loginBonus, t)
     const today = dayKey(t)
     const daily = data.battleDaily && data.battleDaily.day === today ? data.battleDaily.count : 0
     return {
-      gems: data.gems, pityCount: data.pityCount, owned: data.owned, sig: data.sig || {}, enh: data.enh || {},
+      gems: data.gems, pityCount: data.pityCount, pickupPity: pickupPityNow(data), banners: bannersInfo(new Date(now())), owned: data.owned, sig: data.sig || {}, enh: data.enh || {},
       loginBonus: { canClaim: lb.canClaim, streak: lb.streak, nextAmount: lb.nextAmount, cycle: CONFIG.LOGIN_BONUS },
       battle: { todayCount: daily, dailyLimit: CONFIG.BATTLE_REWARD_DAILY_LIMIT, rewards: CONFIG.BATTLE_REWARD },
     }
@@ -141,6 +147,9 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
     try {
       const times = Number(req.body?.times)
       if (times !== 1 && times !== 10) throw new HttpError(400, '回数が正しくありません')
+      const banner = req.body?.banner === 'pickup' ? 'pickup' : 'normal'
+      const rotation = rotationForBanner(banner, new Date(now()))
+      if (!rotation) throw new HttpError(400, 'このガチャはいま引けません(準備中です)')
       const uid = req.user.uid
       const userRef = userRefOf(uid)
       const logRef = db.collection('gacha_logs').doc()
@@ -150,17 +159,18 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
         const data = snap.exists ? snap.data() : newUserData()
         const cost = CONFIG.COST_PER_PULL * times
         if (data.gems < cost) throw new HttpError(400, '通貨が足りません')
-        const { pulls, newCount } = drawGacha(times, data.pityCount || 0)
+        const startCount = banner === 'pickup' ? pickupPityNow(data) : data.pityCount || 0
+        const { pulls, newCount } = drawGacha(times, startCount, rotation)
         const n = normalizeOwned(data)
         const { owned, sig, gained } = applyPulls(n, pulls)
         const gems = data.gems - cost
-        t.set(userRef, { gems, pityCount: newCount, owned, sig, enh: n.enh, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+        t.set(userRef, { gems, ...(banner === 'pickup' ? { pickupPity: { rotation, count: newCount } } : { pityCount: newCount }), owned, sig, enh: n.enh, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
         t.set(logRef, {
-          uid, times, cost,
+          uid, times, cost, banner, rotation,
           pulls: pulls.map((p) => ({ pity: p.pity, ids: p.characters.map((c) => c.id) })),
           createdAt: FieldValue.serverTimestamp(),
         })
-        return { pulls: pulls.map((p, i) => ({ ...p, gained: gained[i] })), gems, pityCount: newCount }
+        return { pulls: pulls.map((p, i) => ({ ...p, gained: gained[i] })), gems, pityCount: newCount, banner }
       })
       res.json(result)
     } catch (e) {

@@ -12,11 +12,19 @@ const rnd = (n) => Math.floor(Math.random() * n)
 export const SANDBOX_GEMS = 90000
 
 export function createSandbox({ characters, cost = 500, grant = SANDBOX_GEMS }) {
-  const byRarity = {}
-  for (const c of characters) {
-    if (!(c.rarity in NORMAL_RATES) || String(c.id).startsWith('test_')) continue
-    ;(byRarity[c.rarity] ||= []).push({ id: c.id, name: c.name, class: c.class, rarity: c.rarity })
+  const poolOf = (rotName) => {
+    const by = {}
+    for (const c of characters) {
+      if (!(c.rarity in NORMAL_RATES) || String(c.id).startsWith('test_') || (rotName && c.rotation !== rotName)) continue
+      ;(by[c.rarity] ||= []).push({ id: c.id, name: c.name, class: c.class, rarity: c.rarity })
+    }
+    return by
   }
+  const POOLS = { normal: poolOf('ベーシック'), pickup: poolOf('伝説の幕開け') }
+  for (const k of Object.keys(POOLS)) if (!Object.keys(POOLS[k]).length) POOLS[k] = poolOf(null) // ローテーション情報がないときは、全キャラから
+  let byRarity = POOLS.normal
+  const endsAt = () => { const d = new Date(); return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1) - 9 * 3600 * 1000).toISOString() }
+  const banners = () => ({ normal: { id: 'normal', name: '通常ガチャ', rotation: 'basic', rotationName: 'ベーシック', available: true }, pickup: { id: 'pickup', name: 'ピックアップガチャ', rotation: '1', rotationName: '伝説の幕開け', available: true, endsAt: endsAt() } })
   const pickRarity = (rates) => {
     const usable = Object.entries(rates).filter(([r]) => byRarity[r] && byRarity[r].length)
     let r = rnd(usable.reduce((a, [, w]) => a + w, 0))
@@ -27,6 +35,7 @@ export function createSandbox({ characters, cost = 500, grant = SANDBOX_GEMS }) 
 
   let gems = 0
   let pityCount = 0
+  let pickupPity = 0
   const owned = {}
   const sig = {}
   const enh = {}
@@ -41,13 +50,14 @@ export function createSandbox({ characters, cost = 500, grant = SANDBOX_GEMS }) 
 
   return {
     sandbox: true,
-    fetchMe: () => done({ gems, pityCount, owned: { ...owned }, sig: { ...sig }, enh: { ...enh }, loginBonus: { canClaim: false, streak: 0 } }),
+    fetchMe: () => done({ gems, pityCount, pickupPity, banners: banners(), owned: { ...owned }, sig: { ...sig }, enh: { ...enh }, loginBonus: { canClaim: false, streak: 0 } }),
     fetchGifts: () => done({ gifts: mail.map((g) => ({ ...g })) }),
-    drawGacha: (times) => {
+    drawGacha: (times, banner = 'normal') => {
+      byRarity = banner === 'pickup' ? POOLS.pickup : POOLS.normal
       if (times !== 1 && times !== 10) return fail('回数が正しくありません')
       const total = cost * times
       if (gems < total) return fail('通貨が足りません')
-      let count = pityCount
+      let count = banner === 'pickup' ? pickupPity : pityCount
       let pityUsed = false
       const pulls = []
       for (let i = 0; i < times; i++) {
@@ -60,7 +70,8 @@ export function createSandbox({ characters, cost = 500, grant = SANDBOX_GEMS }) 
         pulls.push({ pity: isPity, characters: chars })
       }
       gems -= total
-      pityCount = pityUsed ? 0 : count
+      if (banner === 'pickup') pickupPity = pityUsed ? 0 : count
+      else pityCount = pityUsed ? 0 : count
       for (const p of pulls) for (const c of p.characters) { if (owned[c.id]) sig[c.id] = (sig[c.id] || 0) + 1; else owned[c.id] = 1 }
       return done({ pulls, gems, pityCount })
     },

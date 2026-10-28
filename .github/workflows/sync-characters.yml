@@ -7,6 +7,7 @@ on:
     paths:
       - 'web/src/battle/characters/**'
       - 'web/src/battle/amulet/**'
+      - 'web/src/battle/rotations.js'
       - 'scripts/**'
   workflow_dispatch: # 手動で動かしたいとき(Actionsタブ → このワークフロー → Run workflow)
 
@@ -25,13 +26,13 @@ jobs:
         run: node scripts/generate-characters.mjs
       - name: 変わっていたら保存する
         run: |
-          if git diff --quiet -- server/characters.json; then
+          if git diff --quiet -- server/characters.json server/rotations.json; then
             echo "characters.json に変更はありません"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add server/characters.json
+          git add server/characters.json server/rotations.json
           git commit -m "chore: characters.json をキャラのファイルから自動更新"
           git pull --rebase origin main
           git push

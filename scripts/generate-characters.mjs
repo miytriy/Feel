@@ -23,27 +23,44 @@ const errors = []
 const map = new Map() // id -> { id, name, class, rarity }
 const fromFile = new Set()
 
-const amuletDir = path.join(charDir, '..', 'amulet') // アミュレットは、キャラとは別のフォルダ(amulet/クラス名/id.js)。ガチャの対象になるのは、キャラと同じ
-for (const [base, dir] of [charDir, amuletDir].filter((b) => fs.existsSync(b)).flatMap((b) => fs.readdirSync(b, { withFileTypes: true }).filter((d) => d.isDirectory() && d.name !== 'test').map((d) => [b, d]))) {
-  const names = fs.readdirSync(path.join(base, dir.name)).filter((x) => x.endsWith('.js')).sort()
-  for (const f of names) {
-    const rel = `${dir.name}/${f}`
+const amuletDir = path.join(charDir, '..', 'amulet') // アミュレットは、キャラとは別のフォルダ(amulet/クラス名/ローテーション/id.js)。ガチャの対象になるのは、キャラと同じ
+const { ROTATIONS } = await import(pathToFileURL(path.join(charDir, '..', 'rotations.js')).href)
+const rotKeyOfName = (name) => Object.keys(ROTATIONS).find((k) => ROTATIONS[k] === name) ?? null
+
+// フォルダの中の .js を、すべて集める(クラス/ローテーション/ファイル.js)。tokens と test は、ガチャに入れない
+function* walk(dir, rel = []) {
+  for (const d of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    if (d.isDirectory()) {
+      if (d.name === 'tokens' || (rel.length === 0 && d.name === 'test')) continue
+      yield* walk(path.join(dir, d.name), [...rel, d.name])
+    } else if (d.name.endsWith('.js') && rel.length > 0 && !d.name.startsWith('_') && d.name !== 'index.js' && d.name !== 'validate.js') {
+      yield { file: path.join(dir, d.name), rel: [...rel, d.name] }
+    }
+  }
+}
+
+for (const base of [charDir, amuletDir].filter((b) => fs.existsSync(b))) {
+  for (const { file, rel: parts } of walk(base)) {
+    const rel = parts.join('/')
     let mod
     try {
-      mod = await import(pathToFileURL(path.join(base, dir.name, f)).href)
+      mod = await import(pathToFileURL(file).href)
     } catch (e) {
       errors.push(`${rel}: 読み込めません(${e.message})`)
       continue
     }
     const defs = Array.isArray(mod.default) ? mod.default : [mod.default]
-    const fileId = path.basename(f).replace(/\.js$/, '')
+    const fileId = path.basename(file).replace(/\.js$/, '')
+    const folderRot = parts.length >= 3 && Object.prototype.hasOwnProperty.call(ROTATIONS, parts[1]) ? parts[1] : null
     for (const def of defs) {
       const errs = validateCharacter(def, { expectedId: defs.length === 1 ? fileId : undefined })
       if (errs.length) { errors.push(`${rel}: ${errs.join(' / ')}`); continue }
       if (fromFile.has(def.id)) { errors.push(`${rel}: id「${def.id}」が重複しています`); continue }
       if (String(def.type || '').startsWith('トークン')) continue // トークンはガチャに入れない
+      const rotation = (def.rotation ? rotKeyOfName(def.rotation) : null) ?? folderRot
+      if (!rotation) { errors.push(`${rel}: ローテーションが決まりません(フォルダを クラス/ローテーション/ に置いてください)`); continue }
       fromFile.add(def.id)
-      map.set(def.id, { id: def.id, name: def.name, class: def.class, rarity: def.rarity })
+      map.set(def.id, { id: def.id, name: def.name, class: def.class, rarity: def.rarity, rotation })
     }
   }
 }
@@ -63,7 +80,7 @@ for (const x of Array.isArray(extras) ? extras : []) {
     continue
   }
   if (fromFile.has(x.id)) console.log(`メモ: ${x.id} はキャラのファイルができたので、gacha-extra.json の分は使いません(消して大丈夫です)`)
-  else map.set(x.id, { id: x.id, name: x.name, class: x.class, rarity: x.rarity })
+  else map.set(x.id, { id: x.id, name: x.name, class: x.class, rarity: x.rarity, rotation: x.rotation || 'basic' })
 }
 
 if (errors.length) {
@@ -76,8 +93,9 @@ const order = ['neutral', 'elf', 'royal']
 const rank = (id) => { const i = order.indexOf(id.split('_')[0]); return i < 0 ? order.length : i }
 const list = [...map.values()].sort((a, b) => rank(a.id) - rank(b.id) || a.id.localeCompare(b.id))
 
-const line = (c) => `  { "id": ${JSON.stringify(c.id)}, "name": ${JSON.stringify(c.name)}, "class": ${JSON.stringify(c.class)}, "rarity": ${JSON.stringify(c.rarity)} }`
+const line = (c) => `  { "id": ${JSON.stringify(c.id)}, "name": ${JSON.stringify(c.name)}, "class": ${JSON.stringify(c.class)}, "rarity": ${JSON.stringify(c.rarity)}, "rotation": ${JSON.stringify(c.rotation)} }`
 const text = '[\n' + list.map(line).join(',\n') + '\n]\n'
 JSON.parse(text) // 念のため、書き出す前にJSONとして正しいか確認
 fs.writeFileSync(outFile, text)
+fs.writeFileSync(path.join(root, 'server/rotations.json'), JSON.stringify(ROTATIONS, null, 2) + '\n') // ガチャのバナー名用
 console.log(`server/characters.json を作りました(${list.length}体)`)

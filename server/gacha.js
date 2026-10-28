@@ -17,16 +17,18 @@ if (sum(NORMAL_RATES) !== 100000 || sum(GUARANTEED_RATES) !== 100000) {
   throw new Error('排出率の合計が100%ではありません')
 }
 
-const byRarity = {}
+const rotationNames = JSON.parse(readFileSync(new URL('./rotations.json', import.meta.url), 'utf-8'))
+export const ROTATION_NAMES = rotationNames
+
+// ローテーションごとの、レアリティ別の排出リスト。通常ガチャ = basic / ピックアップ = いまのローテーション
+const RARITY_ORDER = ['legend', 'gold', 'silver', 'bronze']
+const pools = {}
 for (const c of characters) {
-  if (!byRarity[c.rarity]) byRarity[c.rarity] = []
-  byRarity[c.rarity].push(c)
+  const p = (pools[c.rotation || 'basic'] ||= {})
+  ;(p[c.rarity] ||= []).push(c)
 }
-for (const rarity of Object.keys(NORMAL_RATES)) {
-  if (!byRarity[rarity] || byRarity[rarity].length === 0) {
-    throw new Error(`${rarity} のキャラがいません`)
-  }
-}
+export const poolSize = (key) => Object.values(pools[key] || {}).reduce((n, l) => n + l.length, 0)
+export const hasPool = (key) => poolSize(key) > 0
 
 function pickRarity(rates) {
   let r = randomInt(sum(rates))
@@ -37,27 +39,35 @@ function pickRarity(rates) {
   throw new Error('抽選に失敗しました')
 }
 
-function pickCharacter(rarity) {
-  const list = byRarity[rarity]
-  return list[randomInt(list.length)]
+// そのレアリティがプールにないときは、1つ下のレアリティ → それでもなければ上のレアリティから出す
+function pickCharacter(pool, rarity) {
+  const start = RARITY_ORDER.indexOf(rarity)
+  const order = [...RARITY_ORDER.slice(start), ...RARITY_ORDER.slice(0, start).reverse()]
+  for (const r of order) {
+    const list = pool[r]
+    if (list && list.length) return list[randomInt(list.length)]
+  }
+  throw new Error('排出するキャラがいません')
 }
 
 // 1回ガチャ(通常は8体、天井の回は9体)
-function drawOnePull(isPity) {
+function drawOnePull(pool, isPity) {
   const chars = []
   const normalRates = isPity ? GUARANTEED_RATES : NORMAL_RATES
   for (let i = 0; i < 7; i++) {
-    chars.push(pickCharacter(pickRarity(normalRates)))
+    chars.push(pickCharacter(pool, pickRarity(normalRates)))
   }
-  chars.push(pickCharacter(pickRarity(GUARANTEED_RATES)))
+  chars.push(pickCharacter(pool, pickRarity(GUARANTEED_RATES)))
   if (isPity) {
-    chars.push(pickCharacter('legend'))
+    chars.push(pickCharacter(pool, 'legend'))
   }
   return { pity: isPity, characters: chars }
 }
 
 // times回ガチャを引く(1回 または 10連)
-export function drawGacha(times, startCount) {
+export function drawGacha(times, startCount, rotation = 'basic') {
+  const pool = pools[rotation]
+  if (!pool) throw new Error('このガチャはまだ準備中です')
   let count = startCount
   let pityUsed = false
   const pulls = []
@@ -70,7 +80,7 @@ export function drawGacha(times, startCount) {
         pityUsed = true
       }
     }
-    pulls.push(drawOnePull(isPity))
+    pulls.push(drawOnePull(pool, isPity))
   }
   return { pulls, newCount: pityUsed ? 0 : count }
 }

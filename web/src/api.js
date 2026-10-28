@@ -41,8 +41,8 @@ async function request(path, options = {}) {
 
 export const fetchMe = () => request('/api/me')
 
-export const drawGacha = (times) =>
-  request('/api/gacha', { method: 'POST', body: JSON.stringify({ times }) })
+export const drawGacha = (times, banner = 'normal') =>
+  request('/api/gacha', { method: 'POST', body: JSON.stringify({ times, banner }) })
 
 export const enhanceChar = (id) => request('/api/enhance', { method: 'POST', body: JSON.stringify({ id }) })
 

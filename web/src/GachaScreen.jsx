@@ -51,6 +51,11 @@ const CSS = `
 
 .gc-main { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 14px 4vw calc(16px + env(safe-area-inset-bottom)) 24px; }
 .gc-info { max-width: 460px; animation: gc-left 0.5s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.gc-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.gc-tabs button { padding: 6px 16px; border: 1px solid ${C.line}; background: transparent; color: ${C.mute}; font-weight: 700; font-size: 14px; cursor: pointer; }
+.gc-tabs button.on { background: ${C.player}; color: #111; border-color: ${C.player}; }
+.gc-tabs button:disabled { opacity: 0.5; cursor: default; }
+.gc-rot { margin-top: 10px; font-size: 15px; font-weight: 700; color: #fff; } .gc-rot small { display: block; margin-top: 2px; font-size: 12px; color: ${C.mute}; font-weight: 400; }
 .gc-tag { display: inline-block; padding: 2px 10px; background: ${C.player}; color: #111; font-family: ${DISPLAY}; font-weight: 700; font-size: 12px; letter-spacing: 0.12em; }
 .gc-name { margin: 8px 0 0; font-family: ${DISPLAY}; font-weight: 700; font-size: clamp(34px, 6vw, 64px); letter-spacing: 0.04em; line-height: 1.1; border-bottom: 4px solid ${C.player}; display: inline-block; padding-right: 24px; }
 .gc-lines { margin: 14px 0 0; padding: 0; list-style: none; font-size: 14px; line-height: 1.9; color: #d6d6dc; }
@@ -249,6 +254,7 @@ const revealAt = (items) => {
 
 export default function GachaScreen({ me, busy, error, results, cost, pityCount, onPull, onCloseResults, onExit }) {
   const [dialog, setDialog] = useState(null) // 'rates' / null
+  const [banner, setBanner] = useState('normal') // 'normal'(通常ガチャ) / 'pickup'(ピックアップガチャ)
   const [leaving, setLeaving] = useState(false)
   const [confirm, setConfirm] = useState(0) // 確認ダイアログ(回数。0=出していない)
   const [phase, setPhase] = useState(null) // null / 'wait'(通信中) / 'strips'(帯の演出) / 'list'(報酬一覧)
@@ -276,7 +282,7 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
     setConfirm(0)
     setPhase('wait')
     setPi(0); setFast(false); setDone(false)
-    onPull(times)
+    onPull(times, banner)
   }
   useEffect(() => {
     if (phase !== 'wait') return
@@ -312,10 +318,22 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
   }, [phase]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const gems = me ? me.gems : 0
-  const have = me ? me.pityCount || 0 : 0
+  const bn = me && me.banners ? me.banners : null
+  const isPickup = banner === 'pickup'
+  const pickupOk = !!(bn && bn.pickup && bn.pickup.available)
+  const bName = isPickup ? 'ピックアップガチャ' : '通常ガチャ'
+  const bRot = bn ? (isPickup ? bn.pickup.rotationName : bn.normal.rotationName) : null
+  const have = me ? (isPickup ? me.pickupPity || 0 : me.pityCount || 0) : 0
+  const endText = (() => {
+    if (!isPickup || !bn || !bn.pickup.endsAt) return ''
+    const ms = new Date(bn.pickup.endsAt).getTime() - Date.now()
+    if (!(ms > 0)) return ''
+    const d = Math.floor(ms / 86400000); const h = Math.floor((ms % 86400000) / 3600000)
+    return d > 0 ? `あと${d}日${h}時間で切り替わり` : `あと${h}時間で切り替わり`
+  })()
   const left = Math.max(0, pityCount - have)
-  const can1 = !busy && !!me && gems >= cost && !phase
-  const can10 = !busy && !!me && gems >= cost * 10 && !phase
+  const can1 = !busy && !!me && gems >= cost && !phase && (!isPickup || pickupOk)
+  const can10 = !busy && !!me && gems >= cost * 10 && !phase && (!isPickup || pickupOk)
 
   return (
     <div className={`gc theme-dark${leaving ? ' leaving' : ''}`} data-testid="gacha">
@@ -328,12 +346,19 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
       </div>
       <div className="gc-main">
         <div className="gc-info">
-          <span className="gc-tag">常設</span>
-          <h2 className="gc-name">通常ガチャ</h2>
+          <div className="gc-tabs" role="tablist">
+            {[['normal', '通常'], ['pickup', 'ピックアップ']].map(([k, label]) => (
+              <button key={k} type="button" role="tab" aria-selected={banner === k} data-testid={`gc-tab-${k}`} className={banner === k ? 'on' : ''} disabled={!!phase} onClick={() => setBanner(k)}>{label}</button>
+            ))}
+          </div>
+          <span className="gc-tag">{isPickup ? '期間限定' : '常設'}</span>
+          <h2 className="gc-name">{bName}</h2>
+          {bRot && <div className="gc-rot">{isPickup ? 'ピックアップ' : '排出'}：{bRot}{endText && <small>{endText}</small>}</div>}
+          {isPickup && me && !pickupOk && <div className="gc-rot" style={{ color: C.warn }}>このピックアップは準備中です</div>}
           <ul className="gc-lines">
             <li>1回で <em>8体</em> のキャラクターが出ます</li>
             <li>8体のうち1体は、<em>シルバー以上</em> 確定</li>
-            <li><em>{pityCount}回</em> 以内に、<em>レジェンド</em> 確定(天井)</li>
+            <li><em>{pityCount}回</em> 以内に、<em>レジェンド</em> 確定(天井){isPickup && <small style={{ display: 'block', color: C.mute, lineHeight: 1.4 }}>(ピックアップの天井は、ローテーションが変わると0に戻ります)</small>}</li>
           </ul>
           <div className="gc-bar" aria-label="天井まで">
             <small><span>天井まで</span><span>あと {left} 回</span></small>
@@ -383,7 +408,7 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
       {confirm > 0 && (
         <div className="gk" onClick={() => setConfirm(0)}>
           <div className="gk-band" role="dialog" aria-label="ガチャの確認" onClick={(e) => e.stopPropagation()}>
-            <div className="gk-msg">「通常ガチャ」 ジェム×{cost * confirm} を消費して、{confirm}回ガチャをしますか?</div>
+            <div className="gk-msg">「{bName}」 ジェム×{cost * confirm} を消費して、{confirm}回ガチャをしますか?</div>
             <div className="gk-cost"><span><IconGem /></span><small>所持 <b>{gems}</b> → 残り <b>{Math.max(0, gems - cost * confirm)}</b></small></div>
             <div className="gk-btns">
               <button type="button" className="gk-btn" onClick={() => setConfirm(0)}>キャンセル<IconClose /></button>

@@ -200,11 +200,11 @@ export default function App() {
     await signOut(auth)
   }
 
-  const handleGacha = async (times) => {
+  const handleGacha = async (times, banner) => {
     setBusy(true)
     setError('')
     try {
-      const data = await api.drawGacha(times)
+      const data = await api.drawGacha(times, banner)
       setResults(data.pulls)
       setMe(await api.fetchMe())
     } catch (e) {
