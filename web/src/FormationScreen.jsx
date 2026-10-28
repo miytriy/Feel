@@ -8,6 +8,7 @@ import { MAX_PARTIES, partyToSlots, partyToSpells, partyCount } from './battle/p
 import { RARITY } from './CodexScreen.jsx'
 import { CLASS_ORDER } from './battle/characters/validate.js'
 import { StatIcon } from './icons.jsx'
+import { CLASS_TRAITS, classTraitOf } from './battle/engine.js'
 import { artOf, ArtImg, useArtStatus } from './charArt.jsx'
 
 // 編成画面。参考: エンドフィールドの「編成」
@@ -119,6 +120,7 @@ const CSS = `
 
 /* 右下: ボタンと、状態の表示 */
 .fm-status { position: absolute; right: 56px; bottom: 186px; z-index: 12; width: 960px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; }
+.fm-status > .fm-trait { border-right-color: ${C.ok}; color: ${C.ok}; }
 .fm-status > div { padding: 6px 18px; background: rgba(0,0,0,0.7); border-right: 5px solid ${C.warn}; font-size: 24px; font-weight: 700; color: ${C.warn}; }
 .fm-btns { position: absolute; right: 56px; bottom: 74px; z-index: 12; display: flex; gap: 16px; }
 .fm-btn { display: inline-flex; align-items: center; gap: 14px; min-width: 300px; height: 88px; padding: 0 0 0 30px; border: 0; background: #f2f2f3; color: #111; font-size: 30px; font-weight: 700; cursor: pointer; clip-path: polygon(24px 0, 100% 0, 100% 100%, 0 100%, 0 24px); transition: transform 0.15s, background 0.15s; }
@@ -382,6 +384,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
   const spellIds = JSON.stringify(spellSet.map((sp) => sp.id))
   const dirty = ids !== savedIds || spellIds !== savedSpellIds
   const filled = slots.filter(Boolean)
+  const traitCls = classTraitOf(filled)
   const checkChars = validateFormation(slots)
   const checkSpells = validateSpellSet(spellSet, filled)
   const check = checkChars.ok ? checkSpells : checkChars
@@ -668,6 +671,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
         )}
 
         <div className="fm-status">
+          {traitCls && <div className="fm-trait">クラス特性発動中（{traitCls}）: {CLASS_TRAITS[traitCls].name}</div>}
           {dirty && <div>● 未保存の変更があります</div>}
           {!check.ok && <div>{check.reason}</div>}
           {message && <div style={savedMsg ? { borderRightColor: C.ok, color: C.ok } : undefined}>{message}</div>}
