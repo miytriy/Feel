@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { addEvents, buildMatch, newStats } from './career.js'
 import { createBattle, applyAction, getActiveUnit, legalActions, getUnit, gaugeOf, calcDamage, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS, SPELL_LEVEL } from './battle/ai.js'
@@ -43,9 +43,9 @@ function buildTimeline(state, count = 12) {
 
 function ActionBar({ state, big = false }) {
   const items = buildTimeline(state, big ? 18 : 12)
-  const W = big ? 84 : 54 // 1つ分の幅
-  const H = big ? 50 : 38
-  const F = big ? 12 : 10
+  const W = big ? 100 : 72 // 1つ分の幅
+  const H = big ? 58 : 50
+  const F = big ? 13 : 11
   return (
     <div style={{ display: 'flex', gap: big ? 6 : 4, overflowX: 'auto', padding: '6px 2px', alignItems: 'stretch' }}>
       {items.map((it, i) =>
@@ -90,10 +90,10 @@ function ActionBar({ state, big = false }) {
               color: it.accel ? TEAM_COLOR[it.unit.team] : it.unit.team === 'A' ? C.onAccent : '#fff',
               background: it.accel ? C.card : TEAM_COLOR[it.unit.team],
               border: i === 0 ? `2px solid ${C.active}` : it.accel ? `2px dashed ${TEAM_COLOR[it.unit.team]}` : '2px solid transparent',
-              fontWeight: i === 0 ? 700 : 400,
+              fontWeight: i === 0 ? 700 : 400, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
             }}
           >
-            {it.accel ? '⚡' : ''}{it.unit.name}
+            {it.accel ? '⚡' : ''}{it.unit.team === 'A' ? '' : '敵 '}{it.unit.name}
           </div>
         )
       )}
@@ -186,27 +186,30 @@ const tierOf = (g) => (g >= 15 ? '【解放奥義】' : g >= 10 ? '【奥義】'
 // チームの資源(MP・EP・信仰値・連携・奥義ゲージ)と、置かれているクレスト
 function TeamStatus({ state, team, big = false }) {
   const crests = state.crests[team]
+  const chips = [
+    ['MP', `${state.mp[team]}/${state.mpMax[team]}`, true],
+    ['EP', state.ep[team], true],
+    ['信仰', state.faith[team], state.faith[team] > 0],
+    ['スペルブースト', state.boost?.[team] ?? 0, (state.boost?.[team] ?? 0) > 0],
+    ['土の印', state.earth?.[team] ?? 0, (state.earth?.[team] ?? 0) > 0],
+    ['墓場', state.graveyard[team], state.graveyard[team] > 0],
+    ['連携', state.link[team], state.link[team] > 0],
+    ['奥義', `${gaugeOf(state, team)}${tierOf(gaugeOf(state, team))}`, true],
+  ]
+  const col = TEAM_COLOR[team]
   return (
-    <div style={{ fontSize: big ? 13 : 11, marginTop: 3, color: TEAM_COLOR[team], lineHeight: 1.5 }}>
-      <b>{team === 'A' ? '自分' : '相手'}</b>
-      <span> MP {state.mp[team]}/{state.mpMax[team]}</span>
-      <span> ・ EP {state.ep[team]}</span>
-      <span> ・ 信仰 {state.faith[team]}</span>
-      {(state.boost?.[team] ?? 0) > 0 && <span> ・ スペルブースト {state.boost[team]}</span>}
-      {(state.earth?.[team] ?? 0) > 0 && <span> ・ 土の印 {state.earth[team]}</span>}
-      <span> ・ 墓場 {state.graveyard[team]}</span>
-      <span> ・ 連携 {state.link[team]}</span>
-      <span> ・ 奥義ゲージ {gaugeOf(state, team)}{tierOf(gaugeOf(state, team))}</span>
-      {crests.length > 0 && (
-        <span>
-          {' ・ クレスト '}
-          {crests.map((c) => (
-            <span key={c.name} title={c.desc} style={{ marginRight: 4, padding: '0 4px', borderRadius: 3, background: C.softWarn, color: C.active }}>
-              {c.name}{c.countdown != null ? `(${c.countdown})` : ''}
-            </span>
-          ))}
+    <div style={{ fontSize: big ? 13 : 11, marginTop: 4, lineHeight: 1.4, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+      <b style={{ color: col, marginRight: 2 }}>{team === 'A' ? '自分' : '相手'}</b>
+      {chips.filter((c) => c[2]).map(([k, v]) => (
+        <span key={k} style={{ padding: big ? '2px 8px' : '1px 6px', borderRadius: 999, border: `1px solid ${col}`, color: C.ink, background: alpha(col, 14), whiteSpace: 'nowrap' }}>
+          <span style={{ color: col, fontWeight: 700 }}>{k}</span> {v}
         </span>
-      )}
+      ))}
+      {crests.map((c) => (
+        <span key={c.name} title={c.desc} style={{ padding: big ? '2px 8px' : '1px 6px', borderRadius: 999, background: C.softWarn, color: C.active, whiteSpace: 'nowrap' }}>
+          クレスト {c.name}{c.countdown != null ? `(${c.countdown})` : ''}
+        </span>
+      ))}
     </div>
   )
 }
@@ -216,6 +219,48 @@ function Row({ title, color, children, big = false }) {
     <div style={{ marginTop: big ? 0 : 10 }}>
       <div style={{ fontSize: big ? 13 : 11, color, fontWeight: 700, marginBottom: 4 }}>{title}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: big ? 10 : 4 }}>{children}</div>
+    </div>
+  )
+}
+
+// 攻撃した側から、攻撃された側へ矢印を引く(再生中のダメージ・防御の瞬間だけ)
+function AttackArrow({ ev, big }) {
+  const [pt, setPt] = useState(null)
+  useLayoutEffect(() => {
+    if (!ev || !ev.src || !ev.target || ev.src === ev.target || (ev.type !== 'damage' && ev.type !== 'block')) { setPt(null); return }
+    const a = document.querySelector(`[data-uid="${ev.src}"]`)
+    const b = document.querySelector(`[data-uid="${ev.target}"]`)
+    if (!a || !b) { setPt(null); return }
+    const ra = a.getBoundingClientRect(); const rb = b.getBoundingClientRect()
+    setPt({ x1: ra.left + ra.width / 2, y1: ra.top + ra.height / 2, x2: rb.left + rb.width / 2, y2: rb.top + rb.height / 2 })
+  }, [ev])
+  if (!pt || !ev) return null
+  const color = ev.srcTeam === 'B' ? C.enemy : C.player
+  return (
+    <svg aria-hidden="true" data-testid="attack-arrow" style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 20 }}>
+      <defs><marker id="feel-arw" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill={color} /></marker></defs>
+      <line x1={pt.x1} y1={pt.y1} x2={pt.x2} y2={pt.y2} stroke="#000" strokeWidth={big ? 9 : 7} strokeLinecap="round" opacity="0.5" />
+      <line x1={pt.x1} y1={pt.y1} x2={pt.x2} y2={pt.y2} stroke={color} strokeWidth={big ? 5 : 4} strokeLinecap="round" markerEnd="url(#feel-arw)" />
+      <circle cx={pt.x1} cy={pt.y1} r={big ? 8 : 6} fill={color} stroke="#000" strokeWidth="2" />
+    </svg>
+  )
+}
+
+// いま起きたことの履歴(新しいものが下・いちばん新しいものが目立つ)。ログを開かなくても、流れが分かるように
+function RecentFeed({ feed, big }) {
+  const rows = feed.slice(-5)
+  return (
+    <div data-testid="feed" style={{ minHeight: big ? 128 : 112, padding: big ? '8px 12px' : '6px 8px', borderRadius: 10, background: C.card, border: `1px solid ${C.line}`, fontSize: big ? 14 : 12, lineHeight: 1.5, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+      {rows.length === 0 && <div style={{ color: C.mute }}>ここに、いま起きたことが出ます</div>}
+      {rows.map((r, i) => {
+        const latest = i === rows.length - 1
+        return (
+          <div key={r.k} style={{ display: 'flex', gap: 6, opacity: latest ? 1 : 0.45 + i * 0.1, fontWeight: latest ? 800 : 400, color: C.ink }}>
+            <span style={{ flex: '0 0 auto', width: 6, borderRadius: 3, background: r.team ? TEAM_COLOR[r.team] : C.line }} />
+            <span style={{ minWidth: 0 }}>{r.text}</span>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -365,6 +410,9 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     ? accelActs.map((a) => a.target).filter(Boolean)
     : mode ? traitActions(mode).map((a) => a.target).filter(Boolean) : skillTargets
 
+  const [feed, setFeed] = useState([]) // 「いま起きたこと」の履歴(再生に合わせて増える)
+  const [showDesc, setShowDesc] = useState(() => { try { return localStorage.getItem('feel-show-desc') === '1' } catch { return false } }) // 操作パネルの説明文を出すか
+  const toggleDesc = () => { const v = !showDesc; setShowDesc(v); try { localStorage.setItem('feel-show-desc', v ? '1' : '0') } catch { /* 保存できなくても動く */ } }
   const [hist, setHist] = useState(emptyHistory) // バトルログの「発動」「破壊」の履歴
   const [logOpen, setLogOpen] = useState(false) // 戦闘実況のオーバーレイを開いている
 
@@ -394,6 +442,22 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     }, cpuDelay)
     return () => clearTimeout(timer)
   }, [state, level, cpuDelay, play, intro, leaveAsk, logOpen, auto])
+
+  // 再生に合わせて、「いま起きたこと」の履歴に1行ずつ足す
+  useEffect(() => {
+    if (!play || !state || play.i >= play.events.length) return
+    const e = play.events[play.i]
+    const nm = (uid) => state.units.find((u) => u.uid === uid)?.name ?? ''
+    const tm = (uid) => state.units.find((u) => u.uid === uid)?.team ?? null
+    let line = null
+    if (e.type === 'turn') line = { team: e.team, text: `▶ ${e.team === 'B' ? '相手の' : ''}${e.name}の番` }
+    else if (e.type === 'damage') line = { team: tm(e.src), text: `${nm(e.src)}の${e.means || '攻撃'} → ${nm(e.target)}に ${e.amount} ダメージ${e.crit ? '(クリティカル!)' : ''}` }
+    else if (e.type === 'block') line = { team: tm(e.src), text: `${nm(e.src)}の${e.means || '攻撃'} → ${nm(e.target)}のバリアが防いだ` }
+    else if (e.type === 'heal') line = { team: tm(e.target), text: `${nm(e.target)}が ${e.amount} 回復` }
+    else if (e.type === 'summon') line = { team: e.team, text: `${e.name}が登場` }
+    else if (e.type === 'ability') line = { team: e.team, text: `【${e.kind}】${e.owner}${e.name ? ` ― ${e.name}` : ''}${e.desc ? `：${e.desc}` : ''}` }
+    if (line) setFeed((f) => [...f, { k: `${Date.now()}-${f.length}-${play.i}`, ...line }].slice(-8))
+  }, [play && play.events, play && play.i]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 再生を1つずつ進める
   useEffect(() => {
@@ -470,6 +534,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
         .catch((e) => setRewardMsg(`この対戦では報酬がもらえません: ${e.message}`))
     }
     setPlay(null)
+    setFeed([])
     const cpuTeam = buildCpuTeam(ALL_CHARACTERS, cpuChars, Math.random, level, ALL_SPELLS) // Lv.5以上は、シナジーのある編成
     const cpuSpells = level >= SPELL_LEVEL ? buildCpuSpells(ALL_SPELLS, cpuTeam, Math.random, level) : [] // Lv.5以上のCPUは、編成に合う強いスペルを持つ
     const first = createBattle(team.map((d) => enhanceDef(d)), cpuTeam, { comboMode, pool: ownedPool(cpuChars), spells: { A: spellSet, B: cpuSpells } })
@@ -641,6 +706,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     if (ev.type === 'block') return { kind: 'block', text: 'ガード!' }
     return null
   }
+  const arrowEv = ev && (ev.type === 'damage' || ev.type === 'block') ? { ...ev, srcTeam: state.units.find((u) => u.uid === ev.src)?.team } : null
   const hlFor = (uid) => !!ev && ev.type === 'attack' && (ev.src === uid || ev.target === uid)
   const levelInfo = CPU_LEVELS.find((l) => l.level === level)
   const enemies = view.units.filter((u) => u.team === 'B' && u.field === 'main')
@@ -680,6 +746,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const backLevel = () => { if (flow) (onBackLevel || onExit)(); else setState(null) }
   const panelInner = (
     <>
+      <div style={{ textAlign: 'right', marginBottom: 4 }}><button type="button" data-testid="toggle-desc" onClick={toggleDesc} style={{ border: `1px solid ${C.line}`, background: 'transparent', color: C.mute, borderRadius: 999, padding: '1px 10px', fontSize: 11, cursor: 'pointer' }}>{showDesc ? '説明を隠す' : '説明を見る'}</button></div>
       {selectedUnit && <TargetInfo unit={selectedUnit} expected={expectedDmg} loss={lossShown} big={desktop} />}
         {state.winner && !playing ? (
           <div>
@@ -774,7 +841,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
                       >
                         ✦{sp.name}(MP{sp.cost}){!usable ? ` ${why}` : ''}
                       </button>
-                      <span style={{ fontSize: 11, color: C.mute, ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> {sp.desc}</span>
+                      {showDesc && <span style={{ fontSize: 11, color: C.mute, ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> {sp.desc}</span>}
                     </div>
                   )
                 })}
@@ -796,7 +863,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
                       >
                         {t.name}(MP{t.cost}{t.charges != null ? `・残り${t.charges}回` : ''}){!usable ? ` ${why}` : ''}
                       </button>
-                      <span style={{ fontSize: 11, color: C.mute, ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> {t.desc}</span>
+                      {showDesc && <span style={{ fontSize: 11, color: C.mute, ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> {t.desc}</span>}
                     </div>
                   )
                 })}
@@ -812,7 +879,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
                 >
                   進化(EP1){!canEvolve ? ` ${actor.evolved ? '進化済み' : state.ep.A < 1 ? 'EPなし' : ''}` : ''}
                 </button>
-                <span style={{ fontSize: 11, color: C.mute, ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> 体力と攻撃力が2倍。進化したターンからスキルを使える</span>
+                {showDesc && <span style={{ fontSize: 11, color: C.mute, ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> 体力と攻撃力が2倍。進化したターンからスキルを使える</span>}
               </div>
             )}
 
@@ -873,6 +940,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 24px 16px', background: C.paper, color: C.ink, fontFamily: FONT, boxSizing: 'border-box', overflow: 'hidden' }}>
         {hud}
         {overlays}
+        <AttackArrow ev={arrowEv} big />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
           <TeamStatus state={view} team="A" big />
           <TeamStatus state={view} team="B" big />
@@ -886,7 +954,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
               <Row big title="相手" color={C.enemy}>{enemies.map(card)}</Row>
               {enemySummons.length > 0 && <Row big title="相手の召喚物" color={C.enemy}>{enemySummons.map(card)}</Row>}
             </div>
-            <AbilityBanner ability={view.lastAbility} now={nowText} big />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}><RecentFeed feed={feed} big /><AbilityBanner ability={view.lastAbility} big /></div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {playerSummons.length > 0 && <Row big title="自分の召喚物" color={C.player}>{playerSummons.map(card)}</Row>}
               <Row big title="自分" color={C.player}>{players.map(card)}</Row>
@@ -906,6 +974,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   // ---- スマホ: 1列。上に行動バーを固定、下に操作パネルを固定して、盤面をスクロールで見る ----
   return (
     <div style={wrap}>
+      <AttackArrow ev={arrowEv} />
       <div style={{ position: 'sticky', top: 0, zIndex: 9, background: C.paper, margin: '-12px -12px 0', padding: '8px 12px 2px', borderBottom: `1px solid ${C.line}` }}>
         {hud}
         {overlays}
@@ -920,7 +989,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
       <Row title="相手" color={C.enemy}>{enemies.map(card)}</Row>
       {enemySummons.length > 0 && <Row title="相手の召喚物" color={C.enemy}>{enemySummons.map(card)}</Row>}
 
-      <div style={{ marginTop: 12 }}><AbilityBanner ability={view.lastAbility} now={nowText} /></div>
+      <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}><RecentFeed feed={feed} /><AbilityBanner ability={view.lastAbility} /></div>
 
       {playerSummons.length > 0 && <Row title="自分の召喚物" color={C.player}>{playerSummons.map(card)}</Row>}
       <Row title="自分" color={C.player}>{players.map(card)}</Row>
