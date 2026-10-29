@@ -29,6 +29,7 @@
 //   { type:'armor', stat, mult, flat, rate(吸収レート0.6〜1), target }   barrier: { type:'barrier', target }
 //   { type:'advance', pct, target }   { type:'mp', amount }   { type:'ep', amount }   { type:'growByDead', deadType }(このターン中に倒された自分のそのタイプのキャラの元の攻撃力・体力の合計だけ、これが強くなる)   { type:'evolve' }(これは進化する。EPは使わない)
 //   { type:'faith', amount }   { type:'graveyard', amount }(マイナスで消費)
+//   { type:'earth', amount }(土の印を増やす。場の【土の印】アミュレットに溜まる。アミュレットがなければ新しく出す。満員なら働かない)   { type:'earthSummon', amount }(【土の印】アミュレットを召喚する。満員でも上限を超えて出られ、すでにあるものは消滅してその数が足される)
 //   { type:'summon', unit:{ キャラのデータ }, count }   { type:'crest', crest:{ name, passives, countdown } }
 //   perGraveyard: 墓場1つにつき、効果が(heal/buff/armor/damageのadd)その分だけ増える
 //   condition: { link, gauge, ultimate, liberation, faith, graveyard, hpBelow, hpAbove, evolved, crests }

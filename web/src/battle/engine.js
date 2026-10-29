@@ -133,7 +133,7 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
     evolvable: !(field === 'summon' && def.amulet) && def.evolvable !== false, evolved: false, charDef: def, // 召喚物も進化できる(アミュレットだけ進化しない)。def: 「自分と同じキャラを召喚」のために元の定義を持つ
     accel: def.accelerate ? makeAccel(def.accelerate) : null,
     countdown: def.countdown ?? null,
-    comboCount: 0, boost: 0,
+    comboCount: 0, boost: 0, earthCount: 0, // earthCount: 【土の印】アミュレットに溜まっている土の印の数
     buffs: [], usedTraits: [],
     hasActed: false, alive: true, deathHandled: false, killedBy: null,
   }
@@ -371,6 +371,7 @@ function recalc(state) {
   }
   syncCrestSlots(state)
   syncComboReset(state)
+  syncEarth(state)
 }
 
 // ---------- ダメージ ----------
@@ -470,7 +471,7 @@ function fireCrestsOnHeal(state, team) {
 }
 
 // 起きたことの記録(画面で、1つずつ順番に見せるため)。そのときの盤面の要約(体力など)つき。AIの先読み(expected)のときは記録しない
-const SNAP_KEYS = ['hp', 'maxHp', 'alive', 'armor', 'armorRate', 'barrier', 'stealth', 'countdown', 'comboCount', 'evolved']
+const SNAP_KEYS = ['hp', 'maxHp', 'alive', 'armor', 'armorRate', 'barrier', 'stealth', 'countdown', 'comboCount', 'evolved', 'earthCount']
 function emit(state, type, data = {}) {
   if (!state.rec) return
   const units = {}
@@ -567,9 +568,50 @@ const GRAVE_PER_DEATH = 3
 // 効果の perGraveyard が指定されていれば、墓場1つにつきその分だけ効果が大きくなる
 const graveBonus = (state, source, e) => (e.perGraveyard || 0) * state.graveyard[source.team]
 
-// 召喚: 召喚物フィールド(最大5体)に出す。満員なら出せない
-function summon(state, source, def) {
-  if (summonsOf(state, source).length >= SUMMON_MAX) {
+// 消滅させる: 破壊でも「場を離れる」でもない。墓場にも倒された記録にも入らず、ラストワードや味方の戦闘不能の能力も働かない
+function vanishUnit(state, u, log = true) {
+  if (!u.alive) return
+  u.alive = false; u.deathHandled = true; u.hp = 0
+  u.buffs = []; u.armor = 0; u.barrier = 0; u.stealth = false
+  if (log) state.log.push(`${u.name}は消滅した`)
+}
+
+// 土の印: 数は【土の印】アミュレット自身が持つ(earthCount)。チームの合計(state.earth)は、場の土の印アミュレットの合計
+const earthAmulets = (state, team) => state.units.filter((x) => x.alive && x.team === team && x.field === 'summon' && hasKw(x, 'earthSign'))
+function syncEarth(state) {
+  for (const t of ['A', 'B']) state.earth[t] = earthAmulets(state, t).reduce((n, u) => n + (u.earthCount || 0), 0)
+}
+// 土の印を増やす(+)・減らす(-)。アミュレットがなければ、増やすときだけ新しく出す(出せなければ働かない)。0になったらアミュレットは消滅する
+function addEarth(state, team, source, amount) {
+  let am = earthAmulets(state, team)[0]
+  if (!am) {
+    if (amount <= 0) return false
+    am = summon(state, source, EARTH_SHARD)
+    if (!am) return false
+  }
+  am.earthCount = Math.max(0, (am.earthCount || 0) + amount)
+  if (am.earthCount <= 0) vanishUnit(state, am)
+  syncEarth(state)
+  return true
+}
+// 土の印アミュレットを召喚する(増やす効果とは別): 新しいものが先に出て(満員でも例外で上限を超えて出られる)、すでにあったものは消滅し、その数が新しいほうに足される
+function summonEarth(state, source, amount) {
+  if (!(amount > 0)) return null
+  const olds = earthAmulets(state, source.team)
+  const nu = summon(state, source, EARTH_SHARD, { overflow: true })
+  if (!nu) return null
+  let total = amount
+  for (const o of olds) { total += o.earthCount || 0; vanishUnit(state, o) }
+  nu.earthCount = total
+  if (olds.length) state.log.push(`土の印アミュレットが1つにまとまった(土の印 ${total})`)
+  recalc(state)
+  syncEarth(state)
+  return nu
+}
+
+// 召喚: 召喚物フィールド(最大5体)に出す。満員なら出せない(opts.overflow があるときだけ、上限を超えて出られる)
+function summon(state, source, def, opts = {}) {
+  if (!opts.overflow && summonsOf(state, source).length >= SUMMON_MAX) {
     state.log.push(`召喚物フィールドが満員で、${def.name}は出せなかった`)
     return null
   }
@@ -613,7 +655,7 @@ function runEffects(state, source, effects, ctx = {}) {
     if (e.condition && !checkCond(state, source, e.condition)) continue
     if (e.earthCost) { // 【土の秘術_N】土の印をN消費して、この効果が働く。足りないときは働かない(対象を選ぶ効果とは組み合わせない: 選んだあとの再開で二重に消費するため)
       if (state.earth[source.team] < e.earthCost) { state.log.push(`土の印が足りないので、【土の秘術_${e.earthCost}】は働かなかった`); continue }
-      state.earth[source.team] -= e.earthCost
+      addEarth(state, source.team, source, -e.earthCost)
       state.log.push(`【土の秘術_${e.earthCost}】土の印を${e.earthCost}消費(${state.earth[source.team]})`)
     }
     if (e.timesPerType && !ctx.noRepeat) { // 「自分の場の〇〇タイプの数だけ、この効果を繰り返す」(対象は毎回選び直す)
@@ -750,11 +792,13 @@ function runEffects(state, source, effects, ctx = {}) {
     }
     if (e.type === 'earth') { // 土の印: 場の土の印の合計(チーム共通)。マイナスで消費(土の秘術)
       const amount = (e.amount ?? 1) + witchBonus(state, source.team, 'earth', e.amount ?? 1)
-      // 場に土の印がないときに土の印が増えるなら、先に「大地の魔片」を召喚する
-      if (amount > 0 && !state.units.some((x) => x.alive && x.team === source.team && x.field === 'summon' && hasKw(x, 'earthSign'))) summon(state, source, EARTH_SHARD)
-      const next = Math.max(0, state.earth[source.team] + amount)
-      state.log.push(`土の印が${amount >= 0 ? '+' : ''}${amount}(${next})`)
-      state.earth[source.team] = next
+      // 場に土の印アミュレットがないときに増えるなら、先に「大地の魔片」を召喚して、そこに溜める(満員で出せなければ働かない)
+      if (!addEarth(state, source.team, source, amount)) { state.log.push('土の印を溜める【土の印】アミュレットがないので、土の印は増えなかった'); continue }
+      state.log.push(`土の印が${amount >= 0 ? '+' : ''}${amount}(${state.earth[source.team]})`)
+      continue
+    }
+    if (e.type === 'earthSummon') { // 土の印アミュレットを召喚する(amount = 新しいアミュレットの最初の数)
+      summonEarth(state, source, e.amount ?? 1)
       continue
     }
     if (e.type === 'graveyard') {
@@ -922,11 +966,7 @@ function runEffects(state, source, effects, ctx = {}) {
           break
         }
         case 'vanish': // 消滅させる(破壊とは違い、墓場に行かず、ラストワードも働かない)
-          if (t.alive) {
-            t.alive = false; t.deathHandled = true; t.hp = 0
-            t.buffs = []; t.armor = 0; t.barrier = 0; t.stealth = false
-            state.log.push(`${t.name}は消滅した`)
-          }
+          vanishUnit(state, t)
           break
         case 'destroy': // 破壊する(召喚物の「自身を破壊」など)
           if (hasKw(t, 'earthSign')) break // 土の印は、能力で破壊できない
@@ -1007,9 +1047,10 @@ function resolveDeaths(state, opts) {
     for (const u of dead) {
       const leave = (u.passiveObjs || []).find((p) => p.trigger === 'onLeave') // 【場を離れる場合、これを消滅】: 破壊されず、消滅する(倒れた扱いにならない。墓場・ラストワード・味方が倒れたときの能力は働かない)
       if (leave) {
+        // 退場するときは、破壊ではなく、必ず消滅になる(墓場・ラストワード・味方の戦闘不能の能力は働かない)
         u.deathHandled = true
         u.buffs = []; u.armor = 0; u.barrier = 0; u.stealth = false
-        state.log.push(`${u.name}は場を離れ、消滅した`)
+        state.log.push(`${u.name}は消滅した`)
         noteAbility(state, TRIGGER_LABELS.onLeave, u.name, leave.name && leave.name !== TRIGGER_LABELS.onLeave ? leave.name : '', leave.desc, u.team)
         continue
       }
@@ -1562,3 +1603,6 @@ export function applyAction(prev, action, opts = {}) {
   endTurn(state, actor)
   return advance(state, opts)
 }
+
+// テスト用(画面からは使わない): 土の印の内部処理
+export const _earthTest = { addEarth, summonEarth, vanishUnit }
