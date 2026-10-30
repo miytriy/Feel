@@ -515,6 +515,7 @@ function resolveTargets(state, source, key, ctx) {
     case 'entered': return ctx.other && ctx.other.alive ? [ctx.other] : [] // 「味方が場に出たとき」の、出てきたキャラ
     case 'summons': return summonsOf(state, source)
     case 'fieldOthers': return state.units.filter((u) => u.alive && u.field === 'main' && u.uid !== source.uid) // 場(両チーム)の、自分以外のキャラクターすべて
+    case 'fieldSummons': return state.units.filter((u) => u.alive && u.field === 'summon' && !u.isAmulet) // 場(両チーム)の召喚物すべて(アミュレットは含まない)
     case 'fieldAmulets': return state.units.filter((u) => u.alive && u.isAmulet) // 場(両チーム)のアミュレットすべて
     case 'otherAllyField': return [...allies, ...summonsOf(state, source)].filter((u) => u.uid !== source.uid) // 自分以外の場すべて
     case 'allyField': return [...allies, ...summonsOf(state, source)] // 自分の場すべて(場のキャラ + 召喚物)
