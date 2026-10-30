@@ -10,7 +10,7 @@ export default {
     { name: 'バットの疾走', trigger: 'allyEnter', enterName: 'バット', desc: '自分の『バット』が場に出たとき、それは【疾走】を持つ。味方すべてに50ダメージを割り振る。',
       effects: [
         { type: 'gainKeyword', keyword: 'dash', target: 'entered' },
-        { type: 'damage', stat: 'atk', mult: 0, add: 50, split: true, dmgType: 'physical', target: 'allies' },
+        { type: 'damage', stat: 'atk', mult: 0, add: 50, split: true, dmgType: 'physical', target: 'allyField' },
       ] },
   ],
 }

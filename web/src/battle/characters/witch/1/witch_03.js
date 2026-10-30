@@ -8,7 +8,7 @@ export default {
       name: '進化時', trigger: 'onEvolve',
       desc: '味方すべてを200ヒール。自分の場の土の印を+2する。',
       effects: [
-        { type: 'heal', flat: 200, target: 'allies' },
+        { type: 'heal', flat: 200, target: 'allyField' },
         { type: 'earth', amount: 2 },
       ],
     },
