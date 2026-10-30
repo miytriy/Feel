@@ -891,7 +891,7 @@ function runEffects(state, source, effects, ctx = {}) {
       switch (e.type) {
         case 'damage': {
           if (e.perMpSpent != null && !(ctx.mpSpent > 0)) break // perMpSpent: 消費したMP1つにつき、倍率が perMpSpent ずつ増える(MPを使わなかったら何もしない)
-          const skill = { stat: e.stat || 'atk', mult: (e.perMpSpent != null ? (e.mult ?? 0) + e.perMpSpent * ctx.mpSpent : e.mult ?? 1), add: (e.add || 0) + graveBonus(state, source, e) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0) + (e.perEarth ? e.perEarth * state.earth[source.team] : 0), type: e.dmgType || 'physical' } // perEarth: 自分の場の土の印1つにつき、add が perEarth ずつ増える / perType: 自分の場の「そのタイプ」のキャラ1体につき、add が perTypeFlat(省くと1)ずつ増える
+          const skill = { stat: e.stat || 'atk', mult: (e.perMpSpent != null ? (e.mult ?? 0) + e.perMpSpent * ctx.mpSpent : e.mult ?? 1), add: (e.split && e.add != null ? e.add / targets.length : (e.add || 0)) + graveBonus(state, source, e) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0) + (e.perEarth ? e.perEarth * state.earth[source.team] : 0), type: e.dmgType || 'physical' } // perEarth: 自分の場の土の印1つにつき、add が perEarth ずつ増える / perType: 自分の場の「そのタイプ」のキャラ1体につき、add が perTypeFlat(省くと1)ずつ増える
           const { damage } = calcDamage(source, t, skill, ctx.opts)
           const dealt = applyDamage(state, source, t, damage, skill.type === 'true')
           loseStealth(source) // 能力でダメージを与えたら潜伏を失う

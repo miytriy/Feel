@@ -58,6 +58,7 @@
   { "id": "dragon_amulet_01", "name": "乙姫の扇", "class": "ドラゴン", "rarity": "gold", "rotation": "1" },
   { "id": "nightmare_01", "name": "無名の悪魔", "class": "ナイトメア", "rarity": "bronze", "rotation": "1" },
   { "id": "nightmare_02", "name": "辣腕の死神・ミーノ", "class": "ナイトメア", "rarity": "silver", "rotation": "1" },
+  { "id": "nightmare_03", "name": "ナイトメア・ヴェリィ", "class": "ナイトメア", "rarity": "silver", "rotation": "1" },
   { "id": "witch_01", "name": "見習い占星術師", "class": "ウィッチ", "rarity": "bronze", "rotation": "1" },
   { "id": "witch_02", "name": "アドラブルティーチャー・ミラ", "class": "ウィッチ", "rarity": "silver", "rotation": "1" },
   { "id": "witch_03", "name": "魔法の薬剤師・ペネロピー", "class": "ウィッチ", "rarity": "gold", "rotation": "1" },
