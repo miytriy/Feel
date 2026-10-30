@@ -653,13 +653,22 @@ function candidatesOf(state, source, e) {
 
 // 候補が0体 → 何もしない / 1体 → 自動で選ぶ / 2体以上 → state.pending に残して、選ばれるまで待つ(ファンファーレのときだけ)
 function runEffects(state, source, effects, ctx = {}) {
+  // repeat: n … 同じ効果を n 回行う(コストの graveCost / earthCost は、最初の1回だけ払う。対象は毎回選び直す)
+  if (effects.some((x) => x.repeat > 1)) effects = effects.flatMap((x, gi) => (x.repeat > 1 ? Array.from({ length: x.repeat }, (_, i) => ({ ...x, repeat: undefined, repGroup: `${gi}`, ...(i > 0 ? { graveCost: undefined, earthCost: undefined } : null) })) : [x]))
+  let skipGroup = null // コストが払えなかった repeat の組は、残りも行わない
   for (let idx = 0; idx < effects.length; idx++) {
     const e = effects[idx]
+    if (e.repGroup != null && e.repGroup === skipGroup) continue
     if (e.condition && !checkCond(state, source, e.condition)) continue
     if (e.earthCost) { // 【土の秘術_N】土の印をN消費して、この効果が働く。足りないときは働かない(対象を選ぶ効果とは組み合わせない: 選んだあとの再開で二重に消費するため)
-      if (state.earth[source.team] < e.earthCost) { state.log.push(`土の印が足りないので、【土の秘術_${e.earthCost}】は働かなかった`); continue }
+      if (state.earth[source.team] < e.earthCost) { state.log.push(`土の印が足りないので、【土の秘術_${e.earthCost}】は働かなかった`); skipGroup = e.repGroup ?? null; continue }
       addEarth(state, source.team, source, -e.earthCost)
       state.log.push(`【土の秘術_${e.earthCost}】土の印を${e.earthCost}消費(${state.earth[source.team]})`)
+    }
+    if (e.graveCost) { // 【ネクロマンス_N】墓場をN消費して、この効果が働く。足りないときは働かない
+      if (state.graveyard[source.team] < e.graveCost) { state.log.push(`墓場が足りないので、【ネクロマンス_${e.graveCost}】は働かなかった`); skipGroup = e.repGroup ?? null; continue }
+      state.graveyard[source.team] -= e.graveCost
+      state.log.push(`【ネクロマンス_${e.graveCost}】墓場を${e.graveCost}消費(${state.graveyard[source.team]})`)
     }
     if (e.timesPerType && !ctx.noRepeat) { // 「自分の場の〇〇タイプの数だけ、この効果を繰り返す」(対象は毎回選び直す)
       const n = typeCount(state, source, e.timesPerType)
