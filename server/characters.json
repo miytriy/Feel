@@ -3,6 +3,7 @@
   { "id": "neutral_02", "name": "楽郎の天宮・フィルドア", "class": "ニュートラル", "rarity": "gold", "rotation": "1" },
   { "id": "neutral_03", "name": "観察の探偵", "class": "ニュートラル", "rarity": "bronze", "rotation": "1" },
   { "id": "neutral_04", "name": "迸る光明・アポロン", "class": "ニュートラル", "rarity": "silver", "rotation": "1" },
+  { "id": "neutral_05", "name": "アルビオンバハムート", "class": "ニュートラル", "rarity": "legend", "rotation": "8" },
   { "id": "neutral_basic_01", "name": "不屈のファイター", "class": "ニュートラル", "rarity": "bronze", "rotation": "basic" },
   { "id": "neutral_basic_02", "name": "ベルエンジェル・リア", "class": "ニュートラル", "rarity": "bronze", "rotation": "basic" },
   { "id": "neutral_basic_03", "name": "煌響の使者・アンリエット", "class": "ニュートラル", "rarity": "silver", "rotation": "basic" },

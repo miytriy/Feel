@@ -514,6 +514,8 @@ function resolveTargets(state, source, key, ctx) {
     }
     case 'entered': return ctx.other && ctx.other.alive ? [ctx.other] : [] // 「味方が場に出たとき」の、出てきたキャラ
     case 'summons': return summonsOf(state, source)
+    case 'fieldOthers': return state.units.filter((u) => u.alive && u.field === 'main' && u.uid !== source.uid) // 場(両チーム)の、自分以外のキャラクターすべて
+    case 'fieldAmulets': return state.units.filter((u) => u.alive && u.isAmulet) // 場(両チーム)のアミュレットすべて
     case 'otherAllyField': return [...allies, ...summonsOf(state, source)].filter((u) => u.uid !== source.uid) // 自分以外の場すべて
     case 'allyField': return [...allies, ...summonsOf(state, source)] // 自分の場すべて(場のキャラ + 召喚物)
     case 'allyFieldRandom': return pickRandom([...allies, ...summonsOf(state, source)]) // 自分の場(場のキャラ + 召喚物)からランダム1体
@@ -795,6 +797,13 @@ function runEffects(state, source, effects, ctx = {}) {
       // 場に土の印アミュレットがないときに増えるなら、先に「大地の魔片」を召喚して、そこに溜める(満員で出せなければ働かない)
       if (!addEarth(state, source.team, source, amount)) { state.log.push('土の印を溜める【土の印】アミュレットがないので、土の印は増えなかった'); continue }
       state.log.push(`土の印が${amount >= 0 ? '+' : ''}${amount}(${state.earth[source.team]})`)
+      continue
+    }
+    if (e.type === 'clearCrests') { // 場(両チーム)のクレストをすべて消滅させる(消えるときのラストワードは働かない)
+      let n = 0
+      for (const t of ['A', 'B']) { n += state.crests[t].length; state.crests[t] = [] }
+      state.log.push(n ? `場のクレスト${n}つが消滅した` : '消滅させるクレストがなかった')
+      recalc(state)
       continue
     }
     if (e.type === 'earthSummon') { // 土の印アミュレットを召喚する(amount = 新しいアミュレットの最初の数)
