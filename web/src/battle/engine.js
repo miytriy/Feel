@@ -57,7 +57,7 @@ export const KEYWORDS = {
 export const TRIGGER_LABELS = {
   fanfare: 'ファンファーレ', constant: '常時', active: 'アクティブ', lastWord: 'ラストワード',
   onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時', onEvolved: '進化したとき', turnEnd: 'ターン終了時', onLeave: '場を離れる場合', onEnter: '場に出たとき', enemyTurnEnd: '相手のターン終了時',
-  roundStart: 'ラウンド開始時', allyDeath: '味方が戦闘不能になったとき', allyEnter: '味方が場に出たとき', allyTurnStart: '味方のターン開始時', link: '連携', onBoost: 'スペルブースト時', allyHeal: '味方が回復したとき',
+  roundStart: 'ラウンド開始時', allyDeath: '味方が戦闘不能になったとき', allyEnter: '味方が場に出たとき', allyTurnStart: '味方のターン開始時', allyTurnEnd: '味方のターン終了時', link: '連携', onBoost: 'スペルブースト時', allyHeal: '味方が回復したとき',
 }
 
 // ---------- 遺物(頭・胴・脚・靴のセットを装備したキャラに、セット効果がつく) ----------
@@ -516,6 +516,7 @@ function resolveTargets(state, source, key, ctx) {
     case 'summons': return summonsOf(state, source)
     case 'fieldOthers': return state.units.filter((u) => u.alive && u.field === 'main' && u.uid !== source.uid) // 場(両チーム)の、自分以外のキャラクターすべて
     case 'fieldSummons': return state.units.filter((u) => u.alive && u.field === 'summon' && !u.isAmulet) // 場(両チーム)の召喚物すべて(アミュレットは含まない)
+    case 'fieldAll': return state.units.filter((u) => u.alive) // 場(両チーム)のすべて(キャラ・召喚物・アミュレット)
     case 'fieldAmulets': return state.units.filter((u) => u.alive && u.isAmulet) // 場(両チーム)のアミュレットすべて
     case 'otherAllyField': return [...allies, ...summonsOf(state, source)].filter((u) => u.uid !== source.uid) // 自分以外の場すべて
     case 'allyField': return [...allies, ...summonsOf(state, source)] // 自分の場すべて(場のキャラ + 召喚物)
@@ -1233,6 +1234,7 @@ function endTurn(state, actor) {
         runEffects(state, actor, p.effects, {})
       }
     }
+    fireCrests(state, actor.team, 'allyTurnEnd', actor, {}) // クレストの【味方のターン終了時】: 味方(自分のチームのキャラ・召喚物)のターンが終わるとき
     resolveDeaths(state)
   }
   if (actor.alive) { // 【ターン終了時】(自分のターンが終わるとき): 場のキャラ・召喚物自身の能力
