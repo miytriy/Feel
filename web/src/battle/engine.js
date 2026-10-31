@@ -536,6 +536,7 @@ function resolveTargets(state, source, key, ctx) {
     case 'enemyField': return [...enemies, ...enemiesSummonsOf(state, source).filter(abilityTargetable)] // 相手の場すべて(場のキャラ + 召喚物)
     case 'enemyOne': return ctx.chosen ? [getUnit(state, ctx.chosen)] : pickRandom(enemies)
     case 'enemyRandom': return pickRandom(enemies)
+    case 'enemyFieldRandom': return pickRandom([...enemies, ...enemiesSummonsOf(state, source).filter(abilityTargetable)]) // 相手の場(場のキャラ + 召喚物)からランダム1体。count があれば、その数(重ならない)
     default: return []
   }
 }
@@ -890,11 +891,11 @@ function runEffects(state, source, effects, ctx = {}) {
     if (e.onlyType) targets = targets.filter((t) => hasType(t, e.onlyType)) // 指定のタイプ(式神など)だけ
     if (e.onlyName) targets = targets.filter((t) => t.name === e.onlyName) // 指定の名前のキャラ(トークンなど)だけ
     // ランダムな相手の人数: count(基本は1体)。comboCount: { combo: 3, count: 3 } なら、コンボが3以上のとき3体(重ならないように選ぶ)
-    if ((e.target || 'self') === 'enemyRandom' && (e.count != null || e.comboCount)) {
+    if (((e.target || 'self') === 'enemyRandom' || e.target === 'enemyFieldRandom') && (e.count != null || e.comboCount)) {
       let n = e.count ?? 1
       if (e.comboCount && comboOf(state, source) >= e.comboCount.combo) n = e.comboCount.count
       const rng = ctx.opts?.rng || Math.random
-      const pool = [...enemiesOf(state, source).filter(abilityTargetable)]
+      const pool = [...enemiesOf(state, source).filter(abilityTargetable), ...(e.target === 'enemyFieldRandom' ? enemiesSummonsOf(state, source).filter(abilityTargetable) : [])]
       targets = []
       while (targets.length < n && pool.length) targets.push(pool.splice(Math.floor(rng() * pool.length), 1)[0])
     }
@@ -908,6 +909,7 @@ function runEffects(state, source, effects, ctx = {}) {
           const dealt = applyDamage(state, source, t, damage, skill.type === 'true')
           loseStealth(source) // 能力でダメージを与えたら潜伏を失う
           if (dealt > 0) state.log.push(`${source.name}の効果で${t.name}に${Math.round(dealt)}ダメージ`)
+          if (e.destroyIfSummon && t.alive && t.field === 'summon' && !hasKw(t, 'earthSign')) { t.hp = 0; t.alive = false; state.log.push(`${t.name}は破壊された`) } // ターゲットが召喚物だったときは、それを破壊する
           break
         }
         case 'heal':
