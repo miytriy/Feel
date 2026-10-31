@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { addEvents, buildMatch, newStats } from './career.js'
 import { createBattle, applyAction, getActiveUnit, legalActions, getUnit, gaugeOf, calcDamage, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS, SPELL_LEVEL } from './battle/ai.js'
@@ -158,6 +158,19 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
         ...(role === 'target' || role === 'guard' ? { boxShadow: `0 0 0 3px ${role === 'guard' ? C.player : C.bad}, 0 0 16px 2px ${alpha(role === 'guard' ? C.player : C.bad, 55)}`, zIndex: 2 } : {}),
       }}
     >
+      {(role === 'target' || role === 'guard') && (
+        // 共通の攻撃エフェクト: 当たった瞬間に、白い閃光と斜めの切り筋が走る(ガードのときは、黄色い輪が広がる)
+        <span key={`hit-${tick}`} aria-hidden="true" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', overflow: 'hidden', pointerEvents: 'none', zIndex: 4 }}>
+          {role === 'target' ? (
+            <>
+              <span style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.95) 0%, rgba(255,110,110,0.55) 38%, transparent 70%)', animation: 'feel-flash 0.32s ease-out forwards' }} />
+              <span style={{ position: 'absolute', left: '-15%', top: '48%', width: '130%', height: 4, borderRadius: 2, background: '#fff', boxShadow: '0 0 8px 2px rgba(255,255,255,0.9)', transform: 'rotate(-32deg)', transformOrigin: 'left center', animation: 'feel-slash 0.28s ease-out forwards' }} />
+            </>
+          ) : (
+            <span style={{ position: 'absolute', left: '50%', top: '50%', width: '60%', aspectRatio: '1', borderRadius: '50%', border: `3px solid ${C.player}`, animation: 'feel-guard 0.4s ease-out forwards' }} />
+          )}
+        </span>
+      )}
       {role && (
         <span aria-hidden="true" style={{ position: 'absolute', left: 6, top: -9, zIndex: 6, padding: '0 6px', borderRadius: 999, fontSize: big ? 11 : 9, fontWeight: 800, lineHeight: '16px', color: '#121212', background: role === 'attacker' ? TEAM_COLOR[unit.team] : role === 'guard' ? C.player : C.bad, whiteSpace: 'nowrap', pointerEvents: 'none' }}>
           {role === 'attacker' ? '攻撃' : role === 'guard' ? 'ガード' : '被弾'}
@@ -228,34 +241,6 @@ function Row({ title, color, children, big = false }) {
       <div style={{ fontSize: big ? 13 : 11, color, fontWeight: 700, marginBottom: 4 }}>{title}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: big ? 10 : 4 }}>{children}</div>
     </div>
-  )
-}
-
-// 攻撃した側から、攻撃された側へ、細い光の線を引く(再生中のダメージ・防御の瞬間だけ)。
-// 近い相手(となり同士)は、カードの印だけで分かるので、線は引かない
-function AttackArrow({ ev, big }) {
-  const [pt, setPt] = useState(null)
-  useLayoutEffect(() => {
-    if (!ev || !ev.src || !ev.target || ev.src === ev.target || (ev.type !== 'damage' && ev.type !== 'block')) { setPt(null); return }
-    const a = document.querySelector(`[data-uid="${ev.src}"]`)
-    const b = document.querySelector(`[data-uid="${ev.target}"]`)
-    if (!a || !b) { setPt(null); return }
-    const ra = a.getBoundingClientRect(); const rb = b.getBoundingClientRect()
-    const p = { x1: ra.left + ra.width / 2, y1: ra.top + ra.height / 2, x2: rb.left + rb.width / 2, y2: rb.top + rb.height / 2 }
-    const dist = Math.hypot(p.x2 - p.x1, p.y2 - p.y1)
-    setPt(dist > Math.max(ra.width, rb.width) * 1.9 ? p : null)
-  }, [ev])
-  if (!pt || !ev) return null
-  const color = ev.srcTeam === 'B' ? C.enemy : C.player
-  const mx = (pt.x1 + pt.x2) / 2 - (pt.y2 - pt.y1) * 0.14
-  const my = (pt.y1 + pt.y2) / 2 + (pt.x2 - pt.x1) * 0.14
-  const d = `M${pt.x1},${pt.y1} Q${mx},${my} ${pt.x2},${pt.y2}`
-  return (
-    <svg aria-hidden="true" data-testid="attack-arrow" style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 20 }}>
-      <path d={d} fill="none" stroke="#000" strokeWidth={big ? 6 : 5} strokeLinecap="round" opacity="0.35" />
-      <path d={d} fill="none" stroke={color} strokeWidth={big ? 3 : 2.5} strokeLinecap="round" pathLength="1" strokeDasharray="1" style={{ animation: 'feel-draw 0.35s ease-out forwards', filter: `drop-shadow(0 0 4px ${color})` }} />
-      <circle cx={pt.x2} cy={pt.y2} r={big ? 6 : 5} fill={color} stroke="#000" strokeWidth="1.5" />
-    </svg>
   )
 }
 
@@ -753,8 +738,6 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     if (ev.type === 'block') return { kind: 'block', text: 'ガード!' }
     return null
   }
-  const arrowAll = groupEvs.filter((x, n) => (x.type === 'damage' || x.type === 'block') && groupEvs.findIndex((y) => y.target === x.target && y.type === x.type) === n).map((x) => ({ ...x, srcTeam: state.units.find((u) => u.uid === x.src)?.team }))
-  const arrowEvs = arrowAll.length <= 2 ? arrowAll : [] // 全体攻撃(3体以上)では線を引かない。カードの印だけで分かる
   // 攻撃した側・受けた側の印(まとまった出来事の全員ぶん)。全体攻撃なら、攻撃側1体と、受ける側が全員
   const attackerIds = new Set(); const targetIds = new Map()
   for (const x of groupEvs) {
@@ -998,8 +981,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 24px 16px', background: C.paper, color: C.ink, fontFamily: FONT, boxSizing: 'border-box', overflow: 'hidden' }}>
         {hud}
         {overlays}
-        {arrowEvs.map((a, n) => <AttackArrow key={n} ev={a} big />)}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
           <TeamStatus state={view} team="A" big />
           <TeamStatus state={view} team="B" big />
         </div>
@@ -1032,7 +1014,6 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   // ---- スマホ: 1列。上に行動バーを固定、下に操作パネルを固定して、盤面をスクロールで見る ----
   return (
     <div style={wrap}>
-      {arrowEvs.map((a, n) => <AttackArrow key={n} ev={a} />)}
       <div style={{ position: 'sticky', top: 0, zIndex: 9, background: C.paper, margin: '-12px -12px 0', padding: '8px 12px 2px', borderBottom: `1px solid ${C.line}` }}>
         {hud}
         {overlays}
