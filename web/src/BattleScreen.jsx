@@ -773,6 +773,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   for (const x of groupEvs) {
     if ((x.type === 'damage' || x.type === 'block' || x.type === 'attack') && x.src && x.target && x.src !== x.target) {
       attackerIds.add(x.src)
+      if (x.type === 'attack') continue // 攻撃の宣言の時点では、まだ当たっていない(エフェクトは、ダメージ・ガードのときの1回だけ)
       if (x.type === 'block') targetIds.set(x.target, 'guard'); else if (targetIds.get(x.target) !== 'guard') targetIds.set(x.target, 'target')
     }
   }
