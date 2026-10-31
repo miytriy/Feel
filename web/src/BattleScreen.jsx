@@ -159,15 +159,17 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
       }}
     >
       {(role === 'target' || role === 'guard') && (
-        // 共通の攻撃エフェクト: 当たった瞬間に、白い閃光と斜めの切り筋が走る(ガードのときは、黄色い輪が広がる)
-        <span key={`hit-${tick}`} aria-hidden="true" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', overflow: 'hidden', pointerEvents: 'none', zIndex: 4 }}>
+        // 共通の攻撃エフェクト: 当たった瞬間に、白い閃光・×の切り筋・広がる輪が出る(ガードのときは、黄色い輪が広がる)。カードの外にも少しはみ出して、目立たせる
+        <span key={`hit-${tick}`} aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 8 }}>
           {role === 'target' ? (
             <>
-              <span style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.95) 0%, rgba(255,110,110,0.55) 38%, transparent 70%)', animation: 'feel-flash 0.32s ease-out forwards' }} />
-              <span style={{ position: 'absolute', left: '-15%', top: '48%', width: '130%', height: 4, borderRadius: 2, background: '#fff', boxShadow: '0 0 8px 2px rgba(255,255,255,0.9)', transform: 'rotate(-32deg)', transformOrigin: 'left center', animation: 'feel-slash 0.28s ease-out forwards' }} />
+              <span style={{ position: 'absolute', inset: -10, borderRadius: 14, background: 'radial-gradient(circle at 50% 50%, #fff 0%, rgba(255,120,110,0.85) 35%, rgba(255,60,60,0) 72%)', animation: 'feel-flash 0.55s ease-out forwards' }} />
+              <span style={{ position: 'absolute', left: '-20%', top: '50%', width: '140%', height: 7, marginTop: -3, borderRadius: 4, background: '#fff', boxShadow: '0 0 10px 3px rgba(255,255,255,0.95), 0 0 18px 6px rgba(255,90,90,0.8)', transformOrigin: 'center', animation: 'feel-slash 0.5s ease-out forwards' }} />
+              <span style={{ position: 'absolute', left: '-20%', top: '50%', width: '140%', height: 7, marginTop: -3, borderRadius: 4, background: '#fff', boxShadow: '0 0 10px 3px rgba(255,255,255,0.95), 0 0 18px 6px rgba(255,90,90,0.8)', transformOrigin: 'center', animation: 'feel-slash2 0.5s ease-out 0.06s both' }} />
+              <span style={{ position: 'absolute', left: '50%', top: '50%', width: '70%', aspectRatio: '1', borderRadius: '50%', border: '4px solid #fff', boxShadow: '0 0 12px 2px rgba(255,110,110,0.9)', animation: 'feel-guard 0.5s ease-out forwards' }} />
             </>
           ) : (
-            <span style={{ position: 'absolute', left: '50%', top: '50%', width: '60%', aspectRatio: '1', borderRadius: '50%', border: `3px solid ${C.player}`, animation: 'feel-guard 0.4s ease-out forwards' }} />
+            <span style={{ position: 'absolute', left: '50%', top: '50%', width: '70%', aspectRatio: '1', borderRadius: '50%', border: `4px solid ${C.player}`, boxShadow: `0 0 12px 2px ${C.player}`, animation: 'feel-guard 0.55s ease-out forwards' }} />
           )}
         </span>
       )}
