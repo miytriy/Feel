@@ -759,7 +759,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
       const fin = dmgs.filter((x) => x.means === '必殺')
       const crit = main.some((x) => x.crit)
       const parts = []
-      if (main.length) parts.push({ text: `${crit ? 'クリティカル ' : ''}-${main.reduce((a, x) => a + x.amount, 0)}`, dmgType: main[0].dmgType || 'physical' })
+      if (main.length) parts.push({ text: `${crit ? 'CRIT ' : ''}-${main.reduce((a, x) => a + x.amount, 0)}`, dmgType: main[0].dmgType || 'physical' })
       if (fin.length) parts.push({ text: `必殺 -${fin.reduce((a, x) => a + x.amount, 0)}`, dmgType: 'true' })
       return { kind: 'damage', text: parts.map((x) => x.text).join(' '), crit, parts }
     }
