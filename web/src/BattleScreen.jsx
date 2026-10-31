@@ -367,8 +367,10 @@ function groupEnd(events, i) {
   let j = i
   while (j + 1 < events.length) {
     const n = events[j + 1]
-    if (n.type !== e.type || seen.has(n.target)) break
-    if (e.type === 'damage' && (n.src !== e.src || n.means !== e.means)) break
+    if (n.type !== e.type) break
+    const finisher = e.type === 'damage' && n.means === '必殺' && n.src === e.src // 【必殺】の追加ダメージは、スキルのダメージと合わせて1回で見せる(同じ相手でもよい)
+    if (!finisher && seen.has(n.target)) break
+    if (e.type === 'damage' && !finisher && (n.src !== e.src || n.means !== e.means)) break
     seen.add(n.target)
     j += 1
   }
@@ -725,15 +727,20 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   }
   const groupEvs = play ? play.events.slice(gStart, gEnd + 1) : []
   const fxFor = (uid) => {
-    const ev = groupEvs.filter((x) => x.target === uid).pop() // まとまった出来事の中から、この人に起きたものを探す
+    const mine = groupEvs.filter((x) => x.target === uid) // まとまった出来事の中から、この人に起きたものを探す
+    const ev = mine[mine.length - 1]
     if (!ev) return null
-    if (ev.type === 'damage') return { kind: 'damage', text: `${ev.crit ? 'クリティカル ' : ''}-${ev.amount}`, crit: !!ev.crit }
+    if (ev.type === 'damage') {
+      const total = mine.filter((x) => x.type === 'damage').reduce((a, x) => a + x.amount, 0) // スキル+必殺は、合計で1回に見せる
+      const crit = mine.some((x) => x.crit)
+      return { kind: 'damage', text: `${mine.some((x) => x.means === '必殺') ? '必殺 ' : ''}${crit ? 'クリティカル ' : ''}-${total}`, crit }
+    }
     if (ev.type === 'heal') return { kind: 'heal', text: `+${ev.amount}` }
     if (ev.type === 'summon') return { kind: 'summon', text: '登場!' }
     if (ev.type === 'block') return { kind: 'block', text: 'ガード!' }
     return null
   }
-  const arrowEvs = groupEvs.filter((x) => x.type === 'damage' || x.type === 'block').map((x) => ({ ...x, srcTeam: state.units.find((u) => u.uid === x.src)?.team }))
+  const arrowEvs = groupEvs.filter((x, n) => (x.type === 'damage' || x.type === 'block') && groupEvs.findIndex((y) => y.target === x.target && y.type === x.type) === n).map((x) => ({ ...x, srcTeam: state.units.find((u) => u.uid === x.src)?.team }))
   const hlFor = (uid) => !!ev && ev.type === 'attack' && (ev.src === uid || ev.target === uid)
   const levelInfo = CPU_LEVELS.find((l) => l.level === level)
   const enemies = view.units.filter((u) => u.team === 'B' && u.field === 'main')
