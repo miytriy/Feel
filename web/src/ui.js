@@ -79,6 +79,8 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-lunge-down { 0%,100% { transform: translateY(0); } 35% { transform: translateY(9px) scale(1.03); } }
     @keyframes feel-shake2 { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
     @keyframes feel-blink { 0%,100% { opacity: 0.95; } 50% { opacity: 0.2; } }
+    @keyframes feel-aura { 0% { opacity: 0; transform: scale(0.9); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(1.12); } }
+    @keyframes feel-rise { 0% { opacity: 0; transform: translateY(14px) scale(0.6); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(-34px) scale(1.1); } }
     @keyframes feel-pop { 0% { opacity: 0; transform: translateX(-50%) scale(0.92); } 100% { opacity: 1; transform: translateX(-50%) scale(1); } }
     @media (max-width: ${DESKTOP_MIN - 1}px) { button { min-height: 40px; } input { font-size: 16px; } }
   `

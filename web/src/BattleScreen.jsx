@@ -188,6 +188,15 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
           )}
         </span>
       )}
+      {fx && (fx.kind === 'buff' || fx.kind === 'keyword') && (
+        // 強化・能力付与のエフェクト: カードの周りに光(強化=金 / 付与=水色)が広がり、記号(▲ / ✦)が昇る
+        <span key={`aura-${tick}`} aria-hidden="true" data-testid={`fx-${fx.kind}`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 7 }}>
+          <span style={{ position: 'absolute', inset: -8, borderRadius: 14, border: `3px solid ${fx.kind === 'buff' ? '#ffd24a' : '#66e0ff'}`, boxShadow: `0 0 18px 4px ${fx.kind === 'buff' ? 'rgba(255,210,74,0.75)' : 'rgba(102,224,255,0.75)'}, inset 0 0 18px 2px ${fx.kind === 'buff' ? 'rgba(255,210,74,0.45)' : 'rgba(102,224,255,0.45)'}`, animation: 'feel-aura 0.9s ease-out both' }} />
+          {[0, 1, 2].map((n) => (
+            <span key={n} style={{ position: 'absolute', left: `${22 + n * 28}%`, bottom: '14%', fontSize: big ? 22 : 16, fontWeight: 900, color: fx.kind === 'buff' ? '#ffd24a' : '#66e0ff', textShadow: '0 0 3px #000, 0 0 8px currentColor', animation: `feel-rise 0.9s ${n * 0.12}s ease-out both` }}>{fx.kind === 'buff' ? '▲' : '✦'}</span>
+          ))}
+        </span>
+      )}
       {role && (
         <span aria-hidden="true" style={{ position: 'absolute', left: 6, top: -9, zIndex: 6, padding: '0 6px', borderRadius: 999, fontSize: big ? 11 : 9, fontWeight: 800, lineHeight: '16px', color: '#121212', background: role === 'attacker' ? TEAM_COLOR[unit.team] : role === 'guard' ? C.player : C.bad, whiteSpace: 'nowrap', pointerEvents: 'none' }}>
           {role === 'attacker' ? '攻撃' : role === 'guard' ? 'ガード' : '被弾'}
@@ -200,7 +209,7 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
             {fx.parts.map((pt, n) => <DmgNum key={n} part={pt} crit={fx.crit && n === 0} big={big} />)}
           </span>
         ) : (
-        <span key={tick} style={{ position: 'absolute', left: '50%', top: '30%', zIndex: 5, pointerEvents: 'none', fontWeight: 800, fontSize: fx.crit ? (big ? 26 : 20) : (big ? 22 : 17), color: fx.kind === 'heal' ? '#3ddc97' : fx.kind === 'damage' ? '#ff5a5a' : C.player, textShadow: '0 0 3px #000, 0 0 3px #000, 0 0 3px #000', whiteSpace: 'nowrap', animation: 'feel-float 1.2s ease-out forwards' }}>
+        <span key={tick} style={{ position: 'absolute', left: '50%', top: '30%', zIndex: 5, pointerEvents: 'none', fontWeight: 800, fontSize: fx.crit ? (big ? 26 : 20) : (big ? 22 : 17), color: fx.kind === 'heal' ? '#3ddc97' : fx.kind === 'damage' ? '#ff5a5a' : fx.kind === 'buff' ? '#ffd24a' : fx.kind === 'keyword' ? '#66e0ff' : C.player, textShadow: '0 0 3px #000, 0 0 3px #000, 0 0 3px #000', whiteSpace: 'nowrap', animation: 'feel-float 1.2s ease-out forwards' }}>
           {fx.text}
         </span>
         )
@@ -381,7 +390,7 @@ const buttonStyle = (primary, disabled) => ({
 // ---- 再生(起きたことを、1つずつ順番に見せる。速さは、設定の「CPUの行動の待ち時間」に合わせる) ----
 // 連続する同じ種類の出来事(複数の召喚・複数への攻撃・複数のヒール)は、1つにまとめて一気に見せる。
 // 返す値は、まとめの最後の番号(まとまらなければ i のまま)。攻撃は、同じ攻撃元・同じ手段のものだけ。同じ相手が2回出たら、そこで区切る
-const GROUP_TYPES = ['damage', 'heal', 'summon']
+const GROUP_TYPES = ['damage', 'heal', 'summon', 'buff', 'keyword']
 function groupEnd(events, i) {
   const e = events[i]
   if (!e || !GROUP_TYPES.includes(e.type)) return i
@@ -398,7 +407,7 @@ function groupEnd(events, i) {
   }
   return j
 }
-const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null }) {
@@ -496,6 +505,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     else if (e.type === 'block') line = { team: tm(e.src), text: `${nm(e.src)}の${e.means || '攻撃'} → ${nm(e.target)}のバリアが防いだ` }
     else if (e.type === 'heal') line = { team: tm(e.target), text: `${nm(e.target)}が ${e.amount} 回復` }
     else if (e.type === 'summon') line = { team: e.team, text: `${e.name}が登場` }
+    else if (e.type === 'buff') line = { team: tm(e.target), text: `${nm(e.target)}の${e.text}` }
+    else if (e.type === 'keyword') line = { team: tm(e.target), text: `${nm(e.target)}は【${e.label}】を得た` }
     else if (e.type === 'ability') line = { team: e.team, text: `【${e.kind}】${e.owner}${e.name ? ` ― ${e.name}` : ''}${e.desc ? `：${e.desc}` : ''}` }
     return line
     }
@@ -763,6 +774,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
       if (fin.length) parts.push({ text: `必殺 -${fin.reduce((a, x) => a + x.amount, 0)}`, dmgType: 'true' })
       return { kind: 'damage', text: parts.map((x) => x.text).join(' '), crit, parts }
     }
+    if (ev.type === 'buff') return { kind: 'buff', text: mine.filter((x) => x.type === 'buff').map((x) => `${x.text}↑`).join(' ') } // 強化(攻撃力+30↑ など)
+    if (ev.type === 'keyword') return { kind: 'keyword', text: mine.filter((x) => x.type === 'keyword').map((x) => `【${x.label}】`).join('') + '獲得' } // 能力付与
     if (ev.type === 'heal') return { kind: 'heal', text: `+${ev.amount}` }
     if (ev.type === 'summon') return { kind: 'summon', text: '登場!' }
     if (ev.type === 'block') return { kind: 'block', text: 'ガード!' }

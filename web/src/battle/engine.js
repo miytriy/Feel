@@ -648,6 +648,13 @@ function summon(state, source, def, opts = {}) {
   state.units.push(u)
   emit(state, 'summon', { target: u.uid, name: def.name, team: u.team })
   state.log.push(state.casting ? `スペル【${state.casting}】で${def.name}を${u.isAmulet ? '設置' : '召喚'}した` : `${source.name}は${def.name}を${u.isAmulet ? '設置' : '召喚'}した`)
+  if (opts.defer) return u // 複数を一気に召喚するとき: 全員が出てから、場に出たときの能力・付与を働かせる(afterEnter)
+  afterEnter(state, u)
+  return u
+}
+
+// 場に出たあとの処理: クレストによる付与・味方の【場に出たとき】・自分の【場に出たとき】
+function afterEnter(state, u) {
   // クレストの onEnter: 自分のチームの(指定のタイプの)キャラが場に出たとき、キーワード能力(疾走など)を持つ
   for (const crest of state.crests[u.team]) {
     const oe = crest.onEnter
@@ -659,7 +666,6 @@ function summon(state, source, def, opts = {}) {
   for (const a of state.units.filter((x) => x.alive && x.team === u.team && x.uid !== u.uid)) fire(state, 'allyEnter', a, { other: u })
   recalc(state)
   fire(state, 'onEnter', u, {}) // 【場に出たとき】: ファンファーレ(最初の自分のターン開始時)とは違い、出た瞬間に働く
-  return u
 }
 
 // 選択が必要な効果(choose: true)の、選べる対象の一覧
@@ -875,7 +881,10 @@ function runEffects(state, source, effects, ctx = {}) {
         state.log.push(`MPを${e.mpCost}消費して、追加で召喚する`)
       }
       if (!sdef) continue
-      for (let i = 0; i < (e.count ?? 1); i++) summon(state, source, e.randomUnits ? e.randomUnits[Math.floor(rng0() * e.randomUnits.length)] : sdef) // randomUnits: 1体ごとに、候補からランダムに選ぶ
+      // 複数体は、まず全員を一気に召喚して、そのあとで「場に出たとき」の能力・付与(疾走・守護など)を働かせる
+      const entered = []
+      for (let i = 0; i < (e.count ?? 1); i++) { const nu = summon(state, source, e.randomUnits ? e.randomUnits[Math.floor(rng0() * e.randomUnits.length)] : sdef, { defer: true }); if (nu) entered.push(nu) } // randomUnits: 1体ごとに、候補からランダムに選ぶ
+      for (const nu of entered) afterEnter(state, nu)
       continue
     }
     if (e.type === 'crest') {
@@ -943,7 +952,9 @@ function runEffects(state, source, effects, ctx = {}) {
           else heal(state, t, (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + graveBonus(state, source, e))
           break
         case 'buff':
-          t.buffs.push({ stat: e.stat, pct: (e.pct || 0) + graveBonus(state, source, e), flat: (e.flat || 0) + (e.perCombo || 0) * comboOf(state, source) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0), turns: e.turns ?? null }) // perCombo: コンボ1つにつき、flat がその分だけ増える
+          const bf = { stat: e.stat, pct: (e.pct || 0) + graveBonus(state, source, e), flat: (e.flat || 0) + (e.perCombo || 0) * comboOf(state, source) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0), turns: e.turns ?? null } // perCombo: コンボ1つにつき、flat がその分だけ増える
+          t.buffs.push(bf)
+          emit(state, 'buff', { target: t.uid, stat: e.stat, text: `${statLabel(e.stat)}${bf.flat ? ` ${bf.flat >= 0 ? '+' : ''}${bf.flat}` : ''}${bf.pct ? ` ${bf.pct >= 0 ? '+' : ''}${bf.pct}%` : ''}`.replace(/\s+/g, ' ') })
           state.log.push(`${t.name}の${statLabel(e.stat)}が上がった`)
           break
         case 'loseHp': { // 現在体力を直接減らす(ダメージではないので、防御・アーマー・バリアは関係なく、墓場も増えない)
@@ -1002,6 +1013,7 @@ function runEffects(state, source, effects, ctx = {}) {
           if (!t.keywords.includes(k)) {
             t.keywords.push(k)
             state.log.push(`${t.name}は【${KEYWORDS[k]?.label || k}】を持つ`)
+            emit(state, 'keyword', { target: t.uid, keyword: k, label: KEYWORDS[k]?.label || k })
           }
           break
         }
