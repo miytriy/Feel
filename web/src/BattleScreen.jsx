@@ -357,6 +357,23 @@ const buttonStyle = (primary, disabled) => ({
 
 // rewardApi: ログイン中だけ渡される。{ start(level) → { ticketId }, finish(ticketId, 'win'|'lose') → { reward, reason } }
 // ---- 再生(起きたことを、1つずつ順番に見せる。速さは、設定の「CPUの行動の待ち時間」に合わせる) ----
+// 連続する同じ種類の出来事(複数の召喚・複数への攻撃・複数のヒール)は、1つにまとめて一気に見せる。
+// 返す値は、まとめの最後の番号(まとまらなければ i のまま)。攻撃は、同じ攻撃元・同じ手段のものだけ。同じ相手が2回出たら、そこで区切る
+const GROUP_TYPES = ['damage', 'heal', 'summon']
+function groupEnd(events, i) {
+  const e = events[i]
+  if (!e || !GROUP_TYPES.includes(e.type)) return i
+  const seen = new Set([e.target])
+  let j = i
+  while (j + 1 < events.length) {
+    const n = events[j + 1]
+    if (n.type !== e.type || seen.has(n.target)) break
+    if (e.type === 'damage' && (n.src !== e.src || n.means !== e.means)) break
+    seen.add(n.target)
+    j += 1
+  }
+  return j
+}
 const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
@@ -446,9 +463,9 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   // 再生に合わせて、「いま起きたこと」の履歴に1行ずつ足す
   useEffect(() => {
     if (!play || !state || play.i >= play.events.length) return
-    const e = play.events[play.i]
     const nm = (uid) => state.units.find((u) => u.uid === uid)?.name ?? ''
     const tm = (uid) => state.units.find((u) => u.uid === uid)?.team ?? null
+    const lineOf = (e) => {
     let line = null
     if (e.type === 'turn') line = { team: e.team, text: `▶ ${e.team === 'B' ? '相手の' : ''}${e.name}の番` }
     else if (e.type === 'damage') line = { team: tm(e.src), text: `${nm(e.src)}の${e.means || '攻撃'} → ${nm(e.target)}に ${e.amount} ダメージ${e.crit ? '(クリティカル!)' : ''}` }
@@ -456,14 +473,18 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     else if (e.type === 'heal') line = { team: tm(e.target), text: `${nm(e.target)}が ${e.amount} 回復` }
     else if (e.type === 'summon') line = { team: e.team, text: `${e.name}が登場` }
     else if (e.type === 'ability') line = { team: e.team, text: `【${e.kind}】${e.owner}${e.name ? ` ― ${e.name}` : ''}${e.desc ? `：${e.desc}` : ''}` }
-    if (line) setFeed((f) => [...f, { k: `${Date.now()}-${f.length}-${play.i}`, ...line }].slice(-8))
+    return line
+    }
+    const lines = []
+    for (let k = play.i; k <= groupEnd(play.events, play.i); k++) { const l = lineOf(play.events[k]); if (l) lines.push(l) }
+    if (lines.length) setFeed((f) => [...f, ...lines.map((line, n) => ({ k: `${Date.now()}-${f.length}-${play.i}-${n}`, ...line }))].slice(-8))
   }, [play && play.events, play && play.i]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 再生を1つずつ進める
   useEffect(() => {
     if (!play || logOpen) return // 戦闘実況を開いている間は、再生を止める
     if (play.i >= play.events.length) { setPlay(null); return }
-    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: p.i + 1 } : p)), (EVENT_MS[play.events[play.i].type] ?? 500) * mult)
+    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), (EVENT_MS[play.events[play.i].type] ?? 500) * mult)
     return () => clearTimeout(t)
   }, [play, mult, logOpen])
 
@@ -681,11 +702,15 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   // 再生中は、その時点の盤面(体力・状態)と、その時点までのログを見せる
   let view = state
   let ev = null
+  let gStart = 0
+  let gEnd = 0
   if (play) {
-    ev = play.events[Math.min(play.i, play.events.length - 1)]
+    gStart = Math.min(play.i, play.events.length - 1)
+    gEnd = groupEnd(play.events, gStart)
+    ev = play.events[gEnd] // まとまった出来事は、最後の時点の盤面を見せる(体力の変化が一気に出る)
     let active = play.prevActive
     let lastAbility = play.prevAbility
-    for (let k = 0; k <= play.i && k < play.events.length; k++) {
+    for (let k = 0; k <= gEnd && k < play.events.length; k++) {
       const e = play.events[k]
       if (e.type === 'turn') active = e.uid
       if (e.type === 'ability') lastAbility = { seq: k, kind: e.kind, owner: e.owner, name: e.name, desc: e.desc, team: e.team }
@@ -698,15 +723,17 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
       winner: null, active, lastAbility,
     }
   }
+  const groupEvs = play ? play.events.slice(gStart, gEnd + 1) : []
   const fxFor = (uid) => {
-    if (!ev || ev.target !== uid) return null
+    const ev = groupEvs.filter((x) => x.target === uid).pop() // まとまった出来事の中から、この人に起きたものを探す
+    if (!ev) return null
     if (ev.type === 'damage') return { kind: 'damage', text: `${ev.crit ? 'クリティカル ' : ''}-${ev.amount}`, crit: !!ev.crit }
     if (ev.type === 'heal') return { kind: 'heal', text: `+${ev.amount}` }
     if (ev.type === 'summon') return { kind: 'summon', text: '登場!' }
     if (ev.type === 'block') return { kind: 'block', text: 'ガード!' }
     return null
   }
-  const arrowEv = ev && (ev.type === 'damage' || ev.type === 'block') ? { ...ev, srcTeam: state.units.find((u) => u.uid === ev.src)?.team } : null
+  const arrowEvs = groupEvs.filter((x) => x.type === 'damage' || x.type === 'block').map((x) => ({ ...x, srcTeam: state.units.find((u) => u.uid === x.src)?.team }))
   const hlFor = (uid) => !!ev && ev.type === 'attack' && (ev.src === uid || ev.target === uid)
   const levelInfo = CPU_LEVELS.find((l) => l.level === level)
   const enemies = view.units.filter((u) => u.team === 'B' && u.field === 'main')
@@ -940,7 +967,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 24px 16px', background: C.paper, color: C.ink, fontFamily: FONT, boxSizing: 'border-box', overflow: 'hidden' }}>
         {hud}
         {overlays}
-        <AttackArrow ev={arrowEv} big />
+        {arrowEvs.map((a, n) => <AttackArrow key={n} ev={a} big />)}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
           <TeamStatus state={view} team="A" big />
           <TeamStatus state={view} team="B" big />
@@ -974,7 +1001,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   // ---- スマホ: 1列。上に行動バーを固定、下に操作パネルを固定して、盤面をスクロールで見る ----
   return (
     <div style={wrap}>
-      <AttackArrow ev={arrowEv} />
+      {arrowEvs.map((a, n) => <AttackArrow key={n} ev={a} />)}
       <div style={{ position: 'sticky', top: 0, zIndex: 9, background: C.paper, margin: '-12px -12px 0', padding: '8px 12px 2px', borderBottom: `1px solid ${C.line}` }}>
         {hud}
         {overlays}
