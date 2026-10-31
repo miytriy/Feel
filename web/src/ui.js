@@ -70,6 +70,7 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     input { font-family: inherit; }
     @keyframes feel-float { 0% { opacity: 0; transform: translate(-50%, 8px) scale(0.8); } 15% { opacity: 1; transform: translate(-50%, 0) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -38px) scale(1); } }
     @keyframes feel-shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+    @keyframes feel-rainbow { from { background-position: 0% 0; } to { background-position: -200% 0; } }
     @keyframes feel-flash { 0% { opacity: 1; transform: scale(0.55); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.2); } }
     @keyframes feel-slash { 0% { opacity: 1; transform: rotate(-32deg) scaleX(0); } 35% { opacity: 1; transform: rotate(-32deg) scaleX(1); } 100% { opacity: 0; transform: rotate(-32deg) scaleX(1.05); } }
     @keyframes feel-slash2 { 0% { opacity: 1; transform: rotate(32deg) scaleX(0); } 35% { opacity: 1; transform: rotate(32deg) scaleX(1); } 100% { opacity: 0; transform: rotate(32deg) scaleX(1.05); } }

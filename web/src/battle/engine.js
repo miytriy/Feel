@@ -426,7 +426,7 @@ function dealDamage(target, dmg, isTrue = false) {
 }
 
 // 攻撃を受ける(バリアがあれば0ダメージにして壊れる)。実際に与えたダメージを返す
-function applyDamage(state, source, target, amount, isTrue = false) {
+function applyDamage(state, source, target, amount, isTrue = false, dmgType = 'physical') {
   if (!target.alive) return 0
   if (target.isAmulet) return 0 // アミュレットには体力がなく、ダメージを受けない(なくなるのは、破壊・消滅・カウントダウンだけ)
   if (target.barrier > 0) {
@@ -438,7 +438,7 @@ function applyDamage(state, source, target, amount, isTrue = false) {
   dealDamage(target, amount, isTrue)
   if (!target.alive) target.killedBy = source.uid
   if (target.field === 'main') state.graveyard[target.team] += GRAVE_PER_HIT // 攻撃をされると墓場が溜まる
-  emit(state, 'damage', { src: source.uid, target: target.uid, amount: Math.round(amount), means: state.means || '効果' })
+  emit(state, 'damage', { src: source.uid, target: target.uid, amount: Math.round(amount), means: state.means || '効果', dmgType: isTrue ? 'true' : dmgType })
   return amount
 }
 
@@ -930,7 +930,7 @@ function runEffects(state, source, effects, ctx = {}) {
           if (e.perMpSpent != null && !(ctx.mpSpent > 0)) break // perMpSpent: 消費したMP1つにつき、倍率が perMpSpent ずつ増える(MPを使わなかったら何もしない)
           const skill = { stat: e.stat || 'atk', mult: (e.perMpSpent != null ? (e.mult ?? 0) + e.perMpSpent * ctx.mpSpent : e.mult ?? 1), add: (e.split && e.add != null ? e.add / targets.length : (e.add || 0)) + graveBonus(state, source, e) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0) + (e.perEarth ? e.perEarth * state.earth[source.team] : 0), type: e.dmgType || 'physical' } // perEarth: 自分の場の土の印1つにつき、add が perEarth ずつ増える / perType: 自分の場の「そのタイプ」のキャラ1体につき、add が perTypeFlat(省くと1)ずつ増える
           const { damage } = calcDamage(source, t, skill, ctx.opts)
-          const dealt = applyDamage(state, source, t, damage, skill.type === 'true')
+          const dealt = applyDamage(state, source, t, damage, skill.type === 'true', skill.type)
           loseStealth(source) // 能力でダメージを与えたら潜伏を失う
           if (dealt > 0) state.log.push(`${source.name}の効果で${t.name}に${Math.round(dealt)}ダメージ`)
           if (e.destroyIfSummon && t.alive && t.field === 'summon' && !hasKw(t, 'earthSign')) { t.hp = 0; t.alive = false; state.log.push(`${t.name}は破壊された`) } // ターゲットが召喚物だったときは、それを破壊する
@@ -1452,7 +1452,7 @@ function doSkill(state, actor, targetUid, opts) {
   emit(state, 'attack', { src: actor.uid, target: target.uid, skill: skill.name })
   state.means = skill.name // これから与えるダメージの攻撃手段(攻撃時の能力が働いたあとに決める)
   const { damage, isCrit } = calcDamage(actor, target, skill, { ...opts, bySkill: true })
-  const dealt = applyDamage(state, actor, target, damage, skill.type === 'true')
+  const dealt = applyDamage(state, actor, target, damage, skill.type === 'true', skill.type)
   if (dealt > 0) {
     if (isCrit && state.rec) { const ev = [...state.events].reverse().find((e) => e.type === 'damage' && e.target === target.uid); if (ev) ev.crit = true }
     state.log.push(`${actor.name}の「${skill.name}」! ${target.name}に${Math.round(dealt)}ダメージ${isCrit ? '(クリティカル!)' : ''}`)
@@ -1461,7 +1461,7 @@ function doSkill(state, actor, targetUid, opts) {
       const fixed = Math.floor(target.maxHp * FINISHER_RATE)
       if (fixed > 0) {
         dealDamage(target, fixed, true) // 必殺の固定ダメージは確定ダメージ
-        emit(state, 'damage', { src: actor.uid, target: target.uid, amount: fixed, means: '必殺' })
+        emit(state, 'damage', { src: actor.uid, target: target.uid, amount: fixed, means: '必殺', dmgType: 'true' })
         if (!target.alive) target.killedBy = actor.uid
         total += fixed
         state.log.push(`【必殺】${target.name}に追加で${fixed}の確定ダメージ`)

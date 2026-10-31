@@ -9,7 +9,7 @@ import { ALL_SPELLS } from './battle/spells/index.js'
 import FormationScreen from './FormationScreen.jsx'
 import { BattleHud, StageIntro, ExitConfirm, ResultBanner } from './BattleHud.jsx'
 import { CommentaryOverlay, collectHistory, addHistory, emptyHistory } from './BattleLog.jsx'
-import { useIsDesktop, C as BASE, alpha } from './ui.js'
+import { useIsDesktop, C as BASE, alpha, DISPLAY } from './ui.js'
 import { StatIcon } from './icons.jsx'
 const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', margin: '0 2px 0 0' }} />
 
@@ -134,6 +134,21 @@ function badgesOf(unit) {
   return badges
 }
 
+// ダメージの数字。物理=白 / 魔法=青 / 確定=虹(レジェンドのように、色が流れる)
+function DmgNum({ part, crit, big }) {
+  const size = (big ? 30 : 22) + (crit ? 6 : 0)
+  const base = { fontWeight: 900, fontSize: size, lineHeight: 1.1, letterSpacing: '0.02em', fontFamily: DISPLAY }
+  if (part.dmgType === 'true') {
+    return (
+      <span style={{ ...base, backgroundImage: 'linear-gradient(90deg, #ff4d4d, #ffb02e, #ffee55, #4dff88, #4dc3ff, #b06bff, #ff4dd2, #ff4d4d)', backgroundSize: '200% 100%', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 2px #000) drop-shadow(0 0 2px #000) drop-shadow(0 0 6px rgba(255,255,255,0.6))', animation: 'feel-rainbow 0.9s linear infinite' }}>{part.text}</span>
+    )
+  }
+  const magic = part.dmgType === 'magic'
+  const color = magic ? '#5cb8ff' : '#ffffff'
+  const glow = magic ? 'rgba(60,150,255,0.9)' : 'rgba(255,255,255,0.7)'
+  return <span style={{ ...base, color, textShadow: `0 0 2px #000, 0 0 2px #000, 0 0 3px #000, 0 2px 0 #000, 0 0 12px ${glow}` }}>{part.text}</span>
+}
+
 function UnitCard({ unit, active, selected, selectable, inspected, onClick, big = false, fx = null, hl = false, tick = 0, loss = 0, role = null }) {
   const ratio = Math.max(0, unit.hp / unit.maxHp)
   const hpColor = ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow
@@ -179,9 +194,16 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
         </span>
       )}
       {fx && (
+        fx.kind === 'damage' && fx.parts ? (
+          // ダメージの数字: 物理=白 / 魔法=青 / 確定=虹。大きく太く出す
+          <span key={tick} style={{ position: 'absolute', left: '50%', top: '22%', zIndex: 9, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, whiteSpace: 'nowrap', animation: 'feel-float 1.3s ease-out forwards' }}>
+            {fx.parts.map((pt, n) => <DmgNum key={n} part={pt} crit={fx.crit && n === 0} big={big} />)}
+          </span>
+        ) : (
         <span key={tick} style={{ position: 'absolute', left: '50%', top: '30%', zIndex: 5, pointerEvents: 'none', fontWeight: 800, fontSize: fx.crit ? (big ? 26 : 20) : (big ? 22 : 17), color: fx.kind === 'heal' ? '#3ddc97' : fx.kind === 'damage' ? '#ff5a5a' : C.player, textShadow: '0 0 3px #000, 0 0 3px #000, 0 0 3px #000', whiteSpace: 'nowrap', animation: 'feel-float 1.2s ease-out forwards' }}>
           {fx.text}
         </span>
+        )
       )}
       <div style={{ height: big ? 36 : 26, overflow: 'hidden', fontWeight: big ? 700 : 400 }}>{unit.name}</div>
       {!unit.isAmulet && (
@@ -731,9 +753,15 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     const ev = mine[mine.length - 1]
     if (!ev) return null
     if (ev.type === 'damage') {
-      const total = mine.filter((x) => x.type === 'damage').reduce((a, x) => a + x.amount, 0) // スキル+必殺は、合計で1回に見せる
-      const crit = mine.some((x) => x.crit)
-      return { kind: 'damage', text: `${mine.some((x) => x.means === '必殺') ? '必殺 ' : ''}${crit ? 'クリティカル ' : ''}-${total}`, crit }
+      // スキルのダメージと、【必殺】の追加ダメージは、数字を2段に分けて1回で見せる(種類で色が変わる: 物理=白 / 魔法=青 / 確定=虹)
+      const dmgs = mine.filter((x) => x.type === 'damage')
+      const main = dmgs.filter((x) => x.means !== '必殺')
+      const fin = dmgs.filter((x) => x.means === '必殺')
+      const crit = main.some((x) => x.crit)
+      const parts = []
+      if (main.length) parts.push({ text: `${crit ? 'クリティカル ' : ''}-${main.reduce((a, x) => a + x.amount, 0)}`, dmgType: main[0].dmgType || 'physical' })
+      if (fin.length) parts.push({ text: `必殺 -${fin.reduce((a, x) => a + x.amount, 0)}`, dmgType: 'true' })
+      return { kind: 'damage', text: parts.map((x) => x.text).join(' '), crit, parts }
     }
     if (ev.type === 'heal') return { kind: 'heal', text: `+${ev.amount}` }
     if (ev.type === 'summon') return { kind: 'summon', text: '登場!' }
