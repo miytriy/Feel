@@ -57,7 +57,7 @@ export const KEYWORDS = {
 export const TRIGGER_LABELS = {
   fanfare: 'ファンファーレ', constant: '常時', active: 'アクティブ', lastWord: 'ラストワード',
   onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時', onEvolved: '進化したとき', turnEnd: 'ターン終了時', onLeave: '場を離れる場合', onEnter: '場に出たとき', enemyTurnEnd: '相手のターン終了時',
-  roundStart: 'ラウンド開始時', allyDeath: '味方が戦闘不能になったとき', allyEnter: '味方が場に出たとき', allyTurnStart: '味方のターン開始時', allyTurnEnd: '味方のターン終了時', link: '連携', onBoost: 'スペルブースト時', allyHeal: '味方が回復したとき',
+  roundStart: 'ラウンド開始時', allyDeath: '味方が戦闘不能になったとき', allyEnter: '味方が場に出たとき', allyTurnStart: '味方のターン開始時', turnStart: '自分のターン開始時', allyTurnEnd: '味方のターン終了時', link: '連携', onBoost: 'スペルブースト時', allyHeal: '味方が回復したとき',
 }
 
 // ---------- 遺物(頭・胴・脚・靴のセットを装備したキャラに、セット効果がつく) ----------
@@ -578,7 +578,7 @@ const graveBonus = (state, source, e) => (e.perGraveyard || 0) * state.graveyard
 // 消滅させる: 破壊でも「場を離れる」でもない。墓場にも倒された記録にも入らず、ラストワードや味方の戦闘不能の能力も働かない
 function vanishUnit(state, u, log = true) {
   if (!u.alive) return
-  u.alive = false; u.deathHandled = true; u.hp = 0
+  u.alive = false; u.deathHandled = true; u.hp = 0; u.vanished = true // 消滅したものは、蘇生できない
   u.buffs = []; u.armor = 0; u.barrier = 0; u.stealth = false
   if (log) state.log.push(`${u.name}は消滅した`)
 }
@@ -614,6 +614,26 @@ function summonEarth(state, source, amount) {
   recalc(state)
   syncEarth(state)
   return nu
+}
+
+// 蘇生【リアニメイト_N】: 自分の倒れた(消滅していない)キャラクター・召喚物のうち、速度がNのものからランダムに1体を蘇生する。
+// 元いた場所(場のキャラ / 召喚物フィールド)に、入場直後の状態で戻る。召喚物フィールドが満員のときは、召喚物は選ばれない
+function reanimate(state, source, speed, opts) {
+  const rng = opts?.rng || Math.random
+  const full = summonsOf(state, source).length >= SUMMON_MAX
+  const cands = state.units.filter((u) => !u.alive && !u.vanished && u.team === source.team && Math.round(u.base.spd) === speed && !(u.field === 'summon' && full))
+  if (!cands.length) { state.log.push(`【リアニメイト_${speed}】蘇生できるものがいなかった`); return null }
+  const old = cands[Math.floor(rng() * cands.length)]
+  const idx = state.units.indexOf(old)
+  const u = makeUnit(old.charDef, old.team, 0, old.field, old.uid)
+  applyClassTrait(u, state.classTrait?.[old.team])
+  state.units[idx] = u
+  emit(state, 'summon', { target: u.uid, name: u.name, team: u.team })
+  state.log.push(`【リアニメイト_${speed}】${u.name}が蘇生した`)
+  for (const a of state.units.filter((x) => x.alive && x.team === u.team && x.uid !== u.uid)) fire(state, 'allyEnter', a, { other: u })
+  recalc(state)
+  fire(state, 'onEnter', u, {})
+  return u
 }
 
 // 召喚: 召喚物フィールド(最大5体)に出す。満員なら出せない(opts.overflow があるときだけ、上限を超えて出られる)
@@ -818,6 +838,10 @@ function runEffects(state, source, effects, ctx = {}) {
       for (const t of ['A', 'B']) { n += state.crests[t].length; state.crests[t] = [] }
       state.log.push(n ? `場のクレスト${n}つが消滅した` : '消滅させるクレストがなかった')
       recalc(state)
+      continue
+    }
+    if (e.type === 'reanimate') { // 蘇生(speed = リアニメイトの数値)
+      reanimate(state, source, e.speed, ctx.opts)
       continue
     }
     if (e.type === 'earthSummon') { // 土の印アミュレットを召喚する(amount = 新しいアミュレットの最初の数)
@@ -1074,6 +1098,7 @@ function resolveDeaths(state, opts) {
       if (leave) {
         // 退場するときは、破壊ではなく、必ず消滅になる(墓場・ラストワード・味方の戦闘不能の能力は働かない)
         u.deathHandled = true
+        u.vanished = true
         u.buffs = []; u.armor = 0; u.barrier = 0; u.stealth = false
         state.log.push(`${u.name}は消滅した`)
         noteAbility(state, TRIGGER_LABELS.onLeave, u.name, leave.name && leave.name !== TRIGGER_LABELS.onLeave ? leave.name : '', leave.desc, u.team)
@@ -1216,6 +1241,15 @@ function beginTurn(state, unit, opts) {
       unit.alive = false
       resolveDeaths(state, opts)
       return
+    }
+  }
+  for (const crest of [...state.crests[unit.team]]) { // クレストの【(持ち主の)ターン開始時】: カウントダウンを進める前に働く(カウントダウン_2なら2回働く)
+    if (crest.sourceUid !== unit.uid) continue
+    for (const p of crest.passives) {
+      if (p.trigger !== 'turnStart' || !checkCond(state, unit, p.condition)) continue
+      state.log.push(`クレスト【${crest.name}】が働いた`)
+      noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team)
+      runEffects(state, unit, p.effects, { opts })
     }
   }
   for (const crest of [...state.crests[unit.team]]) {

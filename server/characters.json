@@ -66,6 +66,7 @@
   { "id": "nightmare_08", "name": "怪奇の探索者・ユナ", "class": "ナイトメア", "rarity": "silver", "rotation": "1" },
   { "id": "nightmare_09", "name": "青薔薇の令嬢・セレス", "class": "ナイトメア", "rarity": "gold", "rotation": "1" },
   { "id": "nightmare_10", "name": "瞑地の天宮・ムカン", "class": "ナイトメア", "rarity": "gold", "rotation": "1" },
+  { "id": "nightmare_2_06", "name": "流れ堕つ冥河・カローン", "class": "ナイトメア", "rarity": "legend", "rotation": "2" },
   { "id": "nightmare_2_08", "name": "双輪夜行・ギンセツ&ユヅキ", "class": "ナイトメア", "rarity": "legend", "rotation": "2" },
   { "id": "witch_01", "name": "見習い占星術師", "class": "ウィッチ", "rarity": "bronze", "rotation": "1" },
   { "id": "witch_02", "name": "アドラブルティーチャー・ミラ", "class": "ウィッチ", "rarity": "silver", "rotation": "1" },
