@@ -497,7 +497,9 @@ function resolveTargets(state, source, key, ctx) {
   const rng = ctx.opts?.rng || Math.random
   const allies = alliesOf(state, source)
   const enemies = enemiesOf(state, source).filter(abilityTargetable)
-  const pickRandom = (list) => (list.length ? [list[Math.floor(rng() * list.length)]] : [])
+  const only = ctx.only || {} // onlyName / onlyType / onlyClass: ランダムに選ぶ前に、候補をしぼる
+  const keep = (u) => !(only.onlyName && u.name !== only.onlyName) && !(only.onlyType && !hasType(u, only.onlyType)) && !(only.onlyClass && u.class !== only.onlyClass)
+  const pickRandom = (list0) => { const list = list0.filter(keep); return list.length ? [list[Math.floor(rng() * list.length)]] : [] }
   switch (key) {
     case 'self': return [source]
     case 'opponent': return ctx.other && ctx.other.alive ? [ctx.other] : []
@@ -883,7 +885,7 @@ function runEffects(state, source, effects, ctx = {}) {
       continue
     }
 
-    let targets = resolveTargets(state, source, e.target || 'self', ctx)
+    let targets = resolveTargets(state, source, e.target || 'self', { ...ctx, only: e })
     if (e.onlyClass) targets = targets.filter((t) => t.class === e.onlyClass) // 指定のクラス(ロイヤルなど)だけ
     if (e.onlyType) targets = targets.filter((t) => hasType(t, e.onlyType)) // 指定のタイプ(式神など)だけ
     if (e.onlyName) targets = targets.filter((t) => t.name === e.onlyName) // 指定の名前のキャラ(トークンなど)だけ
