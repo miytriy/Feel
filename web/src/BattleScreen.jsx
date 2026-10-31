@@ -134,7 +134,7 @@ function badgesOf(unit) {
   return badges
 }
 
-function UnitCard({ unit, active, selected, selectable, inspected, onClick, big = false, fx = null, hl = false, tick = 0, loss = 0 }) {
+function UnitCard({ unit, active, selected, selectable, inspected, onClick, big = false, fx = null, hl = false, tick = 0, loss = 0, role = null }) {
   const ratio = Math.max(0, unit.hp / unit.maxHp)
   const hpColor = ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow
   const badges = unit.alive ? badgesOf(unit) : []
@@ -153,8 +153,16 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
         cursor: 'pointer', position: 'relative',
         ...(hl ? { boxShadow: `0 0 0 4px ${C.active}`, transform: 'scale(1.03)', zIndex: 2 } : {}),
         ...(fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s` } : {}),
+        // 攻撃する側: チームの色で光って、相手のほうへ少し出る / 受ける側: 赤く縁どる(揺れとダメージの数字は、いままでどおり)
+        ...(role === 'attacker' ? { boxShadow: `0 0 0 3px ${TEAM_COLOR[unit.team]}, 0 0 18px 2px ${alpha(TEAM_COLOR[unit.team], 60)}`, zIndex: 3, animation: `${unit.team === 'A' ? 'feel-lunge-up' : 'feel-lunge-down'} 0.5s ease-out` } : {}),
+        ...(role === 'target' || role === 'guard' ? { boxShadow: `0 0 0 3px ${role === 'guard' ? C.player : C.bad}, 0 0 16px 2px ${alpha(role === 'guard' ? C.player : C.bad, 55)}`, zIndex: 2 } : {}),
       }}
     >
+      {role && (
+        <span aria-hidden="true" style={{ position: 'absolute', left: 6, top: -9, zIndex: 6, padding: '0 6px', borderRadius: 999, fontSize: big ? 11 : 9, fontWeight: 800, lineHeight: '16px', color: '#121212', background: role === 'attacker' ? TEAM_COLOR[unit.team] : role === 'guard' ? C.player : C.bad, whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+          {role === 'attacker' ? '攻撃' : role === 'guard' ? 'ガード' : '被弾'}
+        </span>
+      )}
       {fx && (
         <span key={tick} style={{ position: 'absolute', left: '50%', top: '30%', zIndex: 5, pointerEvents: 'none', fontWeight: 800, fontSize: fx.crit ? (big ? 26 : 20) : (big ? 22 : 17), color: fx.kind === 'heal' ? '#3ddc97' : fx.kind === 'damage' ? '#ff5a5a' : C.player, textShadow: '0 0 3px #000, 0 0 3px #000, 0 0 3px #000', whiteSpace: 'nowrap', animation: 'feel-float 1.2s ease-out forwards' }}>
           {fx.text}
@@ -223,7 +231,8 @@ function Row({ title, color, children, big = false }) {
   )
 }
 
-// 攻撃した側から、攻撃された側へ矢印を引く(再生中のダメージ・防御の瞬間だけ)
+// 攻撃した側から、攻撃された側へ、細い光の線を引く(再生中のダメージ・防御の瞬間だけ)。
+// 近い相手(となり同士)は、カードの印だけで分かるので、線は引かない
 function AttackArrow({ ev, big }) {
   const [pt, setPt] = useState(null)
   useLayoutEffect(() => {
@@ -232,16 +241,20 @@ function AttackArrow({ ev, big }) {
     const b = document.querySelector(`[data-uid="${ev.target}"]`)
     if (!a || !b) { setPt(null); return }
     const ra = a.getBoundingClientRect(); const rb = b.getBoundingClientRect()
-    setPt({ x1: ra.left + ra.width / 2, y1: ra.top + ra.height / 2, x2: rb.left + rb.width / 2, y2: rb.top + rb.height / 2 })
+    const p = { x1: ra.left + ra.width / 2, y1: ra.top + ra.height / 2, x2: rb.left + rb.width / 2, y2: rb.top + rb.height / 2 }
+    const dist = Math.hypot(p.x2 - p.x1, p.y2 - p.y1)
+    setPt(dist > Math.max(ra.width, rb.width) * 1.9 ? p : null)
   }, [ev])
   if (!pt || !ev) return null
   const color = ev.srcTeam === 'B' ? C.enemy : C.player
+  const mx = (pt.x1 + pt.x2) / 2 - (pt.y2 - pt.y1) * 0.14
+  const my = (pt.y1 + pt.y2) / 2 + (pt.x2 - pt.x1) * 0.14
+  const d = `M${pt.x1},${pt.y1} Q${mx},${my} ${pt.x2},${pt.y2}`
   return (
     <svg aria-hidden="true" data-testid="attack-arrow" style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 20 }}>
-      <defs><marker id="feel-arw" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill={color} /></marker></defs>
-      <line x1={pt.x1} y1={pt.y1} x2={pt.x2} y2={pt.y2} stroke="#000" strokeWidth={big ? 9 : 7} strokeLinecap="round" opacity="0.5" />
-      <line x1={pt.x1} y1={pt.y1} x2={pt.x2} y2={pt.y2} stroke={color} strokeWidth={big ? 5 : 4} strokeLinecap="round" markerEnd="url(#feel-arw)" />
-      <circle cx={pt.x1} cy={pt.y1} r={big ? 8 : 6} fill={color} stroke="#000" strokeWidth="2" />
+      <path d={d} fill="none" stroke="#000" strokeWidth={big ? 6 : 5} strokeLinecap="round" opacity="0.35" />
+      <path d={d} fill="none" stroke={color} strokeWidth={big ? 3 : 2.5} strokeLinecap="round" pathLength="1" strokeDasharray="1" style={{ animation: 'feel-draw 0.35s ease-out forwards', filter: `drop-shadow(0 0 4px ${color})` }} />
+      <circle cx={pt.x2} cy={pt.y2} r={big ? 6 : 5} fill={color} stroke="#000" strokeWidth="1.5" />
     </svg>
   )
 }
@@ -740,7 +753,17 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     if (ev.type === 'block') return { kind: 'block', text: 'ガード!' }
     return null
   }
-  const arrowEvs = groupEvs.filter((x, n) => (x.type === 'damage' || x.type === 'block') && groupEvs.findIndex((y) => y.target === x.target && y.type === x.type) === n).map((x) => ({ ...x, srcTeam: state.units.find((u) => u.uid === x.src)?.team }))
+  const arrowAll = groupEvs.filter((x, n) => (x.type === 'damage' || x.type === 'block') && groupEvs.findIndex((y) => y.target === x.target && y.type === x.type) === n).map((x) => ({ ...x, srcTeam: state.units.find((u) => u.uid === x.src)?.team }))
+  const arrowEvs = arrowAll.length <= 2 ? arrowAll : [] // 全体攻撃(3体以上)では線を引かない。カードの印だけで分かる
+  // 攻撃した側・受けた側の印(まとまった出来事の全員ぶん)。全体攻撃なら、攻撃側1体と、受ける側が全員
+  const attackerIds = new Set(); const targetIds = new Map()
+  for (const x of groupEvs) {
+    if ((x.type === 'damage' || x.type === 'block' || x.type === 'attack') && x.src && x.target && x.src !== x.target) {
+      attackerIds.add(x.src)
+      if (x.type === 'block') targetIds.set(x.target, 'guard'); else if (targetIds.get(x.target) !== 'guard') targetIds.set(x.target, 'target')
+    }
+  }
+  const roleFor = (uid) => (attackerIds.has(uid) ? 'attacker' : targetIds.get(uid) || null)
   const hlFor = (uid) => !!ev && ev.type === 'attack' && (ev.src === uid || ev.target === uid)
   const levelInfo = CPU_LEVELS.find((l) => l.level === level)
   const enemies = view.units.filter((u) => u.team === 'B' && u.field === 'main')
@@ -765,6 +788,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
       active={u.uid === view.active}
       fx={fxFor(u.uid)}
       hl={hlFor(u.uid)}
+      role={roleFor(u.uid)}
       tick={play ? play.i : 0}
       loss={u.uid === selected ? lossShown : 0}
       selected={u.uid === selected}
