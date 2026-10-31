@@ -17,7 +17,7 @@ const LIBERATION_GAUGE = 15 // 奥義ゲージがこの値以上のとき【解�
 const MAX_ACTIONS_PER_TURN = 30 // 1ターンに使える特性・進化の回数の安全上限
 const MAX_TURNS = 1500 // これを超えたら引き分け(膠着対策)
 const MAGIC_CONVERSION = 0.7 // 魔力参照の攻撃は、攻撃力の70%を魔力に変換する
-const FINISHER_RATE = 0.35 // 必殺: 相手の現在HPの35%
+const FINISHER_RATE = 0.15 // 必殺: 相手の最大HPの15%
 const STATS = ['atk', 'mag', 'def', 'spd', 'critRate', 'critDmg', 'dmgResist']
 
 // 画面表示用: キーワード能力の名前と説明
@@ -49,7 +49,7 @@ export const KEYWORDS = {
   intimidate: { label: '威圧', desc: '相手のスキルで選ばれない' },
   rush: { label: '突進', desc: '場に出たターンでもスキルを発動できる' },
   dash: { label: '疾走', desc: '場に出たターンでもスキルを発動できる。ラウンド開始時に行動順100%アップ' },
-  finisher: { label: '必殺', desc: 'スキルでダメージを与えたとき、相手の現在HP35%の固定ダメージ(防御無視)' },
+  finisher: { label: '必殺', desc: 'スキルでダメージを与えるとき、ターゲットに対象の最大HP15%分の確定ダメージを与える。そのターゲットが召喚物だったとき、それを破壊する' },
   drain: { label: 'ドレイン', desc: 'スキルで与えたダメージと同じだけ自身を回復' },
   barrier: { label: 'バリア', desc: '攻撃を一回0ダメージにして壊れる' },
   earthSign: { label: '土の印', desc: '自分の場の土の印の数は合算される。土の印は土の秘術によって消費される。これは能力で破壊できず、相手の能力で選ばれない' },
@@ -1458,13 +1458,20 @@ function doSkill(state, actor, targetUid, opts) {
     state.log.push(`${actor.name}の「${skill.name}」! ${target.name}に${Math.round(dealt)}ダメージ${isCrit ? '(クリティカル!)' : ''}`)
     let total = dealt
     if (hasKw(actor, 'finisher') && target.alive) {
-      const fixed = Math.floor(target.hp * FINISHER_RATE)
+      const fixed = Math.floor(target.maxHp * FINISHER_RATE)
       if (fixed > 0) {
         dealDamage(target, fixed, true) // 必殺の固定ダメージは確定ダメージ
         emit(state, 'damage', { src: actor.uid, target: target.uid, amount: fixed, means: '必殺' })
         if (!target.alive) target.killedBy = actor.uid
         total += fixed
-        state.log.push(`【必殺】${target.name}に追加で${fixed}の固定ダメージ`)
+        state.log.push(`【必殺】${target.name}に追加で${fixed}の確定ダメージ`)
+      }
+      // 召喚物(アミュレットではない)がターゲットなら、そのまま破壊する
+      if (target.alive && target.field === 'summon' && !target.isAmulet) {
+        target.hp = 0
+        target.alive = false
+        target.killedBy = actor.uid
+        state.log.push(`【必殺】${target.name}は破壊された`)
       }
     }
     if (hasKw(actor, 'drain')) heal(state, actor, total)
