@@ -75,7 +75,7 @@ const TIPS = [
 let lastProgress = (() => { try { const j = JSON.parse(sessionStorage.getItem('feel-load') || 'null'); if (j) return j } catch {} return { v: 0, t: 0 } })() // 再読み込みされても続きから進める
 const saveProgress = (p) => { lastProgress = p; try { sessionStorage.setItem('feel-load', JSON.stringify(p)) } catch {} }
 function useLoadProgress(duration, target) {
-  const [v, setV] = useState(() => (Date.now() - lastProgress.t < 4000 && lastProgress.v < 99 ? lastProgress.v : 0))
+  const [v, setV] = useState(() => (Date.now() - lastProgress.t < 15000 && lastProgress.v < 99 ? lastProgress.v : 0))
   useEffect(() => {
     const start = Date.now()
     const from = v
