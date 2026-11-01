@@ -1170,7 +1170,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
         {errBox}
         <ActionBar state={view} big />
         <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(380px, 30vw)', gap: 20 }}>
-          <div style={{ minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 14, paddingRight: 4 }}>
+          <div className="no-sb" style={{ minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 14, paddingRight: 4 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <Row big title="相手" color={C.enemy}>{enemies.map(card)}</Row>
               <Row big title="相手の召喚物" color={C.enemy}>{summonCards(enemySummons)}</Row>
@@ -1182,8 +1182,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
             </div>
           </div>
           <div style={{ minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {inspected && <div style={{ flex: '0 1 auto', maxHeight: '30%', overflowY: 'auto' }}><InspectBox unit={inspected} big /></div>}
-            <div style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', padding: 14, borderRadius: 10, background: C.card, border: `1px solid ${C.line}`, fontSize: 14 }}>
+            {inspected && <div className="no-sb" style={{ flex: '0 1 auto', maxHeight: '30%', overflowY: 'auto' }}><InspectBox unit={inspected} big /></div>}
+            <div className="no-sb" style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', padding: 14, borderRadius: 10, background: C.card, border: `1px solid ${C.line}`, fontSize: 14 }}>
               {panelInner}
             </div>
           </div>
@@ -1216,7 +1216,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
 
       {inspected && <InspectBox unit={inspected} />}
 
-      <div style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '14px -12px 0', padding: '10px 12px calc(10px + env(safe-area-inset-bottom))', height: 'min(230px, 42vh)', boxSizing: 'border-box', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
+      <div className="no-sb" style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '14px -12px 0', padding: '10px 12px calc(10px + env(safe-area-inset-bottom))', height: 'min(230px, 42vh)', boxSizing: 'border-box', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
         {panelInner}
       </div>
     </div>
