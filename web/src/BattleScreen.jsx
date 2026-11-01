@@ -185,9 +185,12 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
         </span>
       )}
       {unit.alive && (unit.keywords || []).includes('earthSign') && (
-        // 【土の印】を持つユニットの盤面エフェクト: オレンジの円(縁が明るい光の輪)が、カードを包んでゆっくり脈打つ
-        <span aria-hidden="true" data-testid="fx-earth-idle" style={{ position: 'absolute', left: '50%', top: '50%', height: '125%', aspectRatio: '1', borderRadius: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 3,
-          background: 'radial-gradient(circle, rgba(255,150,40,0.10) 0%, rgba(255,150,40,0.18) 52%, rgba(255,160,40,0.85) 66%, rgba(255,120,20,0.35) 72%, rgba(255,120,20,0) 78%)', animation: 'feel-earth-idle 2.4s ease-in-out infinite' }} />
+        // 【土の印】を持つユニットの盤面エフェクト: カードと同じくらいの大きさのオレンジの円。縁が濃く明るく、内側へやわらかく薄れる。縁に明るい筋がゆっくり回る
+        <span aria-hidden="true" data-testid="fx-earth-idle" style={{ position: 'absolute', left: '50%', top: '50%', height: '100%', aspectRatio: '1', borderRadius: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 3, overflow: 'hidden',
+          background: 'radial-gradient(circle, rgba(255,140,30,0) 0%, rgba(255,140,30,0.10) 42%, rgba(255,140,20,0.62) 62%, rgba(255,148,22,1) 84%, rgba(255,172,48,0.97) 95%, rgba(255,172,48,0) 100%)',
+          boxShadow: '0 0 10px 2px rgba(255,140,20,0.55)', animation: 'feel-earth-idle 2.6s ease-in-out infinite' }}>
+          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(from 0deg, rgba(255,230,140,0) 0%, rgba(255,230,140,0.40) 12%, rgba(255,230,140,0) 30%, rgba(255,230,140,0) 55%, rgba(255,230,140,0.32) 68%, rgba(255,230,140,0) 85%)', WebkitMaskImage: 'radial-gradient(circle, transparent 52%, #000 74%)', maskImage: 'radial-gradient(circle, transparent 52%, #000 74%)', animation: 'feel-earth-spin 9s linear infinite' }} />
+        </span>
       )}
       {unit.alive && ((unit.keywords || []).includes('aura') || (unit.keywords || []).includes('earthSign')) && ( // 【土の印】は、オーラと同じ効果(相手の能力で選ばれない)を持つので、オーラのエフェクトも出る
         // 【オーラ】の盤面エフェクト: 7枚の淡い緑のひし形(1-2-1-2-1の並び)が、上から順に、グラデーションのようにフェードイン → フェードアウトを繰り返す
