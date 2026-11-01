@@ -189,7 +189,7 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
       data-selectable={selectable ? 'true' : 'false'}
       onClick={onClick}
       style={{
-        minWidth: 0, boxSizing: 'border-box', padding: big ? 10 : 4, borderRadius: big ? 10 : 8, fontSize: big ? 13 : 10, lineHeight: 1.3,
+        minWidth: 0, boxSizing: 'border-box', padding: big ? 10 : 4, ...(big ? {} : { height: 106, overflow: 'visible' }), // 戦闘画面が動かないように、スマホ幅のカードは高さを固定 borderRadius: big ? 10 : 8, fontSize: big ? 13 : 10, lineHeight: 1.3,
         background: unit.alive ? C.card : '#0a161a',
         opacity: unit.alive ? 1 : 0.5,
         border: `2px solid ${selected ? C.active : selectable ? C.ink : active ? TEAM_COLOR[unit.team] : inspected ? C.mute : C.line}`,
@@ -370,7 +370,7 @@ function Row({ title, color, children, big = false }) {
 function RecentFeed({ feed, big }) {
   const rows = feed.slice(-5)
   return (
-    <div data-testid="feed" style={{ minHeight: big ? 128 : 112, padding: big ? '8px 12px' : '6px 8px', borderRadius: 10, background: C.card, border: `1px solid ${C.line}`, fontSize: big ? 14 : 12, lineHeight: 1.5, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+    <div data-testid="feed" style={{ height: big ? 170 : 150, boxSizing: 'border-box', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: big ? '8px 12px' : '6px 8px', borderRadius: 10, background: C.card, border: `1px solid ${C.line}`, fontSize: big ? 14 : 12, lineHeight: 1.5 }}>
       {rows.length === 0 && <div style={{ color: C.mute }}>ここに、いま起きたことが出ます</div>}
       {rows.map((r, i) => {
         const latest = i === rows.length - 1
@@ -415,10 +415,11 @@ function InspectBox({ unit, big = false }) {
 
 // 直近に発動した能力の説明(ファンファーレ・特性・スペル・進化など)。何が起きたかを、説明つきで見せる
 function AbilityBanner({ ability, now = '', big = false }) {
-  if (!ability && !now) return null
+  const slotH = big ? 112 : 96 // 能力の表示が出たり消えたりしても、画面が動かないように、場所をいつも同じだけ取る
+  if (!ability && !now) return <div aria-hidden="true" style={{ height: slotH }} />
   const color = ability && ability.team === 'B' ? C.enemy : C.player
   return (
-    <div data-testid="ability" style={{ padding: big ? '10px 14px' : '8px 10px', borderRadius: 10, background: C.card, borderLeft: `6px solid ${color}`, border: `1px solid ${C.line}`, borderLeftWidth: 6, borderLeftColor: color, fontSize: big ? 14 : 12, lineHeight: 1.5 }}>
+    <div data-testid="ability" style={{ height: slotH, boxSizing: 'border-box', overflow: 'hidden', padding: big ? '10px 14px' : '8px 10px', borderRadius: 10, background: C.card, borderLeft: `6px solid ${color}`, border: `1px solid ${C.line}`, borderLeftWidth: 6, borderLeftColor: color, fontSize: big ? 14 : 12, lineHeight: 1.5 }}>
       {now && <div data-testid="now" style={{ fontWeight: 800, marginBottom: 4, color: C.ink }}>{now}</div>}
       {ability && (
         <>
@@ -936,6 +937,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const shown = (u) => u.field === 'summon' && (u.alive || dyingUids.has(u.uid))
   const enemySummons = view.units.filter((u) => u.team === 'B' && shown(u))
   const playerSummons = view.units.filter((u) => u.team === 'A' && shown(u))
+  const summonCards = (list) => (list.length ? list.map(card) : <div aria-hidden="true" style={{ gridColumn: '1 / -1', height: desktop ? 0 : 106, minHeight: desktop ? 60 : 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, border: `1px dashed ${C.line}`, color: C.mute, fontSize: 11, opacity: 0.6 }}>召喚物なし</div>) // 召喚物がいなくても場所は空けておく(画面が動かないように)
   const resultText = state.winner === 'A' ? '勝利!' : state.winner === 'B' ? '敗北…' : '引き分け'
   const inspected = inspect && inspect !== selected ? getUnit(state, inspect) : null // 選択中の相手は、操作パネルに詳しく出すので、ここでは重ねて出さない
   const modeTrait = mode ? actor.traits.find((t) => t.id === mode) : null
@@ -981,7 +983,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
             <button onClick={backLevel} style={buttonStyle(false, false)}>{flow ? 'レベルを選ぶ' : '強さを選び直す'}</button>
           </div>
         ) : playing ? (
-          <div style={{ fontSize: 13, color: C.mute }}>動きを再生中… (スキップもできます)</div>
+          <div style={{ fontSize: 13, color: C.mute }}>動きを再生中…</div>
         ) : cpuTurn ? (
           <div style={{ fontSize: 13, color: C.mute }}>{actor.name}(相手)が考えています…</div>
         ) : choosing && modePicking ? (
@@ -1132,11 +1134,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
         )}
     </>
   )
-  const speedBar = playing ? ( // 再生中だけ出す「スキップ」(再生の速さは設定で決める)
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: C.mute, marginTop: 4 }}>
-      <button onClick={() => setPlay(null)} style={{ ...buttonStyle(true, false), padding: '2px 10px', fontSize: 11, minHeight: 0 }}>スキップ</button>
-    </div>
-  ) : null
+  const speedBar = null // スキップボタンは廃止(再生の速さは設定で決める)
   const nameOf = (uid) => state.units.find((u) => u.uid === uid)?.name ?? ''
   const nowText = !ev ? '' : ev.type === 'damage' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}に${ev.amount}ダメージ${ev.crit ? '(クリティカル!)' : ''}` : ev.type === 'block' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}のバリアが防いだ(0ダメージ)` : ev.type === 'turn' ? `${ev.team === 'B' ? '相手' : 'あなた'}のターン: ${ev.name}` : ''
   const hud = <BattleHud view={view} level={level} levelInfo={levelInfo} desktop={desktop} onLeave={() => setLeaveAsk(true)} onIntro={() => { setIntroFirst(false); setIntro(true) }} onCommentary={() => setLogOpen(true)} auto={auto} onAuto={() => setAuto((v) => !v)} />
@@ -1175,11 +1173,11 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
           <div style={{ minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 14, paddingRight: 4 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <Row big title="相手" color={C.enemy}>{enemies.map(card)}</Row>
-              {enemySummons.length > 0 && <Row big title="相手の召喚物" color={C.enemy}>{enemySummons.map(card)}</Row>}
+              <Row big title="相手の召喚物" color={C.enemy}>{summonCards(enemySummons)}</Row>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}><RecentFeed feed={feed} big /><AbilityBanner ability={view.lastAbility} big /></div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {playerSummons.length > 0 && <Row big title="自分の召喚物" color={C.player}>{playerSummons.map(card)}</Row>}
+              <Row big title="自分の召喚物" color={C.player}>{summonCards(playerSummons)}</Row>
               <Row big title="自分" color={C.player}>{players.map(card)}</Row>
             </div>
           </div>
@@ -1209,16 +1207,16 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
       {errBox}
 
       <Row title="相手" color={C.enemy}>{enemies.map(card)}</Row>
-      {enemySummons.length > 0 && <Row title="相手の召喚物" color={C.enemy}>{enemySummons.map(card)}</Row>}
+      <Row title="相手の召喚物" color={C.enemy}>{summonCards(enemySummons)}</Row>
 
       <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}><RecentFeed feed={feed} /><AbilityBanner ability={view.lastAbility} /></div>
 
-      {playerSummons.length > 0 && <Row title="自分の召喚物" color={C.player}>{playerSummons.map(card)}</Row>}
+      <Row title="自分の召喚物" color={C.player}>{summonCards(playerSummons)}</Row>
       <Row title="自分" color={C.player}>{players.map(card)}</Row>
 
       {inspected && <InspectBox unit={inspected} />}
 
-      <div style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '14px -12px 0', padding: '10px 12px calc(10px + env(safe-area-inset-bottom))', maxHeight: '42vh', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
+      <div style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '14px -12px 0', padding: '10px 12px calc(10px + env(safe-area-inset-bottom))', height: 'min(230px, 42vh)', boxSizing: 'border-box', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
         {panelInner}
       </div>
     </div>
