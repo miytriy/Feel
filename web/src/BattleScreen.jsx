@@ -202,22 +202,22 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
         ...(role === 'target' || role === 'guard' ? { boxShadow: `0 0 0 3px ${role === 'guard' ? C.player : C.bad}, 0 0 16px 2px ${alpha(role === 'guard' ? C.player : C.bad, 55)}`, zIndex: 2 } : {}),
       }}
     >
-      {fx && fx.kind === 'destroy' && (
+      {fx && fx.die === 'destroy' && (
         // 破壊の演出: 白熱のフラッシュ → 赤い円(墓場が増えるときは、黒いドクロ入り)→ 紙片が散り、円がくだけて赤い火の粉になって消える
         <span key={`des-${tick}`} aria-hidden="true" data-testid="fx-destroy" style={{ position: 'absolute', left: '50%', top: '50%', height: '120%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }}>
-          <span style={{ position: 'absolute', inset: '8%', borderRadius: '24%', background: 'radial-gradient(circle, #fff 0%, #ffe2b0 45%, rgba(255,150,70,0.8) 75%, rgba(255,120,60,0) 100%)', boxShadow: '0 0 20px 6px rgba(255,170,90,0.8)', animation: 'feel-d-flash 0.3s ease-out forwards' }} />
-          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 50% 45%, #ff7a5c 0%, #f0452f 62%, #b81f16 100%)', boxShadow: '0 0 18px 5px rgba(255,80,60,0.75), inset 0 0 14px 2px rgba(120,10,10,0.7)', animation: 'feel-d-orb 1.05s ease-out forwards' }}>
+          <span style={{ position: 'absolute', inset: '8%', borderRadius: '24%', background: 'radial-gradient(circle, #fff 0%, #ffe2b0 45%, rgba(255,150,70,0.8) 75%, rgba(255,120,60,0) 100%)', boxShadow: '0 0 20px 6px rgba(255,170,90,0.8)', animation: 'feel-d-flash 0.22s ease-out forwards' }} />
+          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 50% 45%, #ff7a5c 0%, #f0452f 62%, #b81f16 100%)', boxShadow: '0 0 18px 5px rgba(255,80,60,0.75), inset 0 0 14px 2px rgba(120,10,10,0.7)', animation: 'feel-d-orb 0.8s ease-out forwards' }}>
             {fx.grave && <Skull />}
           </span>
           {CONFETTI.map((c, n) => (
-            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: 5, height: 3, marginLeft: -2, marginTop: -1, background: n % 3 ? '#fff' : '#cfe0e8', '--dx': c.dx, '--dy': c.dy, '--rot': c.rot, animation: `feel-d-conf 0.7s ease-out ${c.delay}s both` }} />
+            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: 5, height: 3, marginLeft: -2, marginTop: -1, background: n % 3 ? '#fff' : '#cfe0e8', '--dx': c.dx, '--dy': c.dy, '--rot': c.rot, animation: `feel-d-conf 0.55s ease-out ${c.delay * 0.7}s both` }} />
           ))}
         </span>
       )}
-      {fx && fx.kind === 'vanish' && (
+      {fx && fx.die === 'vanish' && (
         // 消滅の演出: 青紫の光の円が広がり、縁にばちばちと電気の輪が走る → 輪がぎゅっと小さくなって、白い光の点に収束し、はじけて消える
         <span key={`van-${tick}`} aria-hidden="true" data-testid="fx-vanish" style={{ position: 'absolute', left: '50%', top: '50%', height: '120%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }}>
-          <span style={{ position: 'absolute', inset: 0, animation: 'feel-v-all 1.05s ease-in-out forwards' }}>
+          <span style={{ position: 'absolute', inset: 0, animation: 'feel-v-all 0.85s ease-in-out forwards' }}>
             <span style={{ position: 'absolute', inset: '4%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(150,190,255,0.95) 0%, rgba(40,60,200,0.85) 38%, rgba(60,30,150,0.75) 72%, rgba(70,40,170,0.25) 100%)' }} />
             <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', filter: 'drop-shadow(0 0 3px #4fb4ff) drop-shadow(0 0 6px #3a7cff)' }}>
               {JAG.map((d, n) => (
@@ -225,7 +225,7 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
               ))}
             </svg>
           </span>
-          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '46%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, #fff 0%, rgba(190,225,255,0.9) 45%, rgba(100,170,255,0) 100%)', animation: 'feel-v-core 1.05s ease-in forwards' }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '46%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, #fff 0%, rgba(190,225,255,0.9) 45%, rgba(100,170,255,0) 100%)', animation: 'feel-v-core 0.85s ease-in forwards' }} />
         </span>
       )}
       {unit.alive && (unit.keywords || []).includes('guard') && (
@@ -484,6 +484,8 @@ function groupEnd(events, i) {
   let j = i
   while (j + 1 < events.length) {
     const n = events[j + 1]
+    const dying = (t) => t === 'destroy' || t === 'vanish'
+    if (dying(n.type) && (e.type === 'damage' || dying(e.type))) { seen.add(n.target); j += 1; continue } // HPが0になった瞬間に、破壊・消滅の演出を、ダメージと一緒に出す
     if (n.type !== e.type) break
     const finisher = e.type === 'damage' && n.means === '必殺' && n.src === e.src // 【必殺】の追加ダメージは、スキルのダメージと合わせて1回で見せる(同じ相手でもよい)
     const boostT = n.type === 'buff' || n.type === 'keyword' // 強化・能力付与は、同じ相手に重なってもひとまとめ
@@ -529,7 +531,7 @@ function reorderBoost(evs) {
   }
   return out
 }
-const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, destroy: 1100, vanish: 1100, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, destroy: 850, vanish: 850, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null }) {
@@ -881,9 +883,10 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     }
   }
   const groupEvs = play ? play.events.slice(gStart, gEnd + 1) : []
-  const fxFor = (uid) => {
+  const fxFor0 = (uid) => {
     const mine = groupEvs.filter((x) => x.target === uid) // まとまった出来事の中から、この人に起きたものを探す
-    const ev = mine[mine.length - 1]
+    const dieEv = mine.find((x) => x.type === 'destroy' || x.type === 'vanish') // 倒れる・消える演出は、ダメージの表示と重ねる
+    const ev = [...mine].reverse().find((x) => x.type !== 'destroy' && x.type !== 'vanish') || mine[mine.length - 1]
     if (!ev) return null
     if (ev.type === 'damage') {
       // スキルのダメージと、【必殺】の追加ダメージは、数字を2段に分けて1回で見せる(種類で色が変わる: 物理=白 / 魔法=青 / 確定=虹)
@@ -904,6 +907,12 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     if (ev.type === 'summon') return { kind: 'summon', text: '登場!' }
     if (ev.type === 'block') return { kind: 'block', text: 'ガード!' }
     return null
+  }
+  const fxFor = (uid) => {
+    const mine = groupEvs.filter((x) => x.target === uid)
+    const dieEv = mine.find((x) => x.type === 'destroy' || x.type === 'vanish')
+    const f = fxFor0(uid)
+    return dieEv ? { ...(f && f.kind !== 'destroy' && f.kind !== 'vanish' ? f : { kind: 'none', text: '' }), die: dieEv.type, grave: !!dieEv.grave } : f
   }
   // 攻撃した側・受けた側の印(まとまった出来事の全員ぶん)。全体攻撃なら、攻撃側1体と、受ける側が全員
   const attackerIds = new Set(); const targetIds = new Map()
