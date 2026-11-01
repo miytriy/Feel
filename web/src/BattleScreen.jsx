@@ -398,8 +398,6 @@ function groupEnd(events, i) {
   let j = i
   while (j + 1 < events.length) {
     const n = events[j + 1]
-    const boost = (t) => t === 'buff' || t === 'keyword' // 強化と能力付与は、ひとまとめ(同じ相手に重ねてもよい)
-    if (boost(e.type) && boost(n.type)) { j += 1; continue }
     if (n.type !== e.type) break
     const finisher = e.type === 'damage' && n.means === '必殺' && n.src === e.src // 【必殺】の追加ダメージは、スキルのダメージと合わせて1回で見せる(同じ相手でもよい)
     if (!finisher && seen.has(n.target)) break
@@ -408,6 +406,24 @@ function groupEnd(events, i) {
     j += 1
   }
   return j
+}
+// 召喚のあとに、1体ずつ「強化 → 能力付与」が交互に起きる(例: 3体召喚 → 1体ごとに強化と付与)場合は、見せる順を「全員に強化 → 全員に能力付与」に並べ替える
+function reorderBoost(evs) {
+  const isB = (e) => e.type === 'buff' || e.type === 'keyword'
+  const out = []
+  for (let i = 0; i < evs.length;) {
+    if (!isB(evs[i])) { out.push(evs[i++]); continue }
+    let j = i
+    while (j < evs.length && isB(evs[j])) j++
+    const run = evs.slice(i, j)
+    const buffs = run.filter((e) => e.type === 'buff'); const kws = run.filter((e) => e.type === 'keyword')
+    if (!buffs.length || !kws.length) { out.push(...run); i = j; continue }
+    const snap = (e) => ({ units: e.units, logLen: e.logLen, mp: e.mp, ep: e.ep })
+    const bs = snap(buffs[buffs.length - 1]); const ks = snap(run[run.length - 1])
+    out.push(...buffs.map((e) => ({ ...e, ...bs })), ...kws.map((e) => ({ ...e, ...ks })))
+    i = j
+  }
+  return out
 }
 const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, sync: 300 }
 
@@ -560,7 +576,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const commit = (next) => {
     try { const d = collectHistory(state, next); setHist((h) => addHistory(h, d)) } catch (e) { console.error('バトルログの集計に失敗', e) } // 失敗しても、対戦は止めない
     try { addEvents(statsRef.current, next.events || [], (uid) => next.units.find((u) => u.uid === uid)) } catch (e) { console.error('キャリアの集計に失敗', e) } // 記録が失敗しても、対戦は止めない
-    const evs = next.events || []
+    const evs = reorderBoost(next.events || [])
     setPlay(evs.length ? { events: evs, i: 0, prevActive: state?.active ?? null, prevAbility: state?.lastAbility ?? null } : null)
     setState(next)
   }
@@ -776,11 +792,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
       if (fin.length) parts.push({ text: `必殺 -${fin.reduce((a, x) => a + x.amount, 0)}`, dmgType: 'true' })
       return { kind: 'damage', text: parts.map((x) => x.text).join(' '), crit, parts }
     }
-    if (ev.type === 'buff' || ev.type === 'keyword') { // 強化(攻撃力+30↑ など)と能力付与(【〇〇】獲得)は、同じ相手なら1つの表示にまとめる
-      const bs = mine.filter((x) => x.type === 'buff'); const ks = mine.filter((x) => x.type === 'keyword')
-      const text = [bs.map((x) => `${x.text}↑`).join(' '), ks.length ? ks.map((x) => `【${x.label}】`).join('') + '獲得' : ''].filter(Boolean).join(' ')
-      return { kind: ks.length ? 'keyword' : 'buff', text }
-    }
+    if (ev.type === 'buff') return { kind: 'buff', text: mine.filter((x) => x.type === 'buff').map((x) => `${x.text}↑`).join(' ') } // 強化(攻撃力+30↑ など)
+    if (ev.type === 'keyword') return { kind: 'keyword', text: mine.filter((x) => x.type === 'keyword').map((x) => `【${x.label}】`).join('') + '獲得' } // 能力付与
     if (ev.type === 'heal') return { kind: 'heal', text: `+${ev.amount}` }
     if (ev.type === 'summon') return { kind: 'summon', text: '登場!' }
     if (ev.type === 'block') return { kind: 'block', text: 'ガード!' }
