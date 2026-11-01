@@ -185,10 +185,12 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
         </span>
       )}
       {unit.alive && (unit.keywords || []).includes('earthSign') && (
-        // 【土の印】を持つユニットの盤面エフェクト: カードと同じくらいの大きさのオレンジの円。縁が濃く明るく、内側へやわらかく薄れる。縁に明るい筋がゆっくり回る
+        // 【土の印】を持つユニットの盤面エフェクト: オレンジの円(縁は左側がやや太い)。縁がゆっくり脈打ち、上のほうから、オレンジのもやが内側へ湧いては引くのを繰り返す。縁に明るい筋が回る
         <span aria-hidden="true" data-testid="fx-earth-idle" style={{ position: 'absolute', left: '50%', top: '50%', height: '100%', aspectRatio: '1', borderRadius: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 3, overflow: 'hidden',
-          background: 'radial-gradient(circle, rgba(255,140,30,0) 0%, rgba(255,140,30,0.10) 42%, rgba(255,140,20,0.62) 62%, rgba(255,148,22,1) 84%, rgba(255,172,48,0.97) 95%, rgba(255,172,48,0) 100%)',
+          background: 'radial-gradient(circle at 56% 50%, rgba(255,140,30,0) 0%, rgba(255,140,30,0.08) 42%, rgba(255,140,20,0.62) 62%, rgba(255,148,22,1) 84%, rgba(255,172,48,0.97) 95%, rgba(255,172,48,0) 100%)',
           boxShadow: '0 0 10px 2px rgba(255,140,20,0.55)', animation: 'feel-earth-idle 2.6s ease-in-out infinite' }}>
+          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(ellipse 70% 38% at 40% 22%, rgba(255,175,60,0.75) 0%, rgba(255,160,40,0.35) 55%, rgba(255,150,30,0) 100%)', animation: 'feel-earth-haze 2.6s ease-in-out infinite' }} />
+          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(ellipse 45% 30% at 68% 30%, rgba(255,185,80,0.6) 0%, rgba(255,160,40,0) 100%)', animation: 'feel-earth-haze 2.6s ease-in-out -1.3s infinite' }} />
           <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(from 0deg, rgba(255,230,140,0) 0%, rgba(255,230,140,0.40) 12%, rgba(255,230,140,0) 30%, rgba(255,230,140,0) 55%, rgba(255,230,140,0.32) 68%, rgba(255,230,140,0) 85%)', WebkitMaskImage: 'radial-gradient(circle, transparent 52%, #000 74%)', maskImage: 'radial-gradient(circle, transparent 52%, #000 74%)', animation: 'feel-earth-spin 9s linear infinite' }} />
         </span>
       )}
