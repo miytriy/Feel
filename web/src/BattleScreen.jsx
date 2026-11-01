@@ -184,6 +184,11 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
           ))}
         </span>
       )}
+      {unit.alive && (unit.keywords || []).includes('earthSign') && (
+        // 【土の印】を持つユニットの盤面エフェクト: オレンジの円(縁が明るい光の輪)が、カードを包んでゆっくり脈打つ
+        <span aria-hidden="true" data-testid="fx-earth-idle" style={{ position: 'absolute', left: '50%', top: '50%', height: '125%', aspectRatio: '1', borderRadius: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 3,
+          background: 'radial-gradient(circle, rgba(255,150,40,0.10) 0%, rgba(255,150,40,0.18) 52%, rgba(255,160,40,0.85) 66%, rgba(255,120,20,0.35) 72%, rgba(255,120,20,0) 78%)', animation: 'feel-earth-idle 2.4s ease-in-out infinite' }} />
+      )}
       {unit.alive && (unit.keywords || []).includes('aura') && (
         // 【オーラ】の盤面エフェクト: 淡い緑のひし形(4枚)が、すうっと浮かんでは消える
         <svg aria-hidden="true" data-testid="fx-aura-idle" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', inset: '8%', width: '84%', height: '84%', pointerEvents: 'none', zIndex: 4, overflow: 'visible', animation: 'feel-aura-idle 2.4s ease-in-out infinite', filter: 'drop-shadow(0 0 3px rgba(190,255,200,0.8))' }}>
