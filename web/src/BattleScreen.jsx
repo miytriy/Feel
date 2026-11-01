@@ -149,6 +149,19 @@ function DmgNum({ part, crit, big }) {
   return <span style={{ ...base, color, textShadow: `0 0 2px #000, 0 0 2px #000, 0 0 3px #000, 0 2px 0 #000, 0 0 12px ${glow}` }}>{part.text}</span>
 }
 
+// 破壊の破片(カードを、斜めの線で9枚に割ったもの)。それぞれ、飛んでいく向きと回転が違う
+const SHARDS = [
+  { clip: 'polygon(0 0, 38% 0, 30% 34%, 0 40%)', dx: '-26px', dy: '-30px', rot: '-28deg', delay: 0 },
+  { clip: 'polygon(38% 0, 72% 0, 62% 30%, 30% 34%)', dx: '-4px', dy: '-38px', rot: '14deg', delay: 0.02 },
+  { clip: 'polygon(72% 0, 100% 0, 100% 36%, 62% 30%)', dx: '28px', dy: '-28px', rot: '30deg', delay: 0.04 },
+  { clip: 'polygon(0 40%, 30% 34%, 36% 68%, 0 74%)', dx: '-34px', dy: '2px', rot: '-18deg', delay: 0.03 },
+  { clip: 'polygon(30% 34%, 62% 30%, 68% 64%, 36% 68%)', dx: '2px', dy: '8px', rot: '-8deg', delay: 0.05 },
+  { clip: 'polygon(62% 30%, 100% 36%, 100% 70%, 68% 64%)', dx: '34px', dy: '-2px', rot: '22deg', delay: 0.04 },
+  { clip: 'polygon(0 74%, 36% 68%, 30% 100%, 0 100%)', dx: '-28px', dy: '34px', rot: '-34deg', delay: 0.06 },
+  { clip: 'polygon(36% 68%, 68% 64%, 72% 100%, 30% 100%)', dx: '-2px', dy: '42px', rot: '12deg', delay: 0.07 },
+  { clip: 'polygon(68% 64%, 100% 70%, 100% 100%, 72% 100%)', dx: '30px', dy: '32px', rot: '36deg', delay: 0.06 },
+]
+
 function UnitCard({ unit, active, selected, selectable, inspected, onClick, big = false, fx = null, hl = false, tick = 0, loss = 0, role = null }) {
   const ratio = Math.max(0, unit.hp / unit.maxHp)
   const hpColor = ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow
@@ -173,6 +186,25 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
         ...(role === 'target' || role === 'guard' ? { boxShadow: `0 0 0 3px ${role === 'guard' ? C.player : C.bad}, 0 0 16px 2px ${alpha(role === 'guard' ? C.player : C.bad, 55)}`, zIndex: 2 } : {}),
       }}
     >
+      {fx && fx.kind === 'destroy' && (
+        // 破壊の演出: 白い閃光とひび割れ → カードが破片になって、四方へ飛び散り、消える
+        <span key={`des-${tick}`} aria-hidden="true" data-testid="fx-destroy" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 9 }}>
+          <span style={{ position: 'absolute', inset: -6, borderRadius: 12, background: 'radial-gradient(circle, #fff 0%, rgba(255,230,200,0.7) 40%, rgba(255,200,150,0) 75%)', animation: 'feel-flash 0.35s ease-out forwards' }} />
+          {SHARDS.map((sh, n) => (
+            <span key={n} style={{ position: 'absolute', inset: 0, clipPath: sh.clip, background: 'linear-gradient(135deg, #e8eef2 0%, #9aa7b0 55%, #56626b 100%)', '--dx': sh.dx, '--dy': sh.dy, '--rot': sh.rot, animation: `feel-shard 0.8s cubic-bezier(.2,.7,.4,1) ${sh.delay}s forwards`, boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.6)' }} />
+          ))}
+        </span>
+      )}
+      {fx && fx.kind === 'vanish' && (
+        // 消滅の演出: 青い光の円が、カードを包んで、中心へぎゅっと収束して消える(青の粒も中心へ集まる)
+        <span key={`van-${tick}`} aria-hidden="true" data-testid="fx-vanish" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 9 }}>
+          <span style={{ position: 'absolute', inset: 0, borderRadius: 10, background: 'rgba(70,150,255,0.55)', mixBlendMode: 'screen', animation: 'feel-van-card 0.95s ease-in forwards' }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '120%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(200,235,255,0.95) 0%, rgba(90,170,255,0.6) 45%, rgba(40,90,255,0.15) 70%, rgba(40,90,255,0) 100%)', border: '3px solid #8fd0ff', boxShadow: '0 0 16px 4px rgba(90,170,255,0.85)', animation: 'feel-van-ring 0.95s cubic-bezier(.5,0,.8,.4) forwards' }} />
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => (
+            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: 6, height: 6, marginLeft: -3, marginTop: -3, borderRadius: '50%', background: '#cfeaff', boxShadow: '0 0 6px 2px #5aaaff', '--sx': `${Math.round(Math.cos(n * Math.PI / 4) * 60)}px`, '--sy': `${Math.round(Math.sin(n * Math.PI / 4) * 60)}px`, animation: `feel-van-dot 0.8s ease-in ${n * 0.03}s forwards` }} />
+          ))}
+        </span>
+      )}
       {unit.alive && (unit.keywords || []).includes('guard') && (
         // 【守護】の盤面エフェクト: 縦長の盾(カードに収まる比率)の輪郭が、内側から現れて外側へ広がりながら消える。2枚が半周期ずらして繰り返す
         <span aria-hidden="true" data-testid="fx-guard-idle" style={{ position: 'absolute', left: '50%', top: '50%', height: '94%', aspectRatio: '0.78', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 4 }}>
@@ -421,7 +453,7 @@ const buttonStyle = (primary, disabled) => ({
 // ---- 再生(起きたことを、1つずつ順番に見せる。速さは、設定の「CPUの行動の待ち時間」に合わせる) ----
 // 連続する同じ種類の出来事(複数の召喚・複数への攻撃・複数のヒール)は、1つにまとめて一気に見せる。
 // 返す値は、まとめの最後の番号(まとまらなければ i のまま)。攻撃は、同じ攻撃元・同じ手段のものだけ。同じ相手が2回出たら、そこで区切る
-const GROUP_TYPES = ['damage', 'heal', 'summon', 'buff', 'keyword']
+const GROUP_TYPES = ['damage', 'heal', 'summon', 'buff', 'keyword', 'destroy', 'vanish']
 function groupEnd(events, i) {
   const e = events[i]
   if (!e || !GROUP_TYPES.includes(e.type)) return i
@@ -474,7 +506,7 @@ function reorderBoost(evs) {
   }
   return out
 }
-const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, destroy: 900, vanish: 1000, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null }) {
@@ -843,6 +875,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     }
     if (ev.type === 'buff') return { kind: 'buff', text: mine.filter((x) => x.type === 'buff').map((x) => `${x.text}↑`).join(' ') } // 強化(攻撃力+30↑ など)
     if (ev.type === 'keyword') return { kind: 'keyword', text: mine.filter((x) => x.type === 'keyword').map((x) => `【${x.label}】`).join('') + '獲得' } // 能力付与
+    if (ev.type === 'destroy') return { kind: 'destroy', text: '' } // 破壊: 砕け散る
+    if (ev.type === 'vanish') return { kind: 'vanish', text: '' } // 消滅: 青い光になって、円の中心へ収束して消える
     if (ev.type === 'heal') return { kind: 'heal', text: `+${ev.amount}` }
     if (ev.type === 'summon') return { kind: 'summon', text: '登場!' }
     if (ev.type === 'block') return { kind: 'block', text: 'ガード!' }
@@ -862,8 +896,11 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const levelInfo = CPU_LEVELS.find((l) => l.level === level)
   const enemies = view.units.filter((u) => u.team === 'B' && u.field === 'main')
   const players = view.units.filter((u) => u.team === 'A' && u.field === 'main')
-  const enemySummons = view.units.filter((u) => u.team === 'B' && u.field === 'summon' && u.alive)
-  const playerSummons = view.units.filter((u) => u.team === 'A' && u.field === 'summon' && u.alive)
+  // 破壊・消滅する召喚物は、その演出が終わるまで盤面に残す(演出の前に消えないように)
+  const dyingUids = new Set(play ? play.events.slice(gStart).filter((x) => x.type === 'destroy' || x.type === 'vanish').map((x) => x.target) : [])
+  const shown = (u) => u.field === 'summon' && (u.alive || dyingUids.has(u.uid))
+  const enemySummons = view.units.filter((u) => u.team === 'B' && shown(u))
+  const playerSummons = view.units.filter((u) => u.team === 'A' && shown(u))
   const resultText = state.winner === 'A' ? '勝利!' : state.winner === 'B' ? '敗北…' : '引き分け'
   const inspected = inspect && inspect !== selected ? getUnit(state, inspect) : null // 選択中の相手は、操作パネルに詳しく出すので、ここでは重ねて出さない
   const modeTrait = mode ? actor.traits.find((t) => t.id === mode) : null

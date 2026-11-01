@@ -77,6 +77,10 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-earth-haze { 0% { opacity: 0; transform: translate(-4%, 6%) scale(0.9); } 45% { opacity: 1; transform: translate(2%, -2%) scale(1.05); } 100% { opacity: 0; transform: translate(6%, -8%) scale(1.15); } }
     @keyframes feel-earth-spin { to { transform: rotate(360deg); } }
     @keyframes feel-earth-idle { 0%, 100% { opacity: 0.85; transform: translate(-50%, -50%) scale(0.985); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.015); } }
+    @keyframes feel-shard { 0% { opacity: 1; transform: translate(0, 0) rotate(0) scale(1); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.6); } }
+    @keyframes feel-van-card { 0% { opacity: 0; } 35% { opacity: 1; } 100% { opacity: 0; transform: scale(0.1); } }
+    @keyframes feel-van-ring { 0% { opacity: 0.2; transform: translate(-50%, -50%) scale(1.3); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0); } }
+    @keyframes feel-van-dot { 0% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(1); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(0, 0) scale(0.3); } }
     @keyframes feel-guard-wave { 0% { opacity: 0; transform: scale(0.7); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.12); } }
     @keyframes feel-aura-idle { 0% { opacity: 0; } 30% { opacity: 1; } 62% { opacity: 1; } 92%, 100% { opacity: 0; } }
     @keyframes feel-guard { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.35); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.7); } }
