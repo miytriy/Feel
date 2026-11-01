@@ -400,27 +400,37 @@ function groupEnd(events, i) {
     const n = events[j + 1]
     if (n.type !== e.type) break
     const finisher = e.type === 'damage' && n.means === '必殺' && n.src === e.src // 【必殺】の追加ダメージは、スキルのダメージと合わせて1回で見せる(同じ相手でもよい)
-    if (!finisher && seen.has(n.target)) break
+    const boostT = n.type === 'buff' || n.type === 'keyword' // 強化・能力付与は、同じ相手に重なってもひとまとめ
+    if (!finisher && !boostT && seen.has(n.target)) break
     if (e.type === 'damage' && !finisher && (n.src !== e.src || n.means !== e.means)) break
     seen.add(n.target)
     j += 1
   }
   return j
 }
-// 召喚のあとに、1体ずつ「強化 → 能力付与」が交互に起きる(例: 3体召喚 → 1体ごとに強化と付与)場合は、見せる順を「全員に強化 → 全員に能力付与」に並べ替える
+// 召喚のあとに、1体ずつ「能力の表示 → 強化 → 能力付与」が交互に起きる(例: 3体召喚 → 1体ごとに強化と付与)場合は、見せる順を
+// 「(能力の表示)→ 全員に強化 → (能力の表示)→ 全員に能力付与」に並べ替える。同じ能力の表示は、1回にまとめる
 function reorderBoost(evs) {
   const isB = (e) => e.type === 'buff' || e.type === 'keyword'
   const out = []
   for (let i = 0; i < evs.length;) {
-    if (!isB(evs[i])) { out.push(evs[i++]); continue }
+    if (!isB(evs[i]) && !(evs[i].type === 'ability' && evs.slice(i + 1).findIndex((e) => e.type !== 'ability') >= 0 && isB(evs[i + 1 + evs.slice(i + 1).findIndex((e) => e.type !== 'ability')]))) { out.push(evs[i++]); continue }
     let j = i
-    while (j < evs.length && isB(evs[j])) j++
+    while (j < evs.length && (isB(evs[j]) || evs[j].type === 'ability')) j++
     const run = evs.slice(i, j)
-    const buffs = run.filter((e) => e.type === 'buff'); const kws = run.filter((e) => e.type === 'keyword')
-    if (!buffs.length || !kws.length) { out.push(...run); i = j; continue }
-    const snap = (e) => ({ units: e.units, logLen: e.logLen, mp: e.mp, ep: e.ep })
-    const bs = snap(buffs[buffs.length - 1]); const ks = snap(run[run.length - 1])
-    out.push(...buffs.map((e) => ({ ...e, ...bs })), ...kws.map((e) => ({ ...e, ...ks })))
+    const buckets = { buff: { abs: [], evs: [] }, keyword: { abs: [], evs: [] } }
+    let pending = []; const tail = []
+    for (const e of run) {
+      if (e.type === 'ability') { pending.push(e); continue }
+      const bk = buckets[e.type]
+      for (const a of pending) if (!bk.abs.some((x) => x.owner === a.owner && x.name === a.name)) bk.abs.push(a)
+      pending = []; bk.evs.push(e)
+    }
+    tail.push(...pending)
+    const last = (arr, d) => arr.length ? arr[arr.length - 1] : d
+    const snapOf = (e) => ({ units: e.units, logLen: e.logLen, mp: e.mp, ep: e.ep })
+    const bs = snapOf(last(buckets.buff.evs, run[run.length - 1])); const ks = snapOf(run[run.length - 1])
+    out.push(...buckets.buff.abs, ...buckets.buff.evs.map((e) => ({ ...e, ...bs })), ...buckets.keyword.abs, ...buckets.keyword.evs.map((e) => ({ ...e, ...ks })), ...tail)
     i = j
   }
   return out
