@@ -429,8 +429,16 @@ function reorderBoost(evs) {
     tail.push(...pending)
     const last = (arr, d) => arr.length ? arr[arr.length - 1] : d
     const snapOf = (e) => ({ units: e.units, logLen: e.logLen, mp: e.mp, ep: e.ep })
-    const bs = snapOf(last(buckets.buff.evs, run[run.length - 1])); const ks = snapOf(run[run.length - 1])
-    out.push(...buckets.buff.abs, ...buckets.buff.evs.map((e) => ({ ...e, ...bs })), ...buckets.keyword.abs, ...buckets.keyword.evs.map((e) => ({ ...e, ...ks })), ...tail)
+    // 能力付与の前の盤面を見せるとき(強化の再生中・強化の能力表示)は、あとで付く能力を、まだ付いていないことにする
+    const before = i > 0 ? evs[i - 1].units : null
+    const noKw = (sn) => {
+      if (!before) return sn
+      const units = {}
+      for (const [uid, u] of Object.entries(sn.units)) units[uid] = before[uid] ? { ...u, keywords: before[uid].keywords } : u
+      return { ...sn, units }
+    }
+    const bs = noKw(snapOf(last(buckets.buff.evs, run[run.length - 1]))); const ks = snapOf(run[run.length - 1])
+    out.push(...buckets.buff.abs.map((e) => ({ ...e, ...noKw(snapOf(e)) })), ...buckets.buff.evs.map((e) => ({ ...e, ...bs })), ...buckets.keyword.abs.map((e) => ({ ...e, ...bs })), ...buckets.keyword.evs.map((e) => ({ ...e, ...ks })), ...tail)
     i = j
   }
   return out
