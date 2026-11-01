@@ -78,8 +78,10 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-earth-spin { to { transform: rotate(360deg); } }
     @keyframes feel-earth-idle { 0%, 100% { opacity: 0.85; transform: translate(-50%, -50%) scale(0.985); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.015); } }
     @keyframes feel-d-flash { 0% { opacity: 1; transform: scale(0.9); } 100% { opacity: 0; transform: scale(1.2); } }
-    @keyframes feel-d-orb { 0% { opacity: 0; transform: scale(0.55); } 14% { opacity: 1; transform: scale(1); } 66% { opacity: 1; transform: scale(1); filter: none; } 100% { opacity: 0; transform: scale(1.3); filter: blur(5px) brightness(1.4); } }
-    @keyframes feel-d-conf { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); } }
+    @keyframes feel-d-orb { 0% { opacity: 0; transform: scale(0.55); } 12% { opacity: 1; transform: scale(1.06); } 18% { transform: scale(1); } 56% { opacity: 1; transform: scale(1); filter: none; } 76% { opacity: 0.55; transform: scale(1.08); filter: blur(1.5px); } 100% { opacity: 0; transform: scale(1.3); filter: blur(6px); } }
+    @keyframes feel-d-skull { 0%, 48% { opacity: 1; } 72% { opacity: 0.2; filter: blur(2px) brightness(0.8); } 100% { opacity: 0; } }
+    @keyframes feel-d-ember { 0%, 45% { opacity: 0; transform: translate(0, 0); } 58% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)); } }
+    @keyframes feel-d-conf { 0% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(0); } 15% { opacity: 0.95; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); } }
     @keyframes feel-v-all { 0% { opacity: 0; transform: scale(0.45); } 24% { opacity: 1; transform: scale(1); } 62% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.18); } }
     @keyframes feel-v-jit { 0% { opacity: 1; } 50% { opacity: 0; } }
     @keyframes feel-v-core { 0%, 55% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); } 80% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); } }
