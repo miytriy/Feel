@@ -398,6 +398,8 @@ function groupEnd(events, i) {
   let j = i
   while (j + 1 < events.length) {
     const n = events[j + 1]
+    const boost = (t) => t === 'buff' || t === 'keyword' // 強化と能力付与は、ひとまとめ(同じ相手に重ねてもよい)
+    if (boost(e.type) && boost(n.type)) { j += 1; continue }
     if (n.type !== e.type) break
     const finisher = e.type === 'damage' && n.means === '必殺' && n.src === e.src // 【必殺】の追加ダメージは、スキルのダメージと合わせて1回で見せる(同じ相手でもよい)
     if (!finisher && seen.has(n.target)) break
@@ -774,8 +776,11 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
       if (fin.length) parts.push({ text: `必殺 -${fin.reduce((a, x) => a + x.amount, 0)}`, dmgType: 'true' })
       return { kind: 'damage', text: parts.map((x) => x.text).join(' '), crit, parts }
     }
-    if (ev.type === 'buff') return { kind: 'buff', text: mine.filter((x) => x.type === 'buff').map((x) => `${x.text}↑`).join(' ') } // 強化(攻撃力+30↑ など)
-    if (ev.type === 'keyword') return { kind: 'keyword', text: mine.filter((x) => x.type === 'keyword').map((x) => `【${x.label}】`).join('') + '獲得' } // 能力付与
+    if (ev.type === 'buff' || ev.type === 'keyword') { // 強化(攻撃力+30↑ など)と能力付与(【〇〇】獲得)は、同じ相手なら1つの表示にまとめる
+      const bs = mine.filter((x) => x.type === 'buff'); const ks = mine.filter((x) => x.type === 'keyword')
+      const text = [bs.map((x) => `${x.text}↑`).join(' '), ks.length ? ks.map((x) => `【${x.label}】`).join('') + '獲得' : ''].filter(Boolean).join(' ')
+      return { kind: ks.length ? 'keyword' : 'buff', text }
+    }
     if (ev.type === 'heal') return { kind: 'heal', text: `+${ev.amount}` }
     if (ev.type === 'summon') return { kind: 'summon', text: '登場!' }
     if (ev.type === 'block') return { kind: 'block', text: 'ガード!' }
