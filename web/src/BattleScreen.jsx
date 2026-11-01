@@ -161,24 +161,13 @@ function Skull() {
     </svg>
   )
 }
-// ぎざぎざの輪(電気の輪)。2種類を、すばやく切り替えて、ばちばちさせる
-function jagRing(seed, r = 45, amp = 1.7, n = 96) {
-  let x = seed
-  const rnd = () => { x = (x * 9301 + 49297) % 233280; return x / 233280 }
-  let d = ''
-  for (let i = 0; i < n; i++) {
-    const a = (i / n) * Math.PI * 2
-    const rr = r + (rnd() - 0.5) * 2 * amp
-    d += `${i ? 'L' : 'M'}${(50 + Math.cos(a) * rr).toFixed(1)} ${(50 + Math.sin(a) * rr).toFixed(1)} `
-  }
-  return d + 'Z'
-}
-const JAG = [jagRing(7), jagRing(23)]
+// 消滅の最後に散る、青い粒と黒いかけら
+const SPARKS = Array.from({ length: 16 }, (_, n) => { const a = n * 2.4 + 0.7; const d = 20 + ((n * 5) % 6) * 7; return { dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d - 6)}px`, dark: n % 3 === 1 } })
 // 飛び散る紙片(破壊): 白くて透ける、三角や四角の破片。火の粉(黄色)と、暗い赤のかけら
 const CONFETTI = Array.from({ length: 16 }, (_, n) => { const a = n * 2.4 + 0.4; const d = 26 + ((n * 7) % 5) * 9; return { x: `${Math.round(Math.cos(a) * 10)}px`, y: `${Math.round(Math.sin(a) * 10)}px`, dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d)}px`, rot: `${(n % 2 ? 1 : -1) * (90 + n * 30)}deg`, size: 6 + (n % 3) * 2, tri: n % 2 === 0, delay: 0.1 + (n % 5) * 0.02 } })
 const EMBERS = Array.from({ length: 10 }, (_, n) => { const a = n * 0.63 + 0.2; const d = 18 + (n % 4) * 9; return { dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d)}px`, dark: n % 3 === 0 } })
 
-function UnitCard({ unit, active, selected, selectable, inspected, onClick, big = false, fx = null, hl = false, tick = 0, loss = 0, role = null }) {
+export function UnitCard({ unit, active, selected, selectable, inspected, onClick, big = false, fx = null, hl = false, tick = 0, loss = 0, role = null }) {
   const ratio = Math.max(0, unit.hp / unit.maxHp)
   const hpColor = ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow
   const badges = unit.alive ? badgesOf(unit) : []
@@ -218,17 +207,29 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
         </span>
       )}
       {fx && fx.die === 'vanish' && (
-        // 消滅の演出: 青紫の光の円が広がり、縁にばちばちと電気の輪が走る → 輪がぎゅっと小さくなって、白い光の点に収束し、はじけて消える
-        <span key={`van-${tick}`} aria-hidden="true" data-testid="fx-vanish" style={{ position: 'absolute', left: '50%', top: '50%', height: '120%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }}>
-          <span style={{ position: 'absolute', inset: 0, animation: 'feel-v-all 0.85s ease-in-out forwards' }}>
-            <span style={{ position: 'absolute', inset: '4%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(150,190,255,0.95) 0%, rgba(40,60,200,0.85) 38%, rgba(60,30,150,0.75) 72%, rgba(70,40,170,0.25) 100%)' }} />
-            <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', filter: 'drop-shadow(0 0 3px #4fb4ff) drop-shadow(0 0 6px #3a7cff)' }}>
-              {JAG.map((d, n) => (
-                <path key={n} d={d} fill="none" stroke="#9fe0ff" strokeWidth="2" strokeLinejoin="round" style={{ animation: `feel-v-jit 0.16s steps(1) ${n * 0.08}s infinite` }} />
-              ))}
-            </svg>
-          </span>
-          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '46%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, #fff 0%, rgba(190,225,255,0.9) 45%, rgba(100,170,255,0) 100%)', animation: 'feel-v-core 0.85s ease-in forwards' }} />
+        // 消滅の演出(動画の再現): ふわっとした青紫の光の円 → 縁にばちばちと電気の輪が走る(中は暗い群青、中心は明るい青)→ 輪が小さく縮み → 白い光の核になって、灰色のけむりと青い粒・黒いかけらを散らして消える
+        <span key={`van-${tick}`} aria-hidden="true" data-testid="fx-vanish" style={{ position: 'absolute', left: '50%', top: '50%', height: '125%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }}>
+          <svg width="0" height="0" style={{ position: 'absolute' }}>
+            <defs>
+              <filter id="feel-fuzzy" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="3" result="n" /><feDisplacementMap in="SourceGraphic" in2="n" scale="16" /></filter>
+              <filter id="feel-bolt" x="-30%" y="-30%" width="160%" height="160%">
+                <feTurbulence type="turbulence" baseFrequency="0.09" numOctaves="2" seed="1" result="n"><animate attributeName="seed" values="1;5;9;13;17;21" dur="0.36s" repeatCount="indefinite" calcMode="discrete" /></feTurbulence>
+                <feDisplacementMap in="SourceGraphic" in2="n" scale="9" result="d" />
+                <feGaussianBlur in="d" stdDeviation="0.7" result="b" />
+                <feMerge><feMergeNode in="b" /><feMergeNode in="d" /></feMerge>
+              </filter>
+            </defs>
+          </svg>
+          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(120,180,255,1) 0%, rgba(35,65,235,1) 26%, rgba(14,24,125,1) 58%, rgba(22,26,115,1) 76%, rgba(105,62,200,0.85) 90%, rgba(120,80,215,0) 100%)', filter: 'url(#feel-fuzzy)', animation: 'feel-v-disc 1.1s ease-out both' }} />
+          <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', animation: 'feel-v-ring 1.1s ease-in-out both', filter: 'drop-shadow(0 0 3px #4fb4ff) drop-shadow(0 0 8px #2f6bff)' }}>
+            <circle cx="50" cy="50" r="42" fill="none" stroke="#45c8ff" strokeWidth="3.4" filter="url(#feel-bolt)" />
+            <circle cx="50" cy="50" r="42" fill="none" stroke="#ffffff" strokeWidth="1.3" filter="url(#feel-bolt)" opacity="0.9" />
+          </svg>
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '70%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(60,60,80,0) 30%, rgba(80,80,100,0.55) 62%, rgba(80,80,100,0) 100%)', filter: 'url(#feel-fuzzy)', animation: 'feel-v-smoke 1.1s ease-out both' }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '40%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, #fff 0%, #fff 25%, rgba(190,235,255,0.9) 50%, rgba(110,190,255,0) 100%)', boxShadow: '0 0 14px 4px rgba(150,220,255,0.8)', animation: 'feel-v-core 1.1s ease-in-out both' }} />
+          {SPARKS.map((sp, n) => (
+            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: sp.dark ? 4 : 3, height: sp.dark ? 4 : 3, marginLeft: -2, marginTop: -2, borderRadius: sp.dark ? 1 : '50%', background: sp.dark ? '#14141c' : '#d8f4ff', boxShadow: sp.dark ? 'none' : '0 0 5px 2px #6ac4ff', '--dx': sp.dx, '--dy': sp.dy, animation: `feel-v-spark 1.1s ease-out both` }} />
+          ))}
         </span>
       )}
       {unit.alive && (unit.keywords || []).includes('guard') && (
@@ -535,7 +536,7 @@ function reorderBoost(evs) {
   }
   return out
 }
-const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, destroy: 1000, vanish: 850, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, destroy: 1000, vanish: 1100, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null }) {
