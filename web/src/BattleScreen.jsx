@@ -174,11 +174,15 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
       }}
     >
       {unit.alive && (unit.keywords || []).includes('guard') && (
-        // 【守護】の盤面エフェクト: 緑に光る盾の輪郭(二重)が、ゆっくり脈打つ
-        <svg aria-hidden="true" data-testid="fx-guard-idle" viewBox="0 0 100 120" preserveAspectRatio="none" style={{ position: 'absolute', inset: '-3%', width: '106%', height: '106%', pointerEvents: 'none', zIndex: 4, overflow: 'visible', animation: 'feel-guard-idle 2s ease-in-out infinite', filter: 'drop-shadow(0 0 4px rgba(150,255,60,0.9))' }}>
-          <path d="M50 3 L93 14 V58 C93 88 72 106 50 117 C28 106 7 88 7 58 V14 Z" fill="rgba(150,255,60,0.08)" stroke="#b6ff4a" strokeWidth="2.4" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-          <path d="M50 11 L85 20 V57 C85 83 67 98 50 108 C33 98 15 83 15 57 V20 Z" fill="none" stroke="rgba(214,255,120,0.9)" strokeWidth="1.4" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-        </svg>
+        // 【守護】の盤面エフェクト: 縦長の盾(カードに収まる比率)の輪郭が、内側から現れて外側へ広がりながら消える。2枚が半周期ずらして繰り返す
+        <span aria-hidden="true" data-testid="fx-guard-idle" style={{ position: 'absolute', left: '50%', top: '48%', height: '76%', aspectRatio: '0.78', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 4 }}>
+          {[0, 1].map((n) => (
+            <svg key={n} viewBox="0 0 78 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', animation: `feel-guard-wave 2.2s ease-out ${n * -1.1}s infinite both`, filter: 'drop-shadow(0 0 3px rgba(150,255,60,0.9))' }}>
+              <path d="M39 2 L74 10 V44 C74 70 57 88 39 98 C21 88 4 70 4 44 V10 Z" fill="rgba(150,255,60,0.07)" stroke="#b6ff4a" strokeWidth="2.2" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+              <path d="M39 9 L67 15 V43 C67 65 53 80 39 89 C25 80 11 65 11 43 V15 Z" fill="none" stroke="rgba(214,255,120,0.9)" strokeWidth="1.2" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+            </svg>
+          ))}
+        </span>
       )}
       {unit.alive && (unit.keywords || []).includes('aura') && (
         // 【オーラ】の盤面エフェクト: 淡い緑のひし形(4枚)が、すうっと浮かんでは消える
