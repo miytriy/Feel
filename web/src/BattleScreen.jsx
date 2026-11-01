@@ -149,18 +149,34 @@ function DmgNum({ part, crit, big }) {
   return <span style={{ ...base, color, textShadow: `0 0 2px #000, 0 0 2px #000, 0 0 3px #000, 0 2px 0 #000, 0 0 12px ${glow}` }}>{part.text}</span>
 }
 
-// 破壊の破片(カードを、斜めの線で9枚に割ったもの)。それぞれ、飛んでいく向きと回転が違う
-const SHARDS = [
-  { clip: 'polygon(0 0, 38% 0, 30% 34%, 0 40%)', dx: '-26px', dy: '-30px', rot: '-28deg', delay: 0 },
-  { clip: 'polygon(38% 0, 72% 0, 62% 30%, 30% 34%)', dx: '-4px', dy: '-38px', rot: '14deg', delay: 0.02 },
-  { clip: 'polygon(72% 0, 100% 0, 100% 36%, 62% 30%)', dx: '28px', dy: '-28px', rot: '30deg', delay: 0.04 },
-  { clip: 'polygon(0 40%, 30% 34%, 36% 68%, 0 74%)', dx: '-34px', dy: '2px', rot: '-18deg', delay: 0.03 },
-  { clip: 'polygon(30% 34%, 62% 30%, 68% 64%, 36% 68%)', dx: '2px', dy: '8px', rot: '-8deg', delay: 0.05 },
-  { clip: 'polygon(62% 30%, 100% 36%, 100% 70%, 68% 64%)', dx: '34px', dy: '-2px', rot: '22deg', delay: 0.04 },
-  { clip: 'polygon(0 74%, 36% 68%, 30% 100%, 0 100%)', dx: '-28px', dy: '34px', rot: '-34deg', delay: 0.06 },
-  { clip: 'polygon(36% 68%, 68% 64%, 72% 100%, 30% 100%)', dx: '-2px', dy: '42px', rot: '12deg', delay: 0.07 },
-  { clip: 'polygon(68% 64%, 100% 70%, 100% 100%, 72% 100%)', dx: '30px', dy: '32px', rot: '36deg', delay: 0.06 },
-]
+// ---- 破壊・消滅の演出の部品(絵文字は使わず、すべてSVGで描く) ----
+// ドクロ(黒いシルエット。目・鼻・歯のすきまは、穴になって下の赤い円が透ける)
+function Skull() {
+  return (
+    <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: '14%', width: '72%', height: '72%', overflow: 'visible' }}>
+      <path fillRule="evenodd" fill="#160707" d="M50 6 C27 6 13 22 13 43 C13 55 19 63 27 69 L27 82 Q27 89 34 89 L66 89 Q73 89 73 82 L73 69 C81 63 87 55 87 43 C87 22 73 6 50 6 Z
+        M21 45 C21 36 32 32 41 37 C48 41 47 52 41 58 C33 63 21 59 21 45 Z
+        M79 45 C79 36 68 32 59 37 C52 41 53 52 59 58 C67 63 79 59 79 45 Z
+        M50 55 L43 69 L57 69 Z
+        M39 77 H41.6 V89 H39 Z M48.7 77 H51.3 V89 H48.7 Z M58.4 77 H61 V89 H58.4 Z" />
+    </svg>
+  )
+}
+// ぎざぎざの輪(電気の輪)。2種類を、すばやく切り替えて、ばちばちさせる
+function jagRing(seed, r = 45, amp = 1.7, n = 96) {
+  let x = seed
+  const rnd = () => { x = (x * 9301 + 49297) % 233280; return x / 233280 }
+  let d = ''
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2
+    const rr = r + (rnd() - 0.5) * 2 * amp
+    d += `${i ? 'L' : 'M'}${(50 + Math.cos(a) * rr).toFixed(1)} ${(50 + Math.sin(a) * rr).toFixed(1)} `
+  }
+  return d + 'Z'
+}
+const JAG = [jagRing(7), jagRing(23)]
+// 飛び散る紙片(破壊)
+const CONFETTI = Array.from({ length: 10 }, (_, n) => { const a = (n / 10) * Math.PI * 2 + 0.3; const d = 38 + (n % 3) * 10; return { dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d)}px`, rot: `${(n % 2 ? 1 : -1) * (120 + n * 25)}deg`, delay: 0.22 + (n % 4) * 0.03 } })
 
 function UnitCard({ unit, active, selected, selectable, inspected, onClick, big = false, fx = null, hl = false, tick = 0, loss = 0, role = null }) {
   const ratio = Math.max(0, unit.hp / unit.maxHp)
@@ -187,22 +203,29 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
       }}
     >
       {fx && fx.kind === 'destroy' && (
-        // 破壊の演出: 白い閃光とひび割れ → カードが破片になって、四方へ飛び散り、消える
-        <span key={`des-${tick}`} aria-hidden="true" data-testid="fx-destroy" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 9 }}>
-          <span style={{ position: 'absolute', inset: -6, borderRadius: 12, background: 'radial-gradient(circle, #fff 0%, rgba(255,230,200,0.7) 40%, rgba(255,200,150,0) 75%)', animation: 'feel-flash 0.35s ease-out forwards' }} />
-          {SHARDS.map((sh, n) => (
-            <span key={n} style={{ position: 'absolute', inset: 0, clipPath: sh.clip, background: 'linear-gradient(135deg, #e8eef2 0%, #9aa7b0 55%, #56626b 100%)', '--dx': sh.dx, '--dy': sh.dy, '--rot': sh.rot, animation: `feel-shard 0.8s cubic-bezier(.2,.7,.4,1) ${sh.delay}s forwards`, boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.6)' }} />
+        // 破壊の演出: 白熱のフラッシュ → 赤い円(墓場が増えるときは、黒いドクロ入り)→ 紙片が散り、円がくだけて赤い火の粉になって消える
+        <span key={`des-${tick}`} aria-hidden="true" data-testid="fx-destroy" style={{ position: 'absolute', left: '50%', top: '50%', height: '120%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }}>
+          <span style={{ position: 'absolute', inset: '8%', borderRadius: '24%', background: 'radial-gradient(circle, #fff 0%, #ffe2b0 45%, rgba(255,150,70,0.8) 75%, rgba(255,120,60,0) 100%)', boxShadow: '0 0 20px 6px rgba(255,170,90,0.8)', animation: 'feel-d-flash 0.3s ease-out forwards' }} />
+          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 50% 45%, #ff7a5c 0%, #f0452f 62%, #b81f16 100%)', boxShadow: '0 0 18px 5px rgba(255,80,60,0.75), inset 0 0 14px 2px rgba(120,10,10,0.7)', animation: 'feel-d-orb 1.05s ease-out forwards' }}>
+            {fx.grave && <Skull />}
+          </span>
+          {CONFETTI.map((c, n) => (
+            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: 5, height: 3, marginLeft: -2, marginTop: -1, background: n % 3 ? '#fff' : '#cfe0e8', '--dx': c.dx, '--dy': c.dy, '--rot': c.rot, animation: `feel-d-conf 0.7s ease-out ${c.delay}s both` }} />
           ))}
         </span>
       )}
       {fx && fx.kind === 'vanish' && (
-        // 消滅の演出: 青い光の円が、カードを包んで、中心へぎゅっと収束して消える(青の粒も中心へ集まる)
-        <span key={`van-${tick}`} aria-hidden="true" data-testid="fx-vanish" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 9 }}>
-          <span style={{ position: 'absolute', inset: 0, borderRadius: 10, background: 'rgba(70,150,255,0.55)', mixBlendMode: 'screen', animation: 'feel-van-card 0.95s ease-in forwards' }} />
-          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '120%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(200,235,255,0.95) 0%, rgba(90,170,255,0.6) 45%, rgba(40,90,255,0.15) 70%, rgba(40,90,255,0) 100%)', border: '3px solid #8fd0ff', boxShadow: '0 0 16px 4px rgba(90,170,255,0.85)', animation: 'feel-van-ring 0.95s cubic-bezier(.5,0,.8,.4) forwards' }} />
-          {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => (
-            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: 6, height: 6, marginLeft: -3, marginTop: -3, borderRadius: '50%', background: '#cfeaff', boxShadow: '0 0 6px 2px #5aaaff', '--sx': `${Math.round(Math.cos(n * Math.PI / 4) * 60)}px`, '--sy': `${Math.round(Math.sin(n * Math.PI / 4) * 60)}px`, animation: `feel-van-dot 0.8s ease-in ${n * 0.03}s forwards` }} />
-          ))}
+        // 消滅の演出: 青紫の光の円が広がり、縁にばちばちと電気の輪が走る → 輪がぎゅっと小さくなって、白い光の点に収束し、はじけて消える
+        <span key={`van-${tick}`} aria-hidden="true" data-testid="fx-vanish" style={{ position: 'absolute', left: '50%', top: '50%', height: '120%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }}>
+          <span style={{ position: 'absolute', inset: 0, animation: 'feel-v-all 1.05s ease-in-out forwards' }}>
+            <span style={{ position: 'absolute', inset: '4%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(150,190,255,0.95) 0%, rgba(40,60,200,0.85) 38%, rgba(60,30,150,0.75) 72%, rgba(70,40,170,0.25) 100%)' }} />
+            <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', filter: 'drop-shadow(0 0 3px #4fb4ff) drop-shadow(0 0 6px #3a7cff)' }}>
+              {JAG.map((d, n) => (
+                <path key={n} d={d} fill="none" stroke="#9fe0ff" strokeWidth="2" strokeLinejoin="round" style={{ animation: `feel-v-jit 0.16s steps(1) ${n * 0.08}s infinite` }} />
+              ))}
+            </svg>
+          </span>
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '46%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, #fff 0%, rgba(190,225,255,0.9) 45%, rgba(100,170,255,0) 100%)', animation: 'feel-v-core 1.05s ease-in forwards' }} />
         </span>
       )}
       {unit.alive && (unit.keywords || []).includes('guard') && (
@@ -506,7 +529,7 @@ function reorderBoost(evs) {
   }
   return out
 }
-const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, destroy: 900, vanish: 1000, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, destroy: 1100, vanish: 1100, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null }) {
@@ -875,7 +898,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     }
     if (ev.type === 'buff') return { kind: 'buff', text: mine.filter((x) => x.type === 'buff').map((x) => `${x.text}↑`).join(' ') } // 強化(攻撃力+30↑ など)
     if (ev.type === 'keyword') return { kind: 'keyword', text: mine.filter((x) => x.type === 'keyword').map((x) => `【${x.label}】`).join('') + '獲得' } // 能力付与
-    if (ev.type === 'destroy') return { kind: 'destroy', text: '' } // 破壊: 砕け散る
+    if (ev.type === 'destroy') return { kind: 'destroy', text: '', grave: !!ev.grave } // 破壊: 砕け散る
     if (ev.type === 'vanish') return { kind: 'vanish', text: '' } // 消滅: 青い光になって、円の中心へ収束して消える
     if (ev.type === 'heal') return { kind: 'heal', text: `+${ev.amount}` }
     if (ev.type === 'summon') return { kind: 'summon', text: '登場!' }

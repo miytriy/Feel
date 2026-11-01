@@ -1128,7 +1128,7 @@ function resolveDeaths(state, opts) {
       u.barrier = 0
       u.stealth = false
       state.log.push(`${u.name}は倒れた`)
-      emit(state, 'destroy', { target: u.uid })
+      emit(state, 'destroy', { target: u.uid, grave: u.field === 'main' }) // grave: 墓場が増える破壊(ドクロの演出)
       // このターン中に倒されたキャラの記録(元の攻撃力・体力つき)。【場に出たとき】の growByDead が使う。前のターンの記録は捨てる
       state.deaths = (state.deaths || []).filter((d) => d.turn === state.turns)
       state.deaths.push({ turn: state.turns, team: u.team, type: u.type, atk: u.charDef?.stats?.atk ?? u.base.atk, hp: u.charDef?.stats?.hp ?? u.baseMaxHp })
