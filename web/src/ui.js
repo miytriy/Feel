@@ -76,7 +76,7 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-slash2 { 0% { opacity: 1; transform: rotate(32deg) scaleX(0); } 35% { opacity: 1; transform: rotate(32deg) scaleX(1); } 100% { opacity: 0; transform: rotate(32deg) scaleX(1.05); } }
     @keyframes feel-earth-idle { 0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(0.97); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.03); } }
     @keyframes feel-guard-wave { 0% { opacity: 0; transform: scale(0.7); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.12); } }
-    @keyframes feel-aura-idle { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.95; } }
+    @keyframes feel-aura-idle { 0% { opacity: 0; } 30% { opacity: 1; } 62% { opacity: 1; } 92%, 100% { opacity: 0; } }
     @keyframes feel-guard { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.35); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.7); } }
     @keyframes feel-lunge-up { 0%,100% { transform: translateY(0); } 35% { transform: translateY(-9px) scale(1.03); } }
     @keyframes feel-lunge-down { 0%,100% { transform: translateY(0); } 35% { transform: translateY(9px) scale(1.03); } }

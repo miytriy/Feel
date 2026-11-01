@@ -190,12 +190,14 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
           background: 'radial-gradient(circle, rgba(255,150,40,0.10) 0%, rgba(255,150,40,0.18) 52%, rgba(255,160,40,0.85) 66%, rgba(255,120,20,0.35) 72%, rgba(255,120,20,0) 78%)', animation: 'feel-earth-idle 2.4s ease-in-out infinite' }} />
       )}
       {unit.alive && ((unit.keywords || []).includes('aura') || (unit.keywords || []).includes('earthSign')) && ( // 【土の印】は、オーラと同じ効果(相手の能力で選ばれない)を持つので、オーラのエフェクトも出る
-        // 【オーラ】の盤面エフェクト: 淡い緑のひし形(4枚)が、すうっと浮かんでは消える
-        <svg aria-hidden="true" data-testid="fx-aura-idle" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', inset: '8%', width: '84%', height: '84%', pointerEvents: 'none', zIndex: 4, overflow: 'visible', animation: 'feel-aura-idle 2.4s ease-in-out infinite', filter: 'drop-shadow(0 0 3px rgba(190,255,200,0.8))' }}>
-          {[[50, 20], [78, 48], [22, 48], [50, 76]].map(([cx, cy], n) => (
-            <path key={n} d={`M${cx} ${cy - 27} L${cx + 27} ${cy} L${cx} ${cy + 27} L${cx - 27} ${cy} Z`} fill="rgba(170,235,185,0.32)" stroke="rgba(235,255,240,0.85)" strokeWidth="1.2" vectorEffect="non-scaling-stroke" />
-          ))}
-        </svg>
+        // 【オーラ】の盤面エフェクト: 6枚の淡い緑のひし形(2-1-2-1の並び)が、上から順に、グラデーションのようにフェードイン → フェードアウトを繰り返す
+        <span aria-hidden="true" data-testid="fx-aura-idle" style={{ position: 'absolute', left: '50%', top: '50%', height: '96%', aspectRatio: '0.84', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 4 }}>
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible' }}>
+            {[[28, 24], [72, 24], [50, 43], [28, 62], [72, 62], [50, 81]].map(([cx, cy], n) => (
+              <path key={n} d={`M${cx} ${cy - 18} L${cx + 21} ${cy} L${cx} ${cy + 18} L${cx - 21} ${cy} Z`} fill="rgba(170,232,170,0.42)" stroke="rgba(225,255,225,0.9)" strokeWidth="1.3" strokeLinejoin="round" vectorEffect="non-scaling-stroke" style={{ animation: `feel-aura-idle 2.6s ease-in-out ${n * 0.14}s infinite both`, filter: 'drop-shadow(0 0 2px rgba(200,255,200,0.7))' }} />
+            ))}
+          </svg>
+        </span>
       )}
       {(role === 'target' || role === 'guard') && (
         // 共通の攻撃エフェクト: 当たった瞬間に、白い閃光・×の切り筋・広がる輪が出る(ガードのときは、黄色い輪が広がる)。カードの外にも少しはみ出して、目立たせる
