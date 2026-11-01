@@ -173,6 +173,21 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
         ...(role === 'target' || role === 'guard' ? { boxShadow: `0 0 0 3px ${role === 'guard' ? C.player : C.bad}, 0 0 16px 2px ${alpha(role === 'guard' ? C.player : C.bad, 55)}`, zIndex: 2 } : {}),
       }}
     >
+      {unit.alive && (unit.keywords || []).includes('guard') && (
+        // 【守護】の盤面エフェクト: 緑に光る盾の輪郭(二重)が、ゆっくり脈打つ
+        <svg aria-hidden="true" data-testid="fx-guard-idle" viewBox="0 0 100 120" preserveAspectRatio="none" style={{ position: 'absolute', inset: '-3%', width: '106%', height: '106%', pointerEvents: 'none', zIndex: 4, overflow: 'visible', animation: 'feel-guard-idle 2s ease-in-out infinite', filter: 'drop-shadow(0 0 4px rgba(150,255,60,0.9))' }}>
+          <path d="M50 3 L93 14 V58 C93 88 72 106 50 117 C28 106 7 88 7 58 V14 Z" fill="rgba(150,255,60,0.08)" stroke="#b6ff4a" strokeWidth="2.4" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          <path d="M50 11 L85 20 V57 C85 83 67 98 50 108 C33 98 15 83 15 57 V20 Z" fill="none" stroke="rgba(214,255,120,0.9)" strokeWidth="1.4" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        </svg>
+      )}
+      {unit.alive && (unit.keywords || []).includes('aura') && (
+        // 【オーラ】の盤面エフェクト: 淡い緑のひし形(4枚)が、すうっと浮かんでは消える
+        <svg aria-hidden="true" data-testid="fx-aura-idle" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', inset: '8%', width: '84%', height: '84%', pointerEvents: 'none', zIndex: 4, overflow: 'visible', animation: 'feel-aura-idle 2.4s ease-in-out infinite', filter: 'drop-shadow(0 0 3px rgba(190,255,200,0.8))' }}>
+          {[[50, 20], [78, 48], [22, 48], [50, 76]].map(([cx, cy], n) => (
+            <path key={n} d={`M${cx} ${cy - 27} L${cx + 27} ${cy} L${cx} ${cy + 27} L${cx - 27} ${cy} Z`} fill="rgba(170,235,185,0.32)" stroke="rgba(235,255,240,0.85)" strokeWidth="1.2" vectorEffect="non-scaling-stroke" />
+          ))}
+        </svg>
+      )}
       {(role === 'target' || role === 'guard') && (
         // 共通の攻撃エフェクト: 当たった瞬間に、白い閃光・×の切り筋・広がる輪が出る(ガードのときは、黄色い輪が広がる)。カードの外にも少しはみ出して、目立たせる
         <span key={`hit-${tick}`} aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 8 }}>
