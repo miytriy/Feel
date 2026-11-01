@@ -153,7 +153,7 @@ function DmgNum({ part, crit, big }) {
 // ドクロ(黒いシルエット。目・鼻・歯のすきまは、穴になって下の赤い円が透ける)
 function Skull() {
   return (
-    <svg viewBox="0 0 100 100" style={{ position: 'absolute', left: '17%', top: '16%', width: '66%', height: '66%', overflow: 'visible', animation: 'feel-d-skull 0.8s ease-out forwards' }}>
+    <svg viewBox="0 0 100 100" style={{ position: 'absolute', left: '17%', top: '16%', width: '66%', height: '66%', overflow: 'visible', animation: 'feel-d-skull 0.8s ease-out 0.2s both' }}>
       <path fillRule="evenodd" fill="#1a0a08" d="M50 4 C75 4 88 17 88 36 C88 48 83 56 77 61 L73 66 L73 84 Q73 92 65 92 L35 92 Q27 92 27 84 L27 66 L23 61 C17 56 12 48 12 36 C12 17 25 4 50 4 Z
         M19 37 Q19 29 27 29 L40 30 Q48 31 47 40 L45 51 Q44 57 36 57 L28 56 Q19 54 19 46 Z
         M81 37 Q81 29 73 29 L60 30 Q52 31 53 40 L55 51 Q56 57 64 57 L72 56 Q81 54 81 46 Z
@@ -196,7 +196,7 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
         boxShadow: selected ? `0 0 0 3px ${alpha(C.active, 33)}` : active ? `0 0 0 3px ${alpha(TEAM_COLOR[unit.team], 20)}` : 'none',
         cursor: 'pointer', position: 'relative',
         ...(hl ? { boxShadow: `0 0 0 4px ${C.active}`, transform: 'scale(1.03)', zIndex: 2 } : {}),
-        ...(fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s` } : {}),
+        ...(fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s${fx.die === 'destroy' ? ', feel-d-melt 0.3s ease-in forwards' : ''}` } : fx && fx.die === 'destroy' ? { animation: 'feel-d-melt 0.3s ease-in forwards' } : {}), // 破壊: ドクロが出る前に、ユニットがぼやけて、下へ溶けるように崩れる
         // 攻撃する側: チームの色で光って、相手のほうへ少し出る / 受ける側: 赤く縁どる(揺れとダメージの数字は、いままでどおり)
         ...(role === 'attacker' ? { boxShadow: `0 0 0 3px ${TEAM_COLOR[unit.team]}, 0 0 18px 2px ${alpha(TEAM_COLOR[unit.team], 60)}`, zIndex: 3, animation: `${unit.team === 'A' ? 'feel-lunge-up' : 'feel-lunge-down'} 0.5s ease-out` } : {}),
         ...(role === 'target' || role === 'guard' ? { boxShadow: `0 0 0 3px ${role === 'guard' ? C.player : C.bad}, 0 0 16px 2px ${alpha(role === 'guard' ? C.player : C.bad, 55)}`, zIndex: 2 } : {}),
@@ -205,15 +205,15 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
       {fx && fx.die === 'destroy' && (
         // 破壊の演出: 白熱のフラッシュ → 赤い円(縁は桃色の輪、外側に暗い赤のにじみ。墓場が増えるときは、黒いドクロ入り)→ 透ける白い破片が散り、ドクロが溶け、円が赤いもやになって、火の粉と暗いかけらを散らして消える
         <span key={`des-${tick}`} aria-hidden="true" data-testid="fx-destroy" style={{ position: 'absolute', left: '50%', top: '50%', height: '120%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }}>
-          <span style={{ position: 'absolute', inset: '8%', borderRadius: '24%', background: 'radial-gradient(circle, #fff 0%, #ffe2b0 45%, rgba(255,150,70,0.8) 75%, rgba(255,120,60,0) 100%)', boxShadow: '0 0 20px 6px rgba(255,170,90,0.8)', animation: 'feel-d-flash 0.2s ease-out forwards' }} />
-          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 50% 46%, #ff9a7e 0%, #fb6a50 55%, #ec4733 85%, #ffa58c 100%)', boxShadow: 'inset 0 0 0 2px rgba(255,205,180,0.85), 0 0 12px 3px rgba(255,80,60,0.85), 0 0 30px 12px rgba(120,10,10,0.55)', animation: 'feel-d-orb 0.8s ease-out forwards' }}>
+          <span style={{ position: 'absolute', inset: '8%', borderRadius: '24%', background: 'radial-gradient(circle, #fff 0%, #ffe2b0 45%, rgba(255,150,70,0.8) 75%, rgba(255,120,60,0) 100%)', boxShadow: '0 0 20px 6px rgba(255,170,90,0.8)', opacity: 0, animation: 'feel-d-flash 0.2s ease-out 0.2s forwards' }} />
+          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 50% 46%, #ff9a7e 0%, #fb6a50 55%, #ec4733 85%, #ffa58c 100%)', boxShadow: 'inset 0 0 0 2px rgba(255,205,180,0.85), 0 0 12px 3px rgba(255,80,60,0.85), 0 0 30px 12px rgba(120,10,10,0.55)', animation: 'feel-d-orb 0.8s ease-out 0.2s both' }}>
             {fx.grave && <Skull />}
           </span>
           {CONFETTI.map((c, n) => (
-            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: c.size, height: c.size, marginLeft: -c.size / 2, marginTop: -c.size / 2, clipPath: c.tri ? 'polygon(0 100%, 50% 0, 100% 100%)' : 'polygon(10% 0, 100% 20%, 90% 100%, 0 80%)', background: 'linear-gradient(135deg, #ffffff 0%, #d6e8ff 50%, #ffe0ea 100%)', '--x': c.x, '--y': c.y, '--dx': c.dx, '--dy': c.dy, '--rot': c.rot, animation: `feel-d-conf 0.6s ease-out ${c.delay}s both` }} />
+            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: c.size, height: c.size, marginLeft: -c.size / 2, marginTop: -c.size / 2, clipPath: c.tri ? 'polygon(0 100%, 50% 0, 100% 100%)' : 'polygon(10% 0, 100% 20%, 90% 100%, 0 80%)', background: 'linear-gradient(135deg, #ffffff 0%, #d6e8ff 50%, #ffe0ea 100%)', '--x': c.x, '--y': c.y, '--dx': c.dx, '--dy': c.dy, '--rot': c.rot, animation: `feel-d-conf 0.6s ease-out ${c.delay + 0.2}s both` }} />
           ))}
           {EMBERS.map((m, n) => (
-            <span key={`e${n}`} style={{ position: 'absolute', left: '50%', top: '50%', width: m.dark ? 4 : 5, height: m.dark ? 4 : 5, marginLeft: -2, marginTop: -2, borderRadius: m.dark ? 1 : '50%', background: m.dark ? '#5a1210' : '#ffd27a', boxShadow: m.dark ? 'none' : '0 0 6px 2px rgba(255,160,50,0.9)', '--dx': m.dx, '--dy': m.dy, animation: `feel-d-ember 0.8s ease-out both` }} />
+            <span key={`e${n}`} style={{ position: 'absolute', left: '50%', top: '50%', width: m.dark ? 4 : 5, height: m.dark ? 4 : 5, marginLeft: -2, marginTop: -2, borderRadius: m.dark ? 1 : '50%', background: m.dark ? '#5a1210' : '#ffd27a', boxShadow: m.dark ? 'none' : '0 0 6px 2px rgba(255,160,50,0.9)', '--dx': m.dx, '--dy': m.dy, animation: `feel-d-ember 0.8s ease-out 0.2s both` }} />
           ))}
         </span>
       )}
@@ -534,7 +534,7 @@ function reorderBoost(evs) {
   }
   return out
 }
-const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, destroy: 850, vanish: 850, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, destroy: 1000, vanish: 850, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null }) {
@@ -646,7 +646,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   useEffect(() => {
     if (!play || logOpen) return // 戦闘実況を開いている間は、再生を止める
     if (play.i >= play.events.length) { setPlay(null); return }
-    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), (EVENT_MS[play.events[play.i].type] ?? 500) * mult)
+    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), Math.max(...play.events.slice(play.i, groupEnd(play.events, play.i) + 1).map((x) => EVENT_MS[x.type] ?? 500)) * mult)
     return () => clearTimeout(t)
   }, [play, mult, logOpen])
 

@@ -77,6 +77,7 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-earth-haze { 0% { opacity: 0; transform: translate(-4%, 6%) scale(0.9); } 45% { opacity: 1; transform: translate(2%, -2%) scale(1.05); } 100% { opacity: 0; transform: translate(6%, -8%) scale(1.15); } }
     @keyframes feel-earth-spin { to { transform: rotate(360deg); } }
     @keyframes feel-earth-idle { 0%, 100% { opacity: 0.85; transform: translate(-50%, -50%) scale(0.985); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.015); } }
+    @keyframes feel-d-melt { 0% { filter: none; opacity: 1; scale: 1 1; transform-origin: 50% 0; } 100% { filter: blur(3px) brightness(1.35) saturate(1.3); opacity: 0.35; scale: 1.04 1.14; transform-origin: 50% 0; } }
     @keyframes feel-d-flash { 0% { opacity: 1; transform: scale(0.9); } 100% { opacity: 0; transform: scale(1.2); } }
     @keyframes feel-d-orb { 0% { opacity: 0; transform: scale(0.55); } 12% { opacity: 1; transform: scale(1.06); } 18% { transform: scale(1); } 56% { opacity: 1; transform: scale(1); filter: none; } 76% { opacity: 0.55; transform: scale(1.08); filter: blur(1.5px); } 100% { opacity: 0; transform: scale(1.3); filter: blur(6px); } }
     @keyframes feel-d-skull { 0%, 48% { opacity: 1; } 72% { opacity: 0.2; filter: blur(2px) brightness(0.8); } 100% { opacity: 0; } }
