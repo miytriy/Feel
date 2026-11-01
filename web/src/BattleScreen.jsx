@@ -1149,7 +1149,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const overlays = (
     <>
       {intro && <StageIntro level={level} levelInfo={levelInfo} cpuChars={cpuChars} first={introFirst} onClose={() => { setIntro(false); setIntroFirst(false) }} />}
-      {logOpen && <CommentaryOverlay units={view.units} active={view.active} round={view.round} log={view.log} ab={hist.ab} dead={hist.dead} onClose={() => setLogOpen(false)} />}
+      {logOpen && <CommentaryOverlay units={view.units} active={view.active} round={view.round} log={view.log} ab={hist.ab} dead={hist.dead} events={hist.ev} onClose={() => setLogOpen(false)} />}
       {leaveAsk && <ExitConfirm onCancel={() => setLeaveAsk(false)} onExit={leave} />}
       {state.winner && !playing && resultShown && !intro && <ResultBanner winner={state.winner} message={rewardMsg} buttons={resultButtons} onDismiss={() => setResultShown(false)} />}
     </>
@@ -1175,7 +1175,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
               <Row big title="相手" color={C.enemy}>{enemies.map(card)}</Row>
               <Row big title="相手の召喚物" color={C.enemy}>{summonCards(enemySummons)}</Row>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}><RecentFeed feed={feed} big /><AbilityBanner ability={view.lastAbility} big /></div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}><AbilityBanner ability={view.lastAbility} big /></div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <Row big title="自分の召喚物" color={C.player}>{summonCards(playerSummons)}</Row>
               <Row big title="自分" color={C.player}>{players.map(card)}</Row>
@@ -1209,7 +1209,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
       <Row title="相手" color={C.enemy}>{enemies.map(card)}</Row>
       <Row title="相手の召喚物" color={C.enemy}>{summonCards(enemySummons)}</Row>
 
-      <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}><RecentFeed feed={feed} /><AbilityBanner ability={view.lastAbility} /></div>
+      <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}><AbilityBanner ability={view.lastAbility} /></div>
 
       <Row title="自分の召喚物" color={C.player}>{summonCards(playerSummons)}</Row>
       <Row title="自分" color={C.player}>{players.map(card)}</Row>

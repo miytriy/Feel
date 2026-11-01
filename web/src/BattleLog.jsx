@@ -4,7 +4,7 @@ import { C, FONT, alpha } from './ui.js'
 import { KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 import { StatIcon } from './icons.jsx'
 
-// 戦闘実況(🎙️): 右上の「≡」から開く、全画面のオーバーレイ。開いている間は、対戦(CPUの行動・再生)を止める。
+// 戦闘実況(🗒️): 右上の「🗒️」から開く、全画面のオーバーレイ。開いている間は、対戦(CPUの行動・再生)を止める。
 //   味方 / 相手 = キャラごとの詳細(ステータス・いまの値・強化)とスキル・能力 ・ ログ = 起きたことの文章の記録
 //   ログ = 起きたことの文章の記録(全部) / 発動 = 発動した能力の履歴(ファンファーレ・特性・スペル・進化など) / 破壊 = 戦闘不能・破壊された順
 // 履歴は、1回の行動ごとに collectHistory で集めて足していく(BattleScreen の commit)。
@@ -37,11 +37,15 @@ export function collectHistory(prev, next) {
     const ref = evs[idx]
     dead.push({ name: u.name, team: u.team, field: u.field, round: ref ? ref.round : next.round, logLen: ref ? ref.logLen : next.log.length, cause })
   }
-  return { ab, dead }
+  // わかりやすいログ用の、軽い出来事の記録(盤面のコピーは持たない)
+  const ev = evs
+    .filter((e) => e.type !== 'sync' && e.type !== 'attack')
+    .map((e) => ({ type: e.type, round: e.round, logLen: e.logLen, src: e.src, target: e.target, uid: e.uid, name: e.name, team: e.team, amount: e.amount, means: e.means, crit: e.crit, dmgType: e.dmgType, kind: e.kind, owner: e.owner, desc: e.desc, text: e.text, label: e.label, grave: e.grave }))
+  return { ab, dead, ev }
 }
 
-export const emptyHistory = () => ({ ab: [], dead: [] })
-export const addHistory = (h, d) => (d.ab.length || d.dead.length ? { ab: [...h.ab, ...d.ab], dead: [...h.dead, ...d.dead] } : h)
+export const emptyHistory = () => ({ ab: [], dead: [], ev: [] })
+export const addHistory = (h, d) => (d.ab.length || d.dead.length || d.ev.length ? { ab: [...h.ab, ...d.ab], dead: [...h.dead, ...d.dead], ev: [...(h.ev || []), ...d.ev] } : h)
 
 
 const TABS = [['ally', '味方'], ['enemy', '相手'], ['log', 'ログ'], ['ab', '発動'], ['dead', '破壊']]
@@ -62,10 +66,10 @@ const buffText = (b) => {
 }
 const num = (n) => Math.round(n).toLocaleString()
 
-// 右上の「≡」ボタン(戦闘実況を開く)
+// 右上の「🗒️」ボタン(戦闘実況を開く)
 export function CommentaryButton({ onClick }) {
   return (
-    <button type="button" data-testid="commentary-btn" onClick={onClick} aria-label="戦闘実況" title="戦闘実況" style={{ marginLeft: 'auto', flex: 'none', width: 40, height: 40, minHeight: 0, padding: 0, display: 'grid', placeItems: 'center', border: 0, borderRadius: 8, background: 'rgba(255,255,255,0.14)', color: '#fff', fontFamily: FONT, fontSize: 26, lineHeight: 1, fontWeight: 700, cursor: 'pointer' }}>≡</button>
+    <button type="button" data-testid="commentary-btn" onClick={onClick} aria-label="戦闘実況" title="戦闘実況" style={{ marginLeft: 'auto', flex: 'none', width: 40, height: 40, minHeight: 0, padding: 0, display: 'grid', placeItems: 'center', border: 0, borderRadius: 8, background: 'rgba(255,255,255,0.14)', color: '#fff', fontFamily: FONT, fontSize: 22, lineHeight: 1, fontWeight: 700, cursor: 'pointer' }}>🗒️</button>
   )
 }
 
@@ -160,11 +164,45 @@ function UnitSkills({ u, color }) {
   )
 }
 
+// 見やすいログ: ラウンドごと・ユニットの番ごとに区切って、1行ずつ「種類のラベル + 内容」で並べる
+const TAGS = { damage: ['攻撃', '#ef4444'], block: ['ガード', '#f59e0b'], heal: ['回復', '#22c55e'], summon: ['召喚', '#a78bfa'], buff: ['強化', '#f4b942'], keyword: ['付与', '#38bdf8'], destroy: ['破壊', '#f87171'], vanish: ['消滅', '#60a5fa'], ability: ['能力', '#94a3b8'] }
+function ReadableLog({ events, units, empty }) {
+  if (events.length === 0) return empty('まだ何も起きていません')
+  const nm = (uid) => units.find((u) => u.uid === uid)?.name ?? '?'
+  const tm = (uid) => units.find((u) => u.uid === uid)?.team ?? null
+  const col = (t) => (t === 'B' ? C.enemy : C.player)
+  const out = []
+  let round = null
+  events.forEach((e, i) => {
+    if (e.round !== round) { round = e.round; out.push(<div key={`r${i}`} style={{ position: 'sticky', top: 0, zIndex: 1, margin: '10px -12px 6px', padding: '4px 12px', background: C.paper, borderBottom: `2px solid ${C.line}`, fontSize: 12, letterSpacing: 2, fontWeight: 800, color: C.mute }}>ラウンド {round}</div>) }
+    if (e.type === 'turn') { out.push(<div key={i} style={{ margin: '10px 0 4px', padding: '5px 10px', borderRadius: 6, borderLeft: `6px solid ${col(e.team)}`, background: alpha(col(e.team), 14), fontWeight: 800, color: col(e.team) }}>▶ {e.team === 'B' ? '相手' : '自分'}の番:{e.name}</div>); return }
+    const tag = TAGS[e.type]; if (!tag) return
+    let body = null; let teamOf = e.team ?? tm(e.src) ?? tm(e.target)
+    if (e.type === 'damage') body = <><b>{nm(e.src)}</b> → <b>{nm(e.target)}</b> <b style={{ color: '#ef4444', fontSize: 15 }}>{e.amount}</b> ダメージ{e.means && e.means !== '攻撃' ? `(${e.means})` : ''}{e.crit ? ' クリティカル!' : ''}</>
+    else if (e.type === 'block') body = <><b>{nm(e.src)}</b> の攻撃を <b>{nm(e.target)}</b> のバリアが防いだ</>
+    else if (e.type === 'heal') body = <><b>{nm(e.target)}</b> が <b style={{ color: '#22c55e' }}>{e.amount}</b> 回復</>
+    else if (e.type === 'summon') body = <><b>{e.name}</b> が場に出た</>
+    else if (e.type === 'buff') body = <><b>{nm(e.target)}</b> の {e.text}</>
+    else if (e.type === 'keyword') body = <><b>{nm(e.target)}</b> が【{e.label}】を得た</>
+    else if (e.type === 'destroy') body = <><b>{nm(e.target)}</b> が倒れた{e.grave ? '(墓場+)' : ''}</>
+    else if (e.type === 'vanish') body = <><b>{nm(e.target)}</b> が消滅した</>
+    else if (e.type === 'ability') { teamOf = e.team; body = <>【{e.kind}】<b>{e.owner}</b>{e.name ? ` ― ${e.name}` : ''}{e.desc && <div style={{ color: C.mute, fontSize: 12 }}>{e.desc}</div>}</> }
+    out.push(
+      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '3px 0 3px 6px', borderLeft: `3px solid ${teamOf ? alpha(col(teamOf), 60) : C.line}`, marginLeft: 6 }}>
+        <span style={{ flex: 'none', minWidth: 42, textAlign: 'center', fontSize: 11, fontWeight: 800, padding: '1px 6px', borderRadius: 5, background: alpha(tag[1], 22), color: tag[1] }}>{tag[0]}</span>
+        <span style={{ minWidth: 0, flex: 1 }}>{body}</span>
+      </div>
+    )
+  })
+  return <div>{out}</div>
+}
+
 // オーバーレイ本体。units: 場のすべて(view.units) / active: いま動くユニットの uid / log: ここまでの文章の記録 / ab, dead: 履歴
-export function CommentaryOverlay({ units, active, round, log, ab, dead, onClose }) {
+export function CommentaryOverlay({ units, active, round, log, ab, dead, events = [], onClose }) {
   const [tab, setTab] = useState('ally')
   const [pick, setPick] = useState({ A: null, B: null })
   const [sub, setSub] = useState('detail')
+  const [raw, setRaw] = useState(false) // ログ: false = 見やすい表示 / true = 文章の記録
   const bodyRef = useRef(null)
   const limit = log.length
   const abShown = ab.filter((x) => x.logLen <= limit)
@@ -193,7 +231,7 @@ export function CommentaryOverlay({ units, active, round, log, ab, dead, onClose
   return createPortal(
     <div data-testid="commentary" role="dialog" aria-label="戦闘実況" style={{ position: 'fixed', inset: 0, zIndex: 2800, display: 'flex', flexDirection: 'column', background: C.paper, color: C.ink, fontFamily: FONT }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'rgba(0,0,0,0.6)', color: '#fff', flex: 'none' }}>
-        <b style={{ fontSize: 16, letterSpacing: 2, whiteSpace: 'nowrap' }}>🎙️ 戦闘実況</b>
+        <b style={{ fontSize: 16, letterSpacing: 2, whiteSpace: 'nowrap' }}>🗒️ 戦闘実況</b>
         <span style={{ fontSize: 12, opacity: 0.8, whiteSpace: 'nowrap' }}>ラウンド {round}</span>
         <button type="button" aria-label="閉じる" data-testid="commentary-close" onClick={onClose} style={{ marginLeft: 'auto', padding: '6px 14px', whiteSpace: 'nowrap', minHeight: 0, borderRadius: 8, border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.1)', color: '#fff', fontFamily: FONT, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>✕ 閉じる</button>
       </div>
@@ -234,9 +272,16 @@ export function CommentaryOverlay({ units, active, round, log, ab, dead, onClose
       <div ref={bodyRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 12px 24px', fontSize: 13, lineHeight: 1.6, width: 'min(860px, 100%)', boxSizing: 'border-box', alignSelf: 'center' }}>
         {isTeam && (!cur ? empty('ユニットがいません') : sub === 'detail' ? <UnitDetail u={cur} color={color} /> : <UnitSkills u={cur} color={color} />)}
 
-        {tab === 'log' && (log.length === 0 ? empty('まだログはありません') : log.map((line, i) => (
-          <div key={i} style={{ fontWeight: i === log.length - 1 ? 700 : 400, color: i === log.length - 1 ? C.ink : C.mute }}>{line}</div>
-        )))}
+        {tab === 'log' && (
+          <>
+            <div style={{ display: 'flex', gap: 6, padding: '6px 0 4px' }}>
+              {[[false, '見やすい'], [true, '文章']].map(([v, l]) => <button key={l} type="button" onClick={() => setRaw(v)} style={pill(raw === v, C.player)}>{l}</button>)}
+            </div>
+            {raw ? (log.length === 0 ? empty('まだログはありません') : log.map((line, i) => (
+              <div key={i} style={{ fontWeight: i === log.length - 1 ? 700 : 400, color: i === log.length - 1 ? C.ink : C.mute }}>{line}</div>
+            ))) : <ReadableLog events={events.filter((x) => x.logLen <= limit)} units={units} empty={empty} />}
+          </>
+        )}
 
         {tab === 'ab' && (abShown.length === 0 ? empty('まだ能力は発動していません') : [...abShown].reverse().map((x, i) => card(x, rowKey(x, i), (
           <>
