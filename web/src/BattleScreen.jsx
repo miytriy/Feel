@@ -190,11 +190,11 @@ function UnitCard({ unit, active, selected, selectable, inspected, onClick, big 
           background: 'radial-gradient(circle, rgba(255,150,40,0.10) 0%, rgba(255,150,40,0.18) 52%, rgba(255,160,40,0.85) 66%, rgba(255,120,20,0.35) 72%, rgba(255,120,20,0) 78%)', animation: 'feel-earth-idle 2.4s ease-in-out infinite' }} />
       )}
       {unit.alive && ((unit.keywords || []).includes('aura') || (unit.keywords || []).includes('earthSign')) && ( // 【土の印】は、オーラと同じ効果(相手の能力で選ばれない)を持つので、オーラのエフェクトも出る
-        // 【オーラ】の盤面エフェクト: 6枚の淡い緑のひし形(2-1-2-1の並び)が、上から順に、グラデーションのようにフェードイン → フェードアウトを繰り返す
+        // 【オーラ】の盤面エフェクト: 7枚の淡い緑のひし形(1-2-1-2-1の並び)が、上から順に、グラデーションのようにフェードイン → フェードアウトを繰り返す
         <span aria-hidden="true" data-testid="fx-aura-idle" style={{ position: 'absolute', left: '50%', top: '50%', height: '96%', aspectRatio: '0.84', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 4 }}>
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible' }}>
-            {[[28, 24], [72, 24], [50, 43], [28, 62], [72, 62], [50, 81]].map(([cx, cy], n) => (
-              <path key={n} d={`M${cx} ${cy - 18} L${cx + 21} ${cy} L${cx} ${cy + 18} L${cx - 21} ${cy} Z`} fill="rgba(170,232,170,0.42)" stroke="rgba(225,255,225,0.9)" strokeWidth="1.3" strokeLinejoin="round" vectorEffect="non-scaling-stroke" style={{ animation: `feel-aura-idle 2.6s ease-in-out ${n * 0.14}s infinite both`, filter: 'drop-shadow(0 0 2px rgba(200,255,200,0.7))' }} />
+            {[[50, 12], [29, 29], [71, 29], [50, 46], [29, 63], [71, 63], [50, 80]].map(([cx, cy], n) => (
+              <path key={n} d={`M${cx} ${cy - 17} L${cx + 21} ${cy} L${cx} ${cy + 17} L${cx - 21} ${cy} Z`} fill="rgba(170,232,170,0.42)" stroke="rgba(225,255,225,0.9)" strokeWidth="1.3" strokeLinejoin="round" vectorEffect="non-scaling-stroke" style={{ animation: `feel-aura-idle 2.6s ease-in-out ${[0, 0.14, 0.14, 0.28, 0.42, 0.42, 0.56][n]}s infinite both`, filter: 'drop-shadow(0 0 2px rgba(200,255,200,0.7))' }} />
             ))}
           </svg>
         </span>
