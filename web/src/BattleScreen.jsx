@@ -207,28 +207,38 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         </span>
       )}
       {fx && fx.die === 'vanish' && (
-        // 消滅の演出(動画の再現): ふわっとした青紫の光の円 → 縁にばちばちと電気の輪が走る(中は暗い群青、中心は明るい青)→ 輪が小さく縮み → 白い光の核になって、灰色のけむりと青い粒・黒いかけらを散らして消える
+        // 消滅の演出(動画の再現): ふわっとした青紫の光の円 → 縁に、水色の電気の網のような太い輪(内側はぎざぎざの暗い群青、中心は明るい青)→ 輪が小さく縮む → 白い光の核と暗いけむり → 水色の光の粒と黒いかけらが散って消える
         <span key={`van-${tick}`} aria-hidden="true" data-testid="fx-vanish" style={{ position: 'absolute', left: '50%', top: '50%', height: '125%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }}>
           <svg width="0" height="0" style={{ position: 'absolute' }}>
             <defs>
               <filter id="feel-fuzzy" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="3" result="n" /><feDisplacementMap in="SourceGraphic" in2="n" scale="16" /></filter>
+              <filter id="feel-rag" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="3" seed="8" result="n" /><feDisplacementMap in="SourceGraphic" in2="n" scale="12" /></filter>
               <filter id="feel-bolt" x="-30%" y="-30%" width="160%" height="160%">
                 <feTurbulence type="turbulence" baseFrequency="0.09" numOctaves="2" seed="1" result="n"><animate attributeName="seed" values="1;5;9;13;17;21" dur="0.36s" repeatCount="indefinite" calcMode="discrete" /></feTurbulence>
                 <feDisplacementMap in="SourceGraphic" in2="n" scale="9" result="d" />
                 <feGaussianBlur in="d" stdDeviation="0.7" result="b" />
                 <feMerge><feMergeNode in="b" /><feMergeNode in="d" /></feMerge>
               </filter>
+              <filter id="feel-web" x="-30%" y="-30%" width="160%" height="160%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.17" numOctaves="3" seed="2" result="n"><animate attributeName="seed" values="2;6;10;14;18" dur="0.3s" repeatCount="indefinite" calcMode="discrete" /></feTurbulence>
+                <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 14 -6.4" result="m" />
+                <feComposite in="SourceGraphic" in2="m" operator="in" result="web" />
+                <feGaussianBlur in="web" stdDeviation="0.45" />
+              </filter>
             </defs>
           </svg>
-          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(120,180,255,1) 0%, rgba(35,65,235,1) 26%, rgba(14,24,125,1) 58%, rgba(22,26,115,1) 76%, rgba(105,62,200,0.85) 90%, rgba(120,80,215,0) 100%)', filter: 'url(#feel-fuzzy)', animation: 'feel-v-disc 1.1s ease-out both' }} />
+          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(70,140,255,1) 0%, rgba(24,52,200,1) 20%, rgba(10,22,105,1) 48%, rgba(8,16,82,1) 70%, rgba(95,55,190,0.9) 90%, rgba(120,80,215,0) 100%)', filter: 'url(#feel-fuzzy)', animation: 'feel-v-disc 1.1s ease-out both' }} />
           <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', animation: 'feel-v-ring 1.1s ease-in-out both', filter: 'drop-shadow(0 0 3px #4fb4ff) drop-shadow(0 0 8px #2f6bff)' }}>
-            <circle cx="50" cy="50" r="42" fill="none" stroke="#45c8ff" strokeWidth="3.4" filter="url(#feel-bolt)" />
-            <circle cx="50" cy="50" r="42" fill="none" stroke="#ffffff" strokeWidth="1.3" filter="url(#feel-bolt)" opacity="0.9" />
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#7ee6ff" strokeWidth="13" filter="url(#feel-web)" />
+            <circle cx="50" cy="50" r="44" fill="none" stroke="#45c8ff" strokeWidth="2.4" filter="url(#feel-bolt)" />
+            <circle cx="50" cy="50" r="44" fill="none" stroke="#ffffff" strokeWidth="1" filter="url(#feel-bolt)" opacity="0.9" />
+            <circle cx="50" cy="50" r="49" fill="none" stroke="#c9bdff" strokeWidth="0.8" filter="url(#feel-bolt)" opacity="0.5" />
           </svg>
-          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '70%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(60,60,80,0) 30%, rgba(80,80,100,0.55) 62%, rgba(80,80,100,0) 100%)', filter: 'url(#feel-fuzzy)', animation: 'feel-v-smoke 1.1s ease-out both' }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '70%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(40,40,52,0) 28%, rgba(55,55,68,0.75) 60%, rgba(60,60,74,0) 100%)', filter: 'url(#feel-rag)', animation: 'feel-v-smoke 1.1s ease-out both' }} />
           <span style={{ position: 'absolute', left: '50%', top: '50%', width: '40%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, #fff 0%, #fff 25%, rgba(190,235,255,0.9) 50%, rgba(110,190,255,0) 100%)', boxShadow: '0 0 14px 4px rgba(150,220,255,0.8)', animation: 'feel-v-core 1.1s ease-in-out both' }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '46%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(170,230,255,0.75) 0%, rgba(110,190,255,0.45) 50%, rgba(110,190,255,0) 100%)', filter: 'url(#feel-rag)', animation: 'feel-v-glow 1.1s ease-out both' }} />
           {SPARKS.map((sp, n) => (
-            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: sp.dark ? 4 : 3, height: sp.dark ? 4 : 3, marginLeft: -2, marginTop: -2, borderRadius: sp.dark ? 1 : '50%', background: sp.dark ? '#14141c' : '#d8f4ff', boxShadow: sp.dark ? 'none' : '0 0 5px 2px #6ac4ff', '--dx': sp.dx, '--dy': sp.dy, animation: `feel-v-spark 1.1s ease-out both` }} />
+            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: sp.dark ? 4 : 5, height: sp.dark ? 4 : 5, marginLeft: -2, marginTop: -2, borderRadius: sp.dark ? 1 : '50%', background: sp.dark ? '#14141c' : '#d8f4ff', boxShadow: sp.dark ? 'none' : '0 0 6px 2px #6ac4ff', '--dx': sp.dx, '--dy': sp.dy, animation: `feel-v-spark 1.1s ease-out both` }} />
           ))}
         </span>
       )}
