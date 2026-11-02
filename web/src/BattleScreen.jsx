@@ -150,8 +150,12 @@ function ActionBar({ state, big = false, avFx = null }) {
             <span data-testid="av-value" style={{ position: 'absolute', right: 3, bottom: 1, fontSize: big ? 11 : 9, fontWeight: 700, lineHeight: 1, padding: '1px 3px', borderRadius: 4, background: 'rgba(0,0,0,0.45)', color: '#fff' }}><AnimNum value={Math.round(it.time)} /></span>
             {avFx && avFx[it.unit.uid] && !it.accel && (
               // 行動順アップ(▲ 緑)/ダウン(▼ 青): その枠が光って、矢印が動く
-              <span key={`${avFx[it.unit.uid].dir}-${avFx.tick}`} aria-hidden="true" data-testid={`fx-av-${avFx[it.unit.uid].dir}`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', borderRadius: 4, animation: `${avFx[it.unit.uid].dir === 'up' ? 'feel-av-up' : 'feel-av-down'} 0.8s ease-out both` }}>
-                <span style={{ position: 'absolute', left: '50%', top: '50%', fontSize: big ? 26 : 22, fontWeight: 900, color: avFx[it.unit.uid].dir === 'up' ? '#6dff9c' : '#7ab8ff', textShadow: '0 0 4px #000, 0 0 10px currentColor', animation: `${avFx[it.unit.uid].dir === 'up' ? 'feel-av-arrow-up' : 'feel-av-arrow-down'} 0.8s ease-out both` }}>{avFx[it.unit.uid].dir === 'up' ? '▲' : '▼'}</span>
+              <span key={`${avFx[it.unit.uid].dir}-${avFx.tick}`} aria-hidden="true" data-testid={`fx-av-${avFx[it.unit.uid].dir}`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', borderRadius: 4, animation: `${avFx[it.unit.uid].dir === 'up' ? 'feel-av-up' : 'feel-av-down'} 1s ease-out both` }}>
+                <span style={{ position: 'absolute', top: 0, bottom: 0, left: '-10%', right: '-10%', background: avFx[it.unit.uid].dir === 'up' ? 'linear-gradient(90deg, rgba(60,170,255,0) 0%, rgba(70,180,255,0.95) 35%, rgba(70,200,255,0.8) 65%, rgba(60,170,255,0) 100%)' : 'linear-gradient(90deg, rgba(90,110,255,0) 0%, rgba(90,110,255,0.95) 35%, rgba(110,130,255,0.8) 65%, rgba(90,110,255,0) 100%)', animation: 'feel-av-band 1s ease-out both' }} />
+                <svg viewBox="0 0 40 40" style={{ position: 'absolute', left: '50%', top: '50%', width: big ? 40 : 34, height: big ? 40 : 34, marginLeft: big ? -20 : -17, marginTop: big ? -20 : -17, overflow: 'visible', transform: avFx[it.unit.uid].dir === 'up' ? 'none' : 'rotate(180deg)', filter: 'drop-shadow(0 0 4px rgba(150,170,255,0.95))', animation: 'feel-av-chev 1s ease-out both' }}>
+                  <path d="M5 22 L20 8 L35 22 L35 28 L20 14 L5 28 Z" fill="none" stroke="#e9e4ff" strokeWidth="2.2" strokeLinejoin="round" />
+                  <path d="M5 33 L20 19 L35 33" fill="none" stroke="#e9e4ff" strokeWidth="2.2" strokeLinejoin="round" opacity="0.8" />
+                </svg>
               </span>
             )}
           </div>
