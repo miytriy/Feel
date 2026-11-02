@@ -471,16 +471,22 @@ function fireCrestsOnHeal(state, team) {
 }
 
 // 起きたことの記録(画面で、1つずつ順番に見せるため)。そのときの盤面の要約(体力など)つき。AIの先読み(expected)のときは記録しない
-const SNAP_KEYS = ['hp', 'maxHp', 'alive', 'armor', 'armorRate', 'barrier', 'stealth', 'countdown', 'comboCount', 'evolved', 'earthCount']
+const SNAP_KEYS = ['hp', 'maxHp', 'alive', 'armor', 'armorRate', 'barrier', 'stealth', 'countdown', 'comboCount', 'evolved', 'earthCount', 'curAV', 'baseAV']
+function crestSlots(state) {
+  const o = {}
+  for (const t of ['A', 'B']) o[t] = (state.crests?.[t] || []).map((c) => ({ countdown: c.countdown, slot: c.slot && { ...c.slot } }))
+  return o
+}
 function emit(state, type, data = {}) {
   if (!state.rec) return
   const units = {}
   for (const u of state.units) {
     const o = { keywords: [...u.keywords] }
     for (const k of SNAP_KEYS) o[k] = u[k]
+    o.accelAV = u.accel ? u.accel.curAV : null
     units[u.uid] = o
   }
-  state.events.push({ type, ...data, round: state.round, units, logLen: state.log.length, mp: { ...state.mp }, ep: { ...state.ep } })
+  state.events.push({ type, ...data, round: state.round, units, totalAV: state.totalAV, comboReset: { A: state.comboReset.A && { ...state.comboReset.A }, B: state.comboReset.B && { ...state.comboReset.B } }, crestSlots: crestSlots(state), logLen: state.log.length, mp: { ...state.mp }, ep: { ...state.ep } })
 }
 
 // 直近に発動した能力(画面に説明を出すための記録): kind=種類(ファンファーレ・特性・スペルなど) owner=持ち主の名前 name=能力名 desc=説明

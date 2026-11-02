@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { addEvents, buildMatch, newStats } from './career.js'
 import { createBattle, applyAction, getActiveUnit, legalActions, getUnit, gaugeOf, calcDamage, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS, SPELL_LEVEL } from './battle/ai.js'
@@ -41,8 +41,60 @@ function buildTimeline(state, count = 12) {
   return items.slice(0, count)
 }
 
+// 数字がなめらかに変わる(行動値が100→0へ減っていく見せ方)
+function AnimNum({ value, ms = 450 }) {
+  const [shown, setShown] = useState(value)
+  const cur = useRef(value)
+  useEffect(() => {
+    const from = cur.current
+    if (from === value) return undefined
+    let raf = 0
+    const t0 = performance.now()
+    const step = (t) => {
+      const k = Math.min(1, (t - t0) / ms)
+      const v = Math.round(from + (value - from) * (1 - (1 - k) * (1 - k)))
+      cur.current = v
+      setShown(v)
+      if (k < 1) raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [value, ms])
+  return <>{shown}</>
+}
+
 function ActionBar({ state, big = false, avFx = null }) {
   const items = buildTimeline(state, big ? 18 : 12)
+  const nodes = useRef({})
+  const prevPos = useRef({})
+  const seen = {}
+  const keyOf = (it, i) => {
+    if (it.round) return `r${it.round}`
+    if (it.crest) return `crest-${it.crest.name}-${i}`
+    if (it.sys) return `sys${it.sys}-${i}`
+    const b = `${it.unit.uid}${it.accel ? 'a' : ''}`
+    seen[b] = (seen[b] ?? -1) + 1
+    return `${b}-${seen[b]}`
+  }
+  const keys = items.map(keyOf)
+  // 並びが変わったとき、前の位置から滑るように動かす(FLIP)
+  useLayoutEffect(() => {
+    const next = {}
+    for (const k of keys) {
+      const n = nodes.current[k]
+      if (!n) continue
+      const left = n.offsetLeft
+      next[k] = left
+      const old = prevPos.current[k]
+      if (!n.animate) continue
+      if (old == null) {
+        if (Object.keys(prevPos.current).length) n.animate([{ opacity: 0, transform: 'scale(0.8)' }, { opacity: 1, transform: 'scale(1)' }], { duration: 350, easing: 'ease-out' })
+      } else if (Math.abs(old - left) > 1) {
+        n.animate([{ transform: `translateX(${old - left}px)`, zIndex: 2 }, { transform: 'translateX(0)', zIndex: 2 }], { duration: 450, easing: 'ease-in-out' })
+      }
+    }
+    prevPos.current = next
+  })
   const W = big ? 100 : 72 // 1つ分の幅
   const H = big ? 58 : 50
   const F = big ? 13 : 11
@@ -83,7 +135,8 @@ function ActionBar({ state, big = false, avFx = null }) {
           </div>
         ) : (
           <div
-            key={`${it.unit.uid}${it.accel ? 'a' : ''}-${i}`}
+            key={keys[i]}
+            ref={(n) => { nodes.current[keys[i]] = n }}
             style={{
               flex: '0 0 auto', width: i === 0 ? W + (big ? 20 : 12) : W, height: H, boxSizing: 'border-box', padding: '3px 4px',
               borderRadius: 6, fontSize: F, lineHeight: 1.25, overflow: 'hidden', position: 'relative',
@@ -94,7 +147,7 @@ function ActionBar({ state, big = false, avFx = null }) {
             }}
           >
             {it.accel ? '⚡' : ''}{it.unit.team === 'A' ? '' : '敵 '}{it.unit.name}
-            <span data-testid="av-value" style={{ position: 'absolute', right: 3, bottom: 1, fontSize: big ? 11 : 9, fontWeight: 700, lineHeight: 1, padding: '1px 3px', borderRadius: 4, background: 'rgba(0,0,0,0.45)', color: '#fff' }}>{Math.round(it.time)}</span>
+            <span data-testid="av-value" style={{ position: 'absolute', right: 3, bottom: 1, fontSize: big ? 11 : 9, fontWeight: 700, lineHeight: 1, padding: '1px 3px', borderRadius: 4, background: 'rgba(0,0,0,0.45)', color: '#fff' }}><AnimNum value={Math.round(it.time)} /></span>
             {avFx && avFx[it.unit.uid] && !it.accel && (
               // 行動順アップ(▲ 緑)/ダウン(▼ 青): その枠が光って、矢印が動く
               <span key={`${avFx[it.unit.uid].dir}-${avFx.tick}`} aria-hidden="true" data-testid={`fx-av-${avFx[it.unit.uid].dir}`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', borderRadius: 4, animation: `${avFx[it.unit.uid].dir === 'up' ? 'feel-av-up' : 'feel-av-down'} 0.8s ease-out both` }}>
@@ -898,7 +951,14 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     }
     view = {
       ...state,
-      units: state.units.filter((u) => ev.units[u.uid]).map((u) => ({ ...u, ...ev.units[u.uid] })),
+      units: state.units.filter((u) => ev.units[u.uid]).map((u) => {
+        const sn = ev.units[u.uid]
+        return { ...u, ...sn, accel: u.accel && sn.accelAV != null ? { ...u.accel, curAV: sn.accelAV } : u.accel }
+      }),
+      round: ev.round ?? state.round,
+      totalAV: ev.totalAV ?? state.totalAV,
+      comboReset: ev.comboReset ?? state.comboReset,
+      crests: ev.crestSlots ? Object.fromEntries(['A', 'B'].map((t) => [t, (state.crests?.[t] || []).map((c, ci) => ({ ...c, ...(ev.crestSlots[t][ci] || {}) }))])) : state.crests,
       log: state.log.slice(0, ev.logLen),
       mp: { ...state.mp, ...ev.mp }, ep: { ...state.ep, ...ev.ep },
       winner: null, active, lastAbility,
