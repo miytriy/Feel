@@ -4,7 +4,7 @@ import { C, FONT, alpha } from './ui.js'
 import { KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 import { StatIcon } from './icons.jsx'
 
-// 戦闘実況(🗒️): 右上の「🗒️」から開く、全画面のオーバーレイ。開いている間は、対戦(CPUの行動・再生)を止める。
+// 戦闘実況(⌸): 右上の「⌸」から開く、全画面のオーバーレイ。開いている間は、対戦(CPUの行動・再生)を止める。
 //   味方 / 相手 = キャラごとの詳細(ステータス・いまの値・強化)とスキル・能力 ・ ログ = 起きたことの文章の記録
 //   ログ = 起きたことの文章の記録(全部) / 発動 = 発動した能力の履歴(ファンファーレ・特性・スペル・進化など) / 破壊 = 戦闘不能・破壊された順
 // 履歴は、1回の行動ごとに collectHistory で集めて足していく(BattleScreen の commit)。
@@ -66,10 +66,10 @@ const buffText = (b) => {
 }
 const num = (n) => Math.round(n).toLocaleString()
 
-// 右上の「🗒️」ボタン(戦闘実況を開く)
+// 右上の「⌸」ボタン(戦闘実況を開く)
 export function CommentaryButton({ onClick }) {
   return (
-    <button type="button" data-testid="commentary-btn" onClick={onClick} aria-label="戦闘実況" title="戦闘実況" style={{ marginLeft: 'auto', flex: 'none', width: 40, height: 40, minHeight: 0, padding: 0, display: 'grid', placeItems: 'center', border: 0, borderRadius: 8, background: 'rgba(255,255,255,0.14)', color: '#fff', fontFamily: FONT, fontSize: 22, lineHeight: 1, fontWeight: 700, cursor: 'pointer' }}>🗒️</button>
+    <button type="button" data-testid="commentary-btn" onClick={onClick} aria-label="戦闘実況" title="戦闘実況" style={{ marginLeft: 'auto', flex: 'none', width: 40, height: 40, minHeight: 0, padding: 0, display: 'grid', placeItems: 'center', border: 0, borderRadius: 8, background: 'rgba(255,255,255,0.14)', color: '#fff', fontFamily: FONT, fontSize: 22, lineHeight: 1, fontWeight: 700, cursor: 'pointer' }}>⌸</button>
   )
 }
 
@@ -232,7 +232,7 @@ export function CommentaryOverlay({ units, active, round, log, ab, dead, events 
   return createPortal(
     <div data-testid="commentary" role="dialog" aria-label="戦闘実況" style={{ position: 'fixed', inset: 0, zIndex: 2800, display: 'flex', flexDirection: 'column', background: C.paper, color: C.ink, fontFamily: FONT }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'rgba(0,0,0,0.6)', color: '#fff', flex: 'none' }}>
-        <b style={{ fontSize: 16, letterSpacing: 2, whiteSpace: 'nowrap' }}>🗒️ 戦闘実況</b>
+        <b style={{ fontSize: 16, letterSpacing: 2, whiteSpace: 'nowrap' }}>⌸ 戦闘実況</b>
         <span style={{ fontSize: 12, opacity: 0.8, whiteSpace: 'nowrap' }}>ラウンド {round}</span>
         <button type="button" aria-label="閉じる" data-testid="commentary-close" onClick={onClose} style={{ marginLeft: 'auto', padding: '6px 14px', whiteSpace: 'nowrap', minHeight: 0, borderRadius: 8, border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.1)', color: '#fff', fontFamily: FONT, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>✕ 閉じる</button>
       </div>

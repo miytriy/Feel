@@ -1230,6 +1230,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
             </div>
           </div>
         )}
+      {inspected && <div style={{ marginTop: 10 }}><InspectBox unit={inspected} big={desktop} /></div>}
     </>
   )
   const speedBar = null // スキップボタンは廃止(再生の速さは設定で決める)
@@ -1276,7 +1277,6 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
             </div>
           </div>
           <div style={{ minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {inspected && <div className="no-sb" style={{ flex: '0 1 auto', maxHeight: '30%', overflowY: 'auto' }}><InspectBox unit={inspected} big /></div>}
             <div className="no-sb" style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', padding: 14, borderRadius: 10, background: C.card, border: `1px solid ${C.line}`, fontSize: 14 }}>
               {panelInner}
             </div>
@@ -1305,8 +1305,6 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
 
       <Row title="自分の召喚物" color={C.player}>{summonCards(playerSummons)}</Row>
       <Row extra={<TeamStatus state={view} team="A" inline />} title="自分" color={C.player}>{players.map(card)}</Row>
-
-      {inspected && <InspectBox unit={inspected} />}
 
       <div className="no-sb" style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '14px -12px 0', padding: '10px 12px calc(10px + env(safe-area-inset-bottom))', height: 'min(230px, 42vh)', boxSizing: 'border-box', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
         {panelInner}
