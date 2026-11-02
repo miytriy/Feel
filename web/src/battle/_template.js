@@ -27,7 +27,7 @@
 //   { type:'heal', stat:'atk'|'maxHp', mult, flat, target }
 //   { type:'buff', stat, pct, flat, turns, target }   turns を省くと戦闘中ずっと
 //   { type:'armor', stat, mult, flat, rate(吸収レート0.6〜1), target }   barrier: { type:'barrier', target }
-//   { type:'advance', pct, target }   { type:'mp', amount }   { type:'ep', amount }
+//   { type:'advance', pct, target }(行動順アップ)   { type:'delay', pct, target }(行動順ダウン)   { type:'mp', amount }   { type:'ep', amount }
 //   { type:'faith', amount }   { type:'graveyard', amount }(マイナスで消費)
 //   { type:'summon', unit:{ キャラのデータ }, count }   { type:'crest', crest:{ name, passives, countdown } }
 //   perGraveyard: 墓場1つにつき、効果が(heal/buff/armor/damageのadd)その分だけ増える

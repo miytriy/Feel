@@ -40,7 +40,7 @@ export function collectHistory(prev, next) {
   // わかりやすいログ用の、軽い出来事の記録(盤面のコピーは持たない)
   const ev = evs
     .filter((e) => e.type !== 'sync' && e.type !== 'attack')
-    .map((e) => ({ type: e.type, round: e.round, logLen: e.logLen, src: e.src, target: e.target, uid: e.uid, name: e.name, team: e.team, amount: e.amount, means: e.means, crit: e.crit, dmgType: e.dmgType, kind: e.kind, owner: e.owner, desc: e.desc, text: e.text, label: e.label, grave: e.grave }))
+    .map((e) => ({ type: e.type, round: e.round, logLen: e.logLen, src: e.src, target: e.target, uid: e.uid, name: e.name, team: e.team, amount: e.amount, means: e.means, crit: e.crit, dmgType: e.dmgType, kind: e.kind, owner: e.owner, desc: e.desc, text: e.text, label: e.label, grave: e.grave, dir: e.dir, pct: e.pct }))
   return { ab, dead, ev }
 }
 
@@ -165,7 +165,7 @@ function UnitSkills({ u, color }) {
 }
 
 // 見やすいログ: ラウンドごと・ユニットの番ごとに区切って、1行ずつ「種類のラベル + 内容」で並べる
-const TAGS = { damage: ['攻撃', '#ef4444'], block: ['ガード', '#f59e0b'], heal: ['回復', '#22c55e'], summon: ['召喚', '#a78bfa'], buff: ['強化', '#f4b942'], keyword: ['付与', '#38bdf8'], destroy: ['破壊', '#f87171'], vanish: ['消滅', '#60a5fa'], ability: ['能力', '#94a3b8'] }
+const TAGS = { damage: ['攻撃', '#ef4444'], block: ['ガード', '#f59e0b'], heal: ['回復', '#22c55e'], summon: ['召喚', '#a78bfa'], buff: ['強化', '#f4b942'], keyword: ['付与', '#38bdf8'], destroy: ['破壊', '#f87171'], vanish: ['消滅', '#60a5fa'], av: ['行動順', '#34d399'], ability: ['能力', '#94a3b8'] }
 function ReadableLog({ events, units, empty }) {
   if (events.length === 0) return empty('まだ何も起きていません')
   const nm = (uid) => units.find((u) => u.uid === uid)?.name ?? '?'
@@ -185,6 +185,7 @@ function ReadableLog({ events, units, empty }) {
     else if (e.type === 'buff') body = <><b>{nm(e.target)}</b> の {e.text}</>
     else if (e.type === 'keyword') body = <><b>{nm(e.target)}</b> が【{e.label}】を得た</>
     else if (e.type === 'destroy') body = <><b>{nm(e.target)}</b> が倒れた{e.grave ? '(墓場+)' : ''}</>
+    else if (e.type === 'av') body = <><b>{nm(e.target)}</b> の行動順が{e.dir === 'up' ? '上がった(早まる)' : '下がった(遅れる)'}{e.pct ? ` ${e.pct}%` : ''}</>
     else if (e.type === 'vanish') body = <><b>{nm(e.target)}</b> が消滅した</>
     else if (e.type === 'ability') { teamOf = e.team; body = <>【{e.kind}】<b>{e.owner}</b>{e.name ? ` ― ${e.name}` : ''}{e.desc && <div style={{ color: C.mute, fontSize: 12 }}>{e.desc}</div>}</> }
     out.push(

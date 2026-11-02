@@ -1046,6 +1046,12 @@ function runEffects(state, source, effects, ctx = {}) {
         case 'advance':
           t.curAV = Math.max(0, t.curAV - (t.baseAV * (e.pct ?? 0)) / 100)
           state.log.push(`${t.name}の行動順が早まった`)
+          emit(state, 'av', { target: t.uid, dir: 'up', pct: e.pct ?? 0 }) // アクションバーのエフェクト用
+          break
+        case 'delay': // 行動順ダウン: いまの行動値が、基準の行動値の pct% ぶん増える(行動が遅くなる)
+          t.curAV = t.curAV + (t.baseAV * (e.pct ?? 0)) / 100
+          state.log.push(`${t.name}の行動順が遅れた`)
+          emit(state, 'av', { target: t.uid, dir: 'down', pct: e.pct ?? 0 })
           break
         default:
           break
@@ -1231,7 +1237,7 @@ function startRound(state, opts) {
   }
   if (state.round === EP_GRANT_ROUND) state.log.push(`ラウンド${EP_GRANT_ROUND}: 両チームにEP${EP_GRANT}が与えられた(進化できる)`)
   for (const u of state.units) {
-    if (u.alive && hasKw(u, 'dash')) u.curAV = Math.max(0, u.curAV - u.baseAV) // 疾走: 行動順100%アップ
+    if (u.alive && hasKw(u, 'dash')) { u.curAV = Math.max(0, u.curAV - u.baseAV); emit(state, 'av', { target: u.uid, dir: 'up', pct: 100 }) } // 疾走: 行動順100%アップ
   }
   for (const team of ['A', 'B']) {
     fireCrests(state, team, 'roundStart', null, opts)

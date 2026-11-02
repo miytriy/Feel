@@ -80,6 +80,10 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-earth-spin { to { transform: rotate(360deg); } }
     @keyframes feel-earth-idle { 0%, 100% { opacity: 0.85; transform: translate(-50%, -50%) scale(0.985); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.015); } }
     @keyframes feel-d-melt { 0% { filter: none; opacity: 1; scale: 1 1; transform-origin: 50% 0; } 100% { filter: blur(3px) brightness(1.35) saturate(1.3); opacity: 0.35; scale: 1.04 1.14; transform-origin: 50% 0; } }
+    @keyframes feel-av-up { 0% { box-shadow: inset 0 0 0 0 rgba(109,255,156,0); background: rgba(109,255,156,0); } 30% { box-shadow: inset 0 0 14px 4px rgba(109,255,156,0.95); background: rgba(109,255,156,0.35); } 100% { box-shadow: inset 0 0 0 0 rgba(109,255,156,0); background: rgba(109,255,156,0); } }
+    @keyframes feel-av-down { 0% { box-shadow: inset 0 0 0 0 rgba(122,184,255,0); background: rgba(122,184,255,0); } 30% { box-shadow: inset 0 0 14px 4px rgba(122,184,255,0.95); background: rgba(40,80,200,0.45); } 100% { box-shadow: inset 0 0 0 0 rgba(122,184,255,0); background: rgba(122,184,255,0); } }
+    @keyframes feel-av-arrow-up { 0% { opacity: 0; transform: translate(-50%, -20%); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -150%); } }
+    @keyframes feel-av-arrow-down { 0% { opacity: 0; transform: translate(-50%, -150%); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -20%); } }
     @keyframes feel-d-flash { 0% { opacity: 1; transform: scale(0.9); } 100% { opacity: 0; transform: scale(1.2); } }
     @keyframes feel-d-orb { 0% { opacity: 0; transform: scale(0.55); } 12% { opacity: 1; transform: scale(1.06); } 18% { transform: scale(1); } 56% { opacity: 1; transform: scale(1); filter: none; } 76% { opacity: 0.55; transform: scale(1.08); filter: blur(1.5px); } 100% { opacity: 0; transform: scale(1.3); filter: blur(6px); } }
     @keyframes feel-d-skull { 0%, 48% { opacity: 1; } 72% { opacity: 0.2; filter: blur(2px) brightness(0.8); } 100% { opacity: 0; } }

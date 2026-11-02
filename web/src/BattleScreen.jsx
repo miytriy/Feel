@@ -41,7 +41,7 @@ function buildTimeline(state, count = 12) {
   return items.slice(0, count)
 }
 
-function ActionBar({ state, big = false }) {
+function ActionBar({ state, big = false, avFx = null }) {
   const items = buildTimeline(state, big ? 18 : 12)
   const W = big ? 100 : 72 // 1つ分の幅
   const H = big ? 58 : 50
@@ -86,7 +86,7 @@ function ActionBar({ state, big = false }) {
             key={`${it.unit.uid}${it.accel ? 'a' : ''}-${i}`}
             style={{
               flex: '0 0 auto', width: i === 0 ? W + (big ? 20 : 12) : W, height: H, boxSizing: 'border-box', padding: '3px 4px',
-              borderRadius: 6, fontSize: F, lineHeight: 1.25, overflow: 'hidden',
+              borderRadius: 6, fontSize: F, lineHeight: 1.25, overflow: 'hidden', position: 'relative',
               color: it.accel ? TEAM_COLOR[it.unit.team] : it.unit.team === 'A' ? C.onAccent : '#fff',
               background: it.accel ? C.card : TEAM_COLOR[it.unit.team],
               border: i === 0 ? `2px solid ${C.active}` : it.accel ? `2px dashed ${TEAM_COLOR[it.unit.team]}` : '2px solid transparent',
@@ -94,6 +94,13 @@ function ActionBar({ state, big = false }) {
             }}
           >
             {it.accel ? '⚡' : ''}{it.unit.team === 'A' ? '' : '敵 '}{it.unit.name}
+            <span data-testid="av-value" style={{ position: 'absolute', right: 3, bottom: 1, fontSize: big ? 11 : 9, fontWeight: 700, lineHeight: 1, padding: '1px 3px', borderRadius: 4, background: 'rgba(0,0,0,0.45)', color: '#fff' }}>{Math.round(it.time)}</span>
+            {avFx && avFx[it.unit.uid] && !it.accel && (
+              // 行動順アップ(▲ 緑)/ダウン(▼ 青): その枠が光って、矢印が動く
+              <span key={`${avFx[it.unit.uid].dir}-${avFx.tick}`} aria-hidden="true" data-testid={`fx-av-${avFx[it.unit.uid].dir}`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', borderRadius: 4, animation: `${avFx[it.unit.uid].dir === 'up' ? 'feel-av-up' : 'feel-av-down'} 0.8s ease-out both` }}>
+                <span style={{ position: 'absolute', left: '50%', top: '50%', fontSize: big ? 26 : 22, fontWeight: 900, color: avFx[it.unit.uid].dir === 'up' ? '#6dff9c' : '#7ab8ff', textShadow: '0 0 4px #000, 0 0 10px currentColor', animation: `${avFx[it.unit.uid].dir === 'up' ? 'feel-av-arrow-up' : 'feel-av-arrow-down'} 0.8s ease-out both` }}>{avFx[it.unit.uid].dir === 'up' ? '▲' : '▼'}</span>
+              </span>
+            )}
           </div>
         )
       )}
@@ -491,7 +498,7 @@ const buttonStyle = (primary, disabled) => ({
 // ---- 再生(起きたことを、1つずつ順番に見せる。速さは、設定の「CPUの行動の待ち時間」に合わせる) ----
 // 連続する同じ種類の出来事(複数の召喚・複数への攻撃・複数のヒール)は、1つにまとめて一気に見せる。
 // 返す値は、まとめの最後の番号(まとまらなければ i のまま)。攻撃は、同じ攻撃元・同じ手段のものだけ。同じ相手が2回出たら、そこで区切る
-const GROUP_TYPES = ['damage', 'heal', 'summon', 'buff', 'keyword', 'destroy', 'vanish']
+const GROUP_TYPES = ['damage', 'heal', 'summon', 'buff', 'keyword', 'destroy', 'vanish', 'av']
 function groupEnd(events, i) {
   const e = events[i]
   if (!e || !GROUP_TYPES.includes(e.type)) return i
@@ -503,7 +510,7 @@ function groupEnd(events, i) {
     if (dying(n.type) && (e.type === 'damage' || dying(e.type))) { seen.add(n.target); j += 1; continue } // HPが0になった瞬間に、破壊・消滅の演出を、ダメージと一緒に出す
     if (n.type !== e.type) break
     const finisher = e.type === 'damage' && n.means === '必殺' && n.src === e.src // 【必殺】の追加ダメージは、スキルのダメージと合わせて1回で見せる(同じ相手でもよい)
-    const boostT = n.type === 'buff' || n.type === 'keyword' // 強化・能力付与は、同じ相手に重なってもひとまとめ
+    const boostT = n.type === 'buff' || n.type === 'keyword' || n.type === 'av' // 強化・能力付与は、同じ相手に重なってもひとまとめ
     if (!finisher && !boostT && seen.has(n.target)) break
     if (e.type === 'damage' && !finisher && (n.src !== e.src || n.means !== e.means)) break
     seen.add(n.target)
@@ -546,7 +553,7 @@ function reorderBoost(evs) {
   }
   return out
 }
-const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, destroy: 1000, vanish: 900, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, destroy: 1000, vanish: 900, av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null }) {
@@ -898,6 +905,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     }
   }
   const groupEvs = play ? play.events.slice(gStart, gEnd + 1) : []
+  const avFx = (() => { const m = {}; for (const x of groupEvs) if (x.type === 'av') m[x.target] = { dir: x.dir }; return Object.keys(m).length ? { ...m, tick: play ? play.i : 0 } : null })() // 行動順の上昇・下降: アクションバーの該当ユニットに出す
   const fxFor0 = (uid) => {
     const mine = groupEvs.filter((x) => x.target === uid) // まとまった出来事の中から、この人に起きたものを探す
     const dieEv = mine.find((x) => x.type === 'destroy' || x.type === 'vanish') // 倒れる・消える演出は、ダメージの表示と重ねる
@@ -1179,7 +1187,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
         </div>
         {speedBar}
         {errBox}
-        <ActionBar state={view} big />
+        <ActionBar state={view} big avFx={avFx} />
         <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(380px, 30vw)', gap: 20 }}>
           <div className="no-sb" style={{ minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 14, paddingRight: 4 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -1209,7 +1217,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
       <div style={{ position: 'sticky', top: 0, zIndex: 9, background: C.paper, margin: '-12px -12px 0', padding: '8px 12px 2px', borderBottom: `1px solid ${C.line}` }}>
         {hud}
         {overlays}
-        <ActionBar state={view} />
+        <ActionBar state={view} avFx={avFx} />
       </div>
       <TeamStatus state={view} team="A" />
       <TeamStatus state={view} team="B" />
