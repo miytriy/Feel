@@ -24,8 +24,8 @@ function buildTimeline(state, count = 12) {
   const items = []
   for (const u of state.units) {
     if (!u.alive) continue
-    for (let k = 0; k < count; k++) items.push({ time: u.curAV + u.baseAV * k, unit: u })
-    if (u.accel) for (let k = 0; k < count; k++) items.push({ time: u.accel.curAV + u.accel.baseAV * k, unit: u, accel: true })
+    for (let k = 0; k < count; k++) items.push({ time: u.curAV + u.baseAV * k, unit: u, k })
+    if (u.accel) for (let k = 0; k < count; k++) items.push({ time: u.accel.curAV + u.accel.baseAV * k, unit: u, accel: true, k })
   }
   for (const team of ['A', 'B']) {
     const cr = state.comboReset?.[team]
@@ -67,19 +67,29 @@ function ActionBar({ state, big = false, avFx = null }) {
   const items = buildTimeline(state, big ? 18 : 12)
   const nodes = useRef({})
   const prevPos = useRef({})
-  const seen = {}
+  const [ghosts, setGhosts] = useState([])
+  const prevItems = useRef({})
   const keyOf = (it, i) => {
     if (it.round) return `r${it.round}`
     if (it.crest) return `crest-${it.crest.name}-${i}`
     if (it.sys) return `sys${it.sys}-${i}`
     const b = `${it.unit.uid}${it.accel ? 'a' : ''}`
-    seen[b] = (seen[b] ?? -1) + 1
-    return `${b}-${seen[b]}`
+    return `${b}-${(it.accel ? it.unit.accelActs || 0 : it.unit.acts || 0) + (it.k || 0)}`
   }
   const keys = items.map(keyOf)
   // 並びが変わったとき、前の位置から滑るように動かす(FLIP)
   useLayoutEffect(() => {
     const next = {}
+    const cur = {}
+    items.forEach((it, i) => { cur[keys[i]] = it })
+    const before = prevItems.current
+    const gone = Object.keys(before).filter((k) => !cur[k] && prevPos.current[k] != null && before[k].unit && prevPos.current[k] < window.innerWidth)
+    prevItems.current = cur
+    if (gone.length) {
+      const gs = gone.map((k) => ({ key: k, it: before[k], left: prevPos.current[k] }))
+      setGhosts((g) => [...g, ...gs])
+      setTimeout(() => setGhosts((g) => g.filter((x) => !gs.includes(x))), 450)
+    }
     for (const k of keys) {
       const n = nodes.current[k]
       if (!n) continue
@@ -88,7 +98,7 @@ function ActionBar({ state, big = false, avFx = null }) {
       const old = prevPos.current[k]
       if (!n.animate) continue
       if (old == null) {
-        if (Object.keys(prevPos.current).length) n.animate([{ opacity: 0, transform: 'scale(0.8)' }, { opacity: 1, transform: 'scale(1)' }], { duration: 350, easing: 'ease-out' })
+        if (Object.keys(prevPos.current).length) n.animate([{ opacity: 0, transform: 'translateY(-22px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 400, easing: 'ease-out' })
       } else if (Math.abs(old - left) > 1) {
         n.animate([{ transform: `translateX(${old - left}px)`, zIndex: 2 }, { transform: 'translateX(0)', zIndex: 2 }], { duration: 450, easing: 'ease-in-out' })
       }
@@ -98,8 +108,37 @@ function ActionBar({ state, big = false, avFx = null }) {
   const W = big ? 100 : 72 // 1つ分の幅
   const H = big ? 58 : 50
   const F = big ? 13 : 11
+  const unitTile = (it, i, key, ghost = null) => (
+      <div
+        key={key}
+        ref={ghost ? undefined : (n) => { nodes.current[key] = n }}
+        style={{
+          ...(ghost ? { position: 'absolute', left: ghost.left, top: 6, zIndex: 1, pointerEvents: 'none', animation: 'feel-bar-out 0.4s ease-in forwards' } : null),
+          flex: '0 0 auto', width: i === 0 ? W + (big ? 20 : 12) : W, height: H, boxSizing: 'border-box', padding: '3px 4px',
+          borderRadius: 6, fontSize: F, lineHeight: 1.25, overflow: 'hidden', position: ghost ? 'absolute' : 'relative',
+          color: it.accel ? TEAM_COLOR[it.unit.team] : it.unit.team === 'A' ? C.onAccent : '#fff',
+          background: it.accel ? C.card : TEAM_COLOR[it.unit.team],
+          border: i === 0 ? `2px solid ${C.active}` : it.accel ? `2px dashed ${TEAM_COLOR[it.unit.team]}` : '2px solid transparent',
+          fontWeight: i === 0 ? 700 : 400, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
+        }}
+      >
+        {it.accel ? '⚡' : ''}{it.unit.team === 'A' ? '' : '敵 '}{it.unit.name}
+        <span data-testid="av-value" style={{ position: 'absolute', right: 3, bottom: 1, fontSize: big ? 11 : 9, fontWeight: 700, lineHeight: 1, padding: '1px 3px', borderRadius: 4, background: 'rgba(0,0,0,0.45)', color: '#fff' }}>{ghost ? Math.round(it.time) : <AnimNum value={Math.round(it.time)} />}</span>
+        {!ghost && avFx && avFx[it.unit.uid] && !it.accel && (
+          // 行動順アップ(▲ 緑)/ダウン(▼ 青): その枠が光って、矢印が動く
+          <span key={`${avFx[it.unit.uid].dir}-${avFx.tick}`} aria-hidden="true" data-testid={`fx-av-${avFx[it.unit.uid].dir}`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', borderRadius: 4, animation: `${avFx[it.unit.uid].dir === 'up' ? 'feel-av-up' : 'feel-av-down'} 1s ease-out both` }}>
+            <span style={{ position: 'absolute', top: 0, bottom: 0, left: '-10%', right: '-10%', background: avFx[it.unit.uid].dir === 'up' ? 'linear-gradient(90deg, rgba(60,170,255,0) 0%, rgba(70,180,255,0.95) 35%, rgba(70,200,255,0.8) 65%, rgba(60,170,255,0) 100%)' : 'linear-gradient(90deg, rgba(90,110,255,0) 0%, rgba(90,110,255,0.95) 35%, rgba(110,130,255,0.8) 65%, rgba(90,110,255,0) 100%)', animation: 'feel-av-band 1s ease-out both' }} />
+            <svg viewBox="0 0 40 40" style={{ position: 'absolute', left: '50%', top: '50%', width: big ? 40 : 34, height: big ? 40 : 34, marginLeft: big ? -20 : -17, marginTop: big ? -20 : -17, overflow: 'visible', transform: avFx[it.unit.uid].dir === 'up' ? 'none' : 'rotate(180deg)', filter: 'drop-shadow(0 0 4px rgba(150,170,255,0.95))', animation: 'feel-av-chev 1s ease-out both' }}>
+              <path d="M5 22 L20 8 L35 22 L35 28 L20 14 L5 28 Z" fill="none" stroke="#e9e4ff" strokeWidth="2.2" strokeLinejoin="round" />
+              <path d="M5 33 L20 19 L35 33" fill="none" stroke="#e9e4ff" strokeWidth="2.2" strokeLinejoin="round" opacity="0.8" />
+            </svg>
+          </span>
+        )}
+      </div>
+  )
   return (
-    <div style={{ display: 'flex', gap: big ? 6 : 4, overflowX: 'auto', padding: '6px 2px', alignItems: 'stretch' }}>
+    <div style={{ display: 'flex', gap: big ? 6 : 4, overflowX: 'auto', padding: '6px 2px', alignItems: 'stretch', position: 'relative' }}>
+      {ghosts.map((g) => unitTile(g.it, 1, g.key + '-out', { left: g.left }))}
       {items.map((it, i) =>
         it.round ? (
           <div
@@ -134,31 +173,7 @@ function ActionBar({ state, big = false, avFx = null }) {
             コンボリセット
           </div>
         ) : (
-          <div
-            key={keys[i]}
-            ref={(n) => { nodes.current[keys[i]] = n }}
-            style={{
-              flex: '0 0 auto', width: i === 0 ? W + (big ? 20 : 12) : W, height: H, boxSizing: 'border-box', padding: '3px 4px',
-              borderRadius: 6, fontSize: F, lineHeight: 1.25, overflow: 'hidden', position: 'relative',
-              color: it.accel ? TEAM_COLOR[it.unit.team] : it.unit.team === 'A' ? C.onAccent : '#fff',
-              background: it.accel ? C.card : TEAM_COLOR[it.unit.team],
-              border: i === 0 ? `2px solid ${C.active}` : it.accel ? `2px dashed ${TEAM_COLOR[it.unit.team]}` : '2px solid transparent',
-              fontWeight: i === 0 ? 700 : 400, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
-            }}
-          >
-            {it.accel ? '⚡' : ''}{it.unit.team === 'A' ? '' : '敵 '}{it.unit.name}
-            <span data-testid="av-value" style={{ position: 'absolute', right: 3, bottom: 1, fontSize: big ? 11 : 9, fontWeight: 700, lineHeight: 1, padding: '1px 3px', borderRadius: 4, background: 'rgba(0,0,0,0.45)', color: '#fff' }}><AnimNum value={Math.round(it.time)} /></span>
-            {avFx && avFx[it.unit.uid] && !it.accel && (
-              // 行動順アップ(▲ 緑)/ダウン(▼ 青): その枠が光って、矢印が動く
-              <span key={`${avFx[it.unit.uid].dir}-${avFx.tick}`} aria-hidden="true" data-testid={`fx-av-${avFx[it.unit.uid].dir}`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', borderRadius: 4, animation: `${avFx[it.unit.uid].dir === 'up' ? 'feel-av-up' : 'feel-av-down'} 1s ease-out both` }}>
-                <span style={{ position: 'absolute', top: 0, bottom: 0, left: '-10%', right: '-10%', background: avFx[it.unit.uid].dir === 'up' ? 'linear-gradient(90deg, rgba(60,170,255,0) 0%, rgba(70,180,255,0.95) 35%, rgba(70,200,255,0.8) 65%, rgba(60,170,255,0) 100%)' : 'linear-gradient(90deg, rgba(90,110,255,0) 0%, rgba(90,110,255,0.95) 35%, rgba(110,130,255,0.8) 65%, rgba(90,110,255,0) 100%)', animation: 'feel-av-band 1s ease-out both' }} />
-                <svg viewBox="0 0 40 40" style={{ position: 'absolute', left: '50%', top: '50%', width: big ? 40 : 34, height: big ? 40 : 34, marginLeft: big ? -20 : -17, marginTop: big ? -20 : -17, overflow: 'visible', transform: avFx[it.unit.uid].dir === 'up' ? 'none' : 'rotate(180deg)', filter: 'drop-shadow(0 0 4px rgba(150,170,255,0.95))', animation: 'feel-av-chev 1s ease-out both' }}>
-                  <path d="M5 22 L20 8 L35 22 L35 28 L20 14 L5 28 Z" fill="none" stroke="#e9e4ff" strokeWidth="2.2" strokeLinejoin="round" />
-                  <path d="M5 33 L20 19 L35 33" fill="none" stroke="#e9e4ff" strokeWidth="2.2" strokeLinejoin="round" opacity="0.8" />
-                </svg>
-              </span>
-            )}
-          </div>
+          unitTile(it, i, keys[i])
         )
       )}
     </div>
@@ -402,7 +417,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
 const tierOf = (g) => (g >= 15 ? '【解放奥義】' : g >= 10 ? '【奥義】' : '')
 
 // チームの資源(MP・EP・信仰値・連携・奥義ゲージ)と、置かれているクレスト
-function TeamStatus({ state, team, big = false }) {
+function TeamStatus({ state, team, big = false, inline = false }) {
   const crests = state.crests[team]
   const chips = [
     ['MP', `${state.mp[team]}/${state.mpMax[team]}`, true],
@@ -416,8 +431,8 @@ function TeamStatus({ state, team, big = false }) {
   ]
   const col = TEAM_COLOR[team]
   return (
-    <div style={{ fontSize: big ? 13 : 11, marginTop: 4, lineHeight: 1.4, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
-      <b style={{ color: col, marginRight: 2 }}>{team === 'A' ? '自分' : '相手'}</b>
+    <div style={{ fontSize: big ? 13 : 11, marginTop: inline ? 0 : 4, lineHeight: 1.4, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', fontWeight: 400 }}>
+      {!inline && <b style={{ color: col, marginRight: 2 }}>{team === 'A' ? '自分' : '相手'}</b>}
       {chips.filter((c) => c[2]).map(([k, v]) => (
         <span key={k} style={{ padding: big ? '2px 8px' : '1px 6px', borderRadius: 999, border: `1px solid ${col}`, color: C.ink, background: alpha(col, 14), whiteSpace: 'nowrap' }}>
           <span style={{ color: col, fontWeight: 700 }}>{k}</span> {v}
@@ -432,10 +447,10 @@ function TeamStatus({ state, team, big = false }) {
   )
 }
 
-function Row({ title, color, children, big = false }) {
+function Row({ title, color, children, big = false, extra = null }) {
   return (
     <div style={{ marginTop: big ? 0 : 10 }}>
-      <div style={{ fontSize: big ? 13 : 11, color, fontWeight: 700, marginBottom: 4 }}>{title}</div>
+      <div style={{ fontSize: big ? 13 : 11, color, fontWeight: 700, marginBottom: 4, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>{title}{extra}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: big ? 10 : 4 }}>{children}</div>
     </div>
   )
@@ -1245,23 +1260,19 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 24px 16px', background: C.paper, color: C.ink, fontFamily: FONT, boxSizing: 'border-box', overflow: 'hidden' }}>
         {hud}
         {overlays}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-          <TeamStatus state={view} team="A" big />
-          <TeamStatus state={view} team="B" big />
-        </div>
         {speedBar}
         {errBox}
         <ActionBar state={view} big avFx={avFx} />
         <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(380px, 30vw)', gap: 20 }}>
           <div className="no-sb" style={{ minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 14, paddingRight: 4 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <Row big title="相手" color={C.enemy}>{enemies.map(card)}</Row>
+              <Row big extra={<TeamStatus state={view} team="B" big inline />} title="相手" color={C.enemy}>{enemies.map(card)}</Row>
               <Row big title="相手の召喚物" color={C.enemy}>{summonCards(enemySummons)}</Row>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}><AbilityBanner ability={view.lastAbility} big /></div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <Row big title="自分の召喚物" color={C.player}>{summonCards(playerSummons)}</Row>
-              <Row big title="自分" color={C.player}>{players.map(card)}</Row>
+              <Row big extra={<TeamStatus state={view} team="A" big inline />} title="自分" color={C.player}>{players.map(card)}</Row>
             </div>
           </div>
           <div style={{ minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1283,19 +1294,17 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
         {overlays}
         <ActionBar state={view} avFx={avFx} />
       </div>
-      <TeamStatus state={view} team="A" />
-      <TeamStatus state={view} team="B" />
 
       {speedBar}
       {errBox}
 
-      <Row title="相手" color={C.enemy}>{enemies.map(card)}</Row>
+      <Row extra={<TeamStatus state={view} team="B" inline />} title="相手" color={C.enemy}>{enemies.map(card)}</Row>
       <Row title="相手の召喚物" color={C.enemy}>{summonCards(enemySummons)}</Row>
 
       <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}><AbilityBanner ability={view.lastAbility} /></div>
 
       <Row title="自分の召喚物" color={C.player}>{summonCards(playerSummons)}</Row>
-      <Row title="自分" color={C.player}>{players.map(card)}</Row>
+      <Row extra={<TeamStatus state={view} team="A" inline />} title="自分" color={C.player}>{players.map(card)}</Row>
 
       {inspected && <InspectBox unit={inspected} />}
 

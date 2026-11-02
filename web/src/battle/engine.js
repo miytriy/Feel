@@ -471,7 +471,7 @@ function fireCrestsOnHeal(state, team) {
 }
 
 // 起きたことの記録(画面で、1つずつ順番に見せるため)。そのときの盤面の要約(体力など)つき。AIの先読み(expected)のときは記録しない
-const SNAP_KEYS = ['hp', 'maxHp', 'alive', 'armor', 'armorRate', 'barrier', 'stealth', 'countdown', 'comboCount', 'evolved', 'earthCount', 'curAV', 'baseAV']
+const SNAP_KEYS = ['hp', 'maxHp', 'alive', 'armor', 'armorRate', 'barrier', 'stealth', 'countdown', 'comboCount', 'evolved', 'earthCount', 'curAV', 'baseAV', 'acts', 'accelActs']
 function crestSlots(state) {
   const o = {}
   for (const t of ['A', 'B']) o[t] = (state.crests?.[t] || []).map((c) => ({ countdown: c.countdown, slot: c.slot && { ...c.slot } }))
@@ -1316,6 +1316,7 @@ function endTurn(state, actor) {
   }
   resolveDeaths(state)
   actor.curAV = actor.baseAV
+  actor.acts = (actor.acts || 0) + 1
   if (state.comboMode !== 'reset') actor.comboCount = 0 // 従来: コンボは、自分のターンが終わった後から数え直す(βでは、コンボリセットのターンで数え直す)
   actor.buffs = actor.buffs
     .map((b) => ({ ...b, turns: b.turns == null ? null : b.turns - 1 }))
@@ -1344,7 +1345,8 @@ function shiftAV(state, amount) {
 // (見送ったときは、アクセラレートの行動値だけ初期値に戻る)
 function endAccel(state, unit, executed) {
   unit.accel.curAV = unit.accel.baseAV
-  if (executed) unit.curAV = unit.baseAV
+  unit.accelActs = (unit.accelActs || 0) + 1
+  if (executed) { unit.curAV = unit.baseAV; unit.acts = (unit.acts || 0) + 1 }
   state.turns += 1
   state.active = null
   state.activeKind = null
