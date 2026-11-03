@@ -246,26 +246,55 @@ const SPARKS = Array.from({ length: 16 }, (_, n) => { const a = n * 2.4 + 0.7; c
 const CONFETTI = Array.from({ length: 16 }, (_, n) => { const a = n * 2.4 + 0.4; const d = 26 + ((n * 7) % 5) * 9; return { x: `${Math.round(Math.cos(a) * 10)}px`, y: `${Math.round(Math.sin(a) * 10)}px`, dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d)}px`, rot: `${(n % 2 ? 1 : -1) * (90 + n * 30)}deg`, size: 6 + (n % 3) * 2, tri: n % 2 === 0, delay: 0.1 + (n % 5) * 0.02 } })
 const EMBERS = Array.from({ length: 10 }, (_, n) => { const a = n * 0.63 + 0.2; const d = 18 + (n % 4) * 9; return { dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d)}px`, dark: n % 3 === 0 } })
 
+// 召喚物の並びが変わったとき(破壊・消滅・新しい召喚)、動いたカードを元の位置から新しい位置へ滑らせる(FLIP)。
+// 毎回の描画のあとに、召喚物カードの位置(offsetLeft/Top)を前回と比べる。transform ではなく独立の translate を使うので、ほかの演出と重ならない
+const slidePrev = new Map()
+function useSummonSlide() {
+  useLayoutEffect(() => {
+    if (typeof document === 'undefined') return
+    const seen = new Set()
+    document.querySelectorAll('[data-field="summon"][data-uid]').forEach((el) => {
+      const uid = el.getAttribute('data-uid')
+      seen.add(uid)
+      const x = el.offsetLeft; const y = el.offsetTop
+      const prev = slidePrev.get(uid)
+      slidePrev.set(uid, { x, y })
+      if (!prev || (Math.abs(prev.x - x) < 2 && Math.abs(prev.y - y) < 2)) return
+      el.style.transition = 'none'
+      el.style.translate = `${prev.x - x}px ${prev.y - y}px`
+      void el.offsetWidth // 位置を確定させてから、動かす
+      el.style.transition = 'translate 0.3s ease-out'
+      el.style.translate = '0 0'
+    })
+    for (const k of [...slidePrev.keys()]) if (!seen.has(k)) slidePrev.delete(k)
+  })
+}
+
 export function UnitCard({ unit, active, selected, selectable, inspected, onClick, big = false, fx = null, hl = false, tick = 0, loss = 0, role = null }) {
   const ratio = Math.max(0, unit.hp / unit.maxHp)
   const hpColor = ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow
   const badges = unit.alive ? badgesOf(unit) : []
+  // 破壊・消滅の演出中は、まだ生きているときの見た目のまま(演出のあと、暗い半透明の「戦闘不能」の札に変わって残らないように)。演出が終わったら、そっと消す
+  const dying = !!(fx && fx.die)
+  const gone = !unit.alive && !dying
   return (
     <div
       data-uid={unit.uid}
+      data-field={unit.field}
       data-alive={unit.alive ? 'true' : 'false'}
       data-selectable={selectable ? 'true' : 'false'}
       onClick={onClick}
       style={{
         minWidth: 0, boxSizing: 'border-box', padding: big ? 10 : 4, ...(big ? { minHeight: 112 } : { height: 106, overflow: 'visible' }), // 戦闘画面が動かないように、スマホ幅のカードは高さを固定 borderRadius: big ? 10 : 8, fontSize: big ? 13 : 10, lineHeight: 1.3,
-        background: unit.alive ? C.card : '#0a161a',
-        opacity: unit.alive ? 1 : 0.5,
+        background: C.card,
+        opacity: 1,
+        ...(gone ? { opacity: 0, visibility: 'hidden', pointerEvents: 'none' } : {}), // 場所(枠)は残して、見えなくする。並びがずれない
         border: `2px solid ${selected ? C.active : selectable ? C.ink : active ? TEAM_COLOR[unit.team] : inspected ? C.mute : C.line}`,
         boxShadow: selected ? `0 0 0 3px ${alpha(C.active, 33)}` : active ? `0 0 0 3px ${alpha(TEAM_COLOR[unit.team], 20)}` : 'none',
         cursor: 'pointer', position: 'relative',
         ...(hl ? { boxShadow: `0 0 0 4px ${C.active}`, transform: 'scale(1.03)', zIndex: 2 } : {}),
         ...(fx && fx.kind === 'evolve' ? { zIndex: 4, animation: 'feel-ev-pop 1.2s ease-out both' } : {}),
-        ...(fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s${fx.die === 'destroy' ? ', feel-d-melt 0.3s ease-in forwards' : ''}` } : fx && fx.die === 'destroy' ? { animation: 'feel-d-melt 0.3s ease-in forwards' } : {}), // 破壊: ドクロが出る前に、ユニットがぼやけて、下へ溶けるように崩れる
+        ...(fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s${fx.die === 'destroy' ? ', feel-d-melt 0.3s ease-in forwards, feel-d-fade 0.45s ease-in 0.4s forwards' : fx.die === 'vanish' ? ', feel-d-fade2 0.4s ease-in 0.6s forwards' : ''}` } : fx && fx.die === 'destroy' ? { animation: 'feel-d-melt 0.3s ease-in forwards, feel-d-fade 0.45s ease-in 0.4s forwards' } : fx && fx.die === 'vanish' ? { animation: 'feel-d-fade2 0.4s ease-in 0.6s forwards' } : {}), // 破壊: ドクロが出る前に、ユニットがぼやけて、下へ溶けるように崩れる
         // 攻撃する側: チームの色で光って、相手のほうへ少し出る / 受ける側: 赤く縁どる(揺れとダメージの数字は、いままでどおり)
         ...(role === 'attacker' ? { boxShadow: `0 0 0 3px ${TEAM_COLOR[unit.team]}, 0 0 18px 2px ${alpha(TEAM_COLOR[unit.team], 60)}`, zIndex: 3, animation: `${unit.team === 'A' ? 'feel-lunge-up' : 'feel-lunge-down'} 0.5s ease-out` } : {}),
         ...(role === 'target' || role === 'guard' ? { boxShadow: `0 0 0 3px ${role === 'guard' ? C.player : C.bad}, 0 0 16px 2px ${alpha(role === 'guard' ? C.player : C.bad, 55)}`, zIndex: 2 } : {}),
@@ -718,6 +747,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const [feed, setFeed] = useState([]) // 「いま起きたこと」の履歴(再生に合わせて増える)
   const [showDesc, setShowDesc] = useState(() => { try { return localStorage.getItem('feel-show-desc') === '1' } catch { return false } }) // 操作パネルの説明文を出すか
   const toggleDesc = () => { const v = !showDesc; setShowDesc(v); try { localStorage.setItem('feel-show-desc', v ? '1' : '0') } catch { /* 保存できなくても動く */ } }
+  useSummonSlide() // 召喚物が消えたとき、隣のカードが一瞬で詰まらず、すっと滑って詰まる
   const [hist, setHist] = useState(emptyHistory) // バトルログの「発動」「破壊」の履歴
   const [logOpen, setLogOpen] = useState(false) // 戦闘実況のオーバーレイを開いている
 
