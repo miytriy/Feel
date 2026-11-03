@@ -364,21 +364,23 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         </span>
       )}
       {unit.alive && (unit.keywords || []).includes('intimidate') && (
-        // 【威圧】の盤面エフェクト(元動画どおり): ユニットを包む◇(ひし形)の黄緑の光。縁が明るく、ギザギザの縁が細かくゆらめく。控えめに、ゆっくり脈打つ。カードの上は隠さない
+        // 【威圧】の盤面エフェクト(元動画どおり): カードの後ろから、◇(ひし形)の黄緑のもやが四方に湧き出る。ふちはやわらかく、炎のようにギザギザとゆらめく。カードの縁には、淡い青緑の光の線
         <span aria-hidden="true" data-testid="fx-intimidate-idle" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 3 }}>
           <svg width="0" height="0" style={{ position: 'absolute' }}>
             <filter id="feel-flame" x="-60%" y="-40%" width="220%" height="180%">
-              <feTurbulence type="fractalNoise" baseFrequency="0.05 0.07" numOctaves="2" seed="1" result="n">
+              <feTurbulence type="fractalNoise" baseFrequency="0.045 0.065" numOctaves="2" seed="1" result="n">
                 <animate attributeName="seed" values="1;4;2;7;3;6;5;8" dur="0.9s" calcMode="discrete" repeatCount="indefinite" />
               </feTurbulence>
-              <feDisplacementMap in="SourceGraphic" in2="n" scale="14" xChannelSelector="R" yChannelSelector="G" />
+              <feDisplacementMap in="SourceGraphic" in2="n" scale="18" xChannelSelector="R" yChannelSelector="G" />
             </filter>
           </svg>
-          <span style={{ position: 'absolute', inset: -40, padding: 40, boxSizing: 'border-box', opacity: 0.95, animation: 'feel-int-pulse 2.4s ease-in-out infinite' }}>
+          <span style={{ position: 'absolute', inset: -40, padding: 44, boxSizing: 'border-box', WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)', WebkitMaskComposite: 'xor', mask: 'linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0)', maskComposite: 'exclude', opacity: 0.9, animation: 'feel-int-pulse 2.4s ease-in-out infinite' }}>
             <span style={{ position: 'absolute', inset: 0, filter: 'url(#feel-flame)' }}>
-              <span style={{ position: 'absolute', left: '50%', top: '50%', height: 'calc(100% - 76px)', aspectRatio: '1', transform: 'translate(-50%, -50%) rotate(45deg)', boxShadow: 'inset 0 0 12px 4px rgba(215,255,170,0.95), 0 0 12px 4px rgba(150,235,70,0.8)', filter: 'blur(2.5px)' }} />
+              <span style={{ position: 'absolute', left: '50%', top: '50%', height: 'calc(100% - 84px)', aspectRatio: '1', transform: 'translate(-50%, -50%) rotate(45deg)', background: 'rgba(165,238,55,0.85)', filter: 'blur(8px)' }} />
+              <span style={{ position: 'absolute', left: '50%', top: '50%', height: 'calc(100% - 100px)', aspectRatio: '1', transform: 'translate(-50%, -50%) rotate(45deg)', background: 'rgba(225,255,195,0.75)', filter: 'blur(7px)' }} />
             </span>
           </span>
+          <span style={{ position: 'absolute', inset: 0, borderRadius: 8, border: '1.5px solid rgba(160,245,205,0.85)', boxShadow: '0 0 6px 1px rgba(150,245,190,0.7), inset 0 0 6px rgba(150,245,190,0.5)' }} />
         </span>
       )}
       {unit.alive && (unit.keywords || []).includes('earthSign') && (
