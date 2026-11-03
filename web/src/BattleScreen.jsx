@@ -137,7 +137,7 @@ function ActionBar({ state, big = false, avFx = null }) {
       </div>
   )
   return (
-    <div style={{ display: 'flex', gap: big ? 6 : 4, overflowX: 'auto', padding: '6px 2px', alignItems: 'stretch', position: 'relative' }}>
+    <div className="no-sb" style={{ display: 'flex', gap: big ? 6 : 4, overflowX: 'auto', overflowY: 'hidden', padding: '6px 2px', alignItems: 'stretch', position: 'relative' }}>
       {ghosts.map((g) => unitTile(g.it, 1, g.key + '-out', { left: g.left }))}
       {items.map((it, i) =>
         it.round ? (
