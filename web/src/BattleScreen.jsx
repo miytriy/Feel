@@ -264,6 +264,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         boxShadow: selected ? `0 0 0 3px ${alpha(C.active, 33)}` : active ? `0 0 0 3px ${alpha(TEAM_COLOR[unit.team], 20)}` : 'none',
         cursor: 'pointer', position: 'relative',
         ...(hl ? { boxShadow: `0 0 0 4px ${C.active}`, transform: 'scale(1.03)', zIndex: 2 } : {}),
+        ...(fx && fx.kind === 'evolve' ? { zIndex: 4, animation: 'feel-ev-pop 1.2s ease-out both' } : {}),
         ...(fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s${fx.die === 'destroy' ? ', feel-d-melt 0.3s ease-in forwards' : ''}` } : fx && fx.die === 'destroy' ? { animation: 'feel-d-melt 0.3s ease-in forwards' } : {}), // 破壊: ドクロが出る前に、ユニットがぼやけて、下へ溶けるように崩れる
         // 攻撃する側: チームの色で光って、相手のほうへ少し出る / 受ける側: 赤く縁どる(揺れとダメージの数字は、いままでどおり)
         ...(role === 'attacker' ? { boxShadow: `0 0 0 3px ${TEAM_COLOR[unit.team]}, 0 0 18px 2px ${alpha(TEAM_COLOR[unit.team], 60)}`, zIndex: 3, animation: `${unit.team === 'A' ? 'feel-lunge-up' : 'feel-lunge-down'} 0.5s ease-out` } : {}),
@@ -373,6 +374,20 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
           <span style={{ position: 'absolute', inset: -8, borderRadius: 14, border: `3px solid ${fx.kind === 'buff' ? '#ffd24a' : '#66e0ff'}`, boxShadow: `0 0 18px 4px ${fx.kind === 'buff' ? 'rgba(255,210,74,0.75)' : 'rgba(102,224,255,0.75)'}, inset 0 0 18px 2px ${fx.kind === 'buff' ? 'rgba(255,210,74,0.45)' : 'rgba(102,224,255,0.45)'}`, animation: 'feel-aura 0.9s ease-out both' }} />
           {[0, 1, 2].map((n) => (
             <span key={n} style={{ position: 'absolute', left: `${22 + n * 28}%`, bottom: '14%', fontSize: big ? 22 : 16, fontWeight: 900, color: fx.kind === 'buff' ? '#ffd24a' : '#66e0ff', textShadow: '0 0 3px #000, 0 0 8px currentColor', animation: `feel-rise 0.9s ${n * 0.12}s ease-out both` }}>{fx.kind === 'buff' ? '▲' : '✦'}</span>
+          ))}
+        </span>
+      )}
+      {fx && fx.kind === 'evolve' && (
+        // 進化のエフェクト: 足もとから光の柱が立ち上がり、細い光の輪が2重に広がる。カードが白く光って、光の粒が舞い上がる
+        <span key={`evo-${tick}`} aria-hidden="true" data-testid="fx-evolve" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 8 }}>
+          <span style={{ position: 'absolute', left: '12%', right: '12%', bottom: -6, height: 190, transformOrigin: '50% 100%', background: 'linear-gradient(to top, rgba(255,226,150,0) 0%, rgba(255,240,200,0.85) 35%, rgba(255,255,255,0.35) 75%, rgba(255,255,255,0) 100%)', WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 35%, #000 65%, transparent 100%)', maskImage: 'linear-gradient(90deg, transparent 0%, #000 35%, #000 65%, transparent 100%)', opacity: 0, animation: 'feel-ev-pillar 1.3s cubic-bezier(.2,.7,.2,1) both' }} />
+          {[0, 1].map((n) => (
+            <span key={n} style={{ position: 'absolute', left: '50%', top: '52%', width: '110%', aspectRatio: '1', marginLeft: '-55%', marginTop: '-55%', borderRadius: '50%', border: `${n ? 1.5 : 2.5}px solid ${n ? '#d9ccff' : '#ffe9a8'}`, boxShadow: `0 0 10px 1px ${n ? 'rgba(190,170,255,0.9)' : 'rgba(255,214,110,0.9)'}, inset 0 0 8px ${n ? 'rgba(190,170,255,0.6)' : 'rgba(255,214,110,0.6)'}`, opacity: 0, animation: `feel-ev-ring 1.1s ease-out ${0.25 + n * 0.16}s both` }} />
+          ))}
+          <span style={{ position: 'absolute', inset: 0, borderRadius: 8, background: 'radial-gradient(circle at 50% 55%, rgba(255,255,255,0.9) 0%, rgba(255,240,200,0.6) 40%, rgba(255,214,110,0) 75%)', opacity: 0, animation: 'feel-ev-flash 0.9s ease-out 0.25s both' }} />
+          <span style={{ position: 'absolute', left: '-25%', right: '-25%', top: '52%', height: 2, background: 'linear-gradient(90deg, rgba(255,255,255,0), #fff 50%, rgba(255,255,255,0))', boxShadow: '0 0 8px 1px rgba(255,235,170,0.9)', opacity: 0, animation: 'feel-ev-streak 0.7s ease-out 0.28s both' }} />
+          {[8, 20, 31, 44, 56, 67, 79, 90].map((x, n) => (
+            <span key={x} style={{ position: 'absolute', left: `${x}%`, bottom: '10%', width: n % 3 === 0 ? 7 : 5, height: n % 3 === 0 ? 7 : 5, marginLeft: -3, background: n % 2 ? '#fff3c4' : '#ffffff', clipPath: 'polygon(50% 0, 100% 50%, 50% 100%, 0 50%)', filter: 'drop-shadow(0 0 3px rgba(255,214,110,1))', '--rise': `${54 + (n * 17) % 40}px`, opacity: 0, animation: `feel-ev-part ${0.9 + (n % 3) * 0.15}s ease-out ${0.3 + (n * 0.07) % 0.4}s both` }} />
           ))}
         </span>
       )}
@@ -625,7 +640,7 @@ function reorderBoost(evs) {
   }
   return out
 }
-const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, destroy: 1000, vanish: 900, av: 800, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 2200, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 1000, vanish: 900, av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null }) {
@@ -1003,6 +1018,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     }
     if (ev.type === 'buff') return { kind: 'buff', text: mine.filter((x) => x.type === 'buff').map((x) => `${x.text}↑`).join(' ') } // 強化(攻撃力+30↑ など)
     if (ev.type === 'keyword') return { kind: 'keyword', text: mine.filter((x) => x.type === 'keyword').map((x) => `【${x.label}】`).join('') + '獲得' } // 能力付与
+    if (ev.type === 'evolve') return { kind: 'evolve', text: '' } // 進化: 光の柱・光の輪・舞い上がる光
     if (ev.type === 'destroy') return { kind: 'destroy', text: '', grave: !!ev.grave } // 破壊: 砕け散る
     if (ev.type === 'vanish') return { kind: 'vanish', text: '' } // 消滅: 青い光になって、円の中心へ収束して消える
     if (ev.type === 'heal') return { kind: 'heal', text: `+${ev.amount}` }

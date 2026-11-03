@@ -1615,6 +1615,7 @@ function doEvolve(state, actor, opts, free = false) { // free: 能力の効果�
   state.log.push(`${actor.name}は進化した!(体力と攻撃力が2倍に)`)
   noteAbility(state, '進化', actor.name, '', '体力と攻撃力が2倍になり、【突進】を得る。', actor.team)
   recalc(state)
+  emit(state, 'evolve', { target: actor.uid }) // 進化の演出(盤面の数字も、ここで進化後になる)
   if (!free) fire(state, 'onEvolve', actor, { opts, allowPending: true }) // 【進化時】は、EPを使った進化のときだけ働く。選ぶ効果は、プレイヤーが選ぶまで待つ
   if (!state.pending) fire(state, 'onEvolved', actor, { opts, allowPending: true }) // 【進化したとき】(これが進化したとき)は、EPを使わない進化でも働く
   if (!free && !state.pending) resolveDeaths(state, opts)

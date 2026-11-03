@@ -165,7 +165,7 @@ function UnitSkills({ u, color }) {
 }
 
 // 見やすいログ: ラウンドごと・ユニットの番ごとに区切って、1行ずつ「種類のラベル + 内容」で並べる
-const TAGS = { damage: ['攻撃', '#ef4444'], block: ['ガード', '#f59e0b'], heal: ['回復', '#22c55e'], summon: ['召喚', '#a78bfa'], buff: ['強化', '#f4b942'], keyword: ['付与', '#38bdf8'], destroy: ['破壊', '#f87171'], vanish: ['消滅', '#60a5fa'], av: ['行動順', '#34d399'], ability: ['能力', '#94a3b8'] }
+const TAGS = { damage: ['攻撃', '#ef4444'], block: ['ガード', '#f59e0b'], heal: ['回復', '#22c55e'], summon: ['召喚', '#a78bfa'], buff: ['強化', '#f4b942'], keyword: ['付与', '#38bdf8'], destroy: ['破壊', '#f87171'], vanish: ['消滅', '#60a5fa'], av: ['行動順', '#34d399'], evolve: ['進化', '#fbbf24'], ability: ['能力', '#94a3b8'] }
 function ReadableLog({ events, units, empty }) {
   if (events.length === 0) return empty('まだ何も起きていません')
   const nm = (uid) => units.find((u) => u.uid === uid)?.name ?? '?'

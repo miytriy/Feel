@@ -80,6 +80,12 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-earth-spin { to { transform: rotate(360deg); } }
     @keyframes feel-earth-idle { 0%, 100% { opacity: 0.85; transform: translate(-50%, -50%) scale(0.985); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.015); } }
     @keyframes feel-d-melt { 0% { filter: none; opacity: 1; scale: 1 1; transform-origin: 50% 0; } 100% { filter: blur(3px) brightness(1.35) saturate(1.3); opacity: 0.35; scale: 1.04 1.14; transform-origin: 50% 0; } }
+    @keyframes feel-ev-pillar { 0% { opacity: 0; transform: scaleY(0.1) scaleX(0.6); } 25% { opacity: 1; transform: scaleY(1) scaleX(1); } 100% { opacity: 0; transform: scaleY(1.1) scaleX(0.7); } }
+    @keyframes feel-ev-ring { 0% { opacity: 0.95; transform: scale(0.25); } 100% { opacity: 0; transform: scale(1.5); } }
+    @keyframes feel-ev-flash { 0% { opacity: 0; } 25% { opacity: 0.6; } 100% { opacity: 0; } }
+    @keyframes feel-ev-streak { 0% { opacity: 0; transform: scaleX(0.1); } 30% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0; transform: scaleX(1) scaleY(0.2); } }
+    @keyframes feel-ev-part { 0% { opacity: 0; transform: translateY(0) scale(0.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(calc(var(--rise) * -1)) scale(1); } }
+    @keyframes feel-ev-pop { 0% { transform: scale(1); filter: brightness(1); } 22% { transform: scale(1.0); filter: brightness(1); } 35% { transform: scale(1.07); filter: brightness(1.5) saturate(1.2); } 60% { transform: scale(1.03); filter: brightness(1.25); } 100% { transform: scale(1); filter: brightness(1); } }
     @keyframes feel-av-up { 0% { box-shadow: inset 0 0 0 0 rgba(60,220,200,0); background: rgba(60,220,200,0); } 15% { box-shadow: inset 0 0 0 2px rgba(80,240,210,1); background: rgba(40,200,180,0.4); } 70% { box-shadow: inset 0 0 0 2px rgba(80,240,210,0.9); background: rgba(40,200,180,0.35); } 100% { box-shadow: inset 0 0 0 0 rgba(60,220,200,0); background: rgba(60,220,200,0); } }
     @keyframes feel-av-down { 0% { box-shadow: inset 0 0 0 0 rgba(122,150,255,0); background: rgba(80,100,220,0); } 15% { box-shadow: inset 0 0 0 2px rgba(122,150,255,1); background: rgba(60,80,200,0.45); } 70% { box-shadow: inset 0 0 0 2px rgba(122,150,255,0.9); background: rgba(60,80,200,0.4); } 100% { box-shadow: inset 0 0 0 0 rgba(122,150,255,0); background: rgba(80,100,220,0); } }
     @keyframes feel-bar-out { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(22px); } }
