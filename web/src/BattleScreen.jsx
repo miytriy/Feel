@@ -257,7 +257,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
       data-selectable={selectable ? 'true' : 'false'}
       onClick={onClick}
       style={{
-        minWidth: 0, boxSizing: 'border-box', padding: big ? 10 : 4, ...(big ? {} : { height: 106, overflow: 'visible' }), // 戦闘画面が動かないように、スマホ幅のカードは高さを固定 borderRadius: big ? 10 : 8, fontSize: big ? 13 : 10, lineHeight: 1.3,
+        minWidth: 0, boxSizing: 'border-box', padding: big ? 10 : 4, ...(big ? { minHeight: 128 } : { height: 106, overflow: 'visible' }), // 戦闘画面が動かないように、スマホ幅のカードは高さを固定 borderRadius: big ? 10 : 8, fontSize: big ? 13 : 10, lineHeight: 1.3,
         background: unit.alive ? C.card : '#0a161a',
         opacity: unit.alive ? 1 : 0.5,
         border: `2px solid ${selected ? C.active : selectable ? C.ink : active ? TEAM_COLOR[unit.team] : inspected ? C.mute : C.line}`,
@@ -1035,7 +1035,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const shown = (u) => u.field === 'summon' && (u.alive || dyingUids.has(u.uid))
   const enemySummons = view.units.filter((u) => u.team === 'B' && shown(u))
   const playerSummons = view.units.filter((u) => u.team === 'A' && shown(u))
-  const summonCards = (list) => (list.length ? list.map(card) : <div aria-hidden="true" style={{ gridColumn: '1 / -1', height: desktop ? 0 : 106, minHeight: desktop ? 60 : 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, border: `1px dashed ${C.line}`, color: C.mute, fontSize: 11, opacity: 0.6 }}>召喚物なし</div>) // 召喚物がいなくても場所は空けておく(画面が動かないように)
+  const summonCards = (list) => (list.length ? list.map(card) : <div aria-hidden="true" style={{ gridColumn: '1 / -1', height: desktop ? 128 : 106, minHeight: desktop ? 128 : 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, border: `1px dashed ${C.line}`, color: C.mute, fontSize: 11, opacity: 0.6 }}>召喚物なし</div>) // 召喚物がいなくても場所は空けておく(画面が動かないように)
   const resultText = state.winner === 'A' ? '勝利!' : state.winner === 'B' ? '敗北…' : '引き分け'
   const inspected = inspect && inspect !== selected ? getUnit(state, inspect) : null // 選択中の相手は、操作パネルに詳しく出すので、ここでは重ねて出さない
   const modeTrait = mode ? actor.traits.find((t) => t.id === mode) : null
