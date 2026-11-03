@@ -363,6 +363,27 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
           ))}
         </span>
       )}
+      {unit.alive && (unit.keywords || []).includes('intimidate') && (
+        // 【威圧】の盤面エフェクト: ユニットの輪郭に沿って、黄緑のゆらめく光(炎のようなギザギザの縁)が包む。縁は細い淡緑の光の線。縁のゆらぎは細かく切り替わり続ける
+        <span aria-hidden="true" data-testid="fx-intimidate-idle" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 3 }}>
+          <svg width="0" height="0" style={{ position: 'absolute' }}>
+            <filter id="feel-flame" x="-45%" y="-35%" width="190%" height="170%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.04 0.06" numOctaves="2" seed="1" result="n">
+                <animate attributeName="seed" values="1;4;2;7;3;6;5;8" dur="0.8s" calcMode="discrete" repeatCount="indefinite" />
+              </feTurbulence>
+              <feDisplacementMap in="SourceGraphic" in2="n" scale="24" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+          </svg>
+          <span style={{ position: 'absolute', inset: -34, padding: 34, boxSizing: 'border-box', WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)', WebkitMaskComposite: 'xor', mask: 'linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0)', maskComposite: 'exclude' }}>
+            <span style={{ position: 'absolute', inset: 0, filter: 'url(#feel-flame)', animation: 'feel-int-pulse 1.8s ease-in-out infinite' }}>
+              <span style={{ position: 'absolute', inset: 18, borderRadius: 18, background: 'rgba(130,225,50,0.85)', filter: 'blur(9px)' }} />
+              <span style={{ position: 'absolute', inset: 27, borderRadius: 10, background: 'rgba(220,255,175,0.95)', filter: 'blur(4px)' }} />
+              <span style={{ position: 'absolute', inset: 8, borderRadius: 26, background: 'rgba(120,215,40,0.4)', filter: 'blur(12px)' }} />
+            </span>
+          </span>
+          <span style={{ position: 'absolute', inset: 1, borderRadius: 7, border: '1.5px solid rgba(190,255,205,0.9)', boxShadow: 'inset 0 0 8px 1px rgba(170,255,190,0.55), 0 0 5px rgba(170,255,190,0.7)' }} />
+        </span>
+      )}
       {unit.alive && (unit.keywords || []).includes('earthSign') && (
         // 【土の印】を持つユニットの盤面エフェクト: オレンジの円(縁は左側がやや太い)。縁がゆっくり脈打ち、上のほうから、オレンジのもやが内側へ湧いては引くのを繰り返す。縁に明るい筋が回る
         <span aria-hidden="true" data-testid="fx-earth-idle" style={{ position: 'absolute', left: '50%', top: '50%', height: '100%', aspectRatio: '1', borderRadius: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 3, overflow: 'hidden',
