@@ -376,7 +376,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
           </svg>
           <span style={{ position: 'absolute', inset: -40, padding: 40, boxSizing: 'border-box', opacity: 0.95, animation: 'feel-int-pulse 2.4s ease-in-out infinite' }}>
             <span style={{ position: 'absolute', inset: 0, filter: 'url(#feel-flame)' }}>
-              <span style={{ position: 'absolute', left: '50%', top: '50%', height: 'calc(100% - 76px)', aspectRatio: '1', transform: 'translate(-50%, -50%) rotate(45deg)', background: 'rgba(150,230,70,0.2)', boxShadow: 'inset 0 0 12px 4px rgba(225,255,190,0.9), 0 0 12px 4px rgba(150,235,70,0.8)', filter: 'blur(2.5px)' }} />
+              <span style={{ position: 'absolute', left: '50%', top: '50%', height: 'calc(100% - 76px)', aspectRatio: '1', transform: 'translate(-50%, -50%) rotate(45deg)', boxShadow: 'inset 0 0 12px 4px rgba(215,255,170,0.95), 0 0 12px 4px rgba(150,235,70,0.8)', filter: 'blur(2.5px)' }} />
             </span>
           </span>
         </span>
