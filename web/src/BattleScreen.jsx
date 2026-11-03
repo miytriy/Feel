@@ -288,7 +288,6 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         minWidth: 0, boxSizing: 'border-box', padding: big ? 10 : 4, ...(big ? { minHeight: 112 } : { height: 106, overflow: 'visible' }), // 戦闘画面が動かないように、スマホ幅のカードは高さを固定 borderRadius: big ? 10 : 8, fontSize: big ? 13 : 10, lineHeight: 1.3,
         background: C.card,
         opacity: 1,
-        ...(gone ? { opacity: 0, visibility: 'hidden', pointerEvents: 'none' } : {}), // 場所(枠)は残して、見えなくする。並びがずれない
         border: `2px solid ${selected ? C.active : selectable ? C.ink : active ? TEAM_COLOR[unit.team] : inspected ? C.mute : C.line}`,
         boxShadow: selected ? `0 0 0 3px ${alpha(C.active, 33)}` : active ? `0 0 0 3px ${alpha(TEAM_COLOR[unit.team], 20)}` : 'none',
         cursor: 'pointer', position: 'relative',
@@ -297,6 +296,8 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         ...(fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s${fx.die === 'destroy' ? ', feel-d-melt 0.3s ease-in forwards, feel-d-fade 0.45s ease-in 0.4s forwards' : fx.die === 'vanish' ? ', feel-d-fade2 0.4s ease-in 0.6s forwards' : ''}` } : fx && fx.die === 'destroy' ? { animation: 'feel-d-melt 0.3s ease-in forwards, feel-d-fade 0.45s ease-in 0.4s forwards' } : fx && fx.die === 'vanish' ? { animation: 'feel-d-fade2 0.4s ease-in 0.6s forwards' } : {}), // 破壊: ドクロが出る前に、ユニットがぼやけて、下へ溶けるように崩れる
         // 攻撃する側: チームの色で光って、相手のほうへ少し出る / 受ける側: 赤く縁どる(揺れとダメージの数字は、いままでどおり)
         ...(role === 'attacker' ? { boxShadow: `0 0 0 3px ${TEAM_COLOR[unit.team]}, 0 0 18px 2px ${alpha(TEAM_COLOR[unit.team], 60)}`, zIndex: 3, animation: `${unit.team === 'A' ? 'feel-lunge-up' : 'feel-lunge-down'} 0.5s ease-out` } : {}),
+        // 倒れたキャラ: 外枠と背景を消して、名前とHPバーだけを薄く残す(場所はそのまま。並びがずれない)
+        ...(gone ? { opacity: 0.4, background: 'transparent', border: '2px solid transparent', boxShadow: 'none', pointerEvents: 'none' } : {}),
         ...(role === 'target' || role === 'guard' ? { boxShadow: `0 0 0 3px ${role === 'guard' ? C.player : C.bad}, 0 0 16px 2px ${alpha(role === 'guard' ? C.player : C.bad, 55)}`, zIndex: 2 } : {}),
       }}
     >
@@ -466,7 +467,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
           <LossBlink unit={unit} loss={loss} />
         </div>
       )}
-      <div style={{ marginTop: 2, color: C.mute }}>{unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive ? `${Math.ceil(unit.hp)}/${unit.maxHp}` : '戦闘不能'}</div>
+      <div style={{ marginTop: 2, color: C.mute }}>{unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive ? `${Math.ceil(unit.hp)}/${unit.maxHp}` : dying ? `0/${unit.maxHp}` : ''}</div>
       {unit.armor > 0 && <div style={{ color: C.player }}>アーマー {Math.ceil(unit.armor)}{unit.armorRate < 1 ? `(${Math.round(unit.armorRate * 100)}%)` : ''}</div>}
       {badges.length > 0 && (
         <div style={{ marginTop: 2, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
