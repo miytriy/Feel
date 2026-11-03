@@ -374,9 +374,9 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
               <feDisplacementMap in="SourceGraphic" in2="n" scale="14" xChannelSelector="R" yChannelSelector="G" />
             </filter>
           </svg>
-          <span style={{ position: 'absolute', inset: -40, padding: 40, boxSizing: 'border-box', WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)', WebkitMaskComposite: 'xor', mask: 'linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0)', maskComposite: 'exclude', opacity: 0.7, animation: 'feel-int-pulse 2.4s ease-in-out infinite' }}>
+          <span style={{ position: 'absolute', inset: -40, padding: 40, boxSizing: 'border-box', opacity: 0.95, animation: 'feel-int-pulse 2.4s ease-in-out infinite' }}>
             <span style={{ position: 'absolute', inset: 0, filter: 'url(#feel-flame)' }}>
-              <span style={{ position: 'absolute', left: '50%', top: '50%', height: 'calc(100% - 76px)', aspectRatio: '1', transform: 'translate(-50%, -50%) rotate(45deg)', background: 'rgba(150,230,70,0.42)', boxShadow: 'inset 0 0 9px 3px rgba(225,255,190,0.85), 0 0 8px 2px rgba(150,235,70,0.6)', filter: 'blur(2.5px)' }} />
+              <span style={{ position: 'absolute', left: '50%', top: '50%', height: 'calc(100% - 76px)', aspectRatio: '1', transform: 'translate(-50%, -50%) rotate(45deg)', background: 'rgba(150,230,70,0.2)', boxShadow: 'inset 0 0 12px 4px rgba(225,255,190,0.9), 0 0 12px 4px rgba(150,235,70,0.8)', filter: 'blur(2.5px)' }} />
             </span>
           </span>
         </span>
