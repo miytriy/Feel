@@ -391,6 +391,24 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
           ))}
         </span>
       )}
+      {unit.alive && unit.barrier > 0 && !(fx && fx.kind === 'block') && (
+        // バリアの盤面エフェクト: 水色の透明な泡がユニットを包む。縁がやわらかく光り、左上にツヤが入って、ゆっくり明るさがゆらぐ
+        <span aria-hidden="true" data-testid="fx-barrier" style={{ position: 'absolute', inset: '-5% -9%', zIndex: 3, pointerEvents: 'none', borderRadius: '50% 50% 46% 46% / 42% 42% 36% 36%', background: 'radial-gradient(ellipse at 34% 26%, rgba(255,255,255,0.34) 0%, rgba(170,240,255,0.2) 38%, rgba(70,200,245,0.26) 100%)', boxShadow: 'inset 0 0 0 2px rgba(130,235,255,0.85), inset 0 0 12px 4px rgba(70,205,250,0.8), 0 0 10px 3px rgba(70,205,250,0.55)', animation: 'feel-bar-breathe 2.6s ease-in-out infinite' }}>
+          <span style={{ position: 'absolute', left: '12%', top: '9%', width: '34%', height: '18%', borderRadius: '50%', background: 'linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0))', transform: 'rotate(-28deg)', filter: 'blur(1px)' }} />
+        </span>
+      )}
+      {fx && fx.kind === 'block' && (
+        // バリアが壊れるエフェクト: 泡の中が白く発光 → 放射状の光が走る → 泡ごとサッと消散していく
+        <span key={`bb-${tick}`} aria-hidden="true" data-testid="fx-barrier-break" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 8 }}>
+          <span style={{ position: 'absolute', inset: '-5% -9%', borderRadius: '50% 50% 46% 46% / 42% 42% 36% 36%', background: 'radial-gradient(ellipse at 34% 26%, rgba(255,255,255,0.34) 0%, rgba(170,240,255,0.2) 38%, rgba(70,200,245,0.26) 100%)', boxShadow: 'inset 0 0 0 2px rgba(130,235,255,0.85), inset 0 0 12px 4px rgba(70,205,250,0.8), 0 0 10px 3px rgba(70,205,250,0.55)', animation: 'feel-bb-bubble 0.7s ease-out both' }} />
+          <span style={{ position: 'absolute', inset: '-5% -9%', borderRadius: '50% 50% 46% 46% / 42% 42% 36% 36%', background: 'radial-gradient(ellipse at 50% 50%, #fff 0%, #fff 55%, rgba(220,250,255,0.9) 100%)', boxShadow: '0 0 22px 8px rgba(255,255,255,0.9)', opacity: 0, animation: 'feel-bb-flash 0.7s ease-out both' }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: 220, height: 220, marginLeft: -110, marginTop: -110, borderRadius: '50%', background: 'repeating-conic-gradient(from 6deg, rgba(255,255,255,0.95) 0deg 1.6deg, rgba(255,255,255,0) 1.6deg 17deg)', WebkitMaskImage: 'radial-gradient(circle, #000 0%, #000 22%, transparent 68%)', maskImage: 'radial-gradient(circle, #000 0%, #000 22%, transparent 68%)', opacity: 0, animation: 'feel-bb-rays 0.7s ease-out both' }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: 220, height: 220, marginLeft: -110, marginTop: -110, borderRadius: '50%', background: 'repeating-conic-gradient(from 15deg, rgba(190,245,255,0.8) 0deg 1deg, rgba(255,255,255,0) 1deg 29deg)', WebkitMaskImage: 'radial-gradient(circle, #000 0%, #000 18%, transparent 62%)', maskImage: 'radial-gradient(circle, #000 0%, #000 18%, transparent 62%)', opacity: 0, animation: 'feel-bb-rays 0.7s ease-out 0.03s both' }} />
+          {[[18, 22, 9], [78, 18, 7], [88, 62, 8], [12, 70, 6], [50, 90, 7], [60, 8, 6]].map(([x, y, r], n) => (
+            <span key={n} style={{ position: 'absolute', left: `${x}%`, top: `${y}%`, width: r, height: r, marginLeft: -r / 2, marginTop: -r / 2, borderRadius: '50%', background: 'radial-gradient(circle at 35% 30%, #fff, rgba(190,240,255,0.5))', '--dx': `${(x - 50) * 0.7}px`, '--dy': `${(y - 50) * 0.7}px`, opacity: 0, animation: `feel-bb-mote 0.55s ease-out ${0.2 + n * 0.02}s both` }} />
+          ))}
+        </span>
+      )}
       {role && (
         <span aria-hidden="true" style={{ position: 'absolute', left: 6, top: -9, zIndex: 6, padding: '0 6px', borderRadius: 999, fontSize: big ? 11 : 9, fontWeight: 800, lineHeight: '16px', color: '#121212', background: role === 'attacker' ? TEAM_COLOR[unit.team] : role === 'guard' ? C.player : C.bad, whiteSpace: 'nowrap', pointerEvents: 'none' }}>
           {role === 'attacker' ? '攻撃' : role === 'guard' ? 'ガード' : '被弾'}
