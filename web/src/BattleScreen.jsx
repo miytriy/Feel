@@ -655,7 +655,7 @@ function reorderBoost(evs) {
     const noKw = (sn) => {
       if (!before) return sn
       const units = {}
-      for (const [uid, u] of Object.entries(sn.units)) units[uid] = before[uid] ? { ...u, keywords: before[uid].keywords } : u
+      for (const [uid, u] of Object.entries(sn.units)) units[uid] = before[uid] ? { ...u, keywords: before[uid].keywords, barrier: before[uid].barrier, stealth: before[uid].stealth } : u
       return { ...sn, units }
     }
     const bs = noKw(snapOf(last(buckets.buff.evs, run[run.length - 1]))); const ks = snapOf(run[run.length - 1])
