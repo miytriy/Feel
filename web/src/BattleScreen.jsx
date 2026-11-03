@@ -392,19 +392,18 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         </span>
       )}
       {unit.alive && unit.barrier > 0 && !(fx && fx.kind === 'block') && (
-        // バリアの盤面エフェクト: 中は透き通った、光の縁だけの円。縁は二重(太い光の輪+内側の細い線)で、明るい筋がゆっくり回る。縁はゆっくり脈打つ
+        // バリアの盤面エフェクト(元動画どおり): カードを包む水色の円。内側は薄い水色のもや、縁は太くやわらかい水色の輪。縁を淡い明るい筋がゆっくり回り、全体がゆっくり脈打つ
         <span aria-hidden="true" data-testid="fx-barrier" style={{ position: 'absolute', left: '50%', top: '50%', height: '122%', aspectRatio: '1', borderRadius: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 3, overflow: 'hidden',
-          background: 'radial-gradient(circle, rgba(120,225,255,0) 0%, rgba(120,225,255,0.06) 62%, rgba(90,210,255,0.4) 74%, rgba(100,222,255,1) 86%, rgba(215,250,255,1) 95%, rgba(120,225,255,0) 100%)',
-          boxShadow: '0 0 14px 4px rgba(70,205,255,0.65)', animation: 'feel-earth-idle 2.6s ease-in-out infinite, feel-bar-appear 0.35s ease-out 0.4s backwards' }}>
-          <span style={{ position: 'absolute', inset: '9%', borderRadius: '50%', border: '1.5px solid rgba(200,248,255,0.65)', boxShadow: 'inset 0 0 8px rgba(120,225,255,0.45)' }} />
-          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(from 0deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.85) 8%, rgba(255,255,255,0) 20%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.7) 58%, rgba(255,255,255,0) 70%)', WebkitMaskImage: 'radial-gradient(circle, transparent 70%, #000 82%, #000 96%, transparent 100%)', maskImage: 'radial-gradient(circle, transparent 70%, #000 82%, #000 96%, transparent 100%)', animation: 'feel-earth-spin 6s linear infinite' }} />
+          background: 'radial-gradient(circle, rgba(160,238,252,0.14) 0%, rgba(160,238,252,0.2) 76%, rgba(120,226,250,0.42) 83%, rgba(108,218,246,0.92) 89%, rgba(130,230,252,0.97) 95%, rgba(150,236,252,0) 100%)',
+          boxShadow: '0 0 12px 3px rgba(80,210,250,0.5)', animation: 'feel-earth-idle 2.6s ease-in-out infinite, feel-bar-appear 0.35s ease-out 0.4s backwards' }}>
+          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(from 0deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 8%, rgba(255,255,255,0) 20%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.32) 58%, rgba(255,255,255,0) 70%)', WebkitMaskImage: 'radial-gradient(circle, transparent 76%, #000 86%, #000 96%, transparent 100%)', maskImage: 'radial-gradient(circle, transparent 76%, #000 86%, #000 96%, transparent 100%)', animation: 'feel-earth-spin 6s linear infinite' }} />
         </span>
       )}
       {fx && fx.kind === 'block' && (
         // バリアが壊れるエフェクト: 泡の中が白く発光 → 放射状の光が走る → 泡ごとサッと消散していく
         <span key={`bb-${tick}`} aria-hidden="true" data-testid="fx-barrier-break" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 8 }}>
           <span style={{ position: 'absolute', left: '50%', top: '50%', height: '122%', aspectRatio: '1', transform: 'translate(-50%, -50%)' }}>
-          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(120,225,255,0) 0%, rgba(120,225,255,0.06) 62%, rgba(90,210,255,0.4) 74%, rgba(100,222,255,1) 86%, rgba(215,250,255,1) 95%, rgba(120,225,255,0) 100%)', boxShadow: '0 0 14px 4px rgba(70,205,255,0.65)', animation: 'feel-bb-bubble 0.7s ease-out both' }} />
+          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(160,238,252,0.14) 0%, rgba(160,238,252,0.2) 76%, rgba(120,226,250,0.42) 83%, rgba(108,218,246,0.92) 89%, rgba(130,230,252,0.97) 95%, rgba(150,236,252,0) 100%)', boxShadow: '0 0 14px 4px rgba(70,205,255,0.65)', animation: 'feel-bb-bubble 0.7s ease-out both' }} />
           <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(ellipse at 50% 50%, #fff 0%, #fff 55%, rgba(220,250,255,0.9) 100%)', boxShadow: '0 0 22px 8px rgba(255,255,255,0.9)', opacity: 0, animation: 'feel-bb-flash 0.7s ease-out both' }} />
           </span>
           <span style={{ position: 'absolute', left: '50%', top: '50%', width: 220, height: 220, marginLeft: -110, marginTop: -110, borderRadius: '50%', background: 'repeating-conic-gradient(from 6deg, rgba(255,255,255,0.95) 0deg 1.6deg, rgba(255,255,255,0) 1.6deg 17deg)', WebkitMaskImage: 'radial-gradient(circle, #000 0%, #000 22%, transparent 68%)', maskImage: 'radial-gradient(circle, #000 0%, #000 22%, transparent 68%)', opacity: 0, animation: 'feel-bb-rays 0.7s ease-out both' }} />
