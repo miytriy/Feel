@@ -293,11 +293,11 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         cursor: 'pointer', position: 'relative',
         ...(hl ? { boxShadow: `0 0 0 4px ${C.active}`, transform: 'scale(1.03)', zIndex: 2 } : {}),
         ...(fx && fx.kind === 'evolve' ? { zIndex: 4, animation: 'feel-ev-pop 1.2s ease-out both' } : {}),
-        ...(fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s${fx.die === 'destroy' ? ', feel-d-melt 0.3s ease-in forwards, feel-d-fade 0.45s ease-in 0.4s forwards' : fx.die === 'vanish' ? ', feel-d-fade2 0.4s ease-in 0.6s forwards' : ''}` } : fx && fx.die === 'destroy' ? { animation: 'feel-d-melt 0.3s ease-in forwards, feel-d-fade 0.45s ease-in 0.4s forwards' } : fx && fx.die === 'vanish' ? { animation: 'feel-d-fade2 0.4s ease-in 0.6s forwards' } : {}), // 破壊: ドクロが出る前に、ユニットがぼやけて、下へ溶けるように崩れる
+        ...(fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s${fx.die === 'destroy' ? ', feel-d-melt 0.3s ease-in forwards, ' + (unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade') + ' 0.45s ease-in 0.4s forwards' : fx.die === 'vanish' ? ', ' + (unit.field === 'main' ? 'feel-d-fade2m' : 'feel-d-fade2') + ' 0.4s ease-in 0.6s forwards' : ''}` } : fx && fx.die === 'destroy' ? { animation: `feel-d-melt 0.3s ease-in forwards, ${unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade'} 0.45s ease-in 0.4s forwards` } : fx && fx.die === 'vanish' ? { animation: `${unit.field === 'main' ? 'feel-d-fade2m' : 'feel-d-fade2'} 0.4s ease-in 0.6s forwards` } : {}), // 破壊: ドクロが出る前に、ユニットがぼやけて、下へ溶けるように崩れる
         // 攻撃する側: チームの色で光って、相手のほうへ少し出る / 受ける側: 赤く縁どる(揺れとダメージの数字は、いままでどおり)
         ...(role === 'attacker' ? { boxShadow: `0 0 0 3px ${TEAM_COLOR[unit.team]}, 0 0 18px 2px ${alpha(TEAM_COLOR[unit.team], 60)}`, zIndex: 3, animation: `${unit.team === 'A' ? 'feel-lunge-up' : 'feel-lunge-down'} 0.5s ease-out` } : {}),
         // 倒れたキャラ: 外枠と背景を消して、名前とHPバーだけを薄く残す(場所はそのまま。並びがずれない)
-        ...(gone ? { opacity: 0.4, background: 'transparent', border: '2px solid transparent', boxShadow: 'none', pointerEvents: 'none' } : {}),
+        ...(gone ? { opacity: 0.4, background: 'transparent', border: '2px solid transparent', boxShadow: 'none', pointerEvents: 'none', transition: 'background 0.35s, border-color 0.35s, box-shadow 0.35s' } : {}),
         ...(role === 'target' || role === 'guard' ? { boxShadow: `0 0 0 3px ${role === 'guard' ? C.player : C.bad}, 0 0 16px 2px ${alpha(role === 'guard' ? C.player : C.bad, 55)}`, zIndex: 2 } : {}),
       }}
     >

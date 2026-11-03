@@ -80,6 +80,8 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-earth-spin { to { transform: rotate(360deg); } }
     @keyframes feel-earth-idle { 0%, 100% { opacity: 0.85; transform: translate(-50%, -50%) scale(0.985); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.015); } }
     @keyframes feel-d-fade { 0% { opacity: 0.35; filter: blur(3px) brightness(1.35) saturate(1.3); } 100% { opacity: 0; filter: blur(5px) brightness(1.5); } }
+    @keyframes feel-d-fadem { 0% { opacity: 0.35; filter: blur(3px) brightness(1.35) saturate(1.3); scale: 1.04 1.14; } 100% { opacity: 0.4; filter: none; scale: 1 1; } }
+    @keyframes feel-d-fade2m { 0% { opacity: 1; } 100% { opacity: 0.4; } }
     @keyframes feel-d-fade2 { 0% { opacity: 1; } 100% { opacity: 0; } }
     @keyframes feel-d-melt { 0% { filter: none; opacity: 1; scale: 1 1; transform-origin: 50% 0; } 100% { filter: blur(3px) brightness(1.35) saturate(1.3); opacity: 0.35; scale: 1.04 1.14; transform-origin: 50% 0; } }
     @keyframes feel-ev-pillar { 0% { opacity: 0; transform: scaleY(0.1) scaleX(0.6); } 25% { opacity: 1; transform: scaleY(1) scaleX(1); } 100% { opacity: 0; transform: scaleY(1.1) scaleX(0.7); } }
