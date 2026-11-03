@@ -447,9 +447,9 @@ function TeamStatus({ state, team, big = false, inline = false }) {
   )
 }
 
-function Row({ title, color, children, big = false, extra = null }) {
+function Row({ title, color, children, big = false, extra = null, tight = false }) {
   return (
-    <div style={{ marginTop: big ? 0 : 10 }}>
+    <div style={{ marginTop: big ? 0 : tight ? 4 : 10 }}>
       <div style={{ fontSize: big ? 13 : 11, color, fontWeight: 700, marginBottom: 4, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>{title}{extra}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: big ? 10 : 4 }}>{children}</div>
     </div>
@@ -505,7 +505,7 @@ function InspectBox({ unit, big = false }) {
 
 // 直近に発動した能力の説明(ファンファーレ・特性・スペル・進化など)。何が起きたかを、説明つきで見せる
 function AbilityBanner({ ability, now = '', big = false }) {
-  const slotH = big ? 112 : 96 // 能力の表示が出たり消えたりしても、画面が動かないように、場所をいつも同じだけ取る
+  const slotH = big ? 92 : 72 // 能力の表示が出たり消えたりしても、画面が動かないように、場所をいつも同じだけ取る
   if (!ability && !now) return <div aria-hidden="true" style={{ height: slotH }} />
   const color = ability && ability.team === 'B' ? C.enemy : C.player
   return (
@@ -1299,11 +1299,11 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
       {errBox}
 
       <Row extra={<TeamStatus state={view} team="B" inline />} title="相手" color={C.enemy}>{enemies.map(card)}</Row>
-      <Row title="相手の召喚物" color={C.enemy}>{summonCards(enemySummons)}</Row>
+      <Row tight title="相手の召喚物" color={C.enemy}>{summonCards(enemySummons)}</Row>
 
-      <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}><AbilityBanner ability={view.lastAbility} /></div>
+      <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 6 }}><AbilityBanner ability={view.lastAbility} /></div>
 
-      <Row title="自分の召喚物" color={C.player}>{summonCards(playerSummons)}</Row>
+      <Row tight title="自分の召喚物" color={C.player}>{summonCards(playerSummons)}</Row>
       <Row extra={<TeamStatus state={view} team="A" inline />} title="自分" color={C.player}>{players.map(card)}</Row>
 
       <div className="no-sb" style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '14px -12px 0', padding: '10px 12px calc(10px + env(safe-area-inset-bottom))', height: 'min(230px, 42vh)', boxSizing: 'border-box', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
