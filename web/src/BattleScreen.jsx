@@ -383,19 +383,19 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         </span>
       )}
       {unit.alive && (unit.keywords || []).includes('stealth') && unit.stealth && (
-        // 【潜伏】の盤面エフェクト(元動画どおり): ユニットの上に、薄紫がかった灰色のもくもくした煙がかかる。縁・外側ほど濃く、中央はユニットの絵が見える。明るい筋と暗い影がまだらに混ざり、2層が逆向きにゆっくり渦を巻く。カードの縁は白っぽく半透明
-        <span aria-hidden="true" data-testid="fx-stealth-idle" style={{ position: 'absolute', inset: 0, borderRadius: 8, overflow: 'hidden', pointerEvents: 'none', zIndex: 5, background: 'rgba(60,60,72,0.4)', boxShadow: 'inset 0 0 0 2px rgba(205,210,225,0.55), inset 0 0 10px 2px rgba(220,225,240,0.5)', animation: 'feel-stl-in 0.6s ease-out both' }}>
+        // 【潜伏】の盤面エフェクト(元動画どおり): ユニットの上に、薄紫がかった灰色のもくもくした煙がかかる。縁・外側ほど濃く、中央はユニットの絵が見える。明るい筋と暗い影がまだらに混ざり、2層が逆向きにゆっくり渦を巻く。カードの枠からはみ出し、輪郭は雲のように不定形
+        <span aria-hidden="true" data-testid="fx-stealth-idle" style={{ position: 'absolute', inset: '-24% -30%', overflow: 'hidden', pointerEvents: 'none', zIndex: 5, WebkitMaskImage: 'radial-gradient(ellipse closest-side, #000 58%, rgba(0,0,0,0.7) 78%, transparent 100%)', maskImage: 'radial-gradient(ellipse closest-side, #000 58%, rgba(0,0,0,0.7) 78%, transparent 100%)', animation: 'feel-stl-in 0.6s ease-out both' }}>
           <svg width="0" height="0" style={{ position: 'absolute' }}>
             <filter id="feel-smoke" colorInterpolationFilters="sRGB" x="0" y="0" width="100%" height="100%">
               <feTurbulence type="fractalNoise" baseFrequency="0.016 0.022" numOctaves="5" seed="3" result="n" />
-              <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.36  0 0 0 0 0.36  0 0 0 0 0.42  3.4 0 0 0 -1.0" />
+              <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.36  0 0 0 0 0.36  0 0 0 0 0.42  3.8 0 0 0 -1.3" />
             </filter>
             <filter id="feel-smoke2" colorInterpolationFilters="sRGB" x="0" y="0" width="100%" height="100%">
               <feTurbulence type="fractalNoise" baseFrequency="0.03 0.02" numOctaves="4" seed="11" result="n" />
-              <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.12  0 0 0 0 0.12  0 0 0 0 0.16  3.4 0 0 0 -1.0" />
+              <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.12  0 0 0 0 0.12  0 0 0 0 0.16  3.8 0 0 0 -1.3" />
             </filter>
           </svg>
-          <span style={{ position: 'absolute', inset: 0, WebkitMaskImage: 'radial-gradient(ellipse 62% 58% at 52% 52%, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.85) 55%, #000 100%)', maskImage: 'radial-gradient(ellipse 62% 58% at 52% 52%, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.85) 55%, #000 100%)' }}>
+          <span style={{ position: 'absolute', inset: 0, WebkitMaskImage: 'radial-gradient(ellipse 40% 38% at 50% 50%, rgba(0,0,0,0.9) 0%, #000 100%)', maskImage: 'radial-gradient(ellipse 40% 38% at 50% 50%, rgba(0,0,0,0.9) 0%, #000 100%)' }}>
             <span style={{ position: 'absolute', inset: '-35%', animation: 'feel-stl-b 16s linear infinite' }}>
               <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}><rect width="100%" height="100%" filter="url(#feel-smoke2)" opacity="0.8" /></svg>
             </span>
