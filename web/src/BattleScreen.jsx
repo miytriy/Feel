@@ -20,7 +20,7 @@ const TEAM_COLOR = { A: C.player, B: C.enemy }
 const TYPE_LABEL = { physical: '物理', magic: '魔法', true: '確定' }
 
 // これから行動する順番(アクションバー)。ラウンドの区切りも入れる
-function buildTimeline(state, count = 12) {
+export function buildTimeline(state, count = 12) {
   const items = []
   for (const u of state.units) {
     if (!u.alive) continue
@@ -63,7 +63,7 @@ function AnimNum({ value, ms = 450 }) {
   return <>{shown}</>
 }
 
-function ActionBar({ state, big = false, avFx = null }) {
+export function ActionBar({ state, big = false, avFx = null }) {
   const items = buildTimeline(state, big ? 18 : 12)
   const nodes = useRef({})
   const prevPos = useRef({})
@@ -1194,7 +1194,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
             </div>
           </div>
         ) : choosing ? (
-          <div>
+          <div style={desktop ? undefined : { display: 'contents' }}>
             <div style={{ fontSize: 13, marginBottom: 6 }}>
               <b>{actor.name}</b> の効果: 対象を選んでください
             </div>
@@ -1233,7 +1233,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
             <button onClick={() => act({ type: 'endTurn' })} style={buttonStyle(false, false)}>見送る</button>
           </div>
         ) : (
-          <div>
+          <div style={desktop ? undefined : { display: 'contents' }}>
             <div style={{ fontSize: 13, marginBottom: 6 }}>
               <b>{actor.name}</b> の番: スキル「{actor.skill.name}」({TYPE_LABEL[actor.skill.type]}){actor.doubleSkill ? ` ・1ターンに2回(2回目はMP${actor.doubleSkill.mpCost})${(actor.skillsThisTurn || 0) >= 1 ? ' ・1回目は済み' : ''}` : ''}
             </div>
