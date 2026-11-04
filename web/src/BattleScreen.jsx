@@ -364,7 +364,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         </span>
       )}
       {unit.alive && (unit.keywords || []).includes('intimidate') && (
-        // 【威圧】の盤面エフェクト(元動画どおり): カードの後ろから、◇(ひし形)の黄緑のもやが四方に湧き出る。ふちはやわらかく、炎のようにギザギザとゆらめく。カードの縁には、淡い青緑の光の線
+        // 【威圧】の盤面エフェクト(元動画どおり): ユニットの上に重なる◇(ひし形)の黄緑の光の帯。中は空いていて、帯はやわらかく、炎のようにギザギザとゆらめく。カードの縁には、淡い青緑の光の線
         <span aria-hidden="true" data-testid="fx-intimidate-idle" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 3 }}>
           <svg width="0" height="0" style={{ position: 'absolute' }}>
             <filter id="feel-flame" x="-60%" y="-40%" width="220%" height="180%">
@@ -374,10 +374,9 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
               <feDisplacementMap in="SourceGraphic" in2="n" scale="18" xChannelSelector="R" yChannelSelector="G" />
             </filter>
           </svg>
-          <span style={{ position: 'absolute', inset: -40, padding: 44, boxSizing: 'border-box', WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)', WebkitMaskComposite: 'xor', mask: 'linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0)', maskComposite: 'exclude', opacity: 0.9, animation: 'feel-int-pulse 2.4s ease-in-out infinite' }}>
+          <span style={{ position: 'absolute', inset: -40, opacity: 0.95, animation: 'feel-int-pulse 2.4s ease-in-out infinite' }}>
             <span style={{ position: 'absolute', inset: 0, filter: 'url(#feel-flame)' }}>
-              <span style={{ position: 'absolute', left: '50%', top: '50%', height: 'calc(100% - 84px)', aspectRatio: '1', transform: 'translate(-50%, -50%) rotate(45deg)', background: 'rgba(165,238,55,0.85)', filter: 'blur(8px)' }} />
-              <span style={{ position: 'absolute', left: '50%', top: '50%', height: 'calc(100% - 100px)', aspectRatio: '1', transform: 'translate(-50%, -50%) rotate(45deg)', background: 'rgba(225,255,195,0.75)', filter: 'blur(7px)' }} />
+              <span style={{ position: 'absolute', left: '50%', top: '50%', height: 'calc(100% - 80px)', aspectRatio: '1', transform: 'translate(-50%, -50%) rotate(45deg)', boxShadow: 'inset 0 0 20px 9px rgba(170,240,60,0.95), inset 0 0 8px 2px rgba(225,255,195,0.9), 0 0 14px 5px rgba(160,235,55,0.7)', filter: 'blur(1.5px)' }} />
             </span>
           </span>
           <span style={{ position: 'absolute', inset: 0, borderRadius: 8, border: '1.5px solid rgba(160,245,205,0.85)', boxShadow: '0 0 6px 1px rgba(150,245,190,0.7), inset 0 0 6px rgba(150,245,190,0.5)' }} />
