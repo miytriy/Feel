@@ -389,11 +389,11 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
             {[[1, 3, 0.36, 0.36, 0.42, '0.016 0.022', 5], [2, 7, 0.36, 0.36, 0.42, '0.018 0.02', 5], [3, 12, 0.36, 0.36, 0.42, '0.015 0.024', 5], [4, 21, 0.12, 0.12, 0.16, '0.03 0.02', 4], [5, 33, 0.12, 0.12, 0.16, '0.028 0.022', 4]].map(([id, seed, r, g, b, bf, oct]) => (
               <filter key={id} id={`feel-smoke${id}`} colorInterpolationFilters="sRGB" x="0" y="0" width="100%" height="100%">
                 <feTurbulence type="fractalNoise" baseFrequency={bf} numOctaves={oct} seed={seed} result="n" />
-                <feColorMatrix in="n" type="matrix" values={`0 0 0 0 ${r}  0 0 0 0 ${g}  0 0 0 0 ${b}  4.6 0 0 0 -1.3`} />
+                <feColorMatrix in="n" type="matrix" values={`0 0 0 0 ${r}  0 0 0 0 ${g}  0 0 0 0 ${b}  4.2 0 0 0 -1.4`} />
               </filter>
             ))}
           </svg>
-          <span style={{ position: 'absolute', inset: 0, WebkitMaskImage: 'radial-gradient(ellipse 40% 38% at 50% 50%, rgba(0,0,0,0.9) 0%, #000 100%)', maskImage: 'radial-gradient(ellipse 40% 38% at 50% 50%, rgba(0,0,0,0.9) 0%, #000 100%)', animation: 'feel-stl-breathe 3.2s ease-in-out infinite' }}>
+          <span style={{ position: 'absolute', inset: 0, WebkitMaskImage: 'radial-gradient(ellipse 40% 38% at 50% 50%, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.9) 100%)', maskImage: 'radial-gradient(ellipse 40% 38% at 50% 50%, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.9) 100%)', animation: 'feel-stl-breathe 3.2s ease-in-out infinite' }}>
             {/* 元動画: 煙は回らず、その場でゆっくり形を変える(もくもく)。違う模様の層を順にクロスフェードして煙の形を変え、ごくゆっくり漂わせる。暗い影は別の周期で入れ替わる */}
             {[[5, 0, 1], [4, -3.4, 2]].map(([id, off, dr]) => (
               <span key={id} style={{ position: 'absolute', inset: '-20%', opacity: 0.8, animation: `feel-stl-drift${dr} 9s ease-in-out ${off}s infinite alternate` }}>
