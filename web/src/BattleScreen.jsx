@@ -382,6 +382,27 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
           <span style={{ position: 'absolute', inset: 0, borderRadius: 8, border: '1.5px solid rgba(160,245,205,0.85)', boxShadow: '0 0 6px 1px rgba(150,245,190,0.7), inset 0 0 6px rgba(150,245,190,0.5)' }} />
         </span>
       )}
+      {unit.alive && (unit.keywords || []).includes('stealth') && unit.stealth && (
+        // 【潜伏】の盤面エフェクト(元動画どおり): ユニットの上に、灰白色の半透明のもや(煙)がカード全体にかかり、2層がゆっくり逆向きに渦を巻く。ユニットの絵はもやの下から透けて見える
+        <span aria-hidden="true" data-testid="fx-stealth-idle" style={{ position: 'absolute', inset: 0, borderRadius: 8, overflow: 'hidden', pointerEvents: 'none', zIndex: 5, background: 'rgba(150,158,175,0.14)', boxShadow: 'inset 0 0 8px 1px rgba(210,218,232,0.55)', animation: 'feel-stl-in 0.6s ease-out both' }}>
+          <svg width="0" height="0" style={{ position: 'absolute' }}>
+            <filter id="feel-smoke" x="0" y="0" width="100%" height="100%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.028 0.034" numOctaves="3" seed="3" result="n" />
+              <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.84  0 0 0 0 0.86  0 0 0 0 0.9  2.6 0 0 0 -0.95" />
+            </filter>
+            <filter id="feel-smoke2" x="0" y="0" width="100%" height="100%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.05 0.045" numOctaves="2" seed="9" result="n" />
+              <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.45  0 0 0 0 0.48  0 0 0 0 0.55  2.4 0 0 0 -0.85" />
+            </filter>
+          </svg>
+          <span style={{ position: 'absolute', inset: '-35%', animation: 'feel-stl-b 14s linear infinite' }}>
+            <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}><rect width="100%" height="100%" filter="url(#feel-smoke2)" opacity="0.6" /></svg>
+          </span>
+          <span style={{ position: 'absolute', inset: '-35%', animation: 'feel-stl-a 9s linear infinite' }}>
+            <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}><rect width="100%" height="100%" filter="url(#feel-smoke)" opacity="0.5" /></svg>
+          </span>
+        </span>
+      )}
       {unit.alive && (unit.keywords || []).includes('earthSign') && (
         // 【土の印】を持つユニットの盤面エフェクト: オレンジの円(縁は左側がやや太い)。縁がゆっくり脈打ち、上のほうから、オレンジのもやが内側へ湧いては引くのを繰り返す。縁に明るい筋が回る
         <span aria-hidden="true" data-testid="fx-earth-idle" style={{ position: 'absolute', left: '50%', top: '50%', height: '100%', aspectRatio: '1', borderRadius: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 3, overflow: 'hidden',

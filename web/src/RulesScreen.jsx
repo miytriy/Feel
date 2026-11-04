@@ -215,7 +215,7 @@ const SECTIONS = [
         guard: ['guard.gif', '盤面: 緑の盾'],
         aura: ['aura.gif', '盤面: ◇が順に光る'],
         intimidate: ['intimidate.gif', '盤面: ◇の黄緑の光'],
-        stealth: ['stealth.gif', '盤面: 半透明'],
+        stealth: ['stealth.gif', '盤面: 灰色のもや'],
         barrier: ['barrier.gif', '盤面: 水色の円'],
         earthSign: ['earth.gif', '盤面: オレンジの円と◇'],
       }

@@ -90,6 +90,9 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-ev-streak { 0% { opacity: 0; transform: scaleX(0.1); } 30% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0; transform: scaleX(1) scaleY(0.2); } }
     @keyframes feel-ev-part { 0% { opacity: 0; transform: translateY(0) scale(0.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(calc(var(--rise) * -1)) scale(1); } }
     @keyframes feel-ev-pop { 0% { transform: scale(1); filter: brightness(1); } 22% { transform: scale(1.0); filter: brightness(1); } 35% { transform: scale(1.07); filter: brightness(1.5) saturate(1.2); } 60% { transform: scale(1.03); filter: brightness(1.25); } 100% { transform: scale(1); filter: brightness(1); } }
+    @keyframes feel-stl-a { from { transform: rotate(0deg) scale(1.05); } to { transform: rotate(360deg) scale(1.05); } }
+    @keyframes feel-stl-b { from { transform: rotate(0deg) scale(1.1); } to { transform: rotate(-360deg) scale(1.1); } }
+    @keyframes feel-stl-in { from { opacity: 0; } to { opacity: 1; } }
     @keyframes feel-int-pulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
     @keyframes feel-bar-appear { 0% { opacity: 0; } 100% { opacity: 0.85; } }
     @keyframes feel-bar-breathe { 0%, 100% { opacity: 0.82; } 50% { opacity: 1; } }
