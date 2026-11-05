@@ -385,28 +385,11 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
       {unit.alive && (unit.keywords || []).includes('stealth') && unit.stealth && (
         // 【潜伏】の盤面エフェクト(元動画どおり): ユニットの上に、薄紫がかった灰色のもくもくした煙がかかる。縁・外側ほど濃く、中央はユニットの絵が見える。明るい筋と暗い影がまだらに混ざり、2層が逆向きにゆっくり渦を巻く。カードの枠からはみ出し、輪郭は雲のように不定形
         <span aria-hidden="true" data-testid="fx-stealth-idle" style={{ position: 'absolute', inset: '-24% -30%', overflow: 'hidden', pointerEvents: 'none', zIndex: 5, WebkitMaskImage: 'radial-gradient(ellipse closest-side, #000 58%, rgba(0,0,0,0.7) 78%, transparent 100%)', maskImage: 'radial-gradient(ellipse closest-side, #000 58%, rgba(0,0,0,0.7) 78%, transparent 100%)', animation: 'feel-stl-in 0.6s ease-out both' }}>
-          <svg width="0" height="0" style={{ position: 'absolute' }}>
-            {[[1, 3, 0.36, 0.36, 0.42, '0.016 0.022', 5], [2, 7, 0.36, 0.36, 0.42, '0.018 0.02', 5], [3, 12, 0.36, 0.36, 0.42, '0.015 0.024', 5], [4, 21, 0.12, 0.12, 0.16, '0.03 0.02', 4], [5, 33, 0.12, 0.12, 0.16, '0.028 0.022', 4]].map(([id, seed, r, g, b, bf, oct]) => (
-              <filter key={id} id={`feel-smoke${id}`} colorInterpolationFilters="sRGB" x="0" y="0" width="100%" height="100%">
-                <feTurbulence type="fractalNoise" baseFrequency={bf} numOctaves={oct} seed={seed} result="n" />
-                <feColorMatrix in="n" type="matrix" values={`0 0 0 0 ${r}  0 0 0 0 ${g}  0 0 0 0 ${b}  4.2 0 0 0 -1.4`} />
-              </filter>
-            ))}
-          </svg>
-          <span style={{ position: 'absolute', inset: 0, WebkitMaskImage: 'radial-gradient(ellipse 40% 38% at 50% 50%, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.9) 100%)', maskImage: 'radial-gradient(ellipse 40% 38% at 50% 50%, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.9) 100%)', animation: 'feel-stl-breathe 3.2s ease-in-out infinite' }}>
-            {/* 元動画: 煙は回らず、その場でゆっくり形を変える(もくもく)。違う模様の層を順にクロスフェードして煙の形を変え、ごくゆっくり漂わせる。暗い影は別の周期で入れ替わる */}
-            {[[5, 0, 1], [4, -3.4, 2]].map(([id, off, dr]) => (
-              <span key={id} style={{ position: 'absolute', inset: '-20%', opacity: 0.8, animation: `feel-stl-drift${dr} 9s ease-in-out ${off}s infinite alternate` }}>
-                <span style={{ position: 'absolute', inset: 0, animation: `feel-stl-xf 6.8s linear ${off}s infinite` }}>
-                  <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}><rect width="100%" height="100%" filter={`url(#feel-smoke${id})`} /></svg>
-                </span>
-              </span>
-            ))}
-            {[[1, 0, 2], [2, -2.4, 1], [3, -4.8, 2]].map(([id, off, dr]) => (
-              <span key={id} style={{ position: 'absolute', inset: '-20%', animation: `feel-stl-drift${dr} 8s ease-in-out ${off}s infinite alternate` }}>
-                <span style={{ position: 'absolute', inset: 0, animation: `feel-stl-xf 7.2s linear ${off}s infinite` }}>
-                  <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}><rect width="100%" height="100%" filter={`url(#feel-smoke${id})`} /></svg>
-                </span>
+          {/* 元動画: 煙は回らず、その場でゆっくり形を変える(もくもく)。事前に作った高解像度の煙の画像(public/fx)を、順にクロスフェードして形を変え、ごくゆっくり漂わせる。動かすのは transform と opacity だけなので、GPUで60fps以上で動く */}
+          <span style={{ position: 'absolute', inset: 0, WebkitMaskImage: 'radial-gradient(ellipse 40% 38% at 50% 50%, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.9) 100%)', maskImage: 'radial-gradient(ellipse 40% 38% at 50% 50%, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.9) 100%)', animation: 'feel-stl-breathe 3.2s ease-in-out infinite', willChange: 'opacity' }}>
+            {[['d2', 0, 1, 6.8, 9], ['d1', -3.4, 2, 6.8, 9], ['l1', 0, 2, 7.2, 8], ['l2', -2.4, 1, 7.2, 8], ['l3', -4.8, 2, 7.2, 8]].map(([id, off, dr, xf, dd]) => (
+              <span key={id} style={{ position: 'absolute', inset: '-20%', opacity: id[0] === 'd' ? 0.8 : 1, animation: `feel-stl-drift${dr} ${dd}s ease-in-out ${off}s infinite alternate`, willChange: 'transform' }}>
+                <img src={`/fx/stealth-${id}.webp`} alt="" draggable={false} decoding="async" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', animation: `feel-stl-xf ${xf}s linear ${off}s infinite`, willChange: 'opacity' }} />
               </span>
             ))}
           </span>

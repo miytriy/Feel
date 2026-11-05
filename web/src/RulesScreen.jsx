@@ -4,7 +4,7 @@ import { ScreenHeader } from './chrome.jsx'
 
 // ルール説明(ユーザー向けの、かんたんな版): 「公式ルールブック(ユーザー用)」の章立て・数字に合わせてある。
 // 戦闘処理の細かい規則は、別の「システム用ルールブック」にある。
-// 画像(GIF)は、キーワードの盤面エフェクトのみ(public/rules/)。
+// 動画(MP4・60fps)は、キーワードの盤面エフェクトのみ(public/rules/)。
 // first=true のときは「はじめに」の見出しになり、いちばん下のボタンが「あそびはじめる」になる。
 
 const M = (n) => `/rules/${n}`
@@ -499,27 +499,27 @@ const KW1 = [
  [
   "守護",
   "この能力を持つユニットがいると、相手は守護を持たないユニットを攻撃対象に選べません。",
-  "guard.gif|盤面: 緑の盾"
+  "guard.mp4|盤面: 緑の盾"
  ],
  [
   "潜伏",
   "相手の特性の対象に選ばれず、攻撃も受けない状態です。自分が攻撃するか、能力でダメージを与えると解除されます。",
-  "stealth.gif|盤面: 灰色のもや"
+  "stealth.mp4|盤面: 灰色のもや"
  ],
  [
   "オーラ",
   "相手の能力（パッシブ・特性）の対象に選ばれません。",
-  "aura.gif|盤面: ◇が順に光る"
+  "aura.mp4|盤面: ◇が順に光る"
  ],
  [
   "威圧",
   "相手のスキルの対象に選ばれません。",
-  "intimidate.gif|盤面: ◇の黄緑の光"
+  "intimidate.mp4|盤面: ◇の黄緑の光"
  ],
  [
   "バリア",
   "相手からの攻撃を1回だけ0ダメージにします。そのあと、バリアは壊れます。",
-  "barrier.gif|盤面: 水色の円"
+  "barrier.mp4|盤面: 水色の円"
  ]
 ]
 
@@ -537,7 +537,7 @@ function KeywordGrid() {
         const [file, cap] = media ? media.split('|') : []
         return (
           <div key={name} style={{ display: 'flex', gap: 10, padding: 10, background: C.paper, borderRadius: 8, alignItems: 'center' }}>
-            {file && <img src={M(file)} alt={`【${name}】${cap}`} loading="lazy" decoding="async" width={84} height={84} style={{ flex: '0 0 auto', borderRadius: 6, objectFit: 'cover' }} />}
+            {file && <video src={M(file)} aria-label={`【${name}】${cap}`} autoPlay loop muted playsInline preload="metadata" width={96} height={96} style={{ flex: '0 0 auto', borderRadius: 6, objectFit: 'cover', background: '#0b0b0e' }} />}
             <div style={{ fontSize: 13, lineHeight: 1.7 }}>
               <b>【{name}】</b>　{text}
               {cap && <div style={{ fontSize: 11, color: C.mute }}>{cap}</div>}
