@@ -126,7 +126,7 @@ export function ActionBar({ state, big = false, avFx = null }) {
         <span data-testid="av-value" style={{ position: 'absolute', right: 3, bottom: 1, fontSize: big ? 11 : 9, fontWeight: 700, lineHeight: 1, padding: '1px 3px', borderRadius: 4, background: 'rgba(0,0,0,0.45)', color: '#fff' }}>{ghost ? Math.round(it.time) : <AnimNum value={Math.round(it.time)} />}</span>
         {!ghost && avFx && avFx[it.unit.uid] && !it.accel && (
           // 行動順アップ(▲ 緑)/ダウン(▼ 青): その枠が光って、矢印が動く
-          <span key={`${avFx[it.unit.uid].dir}-${avFx.tick}`} aria-hidden="true" data-testid={`fx-av-${avFx[it.unit.uid].dir}`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', borderRadius: 4, animation: `${avFx[it.unit.uid].dir === 'up' ? 'feel-av-up' : 'feel-av-down'} 1s ease-out both` }}>
+          <span key={`${avFx[it.unit.uid].dir}-${avFx.tick}`} aria-hidden="true" data-testid={`fx-av-${avFx[it.unit.uid].dir}`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', borderRadius: 4, willChange: 'opacity', ...(avFx[it.unit.uid].dir === 'up' ? { boxShadow: 'inset 0 0 0 2px rgba(80,240,210,1)', background: 'rgba(40,200,180,0.4)' } : { boxShadow: 'inset 0 0 0 2px rgba(122,150,255,1)', background: 'rgba(60,80,200,0.45)' }), animation: `${avFx[it.unit.uid].dir === 'up' ? 'feel-av-up' : 'feel-av-down'} 1s ease-out both` }}>
             <span style={{ position: 'absolute', top: 0, bottom: 0, left: '-10%', right: '-10%', background: avFx[it.unit.uid].dir === 'up' ? 'linear-gradient(90deg, rgba(60,170,255,0) 0%, rgba(70,180,255,0.95) 35%, rgba(70,200,255,0.8) 65%, rgba(60,170,255,0) 100%)' : 'linear-gradient(90deg, rgba(90,110,255,0) 0%, rgba(90,110,255,0.95) 35%, rgba(110,130,255,0.8) 65%, rgba(90,110,255,0) 100%)', animation: 'feel-av-band 1s ease-out both' }} />
             <svg viewBox="0 0 40 40" style={{ position: 'absolute', left: '50%', top: '50%', width: big ? 40 : 34, height: big ? 40 : 34, marginLeft: big ? -20 : -17, marginTop: big ? -20 : -17, overflow: 'visible', transform: avFx[it.unit.uid].dir === 'up' ? 'none' : 'rotate(180deg)', filter: 'drop-shadow(0 0 4px rgba(150,170,255,0.95))', animation: 'feel-av-chev 1s ease-out both' }}>
               <path d="M5 22 L20 8 L35 22 L35 28 L20 14 L5 28 Z" fill="none" stroke="#e9e4ff" strokeWidth="2.2" strokeLinejoin="round" />
@@ -301,6 +301,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         ...(role === 'target' || role === 'guard' ? { boxShadow: `0 0 0 3px ${role === 'guard' ? C.player : C.bad}, 0 0 16px 2px ${alpha(role === 'guard' ? C.player : C.bad, 55)}`, zIndex: 2 } : {}),
       }}
     >
+      {fx && fx.die === 'destroy' && <span key={`dg-${tick}`} aria-hidden="true" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: '#fff', pointerEvents: 'none', zIndex: 4, opacity: 0, animation: 'feel-d-glow 0.45s ease-in forwards', willChange: 'opacity' }} />}
       {fx && fx.die === 'destroy' && (
         // 破壊の演出: 白熱のフラッシュ → 赤い円(縁は桃色の輪、外側に暗い赤のにじみ。墓場が増えるときは、黒いドクロ入り)→ 透ける白い破片が散り、ドクロが溶け、円が赤いもやになって、火の粉と暗いかけらを散らして消える
         <span key={`des-${tick}`} aria-hidden="true" data-testid="fx-destroy" style={{ position: 'absolute', left: '50%', top: '50%', height: '120%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }}>
@@ -366,18 +367,11 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
       {unit.alive && (unit.keywords || []).includes('intimidate') && (
         // 【威圧】の盤面エフェクト(元動画どおり): ユニットの上に重なる◇(ひし形)の黄緑の光の帯。中は空いていて、帯はやわらかく、炎のようにギザギザとゆらめく。カードの縁には、淡い青緑の光の線
         <span aria-hidden="true" data-testid="fx-intimidate-idle" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 3 }}>
-          <svg width="0" height="0" style={{ position: 'absolute' }}>
-            <filter id="feel-flame" x="-60%" y="-40%" width="220%" height="180%">
-              <feTurbulence type="fractalNoise" baseFrequency="0.045 0.065" numOctaves="2" seed="1" result="n">
-                <animate attributeName="seed" values="1;4;2;7;3;6;5;8" dur="0.9s" calcMode="discrete" repeatCount="indefinite" />
-              </feTurbulence>
-              <feDisplacementMap in="SourceGraphic" in2="n" scale="18" xChannelSelector="R" yChannelSelector="G" />
-            </filter>
-          </svg>
-          <span style={{ position: 'absolute', inset: -40, opacity: 0.95, animation: 'feel-int-pulse 2.4s ease-in-out infinite' }}>
-            <span style={{ position: 'absolute', inset: 0, filter: 'url(#feel-flame)' }}>
-              <span style={{ position: 'absolute', left: '50%', top: '50%', height: 'calc(100% - 80px)', aspectRatio: '1', transform: 'translate(-50%, -50%) rotate(45deg)', boxShadow: 'inset 0 0 20px 9px rgba(170,240,60,0.95), inset 0 0 8px 2px rgba(225,255,195,0.9), 0 0 14px 5px rgba(160,235,55,0.7)', filter: 'blur(1.5px)' }} />
-            </span>
+          {/* 炎のゆらぎは、事前に作った8コマの高解像度画像(public/fx)を順に切り替えて出す。フィルターの計算は使わない(動かすのは opacity だけ) */}
+          <span style={{ position: 'absolute', inset: 0, opacity: 0.95, animation: 'feel-int-pulse 2.4s ease-in-out infinite', willChange: 'opacity' }}>
+            {[0, 1, 2, 3, 4, 5, 6, 7].map((k) => (
+              <img key={k} src={`/fx/intimidate-${k}.webp`} alt="" draggable={false} decoding="async" style={{ position: 'absolute', left: '50%', top: '50%', height: '200%', aspectRatio: '1', transform: 'translate(-50%, -50%)', opacity: 0, animation: `feel-int-f8 0.9s steps(1, end) ${k * 0.1125}s infinite` }} />
+            ))}
           </span>
           <span style={{ position: 'absolute', inset: 0, borderRadius: 8, border: '1.5px solid rgba(160,245,205,0.85)', boxShadow: '0 0 6px 1px rgba(150,245,190,0.7), inset 0 0 6px rgba(150,245,190,0.5)' }} />
         </span>
@@ -495,7 +489,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
       <div style={{ height: big ? 36 : 26, overflow: 'hidden', fontWeight: big ? 700 : 400 }}>{unit.name}</div>
       {!unit.isAmulet && (
         <div style={{ background: '#1b3a43', height: big ? 9 : 6, borderRadius: 3, marginTop: 3, position: 'relative' }}>
-          <div style={{ width: `${ratio * 100}%`, height: '100%', borderRadius: 3, background: hpColor, transition: 'width 0.3s' }} />
+          <div style={{ width: '100%', height: '100%', borderRadius: 3, background: hpColor, transformOrigin: '0 50%', transform: `scaleX(${ratio})`, transition: 'transform 0.3s' }} />
           <LossBlink unit={unit} loss={loss} />
         </div>
       )}
