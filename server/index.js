@@ -1,5 +1,6 @@
 import admin from 'firebase-admin'
 import { createApp } from './app.js'
+import { attachPvp } from './pvp/ws.js'
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) })
@@ -18,6 +19,8 @@ const app = createApp({
 })
 
 const PORT = process.env.PORT || 10000
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`server running on port ${PORT}`)
 })
+// 対人戦(WebSocket: /pvp)。バトルの計算はサーバーで行う。所持していないキャラの編成は、PVP_REQUIRE_OWNED=0 で許可(開発用)
+attachPvp({ server, auth: admin.auth(), db: admin.firestore(), allowedOrigins, requireOwned: process.env.PVP_REQUIRE_OWNED !== '0' })
