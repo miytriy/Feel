@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useIsDesktop, C, FONT, DISPLAY } from './ui.js'
+import { useIsDesktop, C, FONT, DISPLAY, useRemembered } from './ui.js'
 import { ALL_CHARACTERS } from './battle/characters/index.js'
 import { CLASS_ORDER } from './battle/characters/validate.js'
 import { KEYWORDS, TRIGGER_LABELS, RELICS } from './battle/engine.js'
@@ -326,7 +326,7 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
 
   const [selId, setSelId] = useState(() => (owned[0] ? owned[0].id : null))
   const sel = list.find((d) => d.id === selId) || list[0] || null
-  const [tab, setTab] = useState('ov')
+  const [tab, setTab] = useRemembered('jinji.tab', 'ov')
   const [tabGone, setTabGone] = useState(false) // タブを切り替えるとき、いまの内容が先に出ていく
   const [sweep, setSweep] = useState(0) // タブを切り替えるたびに増やす(黄色い帯を走らせる)
   const [figOut, setFigOut] = useState(false)

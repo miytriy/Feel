@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { C, FONT, DISPLAY } from './ui.js'
+import { C, FONT, DISPLAY, useRemembered } from './ui.js'
 import { SPEEDS } from './settings.js'
 import { IconClose, IconAgents, IconRules } from './icons.jsx'
 
@@ -69,7 +69,7 @@ const CSS = `
 `
 
 export default function SettingsScreen({ user, settings, onChange, onLogin, onLogout, unlockLevel = 0, onUnlock, onRelock, onOpenRules, onExit }) {
-  const [tab, setTab] = useState('battle')
+  const [tab, setTab] = useRemembered('settings.tab', 'battle')
   const [pw, setPw] = useState('')
   const [pwMsg, setPwMsg] = useState('')
   const submitPw = async () => {

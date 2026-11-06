@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useIsDesktop, C, FONT } from './ui.js'
+import { useIsDesktop, C, FONT, useRemembered } from './ui.js'
 import { ScreenHeader } from './chrome.jsx'
 import { StatIcon } from './icons.jsx'
 import { ALL_CHARACTERS, charById } from './battle/characters/index.js'
@@ -300,11 +300,11 @@ function ListItem({ tab, def, selected, onClick, count = null }) {
 export default function CodexScreen({ onExit, title = 'Wiki', ownedMap = null }) {
   const desktop = useIsDesktop()
   const agents = !!ownedMap
-  const [tab, setTab] = useState('chars') // chars | spells
+  const [tab, setTab] = useRemembered('codex.tab', 'chars') // chars | spells
   const [cls, setCls] = useState('all')
   const [rarity, setRarity] = useState('all')
   const [query, setQuery] = useState('')
-  const [selId, setSelId] = useState(null)
+  const [selId, setSelId] = useRemembered('codex.sel', null)
 
   const isSpell = tab === 'spells'
   const source = isSpell ? ALL_SPELLS : ALL_CHARACTERS

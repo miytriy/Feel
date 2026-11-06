@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { C, FONT, DISPLAY } from './ui.js'
+import { C, FONT, DISPLAY, useRemembered } from './ui.js'
 import { ScreenHeader, Chip } from './chrome.jsx'
 import { IconPlay, IconAgents, IconRules, IconGem, IconCareer } from './icons.jsx'
 
@@ -89,8 +89,8 @@ export default function GuideScreen({ gems = null, onCpu, onPvp = null, onRules,
       cats: [{ key: 'rules', label: 'ルール', Icon: IconRules, entries: [{ key: 'rules', title: 'ルール説明', desc: '対戦のルール(行動順・MP・進化など)を、順に読めます。', go: onRules }] }],
     },
   ]
-  const [tab, setTab] = useState('cpu')
-  const [cat, setCat] = useState(null)
+  const [tab, setTab] = useRemembered('guide.tab', 'cpu')
+  const [cat, setCat] = useRemembered('guide.cat', null)
   const t = TABS.find((x) => x.key === tab)
   const c = t.cats.find((x) => x.key === cat) || t.cats[0] || null
   const pick = (key) => { setTab(key); setCat(null) }

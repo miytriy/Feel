@@ -134,3 +134,12 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
   `
   document.head.appendChild(st)
 }
+
+// 画面を出ている間だけでなく、いったん離れて戻ってきたときも、最後に選んでいた項目(タブなど)を覚えておく useState。
+// key は画面ごとの名前(例: 'guide.tab')。覚えておくのは、アプリを開いている間だけ(再読み込みで初期にもどる)
+const REMEMBERED = new Map()
+export function useRemembered(key, init) {
+  const [v, setV] = useState(() => (REMEMBERED.has(key) ? REMEMBERED.get(key) : init))
+  const set = (x) => setV((prev) => { const nx = typeof x === 'function' ? x(prev) : x; REMEMBERED.set(key, nx); return nx })
+  return [v, set]
+}
