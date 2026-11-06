@@ -533,6 +533,11 @@ function resolveTargets(state, source, key, ctx) {
       if (ctx.chosen) return [getUnit(state, ctx.chosen)]
       return [[...allies].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]].filter(Boolean)
     }
+    case 'allyAmuletOne': { // 自分の場のアミュレット1つ(選ぶ効果用)。選ばれなかったときは先頭の1つ
+      const list = summonsOf(state, source).filter((u) => u.isAmulet)
+      if (ctx.chosen) return list.filter((u) => u.uid === ctx.chosen)
+      return list.slice(0, 1)
+    }
     case 'allyFieldOne': { // 自分の場(場のキャラ + 召喚物)から1体(選ぶ効果用)
       const field = [...allies, ...summonsOf(state, source)]
       if (ctx.chosen) return field.filter((u) => u.uid === ctx.chosen)
@@ -682,6 +687,7 @@ function candidatesOf(state, source, e) {
   if (key === 'otherAllyOne') list = alliesOf(state, source).filter((u) => u.uid !== source.uid)
   else if (key === 'allyOne') list = alliesOf(state, source)
   else if (key === 'allyFieldOne') list = [...alliesOf(state, source), ...summonsOf(state, source)]
+  else if (key === 'allyAmuletOne') list = summonsOf(state, source).filter((u) => u.isAmulet)
   else if (key === 'enemyOne') list = enemyOneList(state, source)
   else list = resolveTargets(state, source, key, {})
   if (e.onlyName) list = list.filter((u) => u.name === e.onlyName) // onlyName: 指定の名前のキャラだけ
@@ -896,6 +902,14 @@ function runEffects(state, source, effects, ctx = {}) {
       const simple = (x) => x && x.type === 'summon' && !x.condition && !x.mpCost && !x.earthCost && !x.graveCost && !x.optional && !x.timesPerType && !x.fromCrest && !x.repGroup && (x.unit || x.randomUnits || x.copySelf)
       while (simple(effects[idx + 1])) { idx++; const x = effects[idx]; summonOne(x, x.copySelf ? source.charDef : x.randomUnits ? x.randomUnits[0] : x.unit) }
       for (const nu of entered) afterEnter(state, nu)
+      continue
+    }
+    if (e.type === 'copyAmulet') { // 選んだ自分のアミュレットと同名のアミュレットを、もう1つ場に出す(満員なら出せない)
+      const src = ctx.chosen ? getUnit(state, ctx.chosen) : null
+      if (src && src.alive && src.isAmulet) {
+        const nu = summon(state, source, src.charDef, { defer: true })
+        if (nu) afterEnter(state, nu)
+      }
       continue
     }
     if (e.type === 'crest') {
