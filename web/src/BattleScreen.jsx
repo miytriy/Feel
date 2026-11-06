@@ -498,7 +498,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
           <LossBlink unit={unit} loss={loss} />
         </div>
       )}
-      <div style={{ marginTop: 2, color: C.mute }}>{unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive || dying ? <><AnimNum value={Math.ceil(unit.alive || vanishing ? hpShown : 0)} ms={300} />/{unit.maxHp}</> : ''}</div>
+      <div style={{ marginTop: 2, color: C.mute, ...(dying && !unit.isAmulet ? { animation: `feel-d-fade2 ${vanishing ? '0.35s ease-in 0.45s' : '0.35s ease-in 0.5s'} forwards`, willChange: 'opacity' } : {}) }}>{unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive || dying ? <><AnimNum value={Math.ceil(unit.alive || vanishing ? hpShown : 0)} ms={300} />/{unit.maxHp}</> : ''}</div>
       {unit.armor > 0 && <div style={{ color: C.player }}>アーマー {Math.ceil(unit.armor)}{unit.armorRate < 1 ? `(${Math.round(unit.armorRate * 100)}%)` : ''}</div>}
       {badges.length > 0 && (
         <div style={{ marginTop: 2, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
