@@ -271,7 +271,12 @@ function useSummonSlide() {
 }
 
 export function UnitCard({ unit, active, selected, selectable, inspected, onClick, big = false, fx = null, hl = false, tick = 0, loss = 0, role = null }) {
-  const ratio = Math.max(0, unit.hp / unit.maxHp)
+  // 破壊: HPの数字とバーが、同じ速さで0へ減っていく。消滅: HPは減らないので、消える直前の値のまま(0にしない)
+  const lastHp = useRef(unit.hp)
+  if (unit.alive) lastHp.current = unit.hp
+  const vanishing = !!(fx && fx.die === 'vanish')
+  const hpShown = vanishing && !unit.alive ? lastHp.current : unit.hp
+  const ratio = Math.max(0, hpShown / unit.maxHp)
   const hpColor = ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow
   const badges = unit.alive ? badgesOf(unit) : []
   // 破壊・消滅の演出中は、まだ生きているときの見た目のまま(演出のあと、暗い半透明の「戦闘不能」の札に変わって残らないように)。演出が終わったら、そっと消す
@@ -493,7 +498,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
           <LossBlink unit={unit} loss={loss} />
         </div>
       )}
-      <div style={{ marginTop: 2, color: C.mute }}>{unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive ? `${Math.ceil(unit.hp)}/${unit.maxHp}` : dying ? `0/${unit.maxHp}` : ''}</div>
+      <div style={{ marginTop: 2, color: C.mute }}>{unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive || dying ? <><AnimNum value={Math.ceil(unit.alive || vanishing ? hpShown : 0)} ms={300} />/{unit.maxHp}</> : ''}</div>
       {unit.armor > 0 && <div style={{ color: C.player }}>アーマー {Math.ceil(unit.armor)}{unit.armorRate < 1 ? `(${Math.round(unit.armorRate * 100)}%)` : ''}</div>}
       {badges.length > 0 && (
         <div style={{ marginTop: 2, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
