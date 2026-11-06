@@ -1,3 +1,4 @@
+import { ME, OPP } from './perspective.js'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { C, FONT, alpha } from './ui.js'
@@ -170,12 +171,12 @@ function ReadableLog({ events, units, empty }) {
   if (events.length === 0) return empty('まだ何も起きていません')
   const nm = (uid) => units.find((u) => u.uid === uid)?.name ?? '?'
   const tm = (uid) => units.find((u) => u.uid === uid)?.team ?? null
-  const col = (t) => (t === 'B' ? C.enemy : C.player)
+  const col = (t) => (t !== ME ? C.enemy : C.player)
   const out = []
   let round = null
   events.forEach((e, i) => {
     if (e.round !== round) { round = e.round; out.push(<div key={`r${i}`} style={{ position: 'sticky', top: 0, zIndex: 1, margin: '10px -12px 6px', padding: '4px 12px', background: C.paper, borderBottom: `2px solid ${C.line}`, fontSize: 12, letterSpacing: 2, fontWeight: 800, color: C.mute }}>ラウンド {round}</div>) }
-    if (e.type === 'turn') { out.push(<div key={i} style={{ margin: '10px 0 4px', padding: '5px 10px', borderRadius: 6, borderLeft: `6px solid ${col(e.team)}`, background: alpha(col(e.team), 14), fontWeight: 800, color: col(e.team) }}>▶ {e.team === 'B' ? '相手' : '自分'}の番:{e.name}</div>); return }
+    if (e.type === 'turn') { out.push(<div key={i} style={{ margin: '10px 0 4px', padding: '5px 10px', borderRadius: 6, borderLeft: `6px solid ${col(e.team)}`, background: alpha(col(e.team), 14), fontWeight: 800, color: col(e.team) }}>▶ {e.team !== ME ? '相手' : '自分'}の番:{e.name}</div>); return }
     const tag = TAGS[e.type]; if (!tag) return
     let body = null; let teamOf = e.team ?? tm(e.src) ?? tm(e.target)
     if (e.type === 'damage') body = <><b>{nm(e.src)}</b> → <b>{nm(e.target)}</b> <b style={{ color: '#ef4444', fontSize: 15 }}>{e.amount}</b> ダメージ{e.means && e.means !== '攻撃' ? `(${e.means})` : ''}{e.crit ? ' クリティカル!' : ''}</>
@@ -208,7 +209,7 @@ export function CommentaryOverlay({ units, active, round, log, ab, dead, events 
   const limit = log.length
   const abShown = ab.filter((x) => x.logLen <= limit)
   const deadShown = dead.filter((x) => x.logLen <= limit)
-  const teamColor = (t) => (t === 'B' ? C.enemy : C.player)
+  const teamColor = (t) => (t !== ME ? C.enemy : C.player)
 
   useEffect(() => {
     const h = (e) => { if (e.key === 'Escape') onClose() }
@@ -220,7 +221,7 @@ export function CommentaryOverlay({ units, active, round, log, ab, dead, events 
   }, [tab, limit])
 
   const isTeam = tab === 'ally' || tab === 'enemy'
-  const team = tab === 'enemy' ? 'B' : 'A'
+  const team = tab === 'enemy' ? OPP() : ME
   const list = isTeam ? units.filter((u) => u.team === team).sort((a, b) => (a.field === b.field ? 0 : a.field === 'main' ? -1 : 1)) : []
   const cur = list.find((u) => u.uid === pick[team]) || list.find((u) => u.alive) || list[0]
   const color = teamColor(team)
@@ -293,7 +294,7 @@ export function CommentaryOverlay({ units, active, round, log, ab, dead, events 
 
         {tab === 'dead' && (deadShown.length === 0 ? empty('まだ破壊されたものはありません') : [...deadShown].reverse().map((x, i) => card(x, rowKey(x, i), (
           <>
-            <div style={{ fontWeight: 700 }}>{tag(x)}{x.team === 'B' ? '相手' : '自分'}の{x.name}{x.field === 'summon' ? '(召喚物)' : ''}</div>
+            <div style={{ fontWeight: 700 }}>{tag(x)}{x.team !== ME ? '相手' : '自分'}の{x.name}{x.field === 'summon' ? '(召喚物)' : ''}</div>
             <div style={{ marginTop: 2, color: C.mute }}>{x.cause ? `${x.cause}で倒された` : '破壊された'}</div>
           </>
         ))))}

@@ -60,7 +60,7 @@ const CSS = `
 }
 `
 
-export default function GuideScreen({ gems = null, onCpu, onRules, onExit }) {
+export default function GuideScreen({ gems = null, onCpu, onPvp = null, onRules, onExit }) {
   // 閉じる: すぐ消さずに、閉じる動き(出てきたときの逆向き)を見せてから、onExit を呼ぶ
   const [leaving, setLeaving] = useState(false)
   const leaveTimer = useRef(null)
@@ -81,7 +81,9 @@ export default function GuideScreen({ gems = null, onCpu, onRules, onExit }) {
         entries: [{ key: 'cpu', title: 'CPU戦', sub: 'Lv.1〜4', desc: 'CPUの強さを選んで対戦します。勝つと、ジェムがもらえます(ログイン中のみ・1日5回まで)。', rewards: [{ label: '10〜40' }], go: onCpu }],
       }],
     },
-    { key: 'pvp', label: '対人戦', Icon: IconAgents, soon: true, cats: [] },
+    onPvp
+      ? { key: 'pvp', label: '対人戦', Icon: IconAgents, cats: [{ key: 'room', label: 'ルーム戦', Icon: IconAgents, entries: [{ key: 'pvp-room', title: 'ルーム戦', sub: 'フレンドと', desc: '部屋コードを伝えあって、1対1で対戦します。保存したチームで戦います(報酬・戦績はありません)。', go: onPvp }] }] }
+      : { key: 'pvp', label: '対人戦', Icon: IconAgents, soon: true, cats: [] },
     {
       key: 'rules', label: 'ルール', Icon: IconRules,
       cats: [{ key: 'rules', label: 'ルール', Icon: IconRules, entries: [{ key: 'rules', title: 'ルール説明', desc: '対戦のルール(行動順・MP・進化など)を、順に読めます。', go: onRules }] }],

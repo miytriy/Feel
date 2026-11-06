@@ -11,13 +11,15 @@ import { BattleHud, StageIntro, ExitConfirm, ResultBanner } from './BattleHud.js
 import { CommentaryOverlay, collectHistory, addHistory, emptyHistory } from './BattleLog.jsx'
 import { useIsDesktop, C as BASE, alpha, DISPLAY } from './ui.js'
 import { StatIcon } from './icons.jsx'
+import { ME, OPP, setMe, winnerView } from './perspective.js'
 import { CutIn, cutinOf } from './cutin.jsx'
 const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', margin: '0 2px 0 0' }} />
 
 // 色: 自分=青、相手=赤紫、行動中=琥珀
 const C = { ...BASE, hp: '#3ddc97', hpMid: '#ffd24a', hpLow: '#ff5a5a' } // 色は ui.js の共通の色 + HPバー
 const FONT = '"Hiragino Sans","Noto Sans JP",system-ui,sans-serif'
-const TEAM_COLOR = { A: C.player, B: C.enemy }
+// 自分のチームは自分の色、相手は相手の色(対人戦で自分が B でも、色は自分から見て決まる)
+const TEAM_COLOR = { get A() { return ME === 'A' ? C.player : C.enemy }, get B() { return ME === 'A' ? C.enemy : C.player } }
 const TYPE_LABEL = { physical: '物理', magic: '魔法', true: '確定' }
 
 // これから行動する順番(アクションバー)。ラウンドの区切りも入れる
@@ -117,13 +119,13 @@ export function ActionBar({ state, big = false, avFx = null }) {
           ...(ghost ? { position: 'absolute', left: ghost.left, top: 6, zIndex: 1, pointerEvents: 'none', animation: 'feel-bar-out 0.4s ease-in forwards' } : null),
           flex: '0 0 auto', width: i === 0 ? W + (big ? 20 : 12) : W, height: H, boxSizing: 'border-box', padding: '3px 4px',
           borderRadius: 6, fontSize: F, lineHeight: 1.25, overflow: 'hidden', position: ghost ? 'absolute' : 'relative',
-          color: it.accel ? TEAM_COLOR[it.unit.team] : it.unit.team === 'A' ? C.onAccent : '#fff',
+          color: it.accel ? TEAM_COLOR[it.unit.team] : it.unit.team === ME ? C.onAccent : '#fff',
           background: it.accel ? C.card : TEAM_COLOR[it.unit.team],
           border: i === 0 ? `2px solid ${C.active}` : it.accel ? `2px dashed ${TEAM_COLOR[it.unit.team]}` : '2px solid transparent',
           fontWeight: i === 0 ? 700 : 400, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
         }}
       >
-        {it.accel ? '⚡' : ''}{it.unit.team === 'A' ? '' : '敵 '}{it.unit.name}
+        {it.accel ? '⚡' : ''}{it.unit.team === ME ? '' : '敵 '}{it.unit.name}
         <span data-testid="av-value" style={{ position: 'absolute', right: 3, bottom: 1, fontSize: big ? 11 : 9, fontWeight: 700, lineHeight: 1, padding: '1px 3px', borderRadius: 4, background: 'rgba(0,0,0,0.45)', color: '#fff' }}>{ghost ? Math.round(it.time) : <AnimNum value={Math.round(it.time)} />}</span>
         {!ghost && avFx && avFx[it.unit.uid] && !it.accel && (
           // 行動順アップ(▲ 緑)/ダウン(▼ 青): その枠が光って、矢印が動く
@@ -531,7 +533,7 @@ function TeamStatus({ state, team, big = false, inline = false }) {
   const col = TEAM_COLOR[team]
   return (
     <div style={{ fontSize: big ? 13 : 11, marginTop: inline ? 0 : 4, lineHeight: 1.4, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', fontWeight: 400 }}>
-      {!inline && <b style={{ color: col, marginRight: 2 }}>{team === 'A' ? '自分' : '相手'}</b>}
+      {!inline && <b style={{ color: col, marginRight: 2 }}>{team === ME ? '自分' : '相手'}</b>}
       {chips.filter((c) => c[2]).map(([k, v]) => (
         <span key={k} style={{ padding: big ? '2px 8px' : '1px 6px', borderRadius: 999, border: `1px solid ${col}`, color: C.ink, background: alpha(col, 14), whiteSpace: 'nowrap' }}>
           <span style={{ color: col, fontWeight: 700 }}>{k}</span> {v}
@@ -606,7 +608,7 @@ function InspectBox({ unit, big = false }) {
 function AbilityBanner({ ability, now = '', big = false }) {
   const slotH = big ? 76 : 72 // 能力の表示が出たり消えたりしても、画面が動かないように、場所をいつも同じだけ取る
   if (!ability && !now) return <div aria-hidden="true" style={{ height: slotH }} />
-  const color = ability && ability.team === 'B' ? C.enemy : C.player
+  const color = ability && ability.team !== ME ? C.enemy : C.player
   return (
     <div data-testid="ability" style={{ height: slotH, boxSizing: 'border-box', overflow: 'hidden', padding: big ? '10px 14px' : '8px 10px', borderRadius: 10, background: C.card, borderLeft: `6px solid ${color}`, border: `1px solid ${C.line}`, borderLeftWidth: 6, borderLeftColor: color, fontSize: big ? 14 : 12, lineHeight: 1.5 }}>
       {now && <div data-testid="now" style={{ fontWeight: 800, marginBottom: 4, color: C.ink }}>{now}</div>}
@@ -635,7 +637,7 @@ function TargetInfo({ unit, expected, loss = 0, big = false }) {
   for (const t of unit.traits) lines.push(`【特性 MP${t.cost}】${t.name}: ${t.desc ?? ''}`)
   return (
     <div data-testid="target-info" style={{ marginBottom: 8, padding: big ? 12 : 8, borderRadius: 10, background: C.softWarn, border: `2px solid ${C.active}`, fontSize: big ? 13 : 12, lineHeight: 1.5 }}>
-      <div style={{ fontSize: big ? 11 : 10, color: C.mute }}>選択中の{unit.team === 'B' ? '相手' : '味方'}</div>
+      <div style={{ fontSize: big ? 11 : 10, color: C.mute }}>選択中の{unit.team !== ME ? '相手' : '味方'}</div>
       <div style={{ fontWeight: 700, fontSize: big ? 15 : 13 }}>{unit.name}{unit.evolved ? '(進化済)' : ''}{unit.field === 'summon' ? '(召喚物)' : ''}</div>
       {!unit.isAmulet && (
         <>
@@ -727,10 +729,12 @@ function reorderBoost(evs) {
 const EVENT_MS = { turn: 700, ability: 600, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 1000, vanish: 900, av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
-export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null }) {
-  const flow = !!teamInit
+export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null, online = null }) {
+  // online(対人戦): { client, side, opp, init(サーバーが決めた最初の状態), left, turnMs }。サーバーが審判で、行動はサーバーに送り、返ってきた状態を再生する
+  if (online) setMe(online.side); else setMe('A')
+  const flow = !!teamInit || !!online
   const [spellSet, setSpellSet] = useState(spellsInit || []) // 編成画面で決めたスペルセット(スペル定義の配列。同じスペルを複数入れてよい)
-  const [team, setTeam] = useState(teamInit) // 編成画面で決めた自分のチーム(キャラ定義の配列)。nullなら編成画面を出す
+  const [team, setTeam] = useState(teamInit || (online ? [] : null)) // 編成画面で決めた自分のチーム(キャラ定義の配列)。nullなら編成画面を出す
   const [level, setLevel] = useState(levelInit || 2)
   const [intro, setIntro] = useState(false) // ステージ説明を出している(出している間は、CPUは動かない)
   const [introFirst, setIntroFirst] = useState(false) // 対戦の始まりの、最初のステージ説明
@@ -739,7 +743,14 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const [comboMode, setComboMode] = useState(() => loadComboMode()) // 開発者設定: コンボのシステム(old = 従来 / reset = β: コンボリセット)
   const [cpuCharsSetting, setCpuChars] = useState(() => loadCpuCharSetting()) // 開発者設定: CPUが使うキャラ(test / real)
   const cpuChars = flow ? 'real' : cpuCharsSetting // 通常戦(案内所 → CPU戦 から来たとき)は、いつも本実装キャラ。開発者設定は、単体のテスト画面だけ
-  const [state, setState] = useState(null)
+  const [state, setState] = useState(online ? online.init : null)
+  const [waitingSend, setWaitingSend] = useState(false) // 対人戦: 行動を送って、サーバーの返事を待っている
+  const [inbox, setInbox] = useState([]) // 対人戦: 届いたが、再生中でまだ反映していない知らせ
+  const [oppOffline, setOppOffline] = useState(false)
+  const [netMsg, setNetMsg] = useState('') // 対人戦: 通信の状態の表示(切断中など)
+  const [endInfo, setEndInfo] = useState(null) // 対人戦: { winner, reason }
+  const [deadlineAt, setDeadlineAt] = useState(() => (online && online.left != null ? Date.now() + online.left : null)) // 手番の期限(この端末の時計)
+  const [, setTick] = useState(0)
   const [selected, setSelected] = useState(null)
   const [mode, setMode] = useState(null) // 選択中の特性のid(nullならスキル攻撃)
   const [inspect, setInspect] = useState(null)
@@ -757,8 +768,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const desktop = useIsDesktop() // 画面の幅が広い(PC)ときは、画面全体を使うレイアウトにする
 
   const actor = state ? getActiveUnit(state) : null
-  const cpuTurn = !!actor && actor.team === 'B' && !state.winner
-  const playerTurn = !!actor && actor.team === 'A' && !state.winner && !playing
+  const cpuTurn = !online && !!actor && actor.team === 'B' && !state.winner
+  const playerTurn = !!actor && actor.team === ME && !state.winner && !playing && !(online && waitingSend)
   const legal = playerTurn ? legalActions(state) : []
   const skillTargets = legal.filter((a) => a.type === 'skill').map((a) => a.target)
   const traitActions = (id) => legal.filter((a) => a.type === 'trait' && a.trait === id)
@@ -786,6 +797,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
 
   // CPUの番になったら少し待ってから行動する(特性を使ったあとも番が続くので、何度か動く)
   useEffect(() => {
+    if (online) return
     if (!state || state.winner || play || intro || leaveAsk || logOpen) return // 戦闘実況を開いている間も止める。再生が終わってから・ステージ説明などを閉じてから動く
     const current = getActiveUnit(state)
     if (!current || (current.team !== 'B' && !auto)) return // オート(∞)のときは、自分の番も進める
@@ -818,7 +830,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     const tm = (uid) => state.units.find((u) => u.uid === uid)?.team ?? null
     const lineOf = (e) => {
     let line = null
-    if (e.type === 'turn') line = { team: e.team, text: `▶ ${e.team === 'B' ? '相手の' : ''}${e.name}の番` }
+    if (e.type === 'turn') line = { team: e.team, text: `▶ ${e.team !== ME ? '相手の' : ''}${e.name}の番` }
     else if (e.type === 'damage') line = { team: tm(e.src), text: `${nm(e.src)}の${e.means || '攻撃'} → ${nm(e.target)}に ${e.amount} ダメージ${e.crit ? '(クリティカル!)' : ''}` }
     else if (e.type === 'block') line = { team: tm(e.src), text: `${nm(e.src)}の${e.means || '攻撃'} → ${nm(e.target)}のバリアが防いだ` }
     else if (e.type === 'heal') line = { team: tm(e.target), text: `${nm(e.target)}が ${e.amount} 回復` }
@@ -845,6 +857,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
 
   // 対戦が終わって再生も終わったら、キャリア(アカウントの対戦記録)に残す
   useEffect(() => {
+    if (online) return
     if (!state || !state.winner || play || savedRef.current === state) return
     savedRef.current = state
     // ログイン中なら、アカウントに記録する(失敗しても対戦には影響しない)
@@ -869,7 +882,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     setTicketId(null)
     setRewardMsg('報酬を確認しています…')
     rewardApi
-      .finish(id, state.winner === 'A' ? 'win' : 'lose')
+      .finish(id, state.winner === ME ? 'win' : 'lose')
       .then((r) => setRewardMsg(r.reward > 0 ? `報酬 +${r.reward} ジェム` : r.reason || '報酬はありません'))
       .catch((e) => setRewardMsg(`報酬を受け取れませんでした: ${e.message}`))
   }, [state, rewardApi, ticketId])
@@ -927,13 +940,61 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   // 案内所 → CPU戦 → チーム を通って来たときは、開いたらすぐ対戦を始める
   const autoRef = useRef(false)
   useEffect(() => {
+    if (online) {
+      if (!autoRef.current) { autoRef.current = true; statsRef.current = newStats(); try { setHist(collectHistory(null, online.init)) } catch (e) { console.error(e); setHist(emptyHistory()) }; namesRef.current = { A: [], B: [] } }
+      return
+    }
     if (flow && !autoRef.current) { autoRef.current = true; startBattle() }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const act = (action) => {
     reset()
+    if (online) { if (waitingSend) return; setWaitingSend(true); online.client.action(action); return }
     commit(applyAction(state, action))
   }
+  // ---- 対人戦: サーバーからの知らせ ----
+  useEffect(() => {
+    if (!online) return
+    return online.client.on((m) => {
+      if (m.type === 'update' || m.type === 'end' || (m.type === 'start' && m.resume)) setInbox((q) => [...q, m])
+      else if (m.type === 'opp-offline') setOppOffline(true)
+      else if (m.type === 'opp-online') setOppOffline(false)
+      else if (m.type === 'offline') setNetMsg('通信が切れました。つなぎ直しています…')
+      else if (m.type === 'online') setNetMsg('')
+      else if (m.type === 'error') { setWaitingSend(false); setNetMsg(m.message || '通信エラー') }
+      else if (m.type === 'closed') setNetMsg(m.reason || '部屋が閉じられました')
+    })
+  }, [online])
+  // 届いた知らせを、再生が終わってから順に反映する
+  useEffect(() => {
+    if (!online || !inbox.length || play) return
+    const [m, ...rest] = inbox
+    setInbox(rest)
+    if (m.type === 'end') {
+      setEndInfo({ winner: m.winner, reason: m.reason })
+      if (m.state && m.state.seq !== undefined) { /* 予約 */ }
+      if (m.state && (!state || m.state.turns !== state.turns || m.state.winner !== state.winner)) commit(m.state)
+      else setState((st) => (st && !st.winner ? { ...st, winner: m.winner, events: [] } : st))
+      setWaitingSend(false); setDeadlineAt(null)
+      return
+    }
+    if (m.seq !== undefined && lastSeq.current >= m.seq && !m.resume) return
+    lastSeq.current = m.seq ?? lastSeq.current
+    setWaitingSend(false)
+    setNetMsg('')
+    setOppOffline(false)
+    setDeadlineAt(m.left != null ? Date.now() + m.left : null)
+    if (m.type === 'start') { setPlay(null); setState(m.state); return } // 再接続: 続きの状態にそろえる(演出は出さない)
+    commit(m.state)
+  }, [inbox, play]) // eslint-disable-line react-hooks/exhaustive-deps
+  const lastSeq = useRef(-1)
+  // 手番の残り時間の表示(秒)
+  useEffect(() => {
+    if (!online || deadlineAt == null) return
+    const id = setInterval(() => setTick((x) => x + 1), 250)
+    return () => clearInterval(id)
+  }, [online, deadlineAt])
+  const leftSec = online && deadlineAt != null && state && !state.winner ? Math.max(0, Math.ceil((deadlineAt - Date.now()) / 1000)) : null
   const handleTrait = (trait) => {
     const acts = traitActions(trait.id)
     if (!acts.length) return
@@ -1132,15 +1193,15 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const roleFor = (uid) => (attackerIds.has(uid) ? 'attacker' : targetIds.get(uid) || null)
   const hlFor = (uid) => !!ev && ev.type === 'attack' && (ev.src === uid || ev.target === uid)
   const levelInfo = CPU_LEVELS.find((l) => l.level === level)
-  const enemies = view.units.filter((u) => u.team === 'B' && u.field === 'main')
-  const players = view.units.filter((u) => u.team === 'A' && u.field === 'main')
+  const enemies = view.units.filter((u) => u.team !== ME && u.field === 'main')
+  const players = view.units.filter((u) => u.team === ME && u.field === 'main')
   // 破壊・消滅する召喚物は、その演出が終わるまで盤面に残す(演出の前に消えないように)
   const dyingUids = new Set(play ? play.events.slice(gStart).filter((x) => x.type === 'destroy' || x.type === 'vanish').map((x) => x.target) : [])
   const shown = (u) => u.field === 'summon' && (u.alive || dyingUids.has(u.uid))
-  const enemySummons = view.units.filter((u) => u.team === 'B' && shown(u))
-  const playerSummons = view.units.filter((u) => u.team === 'A' && shown(u))
+  const enemySummons = view.units.filter((u) => u.team !== ME && shown(u))
+  const playerSummons = view.units.filter((u) => u.team === ME && shown(u))
   const summonCards = (list) => (list.length ? list.map(card) : <div aria-hidden="true" style={{ gridColumn: '1 / -1', height: desktop ? 112 : 106, minHeight: desktop ? 112 : 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, border: `1px dashed ${C.line}`, color: C.mute, fontSize: 11, opacity: 0.6 }}>召喚物なし</div>) // 召喚物がいなくても場所は空けておく(画面が動かないように)
-  const resultText = state.winner === 'A' ? '勝利!' : state.winner === 'B' ? '敗北…' : '引き分け'
+  const resultText = state.winner === ME ? '勝利!' : state.winner === 'A' || state.winner === 'B' ? '敗北…' : '引き分け'
   const inspected = inspect && inspect !== selected ? getUnit(state, inspect) : null // 選択中の相手は、操作パネルに詳しく出すので、ここでは重ねて出さない
   const modeTrait = mode ? actor.traits.find((t) => t.id === mode) : null
   const selectedUnit = playerTurn && selected ? getUnit(state, selected) : null
@@ -1254,12 +1315,12 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
               <b>{actor.name}</b> の番: スキル「{actor.skill.name}」({TYPE_LABEL[actor.skill.type]}){actor.doubleSkill ? ` ・1ターンに2回(2回目はMP${actor.doubleSkill.mpCost})${(actor.skillsThisTurn || 0) >= 1 ? ' ・1回目は済み' : ''}` : ''}
             </div>
 
-            {state.spells.A.length > 0 && !choosing && (
+            {state.spells[ME].length > 0 && !choosing && (
               <div style={{ marginBottom: 8 }}>
                 <div style={{ fontSize: 11, color: C.mute, marginBottom: 4 }}>スペル(MPを使う・1枠につき1回・行動は消えません)</div>
-                {state.spells.A.map((sp) => {
+                {state.spells[ME].map((sp) => {
                   const usable = spellActs.some((a) => a.spell === sp.slot)
-                  const why = sp.used ? '使用済み' : state.mp.A < sp.cost ? 'MP不足' : '使えません'
+                  const why = sp.used ? '使用済み' : state.mp[ME] < sp.cost ? 'MP不足' : '使えません'
                   return (
                     <div key={sp.slot} style={{ marginBottom: 4 }}>
                       <button
@@ -1281,7 +1342,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
                 <div style={{ fontSize: 11, color: C.mute, marginBottom: 4 }}>特性(MPを使う。使ってもターンは続きます)</div>
                 {actor.traits.map((t) => {
                   const usable = traitActions(t.id).length > 0
-                  const why = t.charges != null && t.charges <= 0 ? '回数切れ' : !t.repeatable && actor.usedTraits.includes(t.id) ? '使用済み' : state.mp.A < t.cost ? 'MP不足' : t.condition ? '条件未達' : '対象なし'
+                  const why = t.charges != null && t.charges <= 0 ? '回数切れ' : !t.repeatable && actor.usedTraits.includes(t.id) ? '使用済み' : state.mp[ME] < t.cost ? 'MP不足' : t.condition ? '条件未達' : '対象なし'
                   return (
                     <div key={t.id} style={{ marginBottom: 4 }}>
                       <button
@@ -1305,7 +1366,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
                   disabled={!canEvolve}
                   style={{ ...buttonStyle(false, !canEvolve), padding: '6px 10px', fontSize: 13 }}
                 >
-                  進化(EP1){!canEvolve ? ` ${actor.evolved ? '進化済み' : state.ep.A < 1 ? 'EPなし' : ''}` : ''}
+                  進化(EP1){!canEvolve ? ` ${actor.evolved ? '進化済み' : state.ep[ME] < 1 ? 'EPなし' : ''}` : ''}
                 </button>
                 {showDesc && <span style={{ fontSize: 11, color: C.mute, ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> 体力と攻撃力が2倍。進化したターンからスキルを使える</span>}
               </div>
@@ -1340,10 +1401,16 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const speedBar = null // スキップボタンは廃止(再生の速さは設定で決める)
   const nameOf = (uid) => state.units.find((u) => u.uid === uid)?.name ?? ''
   const nowText = !ev ? '' : ev.type === 'damage' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}に${ev.amount}ダメージ${ev.crit ? '(クリティカル!)' : ''}` : ev.type === 'block' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}のバリアが防いだ(0ダメージ)` : ev.type === 'turn' ? `${ev.team === 'B' ? '相手' : 'あなた'}のターン: ${ev.name}` : ''
-  const hud = <BattleHud view={view} level={level} levelInfo={levelInfo} desktop={desktop} onLeave={() => setLeaveAsk(true)} onIntro={() => { setIntroFirst(false); setIntro(true) }} onCommentary={() => setLogOpen(true)} auto={auto} onAuto={() => setAuto((v) => !v)} />
-  const leave = () => { setLeaveAsk(false); if (flow) onExit(); else setState(null) }
+  const hud = <BattleHud view={view} level={level} levelInfo={levelInfo} desktop={desktop} onLeave={() => setLeaveAsk(true)} onIntro={online ? null : () => { setIntroFirst(false); setIntro(true) }} onCommentary={() => setLogOpen(true)} auto={auto} onAuto={online ? null : () => setAuto((v) => !v)} stage={online ? '対人戦' : null} sub={online ? `vs ${online.opp || '相手'}${leftSec != null ? ` ・ 残り ${leftSec}秒` : ''}` : null} />
+  const leave = () => { setLeaveAsk(false); if (online) { if (state && !state.winner) online.client.surrender(); online.client.leave(); onExit(); return } if (flow) onExit(); else setState(null) }
   const backTeam = () => { if (flow && onBackTeam) onBackTeam(); else setTeam(null) }
-  const resultButtons = [
+  const reasonText = { surrender: '相手が降参しました', forfeit: '相手の接続が戻らず、不戦勝になりました', disconnect: '相手の接続が戻りませんでした', timeout: '時間切れ' }
+  const myWin = state.winner === ME
+  const onlineResultMsg = !online || !endInfo ? '' : endInfo.reason === 'surrender' ? (myWin ? '相手が降参しました' : '降参しました') : endInfo.reason === 'forfeit' || endInfo.reason === 'disconnect' ? (myWin ? reasonText.forfeit : '接続が戻らず、負けになりました') : ''
+  const netBanner = online && !state.winner && (netMsg || oppOffline || (waitingSend && !playing))
+    ? (netMsg || (oppOffline ? '相手の接続が切れています。戻るのを待っています…' : '送信中…'))
+    : null
+  const resultButtons = online ? [{ label: '退出', primary: true, onClick: () => { online.client.leave(); onExit() } }] : [
     { label: 'もう一度', primary: true, onClick: startBattle },
     { label: flow ? 'レベルを選ぶ' : '強さを選び直す', onClick: backLevel },
     { label: 'チームを変える', onClick: backTeam },
@@ -1351,11 +1418,12 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   ]
   const overlays = (
     <>
-      {intro && <StageIntro level={level} levelInfo={levelInfo} cpuChars={cpuChars} first={introFirst} onClose={() => { setIntro(false); setIntroFirst(false) }} />}
+      {netBanner && <div data-testid="pvp-net" style={{ position: 'fixed', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 200, padding: '6px 14px', borderRadius: 999, background: 'rgba(20,20,28,.88)', color: '#fff', fontSize: 13, pointerEvents: 'none' }}>{netBanner}</div>}
+      {!online && intro && <StageIntro level={level} levelInfo={levelInfo} cpuChars={cpuChars} first={introFirst} onClose={() => { setIntro(false); setIntroFirst(false) }} />}
       {cutNow && !logOpen && <CutIn key={`cut-${play.i}`} ms={cutNow.ms} onSkip={() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p))} />}
       {logOpen && <CommentaryOverlay units={view.units} active={view.active} round={view.round} log={view.log} ab={hist.ab} dead={hist.dead} events={hist.ev} onClose={() => setLogOpen(false)} />}
-      {leaveAsk && <ExitConfirm onCancel={() => setLeaveAsk(false)} onExit={leave} />}
-      {state.winner && !playing && resultShown && !intro && <ResultBanner winner={state.winner} message={rewardMsg} buttons={resultButtons} onDismiss={() => setResultShown(false)} />}
+      {leaveAsk && <ExitConfirm onCancel={() => setLeaveAsk(false)} onExit={leave} online={!!online} />}
+      {state.winner && !playing && resultShown && !intro && <ResultBanner winner={state.winner} message={online ? onlineResultMsg : rewardMsg} buttons={resultButtons} onDismiss={() => setResultShown(false)} />}
     </>
   )
   const errBox = cpuError && <div style={{ marginTop: 6, padding: 6, borderRadius: 6, background: C.dangerBg, color: C.hpLow, fontSize: 12 }}>{cpuError}</div>
@@ -1372,13 +1440,13 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
         <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(380px, 30vw)', gap: 20 }}>
           <div className="no-sb" style={{ minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 8, paddingRight: 4 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <Row big extra={<TeamStatus state={view} team="B" big inline />} title="相手" color={C.enemy}>{enemies.map(card)}</Row>
+              <Row big extra={<TeamStatus state={view} team={OPP()} big inline />} title="相手" color={C.enemy}>{enemies.map(card)}</Row>
               <Row big title="相手の召喚物" color={C.enemy}>{summonCards(enemySummons)}</Row>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}><AbilityBanner ability={view.lastAbility} big /></div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <Row big title="自分の召喚物" color={C.player}>{summonCards(playerSummons)}</Row>
-              <Row big extra={<TeamStatus state={view} team="A" big inline />} title="自分" color={C.player}>{players.map(card)}</Row>
+              <Row big extra={<TeamStatus state={view} team={ME} big inline />} title="自分" color={C.player}>{players.map(card)}</Row>
             </div>
           </div>
           <div style={{ minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1403,13 +1471,13 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
       {speedBar}
       {errBox}
 
-      <Row extra={<TeamStatus state={view} team="B" inline />} title="相手" color={C.enemy}>{enemies.map(card)}</Row>
+      <Row extra={<TeamStatus state={view} team={OPP()} inline />} title="相手" color={C.enemy}>{enemies.map(card)}</Row>
       <Row tight title="相手の召喚物" color={C.enemy}>{summonCards(enemySummons)}</Row>
 
       <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 6 }}><AbilityBanner ability={view.lastAbility} /></div>
 
       <Row tight title="自分の召喚物" color={C.player}>{summonCards(playerSummons)}</Row>
-      <Row extra={<TeamStatus state={view} team="A" inline />} title="自分" color={C.player}>{players.map(card)}</Row>
+      <Row extra={<TeamStatus state={view} team={ME} inline />} title="自分" color={C.player}>{players.map(card)}</Row>
 
       <div className="no-sb" style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '14px -12px 0', padding: '10px 12px calc(10px + env(safe-area-inset-bottom))', height: 'min(230px, 42vh)', boxSizing: 'border-box', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
         {panelInner}

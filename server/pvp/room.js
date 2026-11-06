@@ -81,7 +81,7 @@ export class Room {
     this.armTimer()
   }
 
-  snapshot() { return { state: this.state, seq: this.seq, deadline: this.deadline, turnMs: this.cfg.TURN_MS } }
+  snapshot() { return { state: this.state, seq: this.seq, deadline: this.deadline, left: this.deadline == null ? null : Math.max(0, this.deadline - this.now()), turnMs: this.cfg.TURN_MS } }
 
   actorSide() {
     if (!this.state || this.state.winner) return null

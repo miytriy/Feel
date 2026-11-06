@@ -1,3 +1,4 @@
+import { winnerView } from './perspective.js'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { C, FONT, DISPLAY } from './ui.js'
@@ -96,13 +97,13 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) { .bh-auto[aria-pressed="true"] .ba-run { animation: none; stroke-dasharray: none; } .bm, .bm-win, .br, .br-band, .br-title, .br-sub, .br-msg, .br-btns, .bh-p.act .bh-face { animation: none !important; } }
 `
 
-export function BattleHud({ view, level, levelInfo, desktop, onLeave, onIntro, onCommentary, auto = false, onAuto }) {
+export function BattleHud({ view, level, levelInfo, desktop, onLeave, onIntro, onCommentary, auto = false, onAuto, stage = null, sub = null }) {
   return (
     <div className={`bh${desktop ? ' big' : ''}`} data-testid="battle-hud">
       <style>{CSS}</style>
       <button type="button" className="bh-leave" data-testid="hud-leave" onClick={onLeave}><ExitIcon />退出</button>
-      <button type="button" className="bh-icon" data-testid="hud-intro" onClick={onIntro} aria-label="ステージ説明" title="ステージ説明"><InfoIcon /></button>
-      <div className="bh-stage"><b>CPU戦 Lv.{level}</b><span>{nameOf(levelInfo) ? `${nameOf(levelInfo)} ・ ` : ''}ラウンド {view.round}</span></div>
+      {onIntro && <button type="button" className="bh-icon" data-testid="hud-intro" onClick={onIntro} aria-label="ステージ説明" title="ステージ説明"><InfoIcon /></button>}
+      <div className="bh-stage"><b>{stage || `CPU戦 Lv.${level}`}</b><span>{sub ? `${sub} ・ ` : nameOf(levelInfo) ? `${nameOf(levelInfo)} ・ ` : ''}ラウンド {view.round}</span></div>
       <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flex: 'none' }}>
         {onAuto && <button type="button" className="bh-auto" data-testid="hud-auto" aria-pressed={auto} aria-label="オート" title={auto ? 'オート: ON(おすと止まる)' : 'オート: OFF(おすと自分の番も自動で進む)'} onClick={onAuto}>
           {/* ⋈(横に1.5倍)。線は、上の左→中央→上の右→下の右→中央→下の左→もどる、の8の字になる。ONのときは、黄色の光がその線の上を走る */}
@@ -146,13 +147,13 @@ export function StageIntro({ level, levelInfo, cpuChars, onClose, first }) {
   )
 }
 
-export function ExitConfirm({ onCancel, onExit }) {
+export function ExitConfirm({ onCancel, onExit, online = false }) {
   return (
     <Top><div className="bm" data-testid="exit-confirm" role="dialog" aria-label="退出の確認" onClick={onCancel}>
       <style>{CSS}</style>
       <div className="bm-win sm" onClick={(e) => e.stopPropagation()}>
         <div className="bm-head">退出</div>
-        <div className="bm-body" style={{ textAlign: 'center' }}>対戦をやめて、戻りますか?<br /><small style={{ color: '#6e6e76' }}>途中で退出すると、報酬はもらえません。</small></div>
+        <div className="bm-body" style={{ textAlign: 'center' }}>{online ? '降参して、退出しますか?' : '対戦をやめて、戻りますか?'}<br /><small style={{ color: '#6e6e76' }}>途中で退出すると、報酬はもらえません。</small></div>
         <div className="bm-foot">
           <button type="button" className="bm-btn" data-testid="exit-cancel" onClick={onCancel}>キャンセル</button>
           <button type="button" className="bm-btn ok" data-testid="exit-ok" onClick={onExit}>退出</button>
@@ -164,6 +165,7 @@ export function ExitConfirm({ onCancel, onExit }) {
 
 // 勝敗の表示。buttons: [{ label, onClick, primary }]。「盤面を見る」は onDismiss
 export function ResultBanner({ winner, message, buttons, onDismiss }) {
+  winner = winnerView(winner)
   const win = winner === 'A'
   const rc = win ? C.player : winner === 'B' ? C.enemy : '#cfcfd5'
   return (

@@ -20,6 +20,7 @@ import { unlockLevel, tryUnlock, relock } from './unlock.js'
 import { createSandbox } from './sandbox.js'
 import GuideScreen from './GuideScreen.jsx'
 import CpuBattleScreen from './CpuBattleScreen.jsx'
+import PvpScreen from './PvpScreen.jsx'
 import { CPU_LEVELS } from './battle/ai.js'
 import { DEFAULT_PLAYER_IDS } from './battle/teams.js'
 import { ScreenHeader, PillTabs, Chip, LoadingScreen } from './chrome.jsx'
@@ -74,6 +75,7 @@ export default function App() {
   // PLAY → 案内所(play) → CPU戦のレベル(cpu) → チーム(team) → 読み込み(loading) → 対戦(battle)
   const [cpuLevel, setCpuLevel] = useState(2) // 選んだCPUのレベル
   const [cpuRun, setCpuRun] = useState(null) // 対戦の準備 { id, level, team, spells }
+  const [pvpRun, setPvpRun] = useState(null) // 対人戦の準備 { id, team, spells }
   const [lockedKey, setLockedKey] = useState(null) // ログインが必要な項目を、ログインなしで押したとき
   const [unlockLv, setUnlockLv] = useState(unlockLevel) // 設定でマスターパスワードを打つと、ログインが必要な機能を、ログインなしで使える(1=人事・編成・足跡 / 2=最高権限: ガチャ・メールも体験用)
   // 最高権限(レベル2)でログインしていないときだけ、ガチャとメールを、この端末の中だけの仮のデータで動かす(ページを読み込み直すと、最初から)
@@ -327,7 +329,35 @@ export default function App() {
     : null
 
   if (current === 'play') {
-    return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
+    return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onPvp={user ? () => setScreen('pvpteam') : null} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
+  }
+
+  // 対人戦: チームを選ぶ → ロビー(部屋コード) → 対戦
+  if (current === 'pvpteam') {
+    return (
+      <ErrorBoundary onExit={() => setScreen('play')}>
+        <FormationScreen
+          title="チーム"
+          allChars={ALL_CHARACTERS}
+          defaultIds={DEFAULT_PLAYER_IDS}
+          allSpells={ALL_SPELLS.filter((sp) => !String(sp.type || '').startsWith('トークン'))}
+          parties={partyApi ? partyApi.parties : null}
+          partyIdxInit={partyApi ? partyApi.activeIdx : null}
+          onSaveParty={partyApi ? partyApi.save : null}
+          onPartyChange={partyApi ? partyApi.setActive : null}
+          onStart={(chars, spells) => { setPvpRun({ id: Date.now(), team: chars, spells: spells || [] }); setScreen('pvp') }}
+          onExit={() => setScreen('play')}
+        />
+      </ErrorBoundary>
+    )
+  }
+  if (current === 'pvp') {
+    if (!pvpRun) return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onPvp={user ? () => setScreen('pvpteam') : null} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
+    return (
+      <ErrorBoundary onExit={() => setScreen('play')}>
+        <PvpScreen key={pvpRun.id} team={pvpRun.team} spells={pvpRun.spells} onExit={() => setScreen('play')} onBackTeam={() => setScreen('pvpteam')} />
+      </ErrorBoundary>
+    )
   }
 
   // CPU戦: レベルを選ぶ
