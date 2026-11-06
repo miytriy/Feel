@@ -67,6 +67,20 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) { .pv *, .pv-match * { animation-duration: .01s !important; animation-iteration-count: 1 !important } }
 `
 
+// 対戦が決まったときの「MATCHED」の表示(バトル画面の上に、少しの間かぶせる)
+export function MatchedOverlay({ me = 'あなた', opp = '相手', ranked = false, oppMp = null }) {
+  return (
+    <div className="pv-match" data-testid="pvp-matched"><style>{CSS}</style>
+      <h3>{ranked ? 'RANK MATCH' : 'MATCHED'}</h3>
+      <div className="row">
+        <div className="side l" style={{ '--sc': C.player }}><small>YOU</small>{me}</div>
+        <div className="vs">VS</div>
+        <div className="side r" style={{ '--sc': C.enemy }}><small>OPPONENT{oppMp != null ? ` ・ ${oppMp} MP` : ''}</small>{opp || '相手'}</div>
+      </div>
+    </div>
+  )
+}
+
 export default function PvpScreen({ team, spells, onExit, onBackTeam, myName = 'あなた' }) {
   const desktop = useIsDesktop()
   const clientRef = useRef(null)
@@ -108,14 +122,7 @@ export default function PvpScreen({ team, spells, onExit, onBackTeam, myName = '
       <>
         <BattleScreen online={online} onExit={onExit} />
         {matched && (
-          <div className="pv-match" data-testid="pvp-matched"><style>{CSS}</style>
-            <h3>MATCHED</h3>
-            <div className="row">
-              <div className="side l" style={{ '--sc': C.player }}><small>YOU</small>{myName}</div>
-              <div className="vs">VS</div>
-              <div className="side r" style={{ '--sc': C.enemy }}><small>OPPONENT</small>{online.opp || '相手'}</div>
-            </div>
-          </div>
+          <MatchedOverlay me={myName} opp={online.opp} ranked={online.ranked} oppMp={online.oppMp} />
         )}
       </>
     )

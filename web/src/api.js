@@ -61,3 +61,6 @@ export const deleteMail = (giftId) => request('/api/mail/delete', { method: 'POS
 export const purgeReadMail = () => request('/api/mail/purge-read', { method: 'POST', body: '{}' })
 export const claimGift = (giftId) => request('/api/gifts/claim', { method: 'POST', body: JSON.stringify({ giftId }) })
 export const redeemCode = (code) => request('/api/codes/redeem', { method: 'POST', body: JSON.stringify({ code }) })
+
+// ランクマッチの成績 { rank: { mp, wins, losses, streak } }
+export const fetchRank = () => request('/api/pvp/rank')

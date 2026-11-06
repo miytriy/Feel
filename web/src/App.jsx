@@ -21,6 +21,8 @@ import { createSandbox } from './sandbox.js'
 import GuideScreen from './GuideScreen.jsx'
 import CpuBattleScreen from './CpuBattleScreen.jsx'
 import PvpScreen from './PvpScreen.jsx'
+import RankMatchScreen from './RankMatchScreen.jsx'
+import { loadFormation, defaultFormation, loadSpellSet } from './battle/formation.js'
 import { CPU_LEVELS } from './battle/ai.js'
 import { DEFAULT_PLAYER_IDS } from './battle/teams.js'
 import { ScreenHeader, PillTabs, Chip, LoadingScreen } from './chrome.jsx'
@@ -75,6 +77,7 @@ export default function App() {
   // PLAY → 案内所(play) → CPU戦のレベル(cpu) → チーム(team) → 読み込み(loading) → 対戦(battle)
   const [cpuLevel, setCpuLevel] = useState(2) // 選んだCPUのレベル
   const [cpuRun, setCpuRun] = useState(null) // 対戦の準備 { id, level, team, spells }
+  const [rankRun, setRankRun] = useState(null) // ランクマッチで使うチーム { team, spells }(なければ、保存した編成)
   const [pvpRun, setPvpRun] = useState(null) // 対人戦の準備 { id, team, spells }
   const [lockedKey, setLockedKey] = useState(null) // ログインが必要な項目を、ログインなしで押したとき
   const [unlockLv, setUnlockLv] = useState(unlockLevel) // 設定でマスターパスワードを打つと、ログインが必要な機能を、ログインなしで使える(1=人事・編成・足跡 / 2=最高権限: ガチャ・メールも体験用)
@@ -329,7 +332,42 @@ export default function App() {
     : null
 
   if (current === 'play') {
-    return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onPvp={user ? () => setScreen('pvpteam') : null} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
+    return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onPvp={user ? () => setScreen('pvpteam') : null} onRank={user ? () => setScreen('rank') : null} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
+  }
+
+  // ランクマッチ: 画面 → (使用デッキの確認・変更で)チームを選ぶ → 画面にもどる
+  if (current === 'rank') {
+    const saved = rankRun || { team: (loadFormation(ALL_CHARACTERS) || defaultFormation(ALL_CHARACTERS, DEFAULT_PLAYER_IDS)).filter(Boolean), spells: loadSpellSet(ALL_SPELLS) }
+    return (
+      <ErrorBoundary onExit={() => setScreen('play')}>
+        <RankMatchScreen
+          team={saved.team}
+          spells={saved.spells}
+          myName={me && me.displayName ? me.displayName : 'あなた'}
+          onChangeTeam={() => setScreen('rankteam')}
+          onCasual={() => setScreen('pvpteam')}
+          onExit={() => setScreen('play')}
+        />
+      </ErrorBoundary>
+    )
+  }
+  if (current === 'rankteam') {
+    return (
+      <ErrorBoundary onExit={() => setScreen('rank')}>
+        <FormationScreen
+          title="使用デッキ"
+          allChars={ALL_CHARACTERS}
+          defaultIds={DEFAULT_PLAYER_IDS}
+          allSpells={ALL_SPELLS.filter((sp) => !String(sp.type || '').startsWith('トークン'))}
+          parties={partyApi ? partyApi.parties : null}
+          partyIdxInit={partyApi ? partyApi.activeIdx : null}
+          onSaveParty={partyApi ? partyApi.save : null}
+          onPartyChange={partyApi ? partyApi.setActive : null}
+          onStart={(chars, spells) => { setRankRun({ team: chars.filter(Boolean), spells: spells || [] }); setScreen('rank') }}
+          onExit={() => setScreen('rank')}
+        />
+      </ErrorBoundary>
+    )
   }
 
   // 対人戦: チームを選ぶ → ロビー(部屋コード) → 対戦
@@ -352,7 +390,7 @@ export default function App() {
     )
   }
   if (current === 'pvp') {
-    if (!pvpRun) return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onPvp={user ? () => setScreen('pvpteam') : null} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
+    if (!pvpRun) return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onPvp={user ? () => setScreen('pvpteam') : null} onRank={user ? () => setScreen('rank') : null} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
     return (
       <ErrorBoundary onExit={() => setScreen('play')}>
         <PvpScreen key={pvpRun.id} team={pvpRun.team} spells={pvpRun.spells} onExit={() => setScreen('play')} onBackTeam={() => setScreen('pvpteam')} />

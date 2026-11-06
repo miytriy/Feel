@@ -41,11 +41,12 @@ export function createPvpClient() {
       let m; try { m = JSON.parse(ev.data) } catch { return }
       if (m.type === 'authed') {
         authed = true
-        if (pendingFirst) { raw(pendingFirst); joined = true; pendingFirst = null }
+        if (pendingFirst) { raw(pendingFirst); joined = pendingFirst.type !== 'queue'; pendingFirst = null } // 待ち行列は、組み合わされるまでは、切れたら再接続しない
         emit({ type: 'online' })
         return
       }
-      if (m.type === 'closed' || m.type === 'end') joined = m.type === 'end' ? joined : false
+      if (m.type === 'start') joined = true
+      if (m.type === 'closed' || m.type === 'queue-left') joined = false
       emit(m)
     }
     sock.onclose = () => {
@@ -64,6 +65,8 @@ export function createPvpClient() {
     on(f) { subs.add(f); return () => subs.delete(f) },
     create(team) { pendingFirst = { type: 'create', team }; closedByUs = false; open() },
     join(code, team) { pendingFirst = { type: 'join', code, team }; closedByUs = false; open() },
+    queue(team) { pendingFirst = { type: 'queue', team }; closedByUs = false; open() }, // ランクマッチの待ち行列に入る
+    cancelQueue() { raw({ type: 'queue-cancel' }) },
     action(action) { raw({ type: 'action', action }) },
     surrender() { raw({ type: 'surrender' }) },
     leave() { raw({ type: 'leave' }); this.close() },

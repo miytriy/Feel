@@ -747,6 +747,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const [waitingSend, setWaitingSend] = useState(false) // 対人戦: 行動を送って、サーバーの返事を待っている
   const [inbox, setInbox] = useState([]) // 対人戦: 届いたが、再生中でまだ反映していない知らせ
   const [oppOffline, setOppOffline] = useState(false)
+  const [rankInfo, setRankInfo] = useState(null) // ランクマッチ: 結果のMPの増減 { mp, delta, label }
   const [netMsg, setNetMsg] = useState('') // 対人戦: 通信の状態の表示(切断中など)
   const [endInfo, setEndInfo] = useState(null) // 対人戦: { winner, reason }
   const [deadlineAt, setDeadlineAt] = useState(() => (online && online.left != null ? Date.now() + online.left : null)) // 手番の期限(この端末の時計)
@@ -957,6 +958,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     if (!online) return
     return online.client.on((m) => {
       if (m.type === 'update' || m.type === 'end' || (m.type === 'start' && m.resume)) setInbox((q) => [...q, m])
+      else if (m.type === 'rank') setRankInfo(m)
       else if (m.type === 'opp-offline') setOppOffline(true)
       else if (m.type === 'opp-online') setOppOffline(false)
       else if (m.type === 'offline') setNetMsg('通信が切れました。つなぎ直しています…')
@@ -1401,12 +1403,13 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const speedBar = null // スキップボタンは廃止(再生の速さは設定で決める)
   const nameOf = (uid) => state.units.find((u) => u.uid === uid)?.name ?? ''
   const nowText = !ev ? '' : ev.type === 'damage' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}に${ev.amount}ダメージ${ev.crit ? '(クリティカル!)' : ''}` : ev.type === 'block' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}のバリアが防いだ(0ダメージ)` : ev.type === 'turn' ? `${ev.team === 'B' ? '相手' : 'あなた'}のターン: ${ev.name}` : ''
-  const hud = <BattleHud view={view} level={level} levelInfo={levelInfo} desktop={desktop} onLeave={() => setLeaveAsk(true)} onIntro={online ? null : () => { setIntroFirst(false); setIntro(true) }} onCommentary={() => setLogOpen(true)} auto={auto} onAuto={online ? null : () => setAuto((v) => !v)} stage={online ? '対人戦' : null} sub={online ? `vs ${online.opp || '相手'}${leftSec != null ? ` ・ 残り ${leftSec}秒` : ''}` : null} />
+  const hud = <BattleHud view={view} level={level} levelInfo={levelInfo} desktop={desktop} onLeave={() => setLeaveAsk(true)} onIntro={online ? null : () => { setIntroFirst(false); setIntro(true) }} onCommentary={() => setLogOpen(true)} auto={auto} onAuto={online ? null : () => setAuto((v) => !v)} stage={online ? (online.ranked ? 'ランクマッチ' : '対人戦') : null} sub={online ? `vs ${online.opp || '相手'}${leftSec != null ? ` ・ 残り ${leftSec}秒` : ''}` : null} />
   const leave = () => { setLeaveAsk(false); if (online) { if (state && !state.winner) online.client.surrender(); online.client.leave(); onExit(); return } if (flow) onExit(); else setState(null) }
   const backTeam = () => { if (flow && onBackTeam) onBackTeam(); else setTeam(null) }
   const reasonText = { surrender: '相手が降参しました', forfeit: '相手の接続が戻らず、不戦勝になりました', disconnect: '相手の接続が戻りませんでした', timeout: '時間切れ' }
   const myWin = state.winner === ME
-  const onlineResultMsg = !online || !endInfo ? '' : endInfo.reason === 'surrender' ? (myWin ? '相手が降参しました' : '降参しました') : endInfo.reason === 'forfeit' || endInfo.reason === 'disconnect' ? (myWin ? reasonText.forfeit : '接続が戻らず、負けになりました') : ''
+  const rankText = rankInfo ? `ランクポイント ${rankInfo.delta >= 0 ? '+' : ''}${rankInfo.delta}(合計 ${rankInfo.mp} MP ・ ${rankInfo.label})` : online && online.ranked && state.winner && state.winner !== 'draw' ? 'ランクポイントを計算しています…' : ''
+  const onlineResultMsg = !online || !endInfo ? '' : (endInfo.reason === 'surrender' ? (myWin ? '相手が降参しました' : '降参しました') : endInfo.reason === 'forfeit' || endInfo.reason === 'disconnect' ? (myWin ? reasonText.forfeit : '接続が戻らず、負けになりました') : '') + (rankText ? `\n${rankText}` : '')
   const netBanner = online && !state.winner && (netMsg || oppOffline || (waitingSend && !playing))
     ? (netMsg || (oppOffline ? '相手の接続が切れています。戻るのを待っています…' : '送信中…'))
     : null

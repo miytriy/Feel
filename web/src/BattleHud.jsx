@@ -88,7 +88,7 @@ const CSS = `
 .br-band { width: 100%; padding: 22px 0 18px; text-align: center; background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.78) 18%, rgba(0,0,0,0.78) 82%, transparent 100%); border-top: 2px solid var(--rc); border-bottom: 2px solid var(--rc); transform-origin: center; animation: bh-band 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .br-title { font-family: ${DISPLAY}; font-weight: 700; font-size: clamp(48px, 12vw, 104px); letter-spacing: 0.12em; line-height: 1; color: var(--rc); text-shadow: 0 0 24px color-mix(in srgb, var(--rc) 60%, transparent); animation: bh-rise 0.5s 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .br-sub { margin-top: 8px; font-size: 13px; letter-spacing: 0.2em; color: #cfcfd5; animation: bh-rise 0.5s 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
-.br-msg { font-size: 15px; color: ${C.player}; min-height: 1.5em; animation: bh-rise 0.5s 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.br-msg { white-space: pre-line; font-size: 15px; color: ${C.player}; min-height: 1.5em; animation: bh-rise 0.5s 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .br-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; animation: bh-rise 0.5s 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .br-btn { min-width: 150px; height: 44px; padding: 0 20px; border: 2px solid #f2f2f3; background: transparent; color: #f2f2f3; font-size: 14px; font-weight: 700; font-family: ${FONT}; cursor: pointer; min-height: 0; clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); transition: background 0.15s, color 0.15s; }
 .br-btn.ok { background: ${C.player}; border-color: ${C.player}; color: #111; }
