@@ -703,6 +703,13 @@ function runEffects(state, source, effects, ctx = {}) {
     const e = effects[idx]
     if (e.repGroup != null && e.repGroup === skipGroup) continue
     if (e.condition && !checkCond(state, source, e.condition)) continue
+    if (e.everyTurns > 1 || e.everyTurns === 1) { // 「Nターンに1回」: 自分のターンが来るたびに数えて、N回に1回だけ働く(最初の1回目から働く)
+      source.everyCnt = source.everyCnt || {}
+      const key = e.everyKey ?? idx
+      const n = source.everyCnt[key] || 0
+      source.everyCnt[key] = n + 1
+      if (n % e.everyTurns !== 0) continue
+    }
     if (e.earthCost) { // 【土の秘術_N】土の印をN消費して、この効果が働く。足りないときは働かない(対象を選ぶ効果とは組み合わせない: 選んだあとの再開で二重に消費するため)
       if (state.earth[source.team] < e.earthCost) { state.log.push(`土の印が足りないので、【土の秘術_${e.earthCost}】は働かなかった`); skipGroup = e.repGroup ?? null; continue }
       addEarth(state, source.team, source, -e.earthCost)
@@ -1302,6 +1309,7 @@ function beginTurn(state, unit, opts) {
     if (crest.sourceUid === unit.uid) tickCrest(state, crest, opts)
   }
   fireCrests(state, unit.team, 'allyTurnStart', unit, opts)
+  fire(state, 'turnStart', unit, { opts }) // 【自分のターン開始時】(バリア_N など)
   if (!unit.hasActed) fire(state, 'fanfare', unit, { opts, allowPending: true }) // 最初のターン開始時だけ(選ぶ効果は、プレイヤーが選ぶまで待つ)
   resolveDeaths(state, opts)
 }
