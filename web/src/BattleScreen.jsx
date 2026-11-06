@@ -11,6 +11,7 @@ import { BattleHud, StageIntro, ExitConfirm, ResultBanner } from './BattleHud.js
 import { CommentaryOverlay, collectHistory, addHistory, emptyHistory } from './BattleLog.jsx'
 import { useIsDesktop, C as BASE, alpha, DISPLAY } from './ui.js'
 import { StatIcon } from './icons.jsx'
+import { CutIn, cutinOf } from './cutin.jsx'
 const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', margin: '0 2px 0 0' }} />
 
 // 色: 自分=青、相手=赤紫、行動中=琥珀
@@ -836,7 +837,9 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   useEffect(() => {
     if (!play || logOpen) return // 戦闘実況を開いている間は、再生を止める
     if (play.i >= play.events.length) { setPlay(null); return }
-    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), Math.max(...play.events.slice(play.i, groupEnd(play.events, play.i) + 1).map((x) => EVENT_MS[x.type] ?? 500)) * mult)
+    const grp = play.events.slice(play.i, groupEnd(play.events, play.i) + 1)
+    const cut = grp.map(cutinOf).find(Boolean) // キャラ専用のカットイン演出がある場面は、その長さだけ待つ
+    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), cut ? cut.ms + 150 : Math.max(...grp.map((x) => EVENT_MS[x.type] ?? 500)) * mult)
     return () => clearTimeout(t)
   }, [play, mult, logOpen])
 
@@ -1083,6 +1086,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     }
   }
   const groupEvs = play ? play.events.slice(gStart, gEnd + 1) : []
+  const cutNow = groupEvs.map(cutinOf).find(Boolean) || null
   const avFx = (() => { const m = {}; for (const x of groupEvs) if (x.type === 'av') m[x.target] = { dir: x.dir }; return Object.keys(m).length ? { ...m, tick: play ? play.i : 0 } : null })() // 行動順の上昇・下降: アクションバーの該当ユニットに出す
   const fxFor0 = (uid) => {
     const mine = groupEvs.filter((x) => x.target === uid) // まとまった出来事の中から、この人に起きたものを探す
@@ -1348,6 +1352,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const overlays = (
     <>
       {intro && <StageIntro level={level} levelInfo={levelInfo} cpuChars={cpuChars} first={introFirst} onClose={() => { setIntro(false); setIntroFirst(false) }} />}
+      {cutNow && !logOpen && <CutIn key={`cut-${play.i}`} ms={cutNow.ms} onSkip={() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p))} />}
       {logOpen && <CommentaryOverlay units={view.units} active={view.active} round={view.round} log={view.log} ab={hist.ab} dead={hist.dead} events={hist.ev} onClose={() => setLogOpen(false)} />}
       {leaveAsk && <ExitConfirm onCancel={() => setLeaveAsk(false)} onExit={leave} />}
       {state.winner && !playing && resultShown && !intro && <ResultBanner winner={state.winner} message={rewardMsg} buttons={resultButtons} onDismiss={() => setResultShown(false)} />}
