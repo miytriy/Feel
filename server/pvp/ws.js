@@ -10,7 +10,9 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
   const rooms = new Map()      // code → Room
   const roomOfUid = new Map()  // uid → Room
   const sockets = new Map()    // uid → ws(いま使っている接続)
-  const regP = loadRegistry()
+  let regErr = null
+  const regP = loadRegistry().catch((e) => { regErr = e; console.error('[pvp] キャラ定義の読み込みに失敗', e); return null }) // 失敗してもサーバー全体は落とさない
+  let connections = 0
 
   const sendTo = (uid, msg) => { const ws = sockets.get(uid); if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)) }
   const roomSend = (room) => (side, msg) => { const p = room.players[side]; if (p) sendTo(p.uid, msg) }
@@ -26,6 +28,7 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
   }
 
   wss.on('connection', (ws, req) => {
+    connections++
     const origin = req.headers.origin
     if (allowedOrigins.length && origin && !allowedOrigins.includes(origin)) { ws.close(1008, 'origin'); return }
     let uid = null, name = 'プレイヤー', alive = true, count = 0
@@ -59,6 +62,7 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
         }
         if (!uid) return fail('先にログインしてください')
         const reg = await regP
+        if (!reg) return fail('サーバー側でキャラ定義を読み込めていません')
 
         if (m.type === 'create' || m.type === 'join') {
           if (roomOfUid.has(uid)) return fail('すでに対戦ルームにいます')
@@ -110,4 +114,6 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
     })
   })
   return { wss, rooms }
+  // 動作確認用: ブラウザで /api/pvp/status を開くと、対人戦が使える状態か分かる
+  return { status: async () => { const r = await regP; return { ok: !!r, chars: r ? r.chars.length : 0, error: regErr ? String(regErr.message || regErr) : null, rooms: rooms.size, connections } } }
 }
