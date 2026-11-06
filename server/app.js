@@ -415,7 +415,7 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
   // ---------- キャリア(対戦の記録): ログイン中の人のぶんを、サーバーに残す ----------
   const careerRefOf = (uid) => db.collection('careers').doc(uid)
 
-  // ランクマッチの成績(MP・勝敗)。MP の増減は、対戦が終わったときに、対戦サーバー(pvp/ws.js)が保存する
+  // ランクマッチの成績(BP・勝敗)。BP の増減は、対戦が終わったときに、対戦サーバー(pvp/ws.js)が保存する
   app.get('/api/pvp/rank', requireAuth, async (req, res) => {
     try {
       const snap = await db.collection('users').doc(req.user.uid).get()

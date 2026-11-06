@@ -83,7 +83,7 @@ export default function GuideScreen({ gems = null, onCpu, onPvp = null, onRank =
     },
     onPvp
       ? { key: 'pvp', label: '対人戦', Icon: IconAgents, cats: [
-        ...(onRank ? [{ key: 'rank', label: 'ランクマッチ', Icon: IconAgents, entries: [{ key: 'pvp-rank', title: 'ランクマッチ', sub: 'ランダム', desc: '近いランクの相手と、ランクをかけて戦います。勝つとMPが増えて、段位が上がります。', go: onRank }] }] : []),
+        ...(onRank ? [{ key: 'rank', label: 'ランクマッチ', Icon: IconAgents, entries: [{ key: 'pvp-rank', title: 'ランクマッチ', sub: 'ランダム', desc: '近いランクの相手と、ランクをかけて戦います。勝つとBPが増えて、段位が上がります。', go: onRank }] }] : []),
         { key: 'room', label: 'カジュアルマッチ', Icon: IconAgents, entries: [{ key: 'pvp-room', title: 'カジュアルマッチ', sub: 'フレンドと', desc: '部屋コードを伝えあって、1対1で対戦します。ランクには影響しません。', go: onPvp }] },
       ] }
       : { key: 'pvp', label: '対人戦', Icon: IconAgents, soon: true, cats: [] },

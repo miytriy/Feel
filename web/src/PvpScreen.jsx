@@ -68,14 +68,14 @@ const CSS = `
 `
 
 // 対戦が決まったときの「MATCHED」の表示(バトル画面の上に、少しの間かぶせる)
-export function MatchedOverlay({ me = 'あなた', opp = '相手', ranked = false, oppMp = null }) {
+export function MatchedOverlay({ me = 'あなた', opp = '相手', ranked = false, oppBp = null }) {
   return (
     <div className="pv-match" data-testid="pvp-matched"><style>{CSS}</style>
       <h3>{ranked ? 'RANK MATCH' : 'MATCHED'}</h3>
       <div className="row">
         <div className="side l" style={{ '--sc': C.player }}><small>YOU</small>{me}</div>
         <div className="vs">VS</div>
-        <div className="side r" style={{ '--sc': C.enemy }}><small>OPPONENT{oppMp != null ? ` ・ ${oppMp} MP` : ''}</small>{opp || '相手'}</div>
+        <div className="side r" style={{ '--sc': C.enemy }}><small>OPPONENT{oppBp != null ? ` ・ ${oppBp} BP` : ''}</small>{opp || '相手'}</div>
       </div>
     </div>
   )
@@ -122,7 +122,7 @@ export default function PvpScreen({ team, spells, onExit, onBackTeam, myName = '
       <>
         <BattleScreen online={online} onExit={onExit} />
         {matched && (
-          <MatchedOverlay me={myName} opp={online.opp} ranked={online.ranked} oppMp={online.oppMp} />
+          <MatchedOverlay me={myName} opp={online.opp} ranked={online.ranked} oppBp={online.oppBp} />
         )}
       </>
     )

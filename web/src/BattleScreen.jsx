@@ -747,7 +747,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const [waitingSend, setWaitingSend] = useState(false) // 対人戦: 行動を送って、サーバーの返事を待っている
   const [inbox, setInbox] = useState([]) // 対人戦: 届いたが、再生中でまだ反映していない知らせ
   const [oppOffline, setOppOffline] = useState(false)
-  const [rankInfo, setRankInfo] = useState(null) // ランクマッチ: 結果のMPの増減 { mp, delta, label }
+  const [rankInfo, setRankInfo] = useState(null) // ランクマッチ: 結果のBPの増減 { bp, delta, label }
   const [netMsg, setNetMsg] = useState('') // 対人戦: 通信の状態の表示(切断中など)
   const [endInfo, setEndInfo] = useState(null) // 対人戦: { winner, reason }
   const [deadlineAt, setDeadlineAt] = useState(() => (online && online.left != null ? Date.now() + online.left : null)) // 手番の期限(この端末の時計)
@@ -1408,7 +1408,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const backTeam = () => { if (flow && onBackTeam) onBackTeam(); else setTeam(null) }
   const reasonText = { surrender: '相手が降参しました', forfeit: '相手の接続が戻らず、不戦勝になりました', disconnect: '相手の接続が戻りませんでした', timeout: '時間切れ' }
   const myWin = state.winner === ME
-  const rankText = rankInfo ? `ランクポイント ${rankInfo.delta >= 0 ? '+' : ''}${rankInfo.delta}(合計 ${rankInfo.mp} MP ・ ${rankInfo.label})` : online && online.ranked && state.winner && state.winner !== 'draw' ? 'ランクポイントを計算しています…' : ''
+  const rankText = rankInfo ? `ランクポイント(BP) ${rankInfo.delta >= 0 ? '+' : ''}${rankInfo.delta}(合計 ${rankInfo.bp} BP ・ ${rankInfo.label})` : online && online.ranked && state.winner && state.winner !== 'draw' ? 'ランクポイントを計算しています…' : ''
   const onlineResultMsg = !online || !endInfo ? '' : (endInfo.reason === 'surrender' ? (myWin ? '相手が降参しました' : '降参しました') : endInfo.reason === 'forfeit' || endInfo.reason === 'disconnect' ? (myWin ? reasonText.forfeit : '接続が戻らず、負けになりました') : '') + (rankText ? `\n${rankText}` : '')
   const netBanner = online && !state.winner && (netMsg || oppOffline || (waitingSend && !playing))
     ? (netMsg || (oppOffline ? '相手の接続が切れています。戻るのを待っています…' : '送信中…'))

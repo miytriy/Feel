@@ -9,8 +9,8 @@ import { createPvpClient } from './pvp.js'
 import { fetchRank } from './api.js'
 import { rankOf, emptyRank, TIERS, DIVS, matchWindow } from './battle/rank.js'
 
-// ランクマッチ画面。左: モードの一覧 / 中: 説明・ルール・使用デッキ / 右: 段位・MP・バトルボタン。
-// 「バトル」を押すと、待ち行列に入り、近い MP の相手が見つかったら、対戦が始まる。終わると、MP が増減する。
+// ランクマッチ画面。左: モードの一覧 / 中: 説明・ルール・使用デッキ / 右: 段位・BP・バトルボタン。
+// 「バトル」を押すと、待ち行列に入り、近い BP の相手が見つかったら、対戦が始まる。終わると、BP が増減する。
 // 動かすのは transform / opacity だけ(web/EFFECTS.md)
 
 // 段位のバッジ(自前の図形)。段位の色の盾 + 段階の数のシェブロン(3段階が下、1段階が上)。グランドマスターは冠つき
@@ -85,9 +85,9 @@ const CSS = `
 .rk-badge::before { content: ''; position: absolute; inset: -10%; border-radius: 50%; background: radial-gradient(circle, var(--tc) 0%, transparent 62%); opacity: .5; animation: rk-glow 3.2s ease-in-out infinite }
 .rk-badge svg { position: relative }
 .rk-rank { font-family: ${DISPLAY}; font-weight: 700; font-size: 34px; text-align: center; line-height: 1.1; background: linear-gradient(180deg, #fff, var(--tc)); -webkit-background-clip: text; background-clip: text; color: transparent }
-.rk-mp { width: 100%; display: grid; gap: 6px }
-.rk-mp .row { display: flex; align-items: baseline; justify-content: space-between; font-family: ${DISPLAY}; font-weight: 700 }
-.rk-mp .row b { font-size: 26px; color: #fff }
+.rk-bp { width: 100%; display: grid; gap: 6px }
+.rk-bp .row { display: flex; align-items: baseline; justify-content: space-between; font-family: ${DISPLAY}; font-weight: 700 }
+.rk-bp .row b { font-size: 26px; color: #fff }
 .rk-bar { height: 10px; border-radius: 5px; background: #0b0f1a; border: 1px solid #243455; overflow: hidden }
 .rk-bar i { display: block; height: 100%; width: 100%; transform-origin: left; background: linear-gradient(90deg, #2b8cff, #6fe0ff) }
 .rk-next { text-align: right; font-size: 12px; color: ${C.mute} }
@@ -138,7 +138,7 @@ export default function RankMatchScreen({ team, spells, onChangeTeam, onCasual, 
     client.on((m) => {
       if (phaseRef.current === 'battle') return
       if (m.type === 'queued') setPhase('searching')
-      else if (m.type === 'start' && !m.resume) { setOnline({ client, side: m.side, opp: m.opp && m.opp.name, oppMp: m.opp && m.opp.mp, ranked: true, init: m.state, left: m.left, turnMs: m.turnMs }); setPhase('battle'); setMatched(true) }
+      else if (m.type === 'start' && !m.resume) { setOnline({ client, side: m.side, opp: m.opp && m.opp.name, oppBp: m.opp && m.opp.bp, ranked: true, init: m.state, left: m.left, turnMs: m.turnMs }); setPhase('battle'); setMatched(true) }
       else if (m.type === 'queue-left') back(m.reason === 'やめました' ? '' : m.reason)
       else if (m.type === 'error') back(m.message || '通信に失敗しました')
       else if (m.type === 'closed') back(m.reason || '部屋が閉じられました')
@@ -148,18 +148,18 @@ export default function RankMatchScreen({ team, spells, onChangeTeam, onCasual, 
     client.queue({ ids: chars.map((c) => c.id), spells: (spells || []).map((s) => s.id) })
   }
   const cancel = () => { if (clientRef.current) { clientRef.current.cancelQueue(); clientRef.current.close(); clientRef.current = null } setPhase('menu') }
-  const leaveBattle = () => { setOnline(null); setPhase('menu'); load() } // 対戦のあと: 最新の MP を読み直す
+  const leaveBattle = () => { setOnline(null); setPhase('menu'); load() } // 対戦のあと: 最新の BP を読み直す
 
   if (phase === 'battle' && online) {
     return (
       <>
         <BattleScreen online={online} onExit={leaveBattle} />
-        {matched && <MatchedOverlay me={myName} opp={online.opp} ranked oppMp={online.oppMp} />}
+        {matched && <MatchedOverlay me={myName} opp={online.opp} ranked oppBp={online.oppBp} />}
       </>
     )
   }
 
-  const ri = rank ? rankOf(rank.mp) : null
+  const ri = rank ? rankOf(rank.bp) : null
   const tc = ri ? ri.tier.color : '#c98a52'
   const busy = phase !== 'menu'
   return (
@@ -181,7 +181,7 @@ export default function RankMatchScreen({ team, spells, onChangeTeam, onCasual, 
 
         <section className="rk-mid">
           <div className="rk-title">ランクマッチ</div>
-          <p className="rk-desc">ランクをかけて争う、ランダムマッチング戦です。勝つとランクポイント(MP)が増え、一定のMPで段位が上がります。負けるとMPが減りますが、段位(ブロンズ・シルバー…)そのものは下がりません。</p>
+          <p className="rk-desc">ランクをかけて争う、ランダムマッチング戦です。勝つとランクポイント(BP)が増え、一定のBPで段位が上がります。負けるとBPが減りますが、段位(ブロンズ・シルバー…)そのものは下がりません。</p>
           <div className="rk-rules">
             <div className="rk-rule on" data-testid="rule-rotation">ローテーション<span className="dot" /></div>
             <div className="rk-rule off">アンリミテッド<small>準備中</small></div>
@@ -206,10 +206,10 @@ export default function RankMatchScreen({ team, spells, onChangeTeam, onCasual, 
             <>
               <div className="rk-badge"><RankBadge rank={ri} size={desktop ? 190 : 150} /></div>
               <div className="rk-rank" data-testid="rank-label">{ri.label}</div>
-              <div className="rk-mp">
-                <div className="row"><span>MP</span><b data-testid="rank-mp">{rank.mp}</b></div>
+              <div className="rk-bp">
+                <div className="row"><span>BP</span><b data-testid="rank-bp">{rank.bp}</b></div>
                 <div className="rk-bar"><i style={{ transform: `scaleX(${Math.max(0.02, ri.progress)})` }} /></div>
-                <div className="rk-next">{ri.next == null ? '最高ランク' : `NEXT ${ri.next - rank.mp}`}</div>
+                <div className="rk-next">{ri.next == null ? '最高ランク' : `NEXT ${ri.next - rank.bp}`}</div>
               </div>
               <div className="rk-rec"><span>勝利 <b>{rank.wins}</b></span><span>敗北 <b>{rank.losses}</b></span><span>連勝 <b>{rank.streak}</b></span></div>
             </>
@@ -227,7 +227,7 @@ export default function RankMatchScreen({ team, spells, onChangeTeam, onCasual, 
             <div style={{ fontWeight: 800, fontSize: 18 }}>{phase === 'connecting' ? 'サーバーにつないでいます…' : '対戦相手を探しています…'}</div>
             {phase === 'searching' && <>
               <div className="rk-time">{fmt(waited)}</div>
-              <div style={{ fontSize: 12, color: C.mute }}>探している範囲: MP ±{matchWindow(waited)}(待つほど広がります)</div>
+              <div style={{ fontSize: 12, color: C.mute }}>探している範囲: BP ±{matchWindow(waited)}(待つほど広がります)</div>
             </>}
             {phase === 'connecting' && <div style={{ fontSize: 12, color: C.mute, marginTop: 8 }}>サーバーが眠っていると、30秒ほどかかることがあります</div>}
             <button type="button" className="rk-btn" style={{ marginTop: 20 }} onClick={cancel} data-testid="rank-cancel">やめる</button>

@@ -14,7 +14,7 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
   let regErr = null
   const regP = loadRegistry().catch((e) => { regErr = e; console.error('[pvp] キャラ定義の読み込みに失敗', e); return null }) // 失敗してもサーバー全体は落とさない
   let connections = 0
-  const queue = new Map() // uid → { uid, name, built, mp, since }(ランクマッチの待ち行列)
+  const queue = new Map() // uid → { uid, name, built, bp, since }(ランクマッチの待ち行列)
   const QUEUE_MAX_MS = 10 * 60 * 1000
 
   const sendTo = (uid, msg) => { const ws = sockets.get(uid); if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)) }
@@ -30,7 +30,7 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
     return snap.data() || {}
   }
 
-  // ランクマッチの結果を、MP に反映して、Firestore に保存し、2人に知らせる
+  // ランクマッチの結果を、BP に反映して、Firestore に保存し、2人に知らせる
   async function settleRank(room, winner) {
     if (winner !== 'A' && winner !== 'B') return // 引き分けは、動かさない
     const pA = room.players.A, pB = room.players.B
@@ -39,14 +39,14 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
     const [sa, sb] = await Promise.all([refA.get(), refB.get()])
     const rA = { ...emptyRank(), ...((sa.data() || {}).rank || {}) }
     const rB = { ...emptyRank(), ...((sb.data() || {}).rank || {}) }
-    const resA = applyResult(rA, rB.mp, winner === 'A')
-    const resB = applyResult(rB, rA.mp, winner === 'B')
+    const resA = applyResult(rA, rB.bp, winner === 'A')
+    const resB = applyResult(rB, rA.bp, winner === 'B')
     await Promise.all([refA.set({ rank: resA.rank }, { merge: true }), refB.set({ rank: resB.rank }, { merge: true })])
-    for (const [p, res] of [[pA, resA], [pB, resB]]) sendTo(p.uid, { type: 'rank', ...res.rank, delta: res.delta, before: res.before, label: rankOf(res.rank.mp).label })
+    for (const [p, res] of [[pA, resA], [pB, resB]]) sendTo(p.uid, { type: 'rank', ...res.rank, delta: res.delta, before: res.before, label: rankOf(res.rank.bp).label })
   }
   const roomEnd = (room, winner) => { if (room.ranked) settleRank(room, winner).catch((e) => console.error('[pvp] ランクの保存に失敗', e)) }
 
-  // 待ち行列から、近い MP の2人を組み合わせる(待つほど、探す幅が広がる)
+  // 待ち行列から、近い BP の2人を組み合わせる(待つほど、探す幅が広がる)
   function matchTick() {
     const now = Date.now()
     for (const [uid, q] of queue) { if (now - q.since > QUEUE_MAX_MS || !sockets.get(uid)) { queue.delete(uid); sendTo(uid, { type: 'queue-left', reason: '相手が見つかりませんでした' }) } }
@@ -58,7 +58,7 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
       for (const b of list) {
         if (b.uid === a.uid || used.has(b.uid)) continue
         const w = Math.max(matchWindow((now - a.since) / 1000), matchWindow((now - b.since) / 1000))
-        const d = Math.abs(a.mp - b.mp)
+        const d = Math.abs(a.bp - b.bp)
         if (d <= w && (!best || d < best.d)) best = { b, d }
       }
       if (!best) continue
@@ -69,7 +69,7 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
       room.send = roomSend(room)
       rooms.set(code, room)
       const first = Math.random() < 0.5 ? [a, best.b] : [best.b, a] // どちらが先に入る(A になる)かは、ランダム
-      for (const q of first) { room.join(q.uid, q.name, q.built, q.mp); roomOfUid.set(q.uid, room) }
+      for (const q of first) { room.join(q.uid, q.name, q.built, q.bp); roomOfUid.set(q.uid, room) }
     }
   }
   const matchTimer = setInterval(matchTick, 1000)
@@ -120,9 +120,9 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
           const built = buildTeam(reg, m.team, { owned: requireOwned ? (data.owned || {}) : null, enh: data.enh || {} })
           if (built.error) return fail(built.error)
           built.owned = requireOwned ? (data.owned || {}) : null
-          const mp = ({ ...emptyRank(), ...(data.rank || {}) }).mp
-          queue.set(uid, { uid, name, built, mp, since: Date.now(), reg })
-          reply({ type: 'queued', mp, count: queue.size })
+          const bp = ({ ...emptyRank(), ...(data.rank || {}) }).bp
+          queue.set(uid, { uid, name, built, bp, since: Date.now(), reg })
+          reply({ type: 'queued', bp, count: queue.size })
           return
         }
         if (m.type === 'create' || m.type === 'join') {
