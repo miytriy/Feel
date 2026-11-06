@@ -1075,6 +1075,7 @@ function fire(state, trigger, unit, ctx = {}, from = 0) {
     if (p.trigger !== trigger || !checkCond(state, unit, p.condition)) continue
     if (p.enterType && !hasType(ctx.other, p.enterType)) continue
     if (p.enterName && ctx.other.name !== p.enterName) continue // 指定の名前のキャラ(トークンなど)が出たときだけ
+    if (p.deathKeyword && !(ctx.other && hasKw(ctx.other, p.deathKeyword))) continue // 指定のキーワード(守護など)を持つキャラが倒れたときだけ(allyDeath用)
     state.log.push(`${unit.name}の【${p.name || TRIGGER_LABELS[trigger]}】`)
     noteAbility(state, TRIGGER_LABELS[trigger] ?? trigger, unit.name, p.name && p.name !== TRIGGER_LABELS[trigger] ? p.name : '', p.desc, unit.team)
     runEffects(state, unit, p.effects, { ...ctx, trigger, nextPassive: i + 1 })
