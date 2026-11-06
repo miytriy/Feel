@@ -22,6 +22,7 @@ export default function PvpScreen({ team, spells, onExit, onBackTeam }) {
       if (m.type === 'created') { setCode(m.code); setPhase('waiting') }
       else if (m.type === 'start' && !m.resume) { setOnline({ client, side: m.side, opp: m.opp && m.opp.name, init: m.state, left: m.left, turnMs: m.turnMs }); setPhase('battle') }
       else if (m.type === 'error' && phaseRef.current !== 'battle') { setErr(m.message || '通信に失敗しました'); setPhase('menu'); client.close() }
+      else if (m.type === 'offline' && phaseRef.current !== 'battle' && phaseRef.current !== 'waiting') { setErr('対戦サーバーにつながりませんでした。サーバーが起動中か、対人戦に未対応の可能性があります。少し待ってからもう一度お試しください。'); setPhase('menu'); client.close() }
       else if (m.type === 'closed' && phaseRef.current !== 'battle') { setErr(m.reason || '部屋が閉じられました'); setPhase('menu'); client.close() }
     })
     if (mode === 'create') { setPhase('creating'); client.create(teamPayload()) }
