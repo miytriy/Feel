@@ -57,7 +57,7 @@ export const KEYWORDS = {
 export const TRIGGER_LABELS = {
   fanfare: 'ファンファーレ', constant: '常時', active: 'アクティブ', lastWord: 'ラストワード',
   onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時', onEvolved: '進化したとき', turnEnd: 'ターン終了時', onLeave: '場を離れる場合', onEnter: '場に出たとき', enemyTurnEnd: '相手のターン終了時',
-  roundStart: 'ラウンド開始時', allyDeath: '味方が戦闘不能になったとき', allyEnter: '味方が場に出たとき', allyTurnStart: '味方のターン開始時', turnStart: '自分のターン開始時', allyTurnEnd: '味方のターン終了時', link: '連携', onBoost: 'スペルブースト時', allyHeal: '味方が回復したとき',
+  roundStart: 'ラウンド開始時', allyDeath: '味方が戦闘不能になったとき', allyEnter: '味方が場に出たとき', allyTurnStart: '味方のターン開始時', turnStart: '自分のターン開始時', allyTurnEnd: '味方のターン終了時', link: '連携', onBoost: 'スペルブースト時', allyHeal: '味方が回復したとき', allyAmuletAct: '味方がアミュレットをアクトしたとき',
 }
 
 // ---------- 遺物(頭・胴・脚・靴のセットを装備したキャラに、セット効果がつく) ----------
@@ -1560,6 +1560,8 @@ function doTrait(state, actor, action, opts) {
   state.log.push(`${actor.name}の特性【${trait.name}】(MP${trait.cost})`)
   noteAbility(state, '特性', actor.name, trait.name, trait.desc, actor.team)
   runEffects(state, actor, trait.effects, { opts, chosen: action.target })
+  // アミュレットの【アクト】をしたとき: 同じ側の場のキャラの【味方がアミュレットをアクトしたとき】が働く
+  if (actor.isAmulet) for (const a of state.units.filter((x) => x.alive && x.team === actor.team && !x.isAmulet && x.field === 'main')) fire(state, 'allyAmuletAct', a, { other: actor, opts })
   countCombos(state, actor, opts)
   resolveDeaths(state, opts)
   emit(state, 'sync')
