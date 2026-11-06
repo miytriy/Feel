@@ -40,8 +40,8 @@ export function buildTeam(reg, team, { owned = null, enh = {} } = {}) {
 }
 
 export class Room {
-  constructor({ code, reg, send, now = () => Date.now(), setTimer = setTimeout, clearTimer = clearTimeout, rng = Math.random, onClose = () => {}, config = CONFIG }) {
-    Object.assign(this, { code, reg, send, now, setTimer, clearTimer, rng, onClose, cfg: config })
+  constructor({ code, reg, send, now = () => Date.now(), setTimer = setTimeout, clearTimer = clearTimeout, rng = Math.random, onClose = () => {}, onEnd = null, ranked = false, config = CONFIG }) {
+    Object.assign(this, { code, reg, send, now, setTimer, clearTimer, rng, onClose, onEnd, ranked, cfg: config })
     this.players = { A: null, B: null } // { uid, name, team, online, offlineSince }
     this.phase = 'waiting' // waiting → battle → done
     this.state = null
@@ -55,13 +55,13 @@ export class Room {
   sideOf(uid) { return this.players.A?.uid === uid ? 'A' : this.players.B?.uid === uid ? 'B' : null }
 
   // 入室。最初の人が A(ホスト)、次の人が B。2人そろったら、すぐに始まる
-  join(uid, name, built) {
+  join(uid, name, built, mp = null) {
     if (this.phase === 'done') return { error: 'この対戦は終わっています' }
     const existing = this.sideOf(uid)
     if (existing) return { error: 'すでにこのルームにいます' }
     if (this.players.A && this.players.B) return { error: 'このルームは満員です' }
     const side = this.players.A ? 'B' : 'A'
-    this.players[side] = { uid, name: name || 'プレイヤー', built, online: true, offlineSince: null }
+    this.players[side] = { uid, name: name || 'プレイヤー', built, mp, online: true, offlineSince: null }
     if (side === 'B') this.start()
     return { side }
   }
@@ -76,7 +76,7 @@ export class Room {
     this.seq = 0
     this.resetDeadline(true)
     for (const side of ['A', 'B']) {
-      this.send(side, { type: 'start', side, opp: { name: this.players[side === 'A' ? 'B' : 'A'].name }, ...this.snapshot() })
+      this.send(side, { type: 'start', side, ranked: this.ranked, opp: { name: this.players[side === 'A' ? 'B' : 'A'].name, mp: this.players[side === 'A' ? 'B' : 'A'].mp }, ...this.snapshot() })
     }
     this.armTimer()
   }
@@ -147,7 +147,8 @@ export class Room {
     if (this.phase === 'done') return { ok: true }
     this.phase = 'done'
     for (const t of Object.values(this.timers)) this.clearTimer(t)
-    this.broadcast({ type: 'end', winner, reason, ...(this.state ? this.snapshot() : {}), ...extra })
+    this.broadcast({ type: 'end', winner, reason, ranked: this.ranked, ...(this.state ? this.snapshot() : {}), ...extra })
+    try { if (this.onEnd) this.onEnd(this, winner, reason) } catch (e) { console.error('[pvp] onEnd', e) }
     this.onClose(this, reason)
     return { ok: true }
   }
@@ -178,7 +179,7 @@ export class Room {
     p.online = true; p.offlineSince = null
     this.clearTimer(this.timers[`grace${side}`])
     if (this.phase === 'battle') {
-      this.send(side, { type: 'start', side, resume: true, opp: { name: this.players[side === 'A' ? 'B' : 'A'].name }, ...this.snapshot() })
+      this.send(side, { type: 'start', side, resume: true, ranked: this.ranked, opp: { name: this.players[side === 'A' ? 'B' : 'A'].name, mp: this.players[side === 'A' ? 'B' : 'A'].mp }, ...this.snapshot() })
       this.send(side === 'A' ? 'B' : 'A', { type: 'opp-online' })
     }
     return { side }

@@ -7,6 +7,7 @@ import { normalizeOwned, applyPulls, enhanceOnce } from './signature.js'
 import { sanitizeMatch, addMatch } from './career.js'
 import { checkPassword, checkToken, gateToken, makeFailLimiter } from './gate.js'
 import { CONFIG } from './config.js'
+import { emptyRank } from '../web/src/battle/rank.js'
 import {
   dayKey, loginBonusStatus, claimLoginBonus, isValidBattleLevel, judgeBattleReward,
   checkGift, normalizeCode, isValidCodeFormat, checkCode, toMillis,
@@ -413,6 +414,16 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
 
   // ---------- キャリア(対戦の記録): ログイン中の人のぶんを、サーバーに残す ----------
   const careerRefOf = (uid) => db.collection('careers').doc(uid)
+
+  // ランクマッチの成績(MP・勝敗)。MP の増減は、対戦が終わったときに、対戦サーバー(pvp/ws.js)が保存する
+  app.get('/api/pvp/rank', requireAuth, async (req, res) => {
+    try {
+      const snap = await db.collection('users').doc(req.user.uid).get()
+      res.json({ rank: { ...emptyRank(), ...((snap.exists && snap.data().rank) || {}) } })
+    } catch (e) {
+      handleError(res, e)
+    }
+  })
 
   app.get('/api/career', requireAuth, async (req, res) => {
     try {

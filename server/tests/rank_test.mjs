@@ -1,0 +1,15 @@
+import { rankOf, rankDelta, applyResult, matchWindow } from '../../web/src/battle/rank.js'
+let fail = 0; const ok = (c, m) => { console.log((c ? 'ok ' : 'NG ') + m); if (!c) fail++ }
+ok(rankOf(0).label === 'ブロンズ3', '0MPはブロンズ3')
+ok(rankOf(400).label === 'ブロンズ2' && rankOf(800).label === 'ブロンズ1', '400ごとに上がる')
+ok(rankOf(1200).label === 'シルバー3', '1200でシルバー3')
+ok(rankOf(99999).label === 'グランドマスター1' && rankOf(99999).next === null, '最上位は上限なし')
+ok(rankDelta(1000, 1000, true, 0) === 40 && rankDelta(1000, 1000, false) === -25, '同格は +40 / -25')
+ok(rankDelta(1000, 2000, true, 0) > 40 && rankDelta(2000, 1000, false) < -25, '強い相手に勝つと多く、弱い相手に負けると多く減る')
+ok(rankDelta(1000, 1000, true, 5) === 55, '連勝ボーナスは最大+15')
+const a = applyResult({ mp: 1200, wins: 0, losses: 0, streak: 0 }, 1200, false)
+ok(a.rank.mp === 1200 && a.delta === 0, '段位の最初のMPより下がらない')
+const b = applyResult({ mp: 1300, wins: 3, losses: 0, streak: 3 }, 1300, true)
+ok(b.rank.wins === 4 && b.rank.streak === 4 && b.delta > 0, '勝つと勝数・連勝が増える')
+ok(matchWindow(0) === 400 && matchWindow(30) === 1300, '待つほど探す幅が広がる')
+if (fail) process.exit(1); console.log('全部OK')
