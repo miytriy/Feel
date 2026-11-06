@@ -40,6 +40,7 @@
   { "id": "royal_15", "name": "レヴィオンアックス・ジェノ", "class": "ロイヤル", "rarity": "gold", "rotation": "1" },
   { "id": "royal_16", "name": "煌刃の勇者・アマリア", "class": "ロイヤル", "rarity": "gold", "rotation": "1" },
   { "id": "bishop_01", "name": "潜みしマイニュ", "class": "ビショップ", "rarity": "bronze", "rotation": "1" },
+  { "id": "bishop_02", "name": "煌槍のアルミラージ・サリッサ", "class": "ビショップ", "rarity": "silver", "rotation": "1" },
   { "id": "dragon_01", "name": "竜育の少女", "class": "ドラゴン", "rarity": "bronze", "rotation": "1" },
   { "id": "dragon_02", "name": "風を駆る者・エイファ", "class": "ドラゴン", "rarity": "silver", "rotation": "1" },
   { "id": "dragon_03", "name": "風を読む者・ゼル", "class": "ドラゴン", "rarity": "silver", "rotation": "1" },
