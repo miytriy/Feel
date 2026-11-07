@@ -25,7 +25,7 @@
 // ---- effects(効果)の種類 ----
 //   { type:'damage', stat, mult, add, dmgType, target }
 //   { type:'heal', stat:'atk'|'maxHp', mult, flat, target }
-//   { type:'buff', stat, pct, flat, turns, target }   turns を省くと戦闘中ずっと
+//   { type:'buff', stat, pct, flat, turns, turnsBy, target }   turns を省くと戦闘中ずっと / stat に dmgUp(与ダメージ。flat: 15 なら+15%)も使える / turnsBy: 'source' なら、turns を「かけた本人のターン」で数える
 //   { type:'armor', stat, mult, flat, rate(吸収レート0.6〜1), target }   barrier: { type:'barrier', target }
 //   { type:'advance', pct, target }   { type:'mp', amount }   { type:'ep', amount }   { type:'growByDead', deadType }(このターン中に倒された自分のそのタイプのキャラの元の攻撃力・体力の合計だけ、これが強くなる)   { type:'evolve' }(これは進化する。EPは使わない)
 //   { type:'faith', amount }   { type:'graveyard', amount }(マイナスで消費)
