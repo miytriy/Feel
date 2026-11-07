@@ -1,6 +1,7 @@
 // 対人戦の通信クライアント。サーバー(審判)と WebSocket でつなぐ。
 // 切れたら自動でつなぎ直し、認証し直すと、サーバーが「続きの状態」(start resume)を送ってくれる。
 import { auth } from './firebase.js'
+import { getAllCharsToken } from './api.js'
 
 const apiUrl = () => import.meta.env.VITE_API_URL || ''
 export const pvpUrl = () => {
@@ -63,9 +64,9 @@ export function createPvpClient() {
 
   return {
     on(f) { subs.add(f); return () => subs.delete(f) },
-    create(team) { pendingFirst = { type: 'create', team }; closedByUs = false; open() },
-    join(code, team) { pendingFirst = { type: 'join', code, team }; closedByUs = false; open() },
-    queue(team, ranked = false) { pendingFirst = { type: 'queue', team, ranked }; closedByUs = false; open() }, // ランダムマッチの待ち行列に入る(ranked=true がランク)
+    create(team) { pendingFirst = { type: 'create', team, unlock: getAllCharsToken() }; closedByUs = false; open() },
+    join(code, team) { pendingFirst = { type: 'join', code, team, unlock: getAllCharsToken() }; closedByUs = false; open() },
+    queue(team, ranked = false) { pendingFirst = { type: 'queue', team, ranked, unlock: ranked ? '' : getAllCharsToken() }; closedByUs = false; open() }, // ランダムマッチの待ち行列に入る(ranked=true がランク)
     cancelQueue() { raw({ type: 'queue-cancel' }) },
     action(action) { raw({ type: 'action', action }) },
     surrender() { raw({ type: 'surrender' }) },

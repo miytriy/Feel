@@ -64,3 +64,15 @@ export const redeemCode = (code) => request('/api/codes/redeem', { method: 'POST
 
 // ランクマッチの成績 { rank: { mp, wins, losses, streak } }
 export const fetchRank = () => request('/api/pvp/rank')
+
+// ---- カジュアルマッチで全キャラを使う(マスターパスワードの機能) ----
+// サーバーが確認する。パスワードを入れると、サーバーが「通行証」を返し、この端末に保存する。対戦に入るとき、それをサーバーに見せる。
+const ALLCHARS_KEY = 'feel.allchars.v1'
+export const getAllCharsToken = () => { try { return localStorage.getItem(ALLCHARS_KEY) || '' } catch { return '' } }
+export const clearAllChars = () => { try { localStorage.removeItem(ALLCHARS_KEY) } catch { /* 何もしない */ } }
+export const enableAllChars = async (password) => {
+  const r = await plain('/api/gate/enter', { method: 'POST', body: JSON.stringify({ password }) })
+  if (!r.token) throw new Error('サーバーにマスターパスワードが設定されていないため、使えません')
+  try { localStorage.setItem(ALLCHARS_KEY, r.token) } catch { /* 保存できなくても、そのままでは使えない */ }
+  return true
+}

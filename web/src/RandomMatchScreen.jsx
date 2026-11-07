@@ -6,7 +6,7 @@ import { tone } from './FormationScreen.jsx'
 import BattleScreen from './BattleScreen.jsx'
 import { MatchedOverlay } from './PvpScreen.jsx'
 import { createPvpClient } from './pvp.js'
-import { fetchRank } from './api.js'
+import { fetchRank, getAllCharsToken } from './api.js'
 import { rankOf, emptyRank, TIERS, DIVS, matchWindow } from './battle/rank.js'
 
 // ランダムマッチ画面。左: モード(ランクマッチ / カジュアルマッチ) / 中: 説明・ルール・使用デッキ / 右: 段位・BP・バトルボタン。
@@ -214,6 +214,7 @@ export default function RandomMatchScreen({ team, spells, onChangeTeam, onRoom, 
               <div className="rk-badge" style={{ '--tc': '#6fe0ff' }}><svg viewBox="0 0 200 200" width={desktop ? 170 : 130} height={desktop ? 170 : 130} aria-hidden="true"><circle cx="100" cy="100" r="84" fill="none" stroke="#6fe0ff" strokeWidth="6" /><circle cx="100" cy="100" r="62" fill="#12233f" stroke="#fff" strokeOpacity=".4" strokeWidth="3" /><path d="M70 130 L130 70 M130 130 L70 70" stroke="#fff" strokeWidth="10" strokeLinecap="round" /></svg></div>
               <div className="rk-rank" style={{ fontSize: 28 }}>CASUAL</div>
               <div style={{ fontSize: 13, color: '#d8d3c0', textAlign: 'center', lineHeight: 1.6 }}>BPは増減しません<br />{loggedIn ? '' : '匿名プレイヤーとして参戦します'}</div>
+              {!loggedIn && !getAllCharsToken() && <div style={{ fontSize: 11, color: C.mute, textAlign: 'center', lineHeight: 1.6 }}>※ アカウントがないと、使えるキャラがありません。設定の「カジュアルで全キャラを使う」をオンにしてください</div>}
             </>
           ) : ri ? (
             <>

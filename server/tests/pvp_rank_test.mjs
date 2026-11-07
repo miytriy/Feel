@@ -3,16 +3,17 @@ import http from 'node:http'
 import WebSocket from 'ws'
 import { attachPvp } from '../pvp/ws.js'
 import { loadRegistry } from '../pvp/registry.js'
+import { gateToken } from '../gate.js'
 
 const reg = await loadRegistry()
 const mains = reg.chars.filter((c) => !c.amulet && !c.id.startsWith('test_') && c.class === 'ニュートラル')
 const ids = mains.slice(0, 3).map((c) => c.id)
 const owned = Object.fromEntries(ids.map((i) => [i, 1]))
-const users = { u1: { owned, rank: { bp: 100, wins: 0, losses: 0, streak: 0 } }, u2: { owned, rank: { bp: 250 } }, u3: { owned, rank: { bp: 6000 } }, u4: { owned } }
+const users = { u1: { owned, rank: { bp: 100, wins: 0, losses: 0, streak: 0 } }, u2: { owned, rank: { bp: 250 } }, u3: { owned, rank: { bp: 6000 } }, u4: { owned }, u5: { owned: {} } }
 const auth = { verifyIdToken: async (t) => { if (!users[t]) throw new Error('bad'); return { uid: t } } }
 const db = { collection: () => ({ doc: (uid) => ({ get: async () => ({ exists: !!users[uid], data: () => users[uid] }), set: async (d) => { users[uid] = { ...users[uid], ...d } } }) }) }
 const server = http.createServer(); await new Promise((r) => server.listen(0, r))
-const pvp = attachPvp({ server, auth, db })
+const pvp = attachPvp({ server, auth, db, masterPassword: 'secret' })
 const url = `ws://127.0.0.1:${server.address().port}/pvp`
 let failed = 0
 const ok = (c, m) => { if (!c) { failed++; console.log('NG', m) } else console.log('ok', m) }
@@ -52,15 +53,24 @@ const guestClient = () => { const ws = new WebSocket(url); const inbox = []; con
   return new Promise((res) => ws.on('open', async () => { send({ type: 'auth', guest: true }); await next('authed'); res({ ws, send, next, inbox }) })) }
 const [g1, g2] = [await guestClient(), await guestClient()]
 g1.send({ type: 'queue', team, ranked: true }); ok((await g1.next('error')).message.includes('ログイン'), '匿名プレイヤーは、ランクに入れない')
-g1.send({ type: 'queue', team }); ok((await g1.next('queued')).ranked === false, '匿名プレイヤーも、カジュアルの待ち行列に入れる')
+g1.send({ type: 'queue', team }); ok((await g1.next('error')).message.includes('マスターパスワード'), '匿名プレイヤーは、設定(全キャラ)がオフだと、キャラがなくて入れない')
+g1.send({ type: 'queue', team, unlock: 'wrong' }); ok((await g1.next('error')).message.includes('アカウントがない'), 'まちがった通行証では、全キャラにならない')
+const UN = gateToken('secret')
+g1.send({ type: 'queue', team, unlock: UN }); ok((await g1.next('queued')).ranked === false, '通行証があれば、匿名プレイヤーも、カジュアルの待ち行列に入れる')
 const c1 = await client('u4'); c1.send({ type: 'queue', team, ranked: true }); await c1.next('queued') // ランク待ちの人とは、組まれない
-g2.send({ type: 'queue', team })
+g2.send({ type: 'queue', team, unlock: UN })
 const s1 = await g1.next('start'), s2 = await g2.next('start')
 ok(!s1.ranked && s1.opp.name === '匿名プレイヤー' && s2.opp.name === '匿名プレイヤー', '匿名プレイヤー同士が、「匿名プレイヤー」の名前で組み合わされる(カジュアル)')
 await new Promise((r) => setTimeout(r, 1300)); ok(c1.inbox.every((m) => m.type !== 'start'), 'ランク待ちの人は、カジュアルの相手と組まれない')
 g1.send({ type: 'surrender' }); await g2.next('end'); await new Promise((r) => setTimeout(r, 200))
 ok(Object.keys(users).every((k) => !k.startsWith('guest')), '匿名プレイヤーのデータは、保存されない')
 c1.send({ type: 'queue-cancel' }); await c1.next('queue-left')
-for (const x of [a, b, far, g1, g2, c1]) x.ws.close()
+// 持っていないキャラ(アカウントあり): カジュアルは通行証で入れる。ランクは通行証があっても入れない
+const c5 = await client('u5')
+c5.send({ type: 'queue', team }); ok((await c5.next('error')).message.includes('所持していない'), '持っていないキャラは、通行証なしだと、断られる')
+c5.send({ type: 'queue', team, ranked: true, unlock: UN }); ok((await c5.next('error')).message.includes('所持していない'), 'ランクでは、通行証があっても、持っているキャラだけ')
+c5.send({ type: 'queue', team, unlock: UN }); ok((await c5.next('queued')).ranked === false, 'カジュアルは、通行証があれば、全キャラ使える')
+c5.send({ type: 'queue-cancel' }); await c5.next('queue-left')
+for (const x of [a, b, far, g1, g2, c1, c5]) x.ws.close()
 const st = await pvp.status(); ok(st.ok && st.queue === 0, '状態の確認(/api/pvp/status)が動く')
 server.close(); process.exit(failed ? 1 : 0)

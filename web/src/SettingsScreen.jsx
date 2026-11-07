@@ -1,3 +1,4 @@
+import { getAllCharsToken, enableAllChars, clearAllChars } from './api.js'
 import { useEffect, useRef, useState } from 'react'
 import { C, FONT, DISPLAY, useRemembered } from './ui.js'
 import { SPEEDS } from './settings.js'
@@ -78,6 +79,17 @@ export default function SettingsScreen({ user, settings, onChange, onLogin, onLo
     setPw('')
     setPwMsg(ok ? '' : 'パスワードがちがいます')
   }
+  // マスターパスワードの機能: カジュアルマッチで全キャラを使う(サーバーが確認する)
+  const [allOn, setAllOn] = useState(() => !!getAllCharsToken())
+  const [apw, setApw] = useState('')
+  const [apwMsg, setApwMsg] = useState('')
+  const [apwBusy, setApwBusy] = useState(false)
+  const submitAll = async () => {
+    if (!apw.trim() || apwBusy) return
+    setApwBusy(true); setApwMsg('')
+    try { await enableAllChars(apw.trim()); setAllOn(true); setApw('') } catch (e) { setApwMsg(e.message || 'うまくいきませんでした') }
+    setApwBusy(false)
+  }
   const [leaving, setLeaving] = useState(false)
   const timer = useRef(null)
   useEffect(() => () => clearTimeout(timer.current), [])
@@ -92,6 +104,7 @@ export default function SettingsScreen({ user, settings, onChange, onLogin, onLo
       key: 'battle', label: '対戦', Icon: IconSliders, head: '対戦',
       rows: [
         { type: 'choice', label: 'CPUの行動の待ち時間', options: SPEEDS.map((s) => ({ key: s.key, label: s.label })), value: settings.speed, onPick: (k) => onChange({ ...settings, speed: k }) },
+        { type: 'allchars', label: 'カジュアルで全キャラを使う(マスターパスワード)' },
       ],
       note: 'この端末のブラウザに保存されます。',
     },
@@ -149,6 +162,18 @@ export default function SettingsScreen({ user, settings, onChange, onLogin, onLo
                     {pwMsg && <span className="st-bad">{pwMsg}</span>}
                   </span>
                 )}
+                {r.type === 'allchars' && (allOn ? (
+                  <span className="st-act">
+                    <span className="st-val">オン(ランクでは使えません)</span>
+                    <button type="button" className="st-go dark" data-testid="allchars-off" onClick={() => { clearAllChars(); setAllOn(false) }}>オフにする</button>
+                  </span>
+                ) : (
+                  <span className="st-pw">
+                    <input type="password" autoComplete="off" value={apw} placeholder="マスターパスワード" aria-label="マスターパスワード(全キャラ)" data-testid="allchars-pw" onChange={(e) => { setApw(e.target.value); setApwMsg('') }} onKeyDown={(e) => { if (e.key === 'Enter') submitAll() }} />
+                    <button type="button" className="st-go" data-testid="allchars-on" onClick={submitAll} disabled={apwBusy}>オンにする</button>
+                    {apwMsg && <span className="st-bad">{apwMsg}</span>}
+                  </span>
+                ))}
                 {r.type === 'choice' && (
                   <span className="st-seg" role="radiogroup" aria-label={r.label}>
                     {r.options.map((o) => (

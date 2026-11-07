@@ -5,9 +5,10 @@ import { WebSocketServer } from 'ws'
 import { Room, buildTeam, makeCode } from './room.js'
 import { randomBytes } from 'node:crypto'
 import { loadRegistry } from './registry.js'
+import { checkToken } from '../gate.js'
 import { rankOf, applyResult, emptyRank, matchWindow } from '../../web/src/battle/rank.js'
 
-export function attachPvp({ server, auth, db, allowedOrigins = [], config, requireOwned = true, path = '/pvp' }) {
+export function attachPvp({ server, auth, db, allowedOrigins = [], config, requireOwned = true, path = '/pvp', masterPassword = '' }) {
   const wss = new WebSocketServer({ server, path, maxPayload: 20 * 1024 })
   const rooms = new Map()      // code → Room
   const roomOfUid = new Map()  // uid → Room
@@ -15,6 +16,9 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
   let regErr = null
   const regP = loadRegistry().catch((e) => { regErr = e; console.error('[pvp] キャラ定義の読み込みに失敗', e); return null }) // 失敗してもサーバー全体は落とさない
   let connections = 0
+  // マスターパスワードの機能「カジュアルで全キャラを使う」: 端末が持っている通行証を、サーバーが確かめる(ランクでは使えない)
+  const allCharsOk = (m, ranked) => { try { return !ranked && !!masterPassword && typeof m.unlock === 'string' && m.unlock.length > 0 && checkToken(m.unlock, masterPassword) } catch { return false } }
+  const ownErr = (msg, guest) => (guest && msg.startsWith('所持していないキャラ') ? 'アカウントがないため、使えるキャラがありません。ログインするか、設定のマスターパスワードで「カジュアルで全キャラを使う」をオンにしてください' : msg)
   const queue = new Map() // uid → { uid, name, built, bp, since }(ランクマッチの待ち行列)
   const QUEUE_MAX_MS = 10 * 60 * 1000
 
@@ -127,9 +131,9 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
           const ranked = m.ranked === true
           if (ranked && guest) return fail('ランクマッチには、ログインが必要です')
           const data = guest ? {} : await userData(uid)
-          const own = requireOwned && !guest // 匿名プレイヤーは、持ちキャラの確認をしない(CPU戦と同じく、全キャラ使える)
+          const own = requireOwned && !allCharsOk(m, ranked) // 持っているキャラだけ(匿名プレイヤーは、持ちキャラなし)。マスターパスワードの機能がオンのカジュアルだけ、全キャラ
           const built = buildTeam(reg, m.team, { owned: own ? (data.owned || {}) : null, enh: data.enh || {} })
-          if (built.error) return fail(built.error)
+          if (built.error) return fail(ownErr(built.error, guest))
           built.owned = own ? (data.owned || {}) : null
           const bp = ({ ...emptyRank(), ...(data.rank || {}) }).bp
           queue.set(uid, { uid, name, built, bp, ranked, since: Date.now(), reg })
@@ -140,9 +144,9 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
           if (queue.has(uid)) return fail('相手を探している間は、部屋をつくれません')
           if (roomOfUid.has(uid)) return fail('すでに対戦ルームにいます')
           const data = guest ? {} : await userData(uid)
-          const own = requireOwned && !guest
+          const own = requireOwned && !allCharsOk(m, false)
           const built = buildTeam(reg, m.team, { owned: own ? (data.owned || {}) : null, enh: data.enh || {} })
-          if (built.error) return fail(built.error)
+          if (built.error) return fail(ownErr(built.error, guest))
           built.owned = own ? (data.owned || {}) : null
           let room
           if (m.type === 'create') {

@@ -23,5 +23,5 @@ const server = app.listen(PORT, () => {
   console.log(`server running on port ${PORT}`)
 })
 // 対人戦(WebSocket: /pvp)。バトルの計算はサーバーで行う。所持していないキャラの編成は、PVP_REQUIRE_OWNED=0 で許可(開発用)
-const pvp = attachPvp({ server, auth: admin.auth(), db: admin.firestore(), allowedOrigins, requireOwned: process.env.PVP_REQUIRE_OWNED !== '0' })
+const pvp = attachPvp({ masterPassword: process.env.MASTER_PASSWORD || '', server, auth: admin.auth(), db: admin.firestore(), allowedOrigins, requireOwned: process.env.PVP_REQUIRE_OWNED !== '0' })
 app.get('/api/pvp/status', async (_req, res) => res.json(await pvp.status())) // 注: 動作確認用(認証なし・中身は件数だけ)
