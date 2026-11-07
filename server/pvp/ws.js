@@ -3,6 +3,7 @@
 //   サーバー→画面: authed / created{code} / start / update / end / closed / opp-offline / opp-online / error
 import { WebSocketServer } from 'ws'
 import { Room, buildTeam, makeCode } from './room.js'
+import { randomBytes } from 'node:crypto'
 import { loadRegistry } from './registry.js'
 import { rankOf, applyResult, emptyRank, matchWindow } from '../../web/src/battle/rank.js'
 
@@ -56,20 +57,20 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
       if (used.has(a.uid)) continue
       let best = null
       for (const b of list) {
-        if (b.uid === a.uid || used.has(b.uid)) continue
+        if (b.uid === a.uid || used.has(b.uid) || b.ranked !== a.ranked) continue // ランクはランク同士、カジュアルはカジュアル同士
         const w = Math.max(matchWindow((now - a.since) / 1000), matchWindow((now - b.since) / 1000))
-        const d = Math.abs(a.bp - b.bp)
+        const d = a.ranked ? Math.abs(a.bp - b.bp) : 0 // カジュアルは、早く組み合わせる(BPは見ない)
         if (d <= w && (!best || d < best.d)) best = { b, d }
       }
       if (!best) continue
       used.add(a.uid); used.add(best.b.uid)
       queue.delete(a.uid); queue.delete(best.b.uid)
       let code; do { code = makeCode() } while (rooms.has(code))
-      const room = new Room({ code, reg: a.reg, send: null, config, onClose: dropRoom, onEnd: roomEnd, ranked: true })
+      const room = new Room({ code, reg: a.reg, send: null, config, onClose: dropRoom, onEnd: roomEnd, ranked: a.ranked })
       room.send = roomSend(room)
       rooms.set(code, room)
       const first = Math.random() < 0.5 ? [a, best.b] : [best.b, a] // どちらが先に入る(A になる)かは、ランダム
-      for (const q of first) { room.join(q.uid, q.name, q.built, q.bp); roomOfUid.set(q.uid, room) }
+      for (const q of first) { room.join(q.uid, q.name, q.built, q.ranked ? q.bp : null); roomOfUid.set(q.uid, room) }
     }
   }
   const matchTimer = setInterval(matchTick, 1000)
@@ -79,7 +80,7 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
     connections++
     const origin = req.headers.origin
     if (allowedOrigins.length && origin && !allowedOrigins.includes(origin)) { ws.close(1008, 'origin'); return }
-    let uid = null, name = 'プレイヤー', alive = true, count = 0
+    let uid = null, name = 'プレイヤー', alive = true, count = 0, guest = false
     const rate = setInterval(() => { count = 0 }, 1000)
     const hb = setInterval(() => { if (!alive) return ws.terminate(); alive = false; try { ws.ping() } catch { /* 切れている */ } }, 25000)
     ws.on('pong', () => { alive = true })
@@ -93,6 +94,13 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
       if (!m || typeof m.type !== 'string') return fail('メッセージが正しくありません')
       try {
         if (m.type === 'ping') return reply({ type: 'pong' })
+        if (m.type === 'auth' && m.guest === true) { // アカウントなし(匿名プレイヤー): 一時的な ID で、カジュアルだけ遊べる
+          if (uid) return
+          uid = `guest-${randomBytes(8).toString('hex')}`; name = '匿名プレイヤー'; guest = true
+          sockets.set(uid, ws)
+          reply({ type: 'authed', guest: true })
+          return
+        }
         if (m.type === 'auth') {
           if (uid) return
           let dec
@@ -116,22 +124,26 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
         if (m.type === 'queue') {
           if (roomOfUid.has(uid)) return fail('すでに対戦ルームにいます')
           if (queue.has(uid)) return fail('すでに相手を探しています')
-          const data = await userData(uid)
-          const built = buildTeam(reg, m.team, { owned: requireOwned ? (data.owned || {}) : null, enh: data.enh || {} })
+          const ranked = m.ranked === true
+          if (ranked && guest) return fail('ランクマッチには、ログインが必要です')
+          const data = guest ? {} : await userData(uid)
+          const own = requireOwned && !guest // 匿名プレイヤーは、持ちキャラの確認をしない(CPU戦と同じく、全キャラ使える)
+          const built = buildTeam(reg, m.team, { owned: own ? (data.owned || {}) : null, enh: data.enh || {} })
           if (built.error) return fail(built.error)
-          built.owned = requireOwned ? (data.owned || {}) : null
+          built.owned = own ? (data.owned || {}) : null
           const bp = ({ ...emptyRank(), ...(data.rank || {}) }).bp
-          queue.set(uid, { uid, name, built, bp, since: Date.now(), reg })
-          reply({ type: 'queued', bp, count: queue.size })
+          queue.set(uid, { uid, name, built, bp, ranked, since: Date.now(), reg })
+          reply({ type: 'queued', bp: ranked ? bp : null, ranked, count: queue.size })
           return
         }
         if (m.type === 'create' || m.type === 'join') {
           if (queue.has(uid)) return fail('相手を探している間は、部屋をつくれません')
           if (roomOfUid.has(uid)) return fail('すでに対戦ルームにいます')
-          const data = await userData(uid)
-          const built = buildTeam(reg, m.team, { owned: requireOwned ? (data.owned || {}) : null, enh: data.enh || {} })
+          const data = guest ? {} : await userData(uid)
+          const own = requireOwned && !guest
+          const built = buildTeam(reg, m.team, { owned: own ? (data.owned || {}) : null, enh: data.enh || {} })
           if (built.error) return fail(built.error)
-          built.owned = requireOwned ? (data.owned || {}) : null
+          built.owned = own ? (data.owned || {}) : null
           let room
           if (m.type === 'create') {
             let code; do { code = makeCode() } while (rooms.has(code))

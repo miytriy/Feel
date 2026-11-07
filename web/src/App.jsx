@@ -21,7 +21,7 @@ import { createSandbox } from './sandbox.js'
 import GuideScreen from './GuideScreen.jsx'
 import CpuBattleScreen from './CpuBattleScreen.jsx'
 import PvpScreen from './PvpScreen.jsx'
-import RankMatchScreen from './RankMatchScreen.jsx'
+import RandomMatchScreen from './RandomMatchScreen.jsx'
 import { loadFormation, defaultFormation, loadSpellSet } from './battle/formation.js'
 import { CPU_LEVELS } from './battle/ai.js'
 import { DEFAULT_PLAYER_IDS } from './battle/teams.js'
@@ -332,31 +332,32 @@ export default function App() {
     : null
 
   if (current === 'play') {
-    return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onPvp={user ? () => setScreen('pvpteam') : null} onRank={user ? () => setScreen('rank') : null} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
+    return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onRandom={() => setScreen('random')} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
   }
 
-  // ランクマッチ: 画面 → (使用デッキの確認・変更で)チームを選ぶ → 画面にもどる
-  if (current === 'rank') {
+  // ランダムマッチ(ランク/カジュアル): 画面 → (使用デッキの確認・変更で)チームを選ぶ → 画面にもどる
+  if (current === 'random') {
     const activeP = partyApi && partyApi.parties ? partyApi.parties[partyApi.activeIdx] : null // 編成画面で選んでいるパーティ
     const saved = rankRun || (activeP && partyCount(activeP) > 0
       ? { team: partyToSlots(activeP, ALL_CHARACTERS).filter(Boolean), spells: partyToSpells(activeP, ALL_SPELLS) }
       : { team: (loadFormation(ALL_CHARACTERS) || defaultFormation(ALL_CHARACTERS, DEFAULT_PLAYER_IDS)).filter(Boolean), spells: loadSpellSet(ALL_SPELLS) })
     return (
       <ErrorBoundary onExit={() => setScreen('play')}>
-        <RankMatchScreen
+        <RandomMatchScreen
           team={saved.team}
           spells={saved.spells}
           myName={me && me.displayName ? me.displayName : 'あなた'}
-          onChangeTeam={() => setScreen('rankteam')}
-          onCasual={() => setScreen('pvpteam')}
+          onChangeTeam={() => setScreen('randomteam')}
+          loggedIn={!!user}
+          onRoom={() => { setPvpRun({ id: Date.now(), team: saved.team, spells: saved.spells }); setScreen('pvp') }}
           onExit={() => setScreen('play')}
         />
       </ErrorBoundary>
     )
   }
-  if (current === 'rankteam') {
+  if (current === 'randomteam') {
     return (
-      <ErrorBoundary onExit={() => setScreen('rank')}>
+      <ErrorBoundary onExit={() => setScreen('random')}>
         <FormationScreen
           title="使用デッキ"
           allChars={ALL_CHARACTERS}
@@ -366,37 +367,19 @@ export default function App() {
           partyIdxInit={partyApi ? partyApi.activeIdx : null}
           onSaveParty={partyApi ? partyApi.save : null}
           onPartyChange={partyApi ? partyApi.setActive : null}
-          onStart={(chars, spells) => { setRankRun({ team: chars.filter(Boolean), spells: spells || [] }); setScreen('rank') }}
-          onExit={() => setScreen('rank')}
+          onStart={(chars, spells) => { setRankRun({ team: chars.filter(Boolean), spells: spells || [] }); setScreen('random') }}
+          onExit={() => setScreen('random')}
         />
       </ErrorBoundary>
     )
   }
 
-  // 対人戦: チームを選ぶ → ロビー(部屋コード) → 対戦
-  if (current === 'pvpteam') {
-    return (
-      <ErrorBoundary onExit={() => setScreen('play')}>
-        <FormationScreen
-          title="チーム"
-          allChars={ALL_CHARACTERS}
-          defaultIds={DEFAULT_PLAYER_IDS}
-          allSpells={ALL_SPELLS.filter((sp) => !String(sp.type || '').startsWith('トークン'))}
-          parties={partyApi ? partyApi.parties : null}
-          partyIdxInit={partyApi ? partyApi.activeIdx : null}
-          onSaveParty={partyApi ? partyApi.save : null}
-          onPartyChange={partyApi ? partyApi.setActive : null}
-          onStart={(chars, spells) => { setPvpRun({ id: Date.now(), team: chars, spells: spells || [] }); setScreen('pvp') }}
-          onExit={() => setScreen('play')}
-        />
-      </ErrorBoundary>
-    )
-  }
+  // 部屋コードで対戦(カジュアル)。ランダムマッチ画面から入る
   if (current === 'pvp') {
-    if (!pvpRun) return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onPvp={user ? () => setScreen('pvpteam') : null} onRank={user ? () => setScreen('rank') : null} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
+    if (!pvpRun) return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onRandom={() => setScreen('random')} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
     return (
       <ErrorBoundary onExit={() => setScreen('play')}>
-        <PvpScreen key={pvpRun.id} team={pvpRun.team} spells={pvpRun.spells} onExit={() => setScreen('play')} onBackTeam={() => setScreen('pvpteam')} />
+        <PvpScreen key={pvpRun.id} team={pvpRun.team} spells={pvpRun.spells} onExit={() => setScreen('random')} />
       </ErrorBoundary>
     )
   }

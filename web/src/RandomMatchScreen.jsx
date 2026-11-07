@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { C, FONT, DISPLAY, useIsDesktop } from './ui.js'
+import { C, FONT, DISPLAY, useIsDesktop, useRemembered } from './ui.js'
 import { ScreenHeader } from './chrome.jsx'
 import { Emblem } from './emblem.jsx'
 import { tone } from './FormationScreen.jsx'
@@ -9,8 +9,9 @@ import { createPvpClient } from './pvp.js'
 import { fetchRank } from './api.js'
 import { rankOf, emptyRank, TIERS, DIVS, matchWindow } from './battle/rank.js'
 
-// ランクマッチ画面。左: モードの一覧 / 中: 説明・ルール・使用デッキ / 右: 段位・BP・バトルボタン。
-// 「バトル」を押すと、待ち行列に入り、近い BP の相手が見つかったら、対戦が始まる。終わると、BP が増減する。
+// ランダムマッチ画面。左: モード(ランクマッチ / カジュアルマッチ) / 中: 説明・ルール・使用デッキ / 右: 段位・BP・バトルボタン。
+// 「バトル」を押すと、待ち行列に入り、相手が見つかったら、対戦が始まる。ランクは、近い BP の相手と組まれ、終わると BP が増減する。
+// カジュアルは、BP に影響せず、ログインしていなくても(匿名プレイヤーとして)遊べる。
 // 動かすのは transform / opacity だけ(web/EFFECTS.md)
 
 // 段位のバッジ(自前の図形)。段位の色の盾 + 段階の数のシェブロン(3段階が下、1段階が上)。グランドマスターは冠つき
@@ -110,10 +111,13 @@ const CSS = `
 
 const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
-// team: 使うチーム(キャラ定義) / spells: スペル / onChangeTeam: 「確認」→チームを選び直す / onCasual: カジュアルマッチへ
-export default function RankMatchScreen({ team, spells, onChangeTeam, onCasual, onExit, myName = 'あなた' }) {
+// team: 使うチーム(キャラ定義) / spells: スペル / onChangeTeam: 「確認」→チームを選び直す / onRoom: 部屋コードで対戦 / loggedIn: ログイン中か
+export default function RandomMatchScreen({ team, spells, onChangeTeam, onRoom, loggedIn = true, onExit, myName = 'あなた' }) {
   const desktop = useIsDesktop()
   const clientRef = useRef(null)
+  const [modeSel, setMode] = useRemembered('random.mode', 'rank')
+  const mode = loggedIn ? modeSel : 'casual' // ログインしていなければ、カジュアルだけ
+  const ranked = mode === 'rank'
   const [rank, setRank] = useState(null)
   const [err, setErr] = useState('')
   const [phase, setPhase] = useState('menu') // menu | connecting | searching | battle
@@ -124,7 +128,7 @@ export default function RankMatchScreen({ team, spells, onChangeTeam, onCasual, 
   const chars = (team || []).filter(Boolean)
 
   const load = () => fetchRank().then((r) => setRank({ ...emptyRank(), ...(r.rank || {}) })).catch((e) => setErr(`ランクの情報を読み込めませんでした: ${e.message}`))
-  useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (loggedIn) load() }, [loggedIn]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => { if (clientRef.current) clientRef.current.close() }, [])
   useEffect(() => { if (phase !== 'searching') return; setWaited(0); const t = setInterval(() => setWaited((w) => w + 1), 1000); return () => clearInterval(t) }, [phase])
   useEffect(() => { if (!matched) return; const t = setTimeout(() => setMatched(false), 2000); return () => clearTimeout(t) }, [matched])
@@ -138,14 +142,14 @@ export default function RankMatchScreen({ team, spells, onChangeTeam, onCasual, 
     client.on((m) => {
       if (phaseRef.current === 'battle') return
       if (m.type === 'queued') setPhase('searching')
-      else if (m.type === 'start' && !m.resume) { setOnline({ client, side: m.side, opp: m.opp && m.opp.name, oppBp: m.opp && m.opp.bp, ranked: true, init: m.state, left: m.left, turnMs: m.turnMs }); setPhase('battle'); setMatched(true) }
+      else if (m.type === 'start' && !m.resume) { setOnline({ client, side: m.side, opp: m.opp && m.opp.name, oppBp: m.opp && m.opp.bp, ranked: !!m.ranked, init: m.state, left: m.left, turnMs: m.turnMs }); setPhase('battle'); setMatched(true) }
       else if (m.type === 'queue-left') back(m.reason === 'やめました' ? '' : m.reason)
       else if (m.type === 'error') back(m.message || '通信に失敗しました')
       else if (m.type === 'closed') back(m.reason || '部屋が閉じられました')
       else if (m.type === 'offline') back('対戦サーバーにつながりませんでした。サーバーが起動中の可能性があります。少し待って、もう一度お試しください。')
     })
     setPhase('connecting')
-    client.queue({ ids: chars.map((c) => c.id), spells: (spells || []).map((s) => s.id) })
+    client.queue({ ids: chars.map((c) => c.id), spells: (spells || []).map((s) => s.id) }, ranked)
   }
   const cancel = () => { if (clientRef.current) { clientRef.current.cancelQueue(); clientRef.current.close(); clientRef.current = null } setPhase('menu') }
   const leaveBattle = () => { setOnline(null); setPhase('menu'); load() } // 対戦のあと: 最新の BP を読み直す
@@ -154,7 +158,7 @@ export default function RankMatchScreen({ team, spells, onChangeTeam, onCasual, 
     return (
       <>
         <BattleScreen online={online} onExit={leaveBattle} />
-        {matched && <MatchedOverlay me={myName} opp={online.opp} ranked oppBp={online.oppBp} />}
+        {matched && <MatchedOverlay me={loggedIn ? myName : '匿名プレイヤー'} opp={online.opp} ranked={online.ranked} oppBp={online.oppBp} />}
       </>
     )
   }
@@ -163,25 +167,28 @@ export default function RankMatchScreen({ team, spells, onChangeTeam, onCasual, 
   const tc = ri ? ri.tier.color : '#c98a52'
   const busy = phase !== 'menu'
   return (
-    <div className="rk theme-dark" data-testid="rank-screen">
+    <div className="rk theme-dark" data-testid="random-screen">
       <style>{CSS}</style>
       <div className="rk-bg"><i /><i /></div>
-      <ScreenHeader title="ランクマッチ" onClose={onExit} />
+      <ScreenHeader title="ランダムマッチ" onClose={onExit} />
       <div className="rk-wrap">
         <nav className="rk-rail" aria-label="モード">
-          <div className="rk-mode on" aria-current="true">
-            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4 L42 11 L40 28 Q37 40 24 45 Q11 40 8 28 L6 11 Z" fill="none" stroke="#1b1500" strokeWidth="3" /><path d="M15 22 L24 30 L33 22" fill="none" stroke="#1b1500" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          <button type="button" className={`rk-mode${ranked ? ' on' : ''}`} onClick={() => setMode('rank')} disabled={busy || !loggedIn} data-testid="mode-rank" aria-pressed={ranked}>
+            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4 L42 11 L40 28 Q37 40 24 45 Q11 40 8 28 L6 11 Z" fill="none" stroke="currentColor" strokeWidth="3" /><path d="M15 22 L24 30 L33 22" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
             ランクマッチ
-          </div>
-          <button type="button" className="rk-mode" onClick={onCasual} disabled={busy} data-testid="rank-to-casual">
+            {!loggedIn && <small style={{ fontSize: 10, fontWeight: 700 }}>ログインが必要</small>}
+          </button>
+          <button type="button" className={`rk-mode${!ranked ? ' on' : ''}`} onClick={() => setMode('casual')} disabled={busy} data-testid="mode-casual" aria-pressed={!ranked}>
             <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="17" fill="none" stroke="currentColor" strokeWidth="3" /><path d="M16 24 H32 M24 16 V32" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
             カジュアルマッチ
           </button>
         </nav>
 
         <section className="rk-mid">
-          <div className="rk-title">ランクマッチ</div>
-          <p className="rk-desc">ランクをかけて争う、ランダムマッチング戦です。勝つとランクポイント(BP)が増え、一定のBPで段位が上がります。負けるとBPが減りますが、段位(ブロンズ・シルバー…)そのものは下がりません。</p>
+          <div className="rk-title">{ranked ? 'ランクマッチ' : 'カジュアルマッチ'}</div>
+          <p className="rk-desc">{ranked
+            ? 'ランクをかけて争う、ランダムマッチング戦です。勝つとバトルポイント(BP)が増え、一定のBPで段位が上がります。負けるとBPが減りますが、段位(ブロンズ・シルバー…)そのものは下がりません。'
+            : 'ランクに影響しない、気軽なランダムマッチング戦です。BPは増減せず、すぐに相手が見つかります。ログインしていなくても、匿名プレイヤーとして遊べます。'}</p>
           <div className="rk-rules">
             <div className="rk-rule on" data-testid="rule-rotation">ローテーション<span className="dot" /></div>
             <div className="rk-rule off">アンリミテッド<small>準備中</small></div>
@@ -202,7 +209,13 @@ export default function RankMatchScreen({ team, spells, onChangeTeam, onCasual, 
         </section>
 
         <aside className="rk-right" style={{ '--tc': tc }}>
-          {ri ? (
+          {!ranked ? (
+            <>
+              <div className="rk-badge" style={{ '--tc': '#6fe0ff' }}><svg viewBox="0 0 200 200" width={desktop ? 170 : 130} height={desktop ? 170 : 130} aria-hidden="true"><circle cx="100" cy="100" r="84" fill="none" stroke="#6fe0ff" strokeWidth="6" /><circle cx="100" cy="100" r="62" fill="#12233f" stroke="#fff" strokeOpacity=".4" strokeWidth="3" /><path d="M70 130 L130 70 M130 130 L70 70" stroke="#fff" strokeWidth="10" strokeLinecap="round" /></svg></div>
+              <div className="rk-rank" style={{ fontSize: 28 }}>CASUAL</div>
+              <div style={{ fontSize: 13, color: '#d8d3c0', textAlign: 'center', lineHeight: 1.6 }}>BPは増減しません<br />{loggedIn ? '' : '匿名プレイヤーとして参戦します'}</div>
+            </>
+          ) : ri ? (
             <>
               <div className="rk-badge"><RankBadge rank={ri} size={desktop ? 190 : 150} /></div>
               <div className="rk-rank" data-testid="rank-label">{ri.label}</div>
@@ -216,18 +229,19 @@ export default function RankMatchScreen({ team, spells, onChangeTeam, onCasual, 
           ) : (
             <div style={{ padding: '70px 0', color: C.mute, fontSize: 13 }}>{err ? '' : '読み込み中…'}</div>
           )}
-          <button type="button" className="rk-battle" data-testid="rank-battle" disabled={busy || !rank || chars.length === 0} onClick={start}>バトル</button>
+          <button type="button" className="rk-battle" data-testid="rank-battle" disabled={busy || (ranked && !rank) || chars.length === 0} onClick={start}>バトル</button>
+          {!ranked && onRoom && <button type="button" className="rk-btn" style={{ marginTop: 6 }} onClick={onRoom} disabled={busy} data-testid="to-room">部屋コードで友だちと対戦</button>}
         </aside>
       </div>
 
       {busy && (
-        <div className="rk-search" data-testid="rank-search">
+        <div className="rk-search" data-testid="random-search">
           <div className="box">
             <div className="rk-radar"><i /><i /><i /><u /></div>
             <div style={{ fontWeight: 800, fontSize: 18 }}>{phase === 'connecting' ? 'サーバーにつないでいます…' : '対戦相手を探しています…'}</div>
             {phase === 'searching' && <>
               <div className="rk-time">{fmt(waited)}</div>
-              <div style={{ fontSize: 12, color: C.mute }}>探している範囲: BP ±{matchWindow(waited)}(待つほど広がります)</div>
+              <div style={{ fontSize: 12, color: C.mute }}>{ranked ? `探している範囲: BP ±${matchWindow(waited)}(待つほど広がります)` : 'カジュアルマッチ'}</div>
             </>}
             {phase === 'connecting' && <div style={{ fontSize: 12, color: C.mute, marginTop: 8 }}>サーバーが眠っていると、30秒ほどかかることがあります</div>}
             <button type="button" className="rk-btn" style={{ marginTop: 20 }} onClick={cancel} data-testid="rank-cancel">やめる</button>

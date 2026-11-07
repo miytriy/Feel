@@ -60,7 +60,7 @@ const CSS = `
 }
 `
 
-export default function GuideScreen({ gems = null, onCpu, onPvp = null, onRank = null, onRules, onExit }) {
+export default function GuideScreen({ gems = null, onCpu, onRandom = null, onRules, onExit }) {
   // 閉じる: すぐ消さずに、閉じる動き(出てきたときの逆向き)を見せてから、onExit を呼ぶ
   const [leaving, setLeaving] = useState(false)
   const leaveTimer = useRef(null)
@@ -81,11 +81,8 @@ export default function GuideScreen({ gems = null, onCpu, onPvp = null, onRank =
         entries: [{ key: 'cpu', title: 'CPU戦', sub: 'Lv.1〜4', desc: 'CPUの強さを選んで対戦します。勝つと、ジェムがもらえます(ログイン中のみ・1日5回まで)。', rewards: [{ label: '10〜40' }], go: onCpu }],
       }],
     },
-    onPvp
-      ? { key: 'pvp', label: '対人戦', Icon: IconAgents, cats: [
-        ...(onRank ? [{ key: 'rank', label: 'ランクマッチ', Icon: IconAgents, entries: [{ key: 'pvp-rank', title: 'ランクマッチ', sub: 'ランダム', desc: '近いランクの相手と、ランクをかけて戦います。勝つとBPが増えて、段位が上がります。', go: onRank }] }] : []),
-        { key: 'room', label: 'カジュアルマッチ', Icon: IconAgents, entries: [{ key: 'pvp-room', title: 'カジュアルマッチ', sub: 'フレンドと', desc: '部屋コードを伝えあって、1対1で対戦します。ランクには影響しません。', go: onPvp }] },
-      ] }
+    onRandom
+      ? { key: 'pvp', label: '対人戦', Icon: IconAgents, cats: [{ key: 'random', label: 'ランダムマッチ', Icon: IconAgents, entries: [{ key: 'pvp-random', title: 'ランダムマッチ', sub: 'ランク / カジュアル', desc: '知らない相手と、1対1で対戦します。ランクマッチでは、勝つとBPが増えて段位が上がります。カジュアルマッチはランクに影響せず、ログインしていなくても(匿名プレイヤーとして)遊べます。', go: onRandom }] }] }
       : { key: 'pvp', label: '対人戦', Icon: IconAgents, soon: true, cats: [] },
     {
       key: 'rules', label: 'ルール', Icon: IconRules,

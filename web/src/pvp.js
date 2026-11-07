@@ -17,6 +17,7 @@ export function createPvpClient() {
   const subs = new Set()
   let pendingFirst = null // つないだ直後に送る最初のメッセージ(create / join)
   let authed = false
+  let guest = false
   let joined = false // 部屋に入ったか(入ったあとに切れたら、再接続する)
 
   const emit = (m) => subs.forEach((f) => { try { f(m) } catch (e) { console.error(e) } })
@@ -25,15 +26,13 @@ export function createPvpClient() {
   const open = async () => {
     authed = false
     try {
-      const user = auth.currentUser
-      if (!user) { emit({ type: 'error', message: 'ログインしてください', fatal: true }); return }
-      const token = await user.getIdToken()
+      guest = !auth.currentUser // ログインしていなければ、匿名プレイヤーとして入る
       ws = new WebSocket(pvpUrl())
     } catch (e) { emit({ type: 'error', message: e.message, fatal: true }); return }
     const sock = ws
     sock.onopen = async () => {
       retry = 0
-      try { raw({ type: 'auth', token: await auth.currentUser.getIdToken() }) } catch (e) { emit({ type: 'error', message: e.message, fatal: true }) }
+      try { raw(guest ? { type: 'auth', guest: true } : { type: 'auth', token: await auth.currentUser.getIdToken() }) } catch (e) { emit({ type: 'error', message: e.message, fatal: true }) }
       clearInterval(pingTimer)
       pingTimer = setInterval(() => raw({ type: 'ping' }), 20000)
     }
@@ -54,6 +53,7 @@ export function createPvpClient() {
       if (sock !== ws) return
       emit({ type: 'offline' })
       if (closedByUs || !joined) return
+      if (guest) { joined = false; emit({ type: 'error', message: '通信が切れました。匿名プレイヤーは、つなぎ直せません(退出してください)', fatal: true }); return } // 匿名プレイヤーは、新しい ID になるので、続きから戻れない
       const wait = Math.min(8000, 800 * 2 ** retry++)
       clearTimeout(retryTimer)
       retryTimer = setTimeout(open, wait)
@@ -65,7 +65,7 @@ export function createPvpClient() {
     on(f) { subs.add(f); return () => subs.delete(f) },
     create(team) { pendingFirst = { type: 'create', team }; closedByUs = false; open() },
     join(code, team) { pendingFirst = { type: 'join', code, team }; closedByUs = false; open() },
-    queue(team) { pendingFirst = { type: 'queue', team }; closedByUs = false; open() }, // ランクマッチの待ち行列に入る
+    queue(team, ranked = false) { pendingFirst = { type: 'queue', team, ranked }; closedByUs = false; open() }, // ランダムマッチの待ち行列に入る(ranked=true がランク)
     cancelQueue() { raw({ type: 'queue-cancel' }) },
     action(action) { raw({ type: 'action', action }) },
     surrender() { raw({ type: 'surrender' }) },
