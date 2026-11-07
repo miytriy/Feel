@@ -141,6 +141,16 @@ export function ActionBar({ state, big = false, avFx = null }) {
   )
   return (
     <div className="no-sb" style={{ display: 'flex', gap: big ? 6 : 4, overflowX: 'auto', overflowY: 'hidden', padding: '6px 2px', alignItems: 'stretch', position: 'relative' }}>
+      {/* いまのラウンド: 左端に、ずっと残す(これから先のラウンドの区切りは、下の R○ で並ぶ) */}
+      <div
+        data-testid="av-round-now"
+        style={{
+          flex: '0 0 auto', width: big ? 36 : 30, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch',
+          fontSize: big ? 12 : 11, fontWeight: 800, color: C.ink, background: C.softWarn, borderRadius: 6, marginRight: 4,
+        }}
+      >
+        R{state.round}
+      </div>
       {ghosts.map((g) => unitTile(g.it, 1, g.key + '-out', { left: g.left }))}
       {items.map((it, i) =>
         it.round ? (
