@@ -60,6 +60,7 @@
   { "id": "dragon_15", "name": "ナイトフォールドラゴン", "class": "ドラゴン", "rarity": "gold", "rotation": "1" },
   { "id": "dragon_16", "name": "再臨のジェネシスドラゴン", "class": "ドラゴン", "rarity": "gold", "rotation": "1" },
   { "id": "dragon_amulet_01", "name": "乙姫の扇", "class": "ドラゴン", "rarity": "gold", "rotation": "1" },
+  { "id": "kronos_01", "name": "天秤の旧金・レインドット", "class": "クロノス", "rarity": "legend", "rotation": "10" },
   { "id": "nightmare_01", "name": "無名の悪魔", "class": "ナイトメア", "rarity": "bronze", "rotation": "1" },
   { "id": "nightmare_02", "name": "辣腕の死神・ミーノ", "class": "ナイトメア", "rarity": "silver", "rotation": "1" },
   { "id": "nightmare_03", "name": "ナイトメア・ヴェリィ", "class": "ナイトメア", "rarity": "silver", "rotation": "1" },
