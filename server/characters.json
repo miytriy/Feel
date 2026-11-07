@@ -62,6 +62,7 @@
   { "id": "dragon_amulet_01", "name": "乙姫の扇", "class": "ドラゴン", "rarity": "gold", "rotation": "1" },
   { "id": "kronos_01", "name": "天秤の旧金・レインドット", "class": "クロノス", "rarity": "legend", "rotation": "10" },
   { "id": "kronos_02", "name": "蒼豹の銀氷・アレイ", "class": "クロノス", "rarity": "legend", "rotation": "10" },
+  { "id": "kronos_03", "name": "超可愛の使い・リーノ", "class": "クロノス", "rarity": "legend", "rotation": "10" },
   { "id": "nightmare_01", "name": "無名の悪魔", "class": "ナイトメア", "rarity": "bronze", "rotation": "1" },
   { "id": "nightmare_02", "name": "辣腕の死神・ミーノ", "class": "ナイトメア", "rarity": "silver", "rotation": "1" },
   { "id": "nightmare_03", "name": "ナイトメア・ヴェリィ", "class": "ナイトメア", "rarity": "silver", "rotation": "1" },
