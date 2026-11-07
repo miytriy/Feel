@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useRef } from 'react'
 
 // カットイン演出(全画面)。前半の全画面アニメは動画(web/public/fx/albion/fanfare-1.mp4)をそのまま再生する
-// (端末のハードウェアでデコードされるので軽い)。後半は、盤面に隕石(画像)が落ちて、爆発の動画(fanfare-2.mp4)が重なる。
+// (端末のハードウェアでデコードされるので軽い)。後半は、盤面に隕石(画像)が落ちて、爆発の動画(fanfare-2.mp4、岩つき)が重なる。
 // 画像の動きは transform と opacity だけ(web/EFFECTS.md)。盤面に出ていた青い小さな円は「消滅」の演出なので、ここでは描かない。
 
 export const CUTINS = {
-  'アルビオンバハムート|ファンファーレ': { id: 'albion', ms: 3600 },
+  'アルビオンバハムート|ファンファーレ': { id: 'albion', ms: 3400 },
 }
 // モードが決まったあと(エンジンが 'cutin' を出す)に流す。選ぶ前には流さない
 export const cutinOf = (ev) => (ev && ev.type === 'cutin' ? CUTINS[`${ev.owner}|${ev.kind}`] || null : null)
 
 const BASE = `${import.meta.env?.BASE_URL || '/'}fx/albion/`
-const IMGS = ['meteor', 'rock-0', 'rock-1', 'rock-2', 'rock-3']
+const IMGS = ['meteor']
 const VIDS = ['fanfare-1', 'fanfare-2']
 if (typeof window !== 'undefined') { // 先に読み込んでおく(初回でも途中で絵が出遅れない)
   const go = () => {
@@ -21,10 +21,10 @@ if (typeof window !== 'undefined') { // 先に読み込んでおく(初回でも
   ;(window.requestIdleCallback || ((fn) => setTimeout(fn, 600)))(go)
 }
 
-const T_V1 = 2500 // 動画1の長さ
-const T_MET = 2240 // 隕石が落ち始める(動画1の最後の閃光の途中から)
-const T_V2 = 2800 // 爆発の動画
-const T_END = 3600
+const T_V1 = 2450 // 動画1の長さ
+const T_MET = 2200 // 隕石が落ち始める(動画1の最後の閃光の途中から)
+const T_V2 = 2750 // 爆発の動画
+const T_END = 3400
 
 const CSS = `
 @keyframes cf-a { 0% { opacity: 0; transform: translate(-50%,-50%) translate(var(--x0,0),var(--y0,0)) rotate(var(--r0,0deg)) scale(var(--s0,1)) }
@@ -41,10 +41,6 @@ const CSS = `
 // 隕石の落ち方・岩の飛び方は、毎回同じ(乱数は固定の種から)
 const rnd = (() => { let s = 20261107; return () => { s = (s * 16807) % 2147483647; return s / 2147483647 } })()
 const METEORS = Array.from({ length: 7 }, (_, i) => ({ tx: (rnd() - .5) * 42, ty: (rnd() - .5) * 26, at: T_MET + i * 70 + rnd() * 40, w: 60 + rnd() * 30 }))
-const ROCKS = Array.from({ length: 18 }, (_, i) => {
-  const a = rnd() * Math.PI * 2, d = 26 + rnd() * 52
-  return { src: `rock-${i % 4}`, x: Math.cos(a) * d, y: Math.sin(a) * d * .66, size: 5 + rnd() * 11, rot: (rnd() - .5) * 900, at: T_V2 - 100 + rnd() * 80, dur: 900 + rnd() * 500 }
-})
 const DIR = (() => { const a = (116 * Math.PI) / 180; return { x: Math.cos(a), y: Math.sin(a), deg: 116 } })()
 
 // 動画: 指定した時刻(ms)に頭から再生する。透明度は CSS アニメで出し入れする
@@ -71,13 +67,6 @@ export function CutIn({ ms = T_END, onSkip }) {
       '--x0': `${m.tx - DIR.x * D}vmax`, '--y0': `${m.ty - DIR.y * D}vmax`, '--x1': `${m.tx}vmax`, '--y1': `${m.ty}vmax`,
     }} />
   }), [])
-  const rocks = useMemo(() => ROCKS.map((r, i) => (
-    <img key={`r${i}`} className="cf-l cf-c" alt="" draggable={false} src={`${BASE}${r.src}.webp`} style={{
-      width: `${r.size}vmax`, animationDuration: `${r.dur}ms`, animationDelay: `${r.at}ms`, animationTimingFunction: 'cubic-bezier(.1,.7,.3,1)',
-      '--x0': '0vmax', '--y0': '0vmax', '--x1': `${r.x}vmax`, '--y1': `${r.y}vmax`, '--r0': '0deg', '--r1': `${r.rot}deg`, '--s0': .3, '--s1': 1, '--in': '4%', '--o': 1,
-    }} />
-  )), [])
-
   return (
     <div data-testid="cutin" onPointerDown={onSkip} style={{ position: 'fixed', inset: 0, zIndex: 9000, touchAction: 'manipulation', cursor: 'pointer', overflow: 'hidden' }}>
       <style>{CSS}</style>
@@ -86,8 +75,7 @@ export function CutIn({ ms = T_END, onSkip }) {
       {/* ② 盤面に隕石が落ちて、爆発(背景は透明で、盤面が見える) */}
       <div style={{ position: 'absolute', inset: 0, animation: `cf-shake 520ms linear ${T_V2}ms both`, willChange: 'transform' }}>
         {meteors}
-        <Clip name="fanfare-2" at={T_V2} dur={T_END - T_V2} anim="cf-v2" mask="radial-gradient(ellipse 38% 46% at 47% 50%, #000 42%, transparent 100%)" />
-        {rocks}
+        <Clip name="fanfare-2" at={T_V2} dur={T_END - T_V2} anim="cf-v2" />
       </div>
       <div style={{ position: 'absolute', right: 12, bottom: 10, fontSize: 11, color: 'rgba(255,255,255,.7)', textShadow: '0 0 4px #000' }}>タップでスキップ</div>
     </div>
