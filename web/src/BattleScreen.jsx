@@ -12,7 +12,7 @@ import { CommentaryOverlay, collectHistory, addHistory, emptyHistory } from './B
 import { useIsDesktop, C as BASE, alpha, DISPLAY } from './ui.js'
 import { StatIcon } from './icons.jsx'
 import { ME, OPP, setMe, winnerView } from './perspective.js'
-import { CutIn, cutinOf } from './cutin.jsx'
+import { CutIn, cutinOf, AlbionBlast, BLAST_MS } from './cutin.jsx'
 const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', margin: '0 2px 0 0' }} />
 
 // 色: 自分=青、相手=赤紫、行動中=琥珀
@@ -245,7 +245,7 @@ function DmgNum({ part, crit, big }) {
 // ドクロ(黒いシルエット。目・鼻・歯のすきまは、穴になって下の赤い円が透ける)
 function Skull() {
   return (
-    <svg viewBox="0 0 100 100" style={{ position: 'absolute', left: '17%', top: '16%', width: '66%', height: '66%', overflow: 'visible', animation: 'feel-d-skull 0.8s ease-out 0.2s both' }}>
+    <svg viewBox="0 0 100 100" style={{ position: 'absolute', left: '17%', top: '16%', width: '66%', height: '66%', overflow: 'visible', animation: 'feel-d-skull 0.48s ease-out 0.12s both' }}>
       <path fillRule="evenodd" fill="#1a0a08" d="M50 4 C75 4 88 17 88 36 C88 48 83 56 77 61 L73 66 L73 84 Q73 92 65 92 L35 92 Q27 92 27 84 L27 66 L23 61 C17 56 12 48 12 36 C12 17 25 4 50 4 Z
         M19 37 Q19 29 27 29 L40 30 Q48 31 47 40 L45 51 Q44 57 36 57 L28 56 Q19 54 19 46 Z
         M81 37 Q81 29 73 29 L60 30 Q52 31 53 40 L55 51 Q56 57 64 57 L72 56 Q81 54 81 46 Z
@@ -311,7 +311,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         cursor: 'pointer', position: 'relative',
         ...(hl ? { boxShadow: `0 0 0 4px ${C.active}`, transform: 'scale(1.03)', zIndex: 2 } : {}),
         ...(fx && fx.kind === 'evolve' ? { zIndex: 4, animation: 'feel-ev-pop 1.2s ease-out both' } : {}),
-        ...(fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s${fx.die === 'destroy' ? ', feel-d-melt 0.3s ease-in forwards, ' + (unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade') + ' 0.45s ease-in 0.4s forwards' : fx.die === 'vanish' ? ', ' + (unit.field === 'main' ? 'feel-d-fade2m' : 'feel-d-fade2') + ' 0.4s ease-in 0.6s forwards' : ''}` } : fx && fx.die === 'destroy' ? { animation: `feel-d-melt 0.3s ease-in forwards, ${unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade'} 0.45s ease-in 0.4s forwards` } : fx && fx.die === 'vanish' ? { animation: `${unit.field === 'main' ? 'feel-d-fade2m' : 'feel-d-fade2'} 0.4s ease-in 0.6s forwards` } : {}), // 破壊: ドクロが出る前に、ユニットがぼやけて、下へ溶けるように崩れる
+        ...(fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s${fx.die === 'destroy' ? ', feel-d-melt 0.18s ease-in forwards, ' + (unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade') + ' 0.27s ease-in 0.24s forwards' : fx.die === 'vanish' ? ', ' + (unit.field === 'main' ? 'feel-d-fade2m' : 'feel-d-fade2') + ' 0.2s ease-in 0.12s forwards' : ''}` } : fx && fx.die === 'destroy' ? { animation: `feel-d-melt 0.18s ease-in forwards, ${unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade'} 0.27s ease-in 0.24s forwards` } : fx && fx.die === 'vanish' ? { animation: `${unit.field === 'main' ? 'feel-d-fade2m' : 'feel-d-fade2'} 0.2s ease-in 0.12s forwards` } : {}), // 破壊: ドクロが出る前に、ユニットがぼやけて、下へ溶けるように崩れる
         // 攻撃する側: チームの色で光って、相手のほうへ少し出る / 受ける側: 赤く縁どる(揺れとダメージの数字は、いままでどおり)
         ...(role === 'attacker' ? { boxShadow: `0 0 0 3px ${TEAM_COLOR[unit.team]}, 0 0 18px 2px ${alpha(TEAM_COLOR[unit.team], 60)}`, zIndex: 3, animation: `${unit.team === 'A' ? 'feel-lunge-up' : 'feel-lunge-down'} 0.5s ease-out` } : {}),
         // 倒れたキャラ: 外枠と背景を消して、名前とHPバーだけを薄く残す(場所はそのまま。並びがずれない)
@@ -319,19 +319,19 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         ...(role === 'target' || role === 'guard' ? { boxShadow: `0 0 0 3px ${role === 'guard' ? C.player : C.bad}, 0 0 16px 2px ${alpha(role === 'guard' ? C.player : C.bad, 55)}`, zIndex: 2 } : {}),
       }}
     >
-      {fx && fx.die === 'destroy' && <span key={`dg-${tick}`} aria-hidden="true" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: '#fff', pointerEvents: 'none', zIndex: 4, opacity: 0, animation: 'feel-d-glow 0.45s ease-in forwards', willChange: 'opacity' }} />}
+      {fx && fx.die === 'destroy' && <span key={`dg-${tick}`} aria-hidden="true" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: '#fff', pointerEvents: 'none', zIndex: 4, opacity: 0, animation: 'feel-d-glow 0.27s ease-in forwards', willChange: 'opacity' }} />}
       {fx && fx.die === 'destroy' && (
         // 破壊の演出: 白熱のフラッシュ → 赤い円(縁は桃色の輪、外側に暗い赤のにじみ。墓場が増えるときは、黒いドクロ入り)→ 透ける白い破片が散り、ドクロが溶け、円が赤いもやになって、火の粉と暗いかけらを散らして消える
         <span key={`des-${tick}`} aria-hidden="true" data-testid="fx-destroy" style={{ position: 'absolute', left: '50%', top: '50%', height: '120%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }}>
-          <span style={{ position: 'absolute', inset: '8%', borderRadius: '24%', background: 'radial-gradient(circle, #fff 0%, #ffe2b0 45%, rgba(255,150,70,0.8) 75%, rgba(255,120,60,0) 100%)', boxShadow: '0 0 20px 6px rgba(255,170,90,0.8)', opacity: 0, animation: 'feel-d-flash 0.2s ease-out 0.2s forwards' }} />
-          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 50% 46%, #ff9a7e 0%, #fb6a50 55%, #ec4733 85%, #ffa58c 100%)', boxShadow: 'inset 0 0 0 2px rgba(255,205,180,0.85), 0 0 12px 3px rgba(255,80,60,0.85), 0 0 30px 12px rgba(120,10,10,0.55)', animation: 'feel-d-orb 0.8s ease-out 0.2s both' }}>
+          <span style={{ position: 'absolute', inset: '8%', borderRadius: '24%', background: 'radial-gradient(circle, #fff 0%, #ffe2b0 45%, rgba(255,150,70,0.8) 75%, rgba(255,120,60,0) 100%)', boxShadow: '0 0 20px 6px rgba(255,170,90,0.8)', opacity: 0, animation: 'feel-d-flash 0.12s ease-out 0.12s forwards' }} />
+          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 50% 46%, #ff9a7e 0%, #fb6a50 55%, #ec4733 85%, #ffa58c 100%)', boxShadow: 'inset 0 0 0 2px rgba(255,205,180,0.85), 0 0 12px 3px rgba(255,80,60,0.85), 0 0 30px 12px rgba(120,10,10,0.55)', animation: 'feel-d-orb 0.48s ease-out 0.12s both' }}>
             {fx.grave && <Skull />}
           </span>
           {CONFETTI.map((c, n) => (
-            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: c.size, height: c.size, marginLeft: -c.size / 2, marginTop: -c.size / 2, clipPath: c.tri ? 'polygon(0 100%, 50% 0, 100% 100%)' : 'polygon(10% 0, 100% 20%, 90% 100%, 0 80%)', background: 'linear-gradient(135deg, #ffffff 0%, #d6e8ff 50%, #ffe0ea 100%)', '--x': c.x, '--y': c.y, '--dx': c.dx, '--dy': c.dy, '--rot': c.rot, animation: `feel-d-conf 0.6s ease-out ${c.delay + 0.2}s both` }} />
+            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: c.size, height: c.size, marginLeft: -c.size / 2, marginTop: -c.size / 2, clipPath: c.tri ? 'polygon(0 100%, 50% 0, 100% 100%)' : 'polygon(10% 0, 100% 20%, 90% 100%, 0 80%)', background: 'linear-gradient(135deg, #ffffff 0%, #d6e8ff 50%, #ffe0ea 100%)', '--x': c.x, '--y': c.y, '--dx': c.dx, '--dy': c.dy, '--rot': c.rot, animation: `feel-d-conf 0.36s ease-out ${(c.delay + 0.2) * 0.6}s both` }} />
           ))}
           {EMBERS.map((m, n) => (
-            <span key={`e${n}`} style={{ position: 'absolute', left: '50%', top: '50%', width: m.dark ? 4 : 5, height: m.dark ? 4 : 5, marginLeft: -2, marginTop: -2, borderRadius: m.dark ? 1 : '50%', background: m.dark ? '#5a1210' : '#ffd27a', boxShadow: m.dark ? 'none' : '0 0 6px 2px rgba(255,160,50,0.9)', '--dx': m.dx, '--dy': m.dy, animation: `feel-d-ember 0.8s ease-out 0.2s both` }} />
+            <span key={`e${n}`} style={{ position: 'absolute', left: '50%', top: '50%', width: m.dark ? 4 : 5, height: m.dark ? 4 : 5, marginLeft: -2, marginTop: -2, borderRadius: m.dark ? 1 : '50%', background: m.dark ? '#5a1210' : '#ffd27a', boxShadow: m.dark ? 'none' : '0 0 6px 2px rgba(255,160,50,0.9)', '--dx': m.dx, '--dy': m.dy, animation: `feel-d-ember 0.48s ease-out 0.12s both` }} />
           ))}
         </span>
       )}
@@ -356,18 +356,18 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
               </filter>
             </defs>
           </svg>
-          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(70,140,255,1) 0%, rgba(24,52,200,1) 20%, rgba(10,22,105,1) 48%, rgba(8,16,82,1) 70%, rgba(95,55,190,0.9) 90%, rgba(120,80,215,0) 100%)', filter: 'url(#feel-fuzzy)', animation: 'feel-v-disc 0.85s ease-out both' }} />
-          <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', animation: 'feel-v-ring 0.85s ease-in-out both', filter: 'drop-shadow(0 0 3px #4fb4ff) drop-shadow(0 0 8px #2f6bff)' }}>
+          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(70,140,255,1) 0%, rgba(24,52,200,1) 20%, rgba(10,22,105,1) 48%, rgba(8,16,82,1) 70%, rgba(95,55,190,0.9) 90%, rgba(120,80,215,0) 100%)', filter: 'url(#feel-fuzzy)', animation: 'feel-v-disc 0.5s ease-out both' }} />
+          <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', animation: 'feel-v-ring 0.5s ease-in-out both', filter: 'drop-shadow(0 0 3px #4fb4ff) drop-shadow(0 0 8px #2f6bff)' }}>
             <circle cx="50" cy="50" r="40" fill="none" stroke="#7ee6ff" strokeWidth="13" filter="url(#feel-web)" />
             <circle cx="50" cy="50" r="44" fill="none" stroke="#45c8ff" strokeWidth="2.4" filter="url(#feel-bolt)" />
             <circle cx="50" cy="50" r="44" fill="none" stroke="#ffffff" strokeWidth="1" filter="url(#feel-bolt)" opacity="0.9" />
             <circle cx="50" cy="50" r="49" fill="none" stroke="#c9bdff" strokeWidth="0.8" filter="url(#feel-bolt)" opacity="0.5" />
           </svg>
-          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '70%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(40,40,52,0) 28%, rgba(55,55,68,0.75) 60%, rgba(60,60,74,0) 100%)', filter: 'url(#feel-rag)', animation: 'feel-v-smoke 0.85s ease-out both' }} />
-          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '40%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, #fff 0%, #fff 25%, rgba(190,235,255,0.9) 50%, rgba(110,190,255,0) 100%)', boxShadow: '0 0 14px 4px rgba(150,220,255,0.8)', animation: 'feel-v-core 0.85s ease-in-out both' }} />
-          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '46%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(170,230,255,0.75) 0%, rgba(110,190,255,0.45) 50%, rgba(110,190,255,0) 100%)', filter: 'url(#feel-rag)', animation: 'feel-v-glow 0.85s ease-out both' }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '70%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(40,40,52,0) 28%, rgba(55,55,68,0.75) 60%, rgba(60,60,74,0) 100%)', filter: 'url(#feel-rag)', animation: 'feel-v-smoke 0.5s ease-out both' }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '40%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, #fff 0%, #fff 25%, rgba(190,235,255,0.9) 50%, rgba(110,190,255,0) 100%)', boxShadow: '0 0 14px 4px rgba(150,220,255,0.8)', animation: 'feel-v-core 0.5s ease-in-out both' }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '46%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(170,230,255,0.75) 0%, rgba(110,190,255,0.45) 50%, rgba(110,190,255,0) 100%)', filter: 'url(#feel-rag)', animation: 'feel-v-glow 0.5s ease-out both' }} />
           {SPARKS.map((sp, n) => (
-            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: sp.dark ? 4 : 5, height: sp.dark ? 4 : 5, marginLeft: -2, marginTop: -2, borderRadius: sp.dark ? 1 : '50%', background: sp.dark ? '#14141c' : '#d8f4ff', boxShadow: sp.dark ? 'none' : '0 0 6px 2px #6ac4ff', '--dx': sp.dx, '--dy': sp.dy, animation: `feel-v-spark 0.85s ease-out both` }} />
+            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: sp.dark ? 4 : 5, height: sp.dark ? 4 : 5, marginLeft: -2, marginTop: -2, borderRadius: sp.dark ? 1 : '50%', background: sp.dark ? '#14141c' : '#d8f4ff', boxShadow: sp.dark ? 'none' : '0 0 6px 2px #6ac4ff', '--dx': sp.dx, '--dy': sp.dy, animation: `feel-v-spark 0.5s ease-out both` }} />
           ))}
         </span>
       )}
@@ -511,7 +511,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
           <LossBlink unit={unit} loss={loss} />
         </div>
       )}
-      <div style={{ marginTop: 2, color: C.mute, ...(dying && !unit.isAmulet ? { animation: `feel-d-fade2 ${vanishing ? '0.35s ease-in 0.45s' : '0.35s ease-in 0.5s'} forwards`, willChange: 'opacity' } : {}) }}>{unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive || dying ? <><AnimNum value={Math.ceil(unit.alive || vanishing ? hpShown : 0)} ms={300} />/{unit.maxHp}</> : ''}</div>
+      <div style={{ marginTop: 2, color: C.mute, ...(dying && !unit.isAmulet ? { animation: `feel-d-fade2 ${vanishing ? '0.2s ease-in 0.12s' : '0.2s ease-in 0.3s'} forwards`, willChange: 'opacity' } : {}) }}>{unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive || dying ? <><AnimNum value={Math.ceil(unit.alive || vanishing ? hpShown : 0)} ms={300} />/{unit.maxHp}</> : ''}</div>
       {unit.armor > 0 && <div style={{ color: C.player }}>アーマー {Math.ceil(unit.armor)}{unit.armorRate < 1 ? `(${Math.round(unit.armorRate * 100)}%)` : ''}</div>}
       {badges.length > 0 && (
         <div style={{ marginTop: 2, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
@@ -736,7 +736,7 @@ function reorderBoost(evs) {
   }
   return out
 }
-const EVENT_MS = { turn: 700, ability: 600, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 1000, vanish: 900, av: 800, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 600, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 600, vanish: 520, av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null, online = null }) {
@@ -862,7 +862,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     if (play.i >= play.events.length) { setPlay(null); return }
     const grp = play.events.slice(play.i, groupEnd(play.events, play.i) + 1)
     const cut = grp.map(cutinOf).find(Boolean) // キャラ専用のカットイン演出がある場面は、その長さだけ待つ
-    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), cut ? cut.ms + 150 : Math.max(...grp.map((x) => EVENT_MS[x.type] ?? 500)) * mult)
+    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), cut ? cut.ms + 150 : Math.max(...grp.map((x) => (x.blast ? BLAST_MS : EVENT_MS[x.type] ?? 500))) * mult)
     return () => clearTimeout(t)
   }, [play, mult, logOpen])
 
@@ -1160,6 +1160,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   }
   const groupEvs = play ? play.events.slice(gStart, gEnd + 1) : []
   const cutNow = groupEvs.map(cutinOf).find(Boolean) || null
+  const blastNow = groupEvs.some((e) => e.blast) // アルビオンバハムートの消滅: 爆発の動画を上に重ねる
   const avFx = (() => { const m = {}; for (const x of groupEvs) if (x.type === 'av') m[x.target] = { dir: x.dir }; return Object.keys(m).length ? { ...m, tick: play ? play.i : 0 } : null })() // 行動順の上昇・下降: アクションバーの該当ユニットに出す
   const fxFor0 = (uid) => {
     const mine = groupEvs.filter((x) => x.target === uid) // まとまった出来事の中から、この人に起きたものを探す
@@ -1433,6 +1434,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     <>
       {netBanner && <div data-testid="pvp-net" style={{ position: 'fixed', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 200, padding: '6px 14px', borderRadius: 999, background: 'rgba(20,20,28,.88)', color: '#fff', fontSize: 13, pointerEvents: 'none' }}>{netBanner}</div>}
       {!online && intro && <StageIntro level={level} levelInfo={levelInfo} cpuChars={cpuChars} first={introFirst} onClose={() => { setIntro(false); setIntroFirst(false) }} />}
+      {blastNow && !cutNow && !logOpen && <AlbionBlast key={`blast-${play.i}`} />}
       {cutNow && !logOpen && <CutIn key={`cut-${play.i}`} ms={cutNow.ms} onSkip={() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p))} />}
       {logOpen && <CommentaryOverlay units={view.units} active={view.active} round={view.round} log={view.log} ab={hist.ab} dead={hist.dead} events={hist.ev} onClose={() => setLogOpen(false)} />}
       {leaveAsk && <ExitConfirm onCancel={() => setLeaveAsk(false)} onExit={leave} online={!!online} />}

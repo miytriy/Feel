@@ -588,12 +588,12 @@ const GRAVE_PER_DEATH = 3
 const graveBonus = (state, source, e) => (e.perGraveyard || 0) * state.graveyard[source.team]
 
 // 消滅させる: 破壊でも「場を離れる」でもない。墓場にも倒された記録にも入らず、ラストワードや味方の戦闘不能の能力も働かない
-function vanishUnit(state, u, log = true) {
+function vanishUnit(state, u, log = true, blast = false) {
   if (!u.alive) return
   u.alive = false; u.deathHandled = true; u.hp = 0; u.vanished = true // 消滅したものは、蘇生できない
   u.buffs = []; u.armor = 0; u.barrier = 0; u.stealth = false
   if (log) state.log.push(`${u.name}は消滅した`)
-  emit(state, 'vanish', { target: u.uid })
+  emit(state, 'vanish', blast ? { target: u.uid, blast: true } : { target: u.uid }) // blast: アルビオンバハムートの爆発の動画が、上に重なる
 }
 
 // 土の印: 数は【土の印】アミュレット自身が持つ(earthCount)。チームの合計(state.earth)は、場の土の印アミュレットの合計
@@ -1061,7 +1061,7 @@ function runEffects(state, source, effects, ctx = {}) {
           break
         }
         case 'vanish': // 消滅させる(破壊とは違い、墓場に行かず、ラストワードも働かない)
-          vanishUnit(state, t)
+          vanishUnit(state, t, true, !!e.blast)
           break
         case 'destroy': // 破壊する(召喚物の「自身を破壊」など)
           if (hasKw(t, 'earthSign')) break // 土の印は、能力で破壊できない
