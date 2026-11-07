@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef } from 'react'
 // 画像の動きは transform と opacity だけ(web/EFFECTS.md)。盤面に出ていた青い小さな円は「消滅」の演出なので、ここでは描かない。
 
 export const CUTINS = {
-  'アルビオンバハムート|ファンファーレ': { id: 'albion', ms: 3400 },
+  'アルビオンバハムート|ファンファーレ': { id: 'albion', ms: 3700 },
 }
 // モードが決まったあと(エンジンが 'cutin' を出す)に流す。選ぶ前には流さない
 export const cutinOf = (ev) => (ev && ev.type === 'cutin' ? CUTINS[`${ev.owner}|${ev.kind}`] || null : null)
@@ -22,15 +22,17 @@ if (typeof window !== 'undefined') { // 先に読み込んでおく(初回でも
 }
 
 const T_V1 = 2450 // 動画1の長さ
-const T_MET = 2200 // 隕石が落ち始める(動画1の最後の閃光の途中から)
-const T_V2 = 2750 // 爆発の動画
-const T_END = 3400
+const T_W = 2300 // 白い閃光が始まる(動画1の終わりに向けて白くなり、そのあと白が溶けて盤面が現れる)
+const T_MET = 2600 // 隕石が落ち始める(白が溶けていく途中から)
+const T_V2 = 3050 // 爆発の動画
+const T_END = 3700
 
 const CSS = `
 @keyframes cf-a { 0% { opacity: 0; transform: translate(-50%,-50%) translate(var(--x0,0),var(--y0,0)) rotate(var(--r0,0deg)) scale(var(--s0,1)) }
   10% { opacity: var(--o,1) } 80% { opacity: var(--o,1) }
   100% { opacity: 0; transform: translate(-50%,-50%) translate(var(--x1,0),var(--y1,0)) rotate(var(--r1,0deg)) scale(var(--s1,1)) } }
-@keyframes cf-v1 { 0% { opacity: 0 } 1% { opacity: 1 } 88% { opacity: 1 } 100% { opacity: 0 } }
+@keyframes cf-v1 { 0% { opacity: 0 } 1% { opacity: 1 } 99% { opacity: 1 } 100% { opacity: 0 } }
+@keyframes cf-w { 0% { opacity: 0 } 15% { opacity: 1 } 30% { opacity: 1 } 100% { opacity: 0 } }
 @keyframes cf-v2 { 0% { opacity: 0 } 12% { opacity: 1 } 62% { opacity: 1 } 100% { opacity: 0 } }
 @keyframes cf-shake { 0%,100% { transform: translate(0,0) } 10% { transform: translate(-1.4%,.8%) } 20% { transform: translate(1.2%,-1%) } 30% { transform: translate(-.9%,-.6%) } 45% { transform: translate(.7%,.7%) } 60% { transform: translate(-.4%,.3%) } 80% { transform: translate(.2%,-.2%) } }
 .cf-l { position: absolute; pointer-events: none; user-select: none; -webkit-user-drag: none; opacity: 0; animation-fill-mode: both; animation-timing-function: linear }
@@ -72,6 +74,8 @@ export function CutIn({ ms = T_END, onSkip }) {
       <style>{CSS}</style>
       {/* ① 全画面アニメ(動画1)。最後の閃光のところで、すっと消える */}
       <Clip name="fanfare-1" at={0} dur={T_V1} anim="cf-v1" />
+      {/* 閃光: 動画1の最後で真っ白になり、そのあと白が溶けて盤面が見える */}
+      <div className="cf-l" style={{ inset: 0, background: '#f4f9ff', animationName: 'cf-w', animationDuration: '800ms', animationDelay: `${T_W}ms`, animationFillMode: 'forwards' }} />
       {/* ② 盤面に隕石が落ちて、爆発(背景は透明で、盤面が見える) */}
       <div style={{ position: 'absolute', inset: 0, animation: `cf-shake 520ms linear ${T_V2}ms both`, willChange: 'transform' }}>
         {meteors}
