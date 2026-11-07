@@ -31,7 +31,7 @@ import { loadSettings, saveSettings, cpuDelayOf } from './settings.js'
 import { ALL_CHARACTERS } from './battle/characters/index.js'
 import { setEnhanceLevels } from './enhance.js'
 import { ALL_SPELLS } from './battle/spells/index.js'
-import { loadParties, saveParty, getActiveParty, setActiveParty } from './battle/parties.js'
+import { loadParties, saveParty, getActiveParty, setActiveParty, partyToSlots, partyToSpells, partyCount } from './battle/parties.js'
 import ErrorBoundary from './ErrorBoundary.jsx'
 import GateScreen from './GateScreen.jsx'
 import { useIsDesktop, C, FONT } from './ui.js'
@@ -337,7 +337,10 @@ export default function App() {
 
   // ランクマッチ: 画面 → (使用デッキの確認・変更で)チームを選ぶ → 画面にもどる
   if (current === 'rank') {
-    const saved = rankRun || { team: (loadFormation(ALL_CHARACTERS) || defaultFormation(ALL_CHARACTERS, DEFAULT_PLAYER_IDS)).filter(Boolean), spells: loadSpellSet(ALL_SPELLS) }
+    const activeP = partyApi && partyApi.parties ? partyApi.parties[partyApi.activeIdx] : null // 編成画面で選んでいるパーティ
+    const saved = rankRun || (activeP && partyCount(activeP) > 0
+      ? { team: partyToSlots(activeP, ALL_CHARACTERS).filter(Boolean), spells: partyToSpells(activeP, ALL_SPELLS) }
+      : { team: (loadFormation(ALL_CHARACTERS) || defaultFormation(ALL_CHARACTERS, DEFAULT_PLAYER_IDS)).filter(Boolean), spells: loadSpellSet(ALL_SPELLS) })
     return (
       <ErrorBoundary onExit={() => setScreen('play')}>
         <RankMatchScreen
