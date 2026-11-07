@@ -11,7 +11,7 @@ const DMG_TYPES = ['physical', 'magic', 'true']
 const EFFECT_TYPES = ['copyAmulet', 'damage', 'heal', 'buff', 'armor', 'shield', 'barrier', 'advance', 'delay', 'mp', 'ep', 'faith', 'earth', 'earthSummon', 'reanimate', 'clearCrests', 'boost', 'boostPick', 'graveyard', 'crest', 'summon', 'reenter', 'loseKeyword', 'destroy', 'vanish', 'maxHp', 'loseHp', 'enableTrait', 'gainKeyword', 'gainDoubleSkill', 'enableSpell', 'mode', 'evolve', 'growByDead', 'mpMax', 'spendMp']
 const EFFECT_TARGETS = ['allyAmuletOne', 'self', 'opponent', 'allies', 'otherAllies', 'allyOne', 'enemies', 'enemyOne', 'enemyRandom', 'enemyFieldRandom', 'summons', 'otherAllyOne', 'allyField', 'allyFieldOne', 'allyFieldRandom', 'enemyField', 'otherAllyField', 'entered', 'nearestAlly', 'fieldOthers', 'fieldSummons', 'fieldAll', 'fieldAmulets']
 const TRAIT_TARGETS = ['self', 'allies', 'otherAllies', 'allyOne', 'allyFieldOne', 'otherAllyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons']
-const BUFF_STATS = ['atk', 'mag', 'def', 'spd', 'critRate', 'critDmg', 'dmgResist']
+const BUFF_STATS = ['atk', 'mag', 'def', 'spd', 'critRate', 'critDmg', 'dmgResist', 'dmgUp']
 const CONDITION_KEYS = ['link', 'gauge', 'ultimate', 'liberation', 'faith', 'earth', 'boost', 'graveyard', 'hpBelow', 'hpAbove', 'evolved', 'crests', 'combo', 'evolveTurn', 'awaken']
 
 const isNum = (x) => typeof x === 'number' && Number.isFinite(x)
@@ -36,6 +36,7 @@ function checkEffects(effects, where, errs, depth = 0) {
     if (e.type === 'buff') {
       if (!BUFF_STATS.includes(e.stat)) errs.push(`${w}: buff の stat は ${BUFF_STATS.join(' / ')} のどれか(「${e.stat}」は使えません)`)
       if (e.pct == null && e.flat == null && e.perGraveyard == null && e.perCombo == null && e.perType == null) errs.push(`${w}: buff には pct か flat が必要です`)
+      if (e.turnsBy != null && (e.turnsBy !== 'source' || e.turns == null)) errs.push(`${w}: turnsBy は 'source'(かけた本人のターンで数える)だけで、turns と一緒に書きます`)
     }
     if (e.type === 'summon') {
       if (!e.unit && !e.fromOwned && !e.copySelf && !e.fromCrest && !e.randomUnits) errs.push(`${w}: summon には unit(召喚するキャラ)・randomUnits・fromOwned: true・copySelf: true・fromCrest: true のどれかが必要です`)
