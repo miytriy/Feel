@@ -5,9 +5,9 @@ import { useEffect, useRef } from 'react'
 // ファンファーレなどのタイミングで、キャラごとに決めた演出を流す。映像素材の転用はせず、独自の描画。
 
 export const CUTINS = {
-  'アルビオンバハムート|ファンファーレ': { id: 'albion', ms: 4200 },
+  'アルビオンバハムート|ファンファーレ': { id: 'albion', ms: 4000 },
 }
-export const cutinOf = (ev) => (ev && ev.type === 'ability' ? CUTINS[`${ev.owner}|${ev.kind}`] || null : null)
+export const cutinOf = (ev) => (ev && ev.type === 'cutin' ?CUTINS[`${ev.owner}|${ev.kind}`] || null : null)
 
 const VS = `#version 300 es
 in vec2 a; void main(){ gl_Position = vec4(a, 0., 1.); }`
@@ -38,35 +38,6 @@ vec3 sky(vec2 p){
 }
 
 // 青い衝撃(爆発)1つ分。白い芯→水色→青、放射状のトゲ、火花
-vec3 burst(vec2 p, vec2 c, float t0, float sz, out float rockMask){
-  rockMask = 0.;
-  float t = T - t0; if (t < 0.) return vec3(0.);
-  vec2 d = p - c; float r = length(d), a = atan(d.y, d.x);
-  float k = 1. - exp(-t * 8.);
-  float sp = pow(n(vec2(a * 9., t * 2.)), 2.) * 1.2 + pow(n(vec2(a * 26., t * 4.)), 3.) * 1.5;
-  float rr = r / (sz * (.4 + k * 2.4));
-  float body = smoothstep(1. + sp * .9, .0, rr) * (.55 + .6 * sp);
-  float fade = exp(-t * 1.9);
-  vec3 c0 = mix(vec3(.04, .22, .85), vec3(.35, .8, 1.), body);
-  c0 = mix(c0, vec3(1.), pow(body, 3.));
-  float spark = step(.97, h(floor(d / sz * 26. + floor(t * 12.)))) * smoothstep(1.6, .3, rr) * 1.3;
-  float ring = smoothstep(.03, 0., abs(r - t * sz * 6.)) * exp(-t * 5.) * .5;
-  return (c0 * body * 1.5 + vec3(.6, .9, 1.) * (spark + ring)) * fade;
-}
-
-// 魔法陣1つ分(歯車のような二重の輪+星)
-vec3 circle(vec2 p, vec2 c, float t0, float rr, float seed){
-  float t = T - t0; if (t < 0.) return vec3(0.);
-  vec2 d = p - c; float r = length(d), a = atan(d.y, d.x) + t * (seed > .5 ? .8 : -.8);
-  float grow = smoothstep(0., .25, t);
-  rr *= .7 + .3 * grow;
-  float ring = smoothstep(.0045, 0., abs(r - rr)) + smoothstep(.003, 0., abs(r - rr * .78)) * .8;
-  float teeth = smoothstep(.01, 0., abs(r - rr * 1.12)) * step(.45, fract(a * 12. / PI));
-  float inner = smoothstep(.003, 0., abs(r - rr * .5)) * .8;
-  float star = smoothstep(.004, 0., abs(r * cos(mod(a, PI * .4) - PI * .2) - rr * .36)) * step(r, rr * .78);
-  float glow = exp(-r * r / (rr * rr * .8)) * .35;
-  return vec3(.4, .75, 1.) * (ring + teeth * .8 + inner + star * .8) * 1.5 * grow + vec3(.1, .3, .9) * glow * grow;
-}
 
 void main(){
   float S = min(R.x, R.y);
@@ -241,19 +212,27 @@ void main(){
   // ===== 2.55〜 盤面の上: 水色の光が盤面を洗い、青い衝撃・巨大な爆発・岩の破片・魔法陣 =====
   vec3 add = vec3(0.); float wash = 0.; float rock = 0.;
   if (T > 2.5){
-    wash = smoothstep(2.5, 2.6, T) * (1. - smoothstep(2.72, 3.3, T)) * .9;
+    wash = smoothstep(2.5, 2.6, T) * (1. - smoothstep(2.6, 2.95, T)) * .9;
     add += vec3(.6, .85, 1.) * wash * .7;
     float sh = smoothstep(2.9, 3.0, T) * (1. - smoothstep(3.0, 3.8, T)) + smoothstep(2.6, 2.7, T) * (1. - smoothstep(2.7, 3.0, T)) * .4;
     vec2 q = p + (vec2(n(vec2(T * 45., 1.)), n(vec2(T * 45., 9.))) - .5) * .028 * sh;
     float ca = .014 * sh;
-    // 小さな衝撃(2.6〜3.1)。盤面の上のあちこちで弾ける
-    for (int i = 0; i < 8; i++){
-      float fi = float(i), r0, r1, r2;
-      vec2 c = vec2((h(vec2(fi, 3.)) - .5) * A.x * .8, (h(vec2(fi, 7.)) - .5) * .6);
-      float t0 = 2.62 + fi * .06 + h(vec2(fi, 5.)) * .1;
-      float sz = .08 + h(vec2(fi, 1.)) * .07;
-      vec3 b = burst(q, c, t0, sz, r0);
-      add += b * (1. - smoothstep(3.0, 3.3, T));
+    // 隕石の落下(2.55〜3.0): 青い尾を引く岩が、右上から中央へ次々に降ってくる
+    for (int i = 0; i < 6; i++){
+      float fi = float(i);
+      float tt = (T - 2.55 - fi * .045) / .42;
+      if (tt > 0. && tt < 1.05){
+        vec2 tgt = vec2(.12, -.04) + (vec2(h(vec2(fi, 3.)), h(vec2(fi, 7.))) - .5) * vec2(.5, .25);
+        vec2 dir = normalize(vec2(-.5, -1.));
+        float k = tt * tt;
+        vec2 hd = tgt - dir * (1. - k) * 1.5;
+        vec2 d = q - hd; float al = dot(d, -dir), pe = dot(d, vec2(-dir.y, dir.x));
+        float tail = smoothstep(.0, .02, al) * exp(-al * 7.) * smoothstep(.08, .0, abs(pe) / (1. + al * 2.));
+        float head = smoothstep(.09, .0, length(d));
+        float vis = 1. - smoothstep(.9, 1.05, tt);
+        add += (vec3(.2, .6, 1.) * tail * 1.3 + vec3(.9, .97, 1.) * head * 1.6) * vis;
+        rock = max(rock, smoothstep(.055, .035, length(d)) * vis);
+      }
     }
     // 巨大な爆発(3.0〜3.7): 青い炎と、暗い青の岩の破片が一面に飛び散る。色収差つき
     float tG = T - 3.0;
@@ -287,12 +266,6 @@ void main(){
       float rk = smoothstep(sizeR, sizeR * .62, length(fo) * (1. + .5 * (fbm(fo * 6. + id) - .5)));
       rock = rk * step(.42, rn) * smoothstep(0., .12, tG) * (1. - smoothstep(.55, 1.15, tG)) * smoothstep(.1, .5, length(q - c));
     }
-    // 魔法陣(3.3〜4.2): 盤面のあちこちに浮かぶ
-    for (int i = 0; i < 12; i++){
-      float fi = float(i);
-      vec2 c = vec2((h(vec2(fi, 11.)) - .5) * A.x * .86, (h(vec2(fi, 13.)) - .5) * .66);
-      add += circle(q, c, 3.3 + h(vec2(fi, 6.)) * .45, .085 + h(vec2(fi, 9.)) * .04, h(vec2(fi, 15.))) * (1. - smoothstep(4.0, 4.2, T));
-    }
   }
 
   vec3 rgb = col * solid + add;
@@ -303,7 +276,7 @@ void main(){
 }`
 
 // debugT が数値なら、その時刻で1コマだけ描く(動作確認用)
-export function CutIn({ ms = 4200, onSkip, debugT }) {
+export function CutIn({ ms = 4000, onSkip, debugT }) {
   const ref = useRef(null)
   useEffect(() => {
     const cv = ref.current
