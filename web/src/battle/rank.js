@@ -1,13 +1,11 @@
 // ランクマッチの段位・ポイント(BP)の計算。画面もサーバーも同じものを使う(依存なしの純粋な関数)。
-// 段位: 7つ × 3段階(3 → 2 → 1 の順に上がる)。1段階 = 400 BP。グランドマスター1は上限なし。
+// 段位: 5つの宝石(エメラルド → トパーズ → ルビー → サファイア → ダイヤモンド) × 3段階(3 → 2 → 1 の順に上がる)。1段階 = 400 BP。ダイヤモンド1は上限なし。
 export const TIERS = [
-  { key: 'bronze', name: 'ブロンズ', color: '#c98a52' },
-  { key: 'silver', name: 'シルバー', color: '#c4ccd8' },
-  { key: 'gold', name: 'ゴールド', color: '#f0c230' },
-  { key: 'platinum', name: 'プラチナ', color: '#6fe0d2' },
-  { key: 'diamond', name: 'ダイヤモンド', color: '#7fb4ff' },
-  { key: 'master', name: 'マスター', color: '#c58cff' },
-  { key: 'grandmaster', name: 'グランドマスター', color: '#ff5a6e' },
+  { key: 'emerald', name: 'エメラルド', color: '#2fd27a' },
+  { key: 'topaz', name: 'トパーズ', color: '#ffa63a' },
+  { key: 'ruby', name: 'ルビー', color: '#ff4a5e' },
+  { key: 'sapphire', name: 'サファイア', color: '#4d92ff' },
+  { key: 'diamond', name: 'ダイヤモンド', color: '#d9a8ff' },
 ]
 export const DIV_BP = 400 // 1段階に必要な BP
 export const DIVS = 3
@@ -36,7 +34,7 @@ export function rankOf(bp) {
 }
 
 // 対戦の結果で、BP がどれだけ動くか。相手との差で、増減が変わる(強い相手に勝つと多く、弱い相手に負けると多く減る)。
-// 連勝ボーナス(3連勝目から +5、最大 +15)。負けても、「段位」(ブロンズ・シルバー…)は下がらない(その段位の最初の BP が下限)。
+// 連勝ボーナス(3連勝目から +5、最大 +15)。負けても、「段位」(エメラルド・トパーズ…)は下がらない(その段位の最初の BP が下限)。
 export function rankDelta(myBp, oppBp, won, streak = 0) {
   const expected = 1 / (1 + 10 ** ((oppBp - myBp) / 800))
   if (won) {

@@ -17,26 +17,79 @@ import { rankOf, emptyRank, TIERS, DIVS, matchWindow } from './battle/rank.js'
 // カジュアルは、BP に影響せず、ログインしていなくても(匿名プレイヤーとして)遊べる。
 // 動かすのは transform / opacity だけ(web/EFFECTS.md)
 
-// 段位のバッジ(自前の図形)。段位の色の盾 + 段階の数のシェブロン(3段階が下、1段階が上)。グランドマスターは冠つき
+// 段位のバッジ(自前の図形): 宝石(段位ごとに、色とカットがちがう)と、金の飾り枠。とげの数は、上の段位ほど多い。
+// 下の小さなひし形が、段階の数(3段階 = 1つ、1段階 = 3つ)
+const GEM_CX = 100, GEM_CY = 104
+const spikePath = (n, r1, r2) => {
+  const pts = []
+  for (let i = 0; i < n; i++) {
+    const a = (-90 + (360 / n) * i) * (Math.PI / 180), w = (Math.PI / n) * 0.42
+    pts.push([GEM_CX + Math.cos(a - w) * r1, GEM_CY + Math.sin(a - w) * r1], [GEM_CX + Math.cos(a) * r2, GEM_CY + Math.sin(a) * r2], [GEM_CX + Math.cos(a + w) * r1, GEM_CY + Math.sin(a + w) * r1])
+  }
+  return pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ') + ' Z'
+}
+function Gem({ k, fill }) {
+  const line = { stroke: '#fff', strokeOpacity: 0.4, strokeWidth: 1.6, fill: 'none', strokeLinejoin: 'round' }
+  const cx = GEM_CX, cy = GEM_CY
+  if (k === 'emerald') { // 長方形に近い八角形(ステップカット)
+    return (<g>
+      <polygon points="66,62 134,62 156,84 156,126 134,148 66,148 44,126 44,84" fill={fill} />
+      <polygon points="76,74 124,74 142,90 142,120 124,136 76,136 58,120 58,90" {...line} />
+      <polygon points="88,86 112,86 124,96 124,114 112,124 88,124 76,114 76,96" {...line} />
+      <path d="M66 62 L76 74 M134 62 L124 74 M156 84 L142 90 M156 126 L142 120 M134 148 L124 136 M66 148 L76 136 M44 126 L58 120 M44 84 L58 90" {...line} />
+    </g>)
+  }
+  if (k === 'topaz') { // たて長の楕円(オーバルカット)
+    return (<g>
+      <ellipse cx={cx} cy={cy} rx="46" ry="62" fill={fill} />
+      <ellipse cx={cx} cy={cy} rx="30" ry="42" {...line} />
+      <path d={`M${cx} ${cy - 62} L${cx} ${cy - 42} M${cx} ${cy + 62} L${cx} ${cy + 42} M${cx - 46} ${cy} L${cx - 30} ${cy} M${cx + 46} ${cy} L${cx + 30} ${cy} M${cx - 33} ${cy - 44} L${cx - 21} ${cy - 30} M${cx + 33} ${cy - 44} L${cx + 21} ${cy - 30} M${cx - 33} ${cy + 44} L${cx - 21} ${cy + 30} M${cx + 33} ${cy + 44} L${cx + 21} ${cy + 30}`} {...line} />
+    </g>)
+  }
+  if (k === 'ruby') { // ひし形(ダイヤカット)
+    return (<g>
+      <polygon points={`${cx},38 ${cx + 58},${cy} ${cx},170 ${cx - 58},${cy}`} fill={fill} />
+      <polygon points={`${cx},58 ${cx + 38},${cy} ${cx},150 ${cx - 38},${cy}`} {...line} />
+      <path d={`M${cx} 38 L${cx} 58 M${cx + 58} ${cy} L${cx + 38} ${cy} M${cx} 170 L${cx} 150 M${cx - 58} ${cy} L${cx - 38} ${cy} M${cx - 38} ${cy} L${cx + 38} ${cy} M${cx} 58 L${cx} 150`} {...line} />
+    </g>)
+  }
+  if (k === 'sapphire') { // 丸(ラウンドブリリアント)
+    return (<g>
+      <circle cx={cx} cy={cy} r="58" fill={fill} />
+      <circle cx={cx} cy={cy} r="38" {...line} />
+      <circle cx={cx} cy={cy} r="16" {...line} />
+      <path d={Array.from({ length: 8 }).map((_, i) => { const a = (i * 45 + 22.5) * Math.PI / 180; return `M${(cx + Math.cos(a) * 16).toFixed(1)} ${(cy + Math.sin(a) * 16).toFixed(1)} L${(cx + Math.cos(a) * 58).toFixed(1)} ${(cy + Math.sin(a) * 58).toFixed(1)}` }).join(' ')} {...line} />
+    </g>)
+  }
+  // diamond: ブリリアントカット(上が平らで、下がとがる)
+  return (<g>
+    <polygon points={`${cx - 42},56 ${cx + 42},56 ${cx + 68},${cy - 4} ${cx},172 ${cx - 68},${cy - 4}`} fill={fill} />
+    <polygon points={`${cx - 42},56 ${cx + 42},56 ${cx + 68},${cy - 4} ${cx - 68},${cy - 4}`} fill="#fff" fillOpacity="0.14" />
+    <path d={`M${cx - 68} ${cy - 4} L${cx + 68} ${cy - 4} M${cx - 42} 56 L${cx - 24} ${cy - 4} L${cx} 56 L${cx + 24} ${cy - 4} L${cx + 42} 56 M${cx - 24} ${cy - 4} L${cx} 172 L${cx + 24} ${cy - 4} M${cx - 68} ${cy - 4} L${cx - 24} ${cy - 4} M${cx + 68} ${cy - 4} L${cx + 24} ${cy - 4}`} {...line} />
+  </g>)
+}
+
 export function RankBadge({ rank, size = 200 }) {
   const col = rank.tier.color
+  const key = rank.tier.key
   const pips = DIVS + 1 - rank.div // 1〜3
-  const gm = rank.tier.key === 'grandmaster'
-  const id = `rb-${rank.tier.key}`
+  const id = `rb-${key}`
+  const spikes = 4 + rank.tierIdx * 1 // エメラルド4 … ダイヤモンド8
   return (
     <svg viewBox="0 0 200 220" width={size} height={size * 1.1} role="img" aria-label={rank.label} style={{ display: 'block' }}>
       <defs>
-        <linearGradient id={`${id}-f`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={col} stopOpacity="1" /><stop offset="0.55" stopColor={col} stopOpacity="0.45" /><stop offset="1" stopColor="#14141a" stopOpacity="1" />
-        </linearGradient>
-        <linearGradient id={`${id}-s`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff" /><stop offset="1" stopColor={col} /></linearGradient>
+        <linearGradient id={`${id}-gold`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff1b0" /><stop offset="0.5" stopColor="#e2b93e" /><stop offset="1" stopColor="#8a6a14" /></linearGradient>
+        <linearGradient id={`${id}-g`} x1="0.2" y1="0" x2="0.8" y2="1"><stop offset="0" stopColor="#fff" stopOpacity="0.85" /><stop offset="0.35" stopColor={col} /><stop offset="1" stopColor="#000" stopOpacity="0.55" /></linearGradient>
       </defs>
-      {gm && <path d="M40 38 L58 8 L80 30 L100 0 L120 30 L142 8 L160 38 Z" fill={col} stroke="#fff" strokeOpacity=".7" strokeWidth="2" />}
-      <path d="M100 22 L176 52 L168 138 Q158 186 100 214 Q42 186 32 138 L24 52 Z" fill={`url(#${id}-f)`} stroke={`url(#${id}-s)`} strokeWidth="5" strokeLinejoin="round" />
-      <path d="M100 38 L160 62 L153 134 Q145 172 100 196 Q55 172 47 134 L40 62 Z" fill="none" stroke="#fff" strokeOpacity=".28" strokeWidth="2" />
+      <path d={spikePath(spikes, 80, 100)} fill={`url(#${id}-gold)`} stroke="#5a430a" strokeOpacity=".5" strokeWidth="1.2" strokeLinejoin="round" />
+      <circle cx={GEM_CX} cy={GEM_CY} r="80" fill="#15131a" stroke={`url(#${id}-gold)`} strokeWidth="6" />
+      <circle cx={GEM_CX} cy={GEM_CY} r="72" fill="none" stroke="#fff" strokeOpacity=".18" strokeWidth="1.5" />
+      <Gem k={key} fill={`url(#${id}-g)`} />
+      <ellipse cx="82" cy="78" rx="14" ry="7" fill="#fff" fillOpacity=".5" transform="rotate(-35 82 78)" />
+      {key === 'diamond' && <path d="M150 58 L153 68 L163 71 L153 74 L150 84 L147 74 L137 71 L147 68 Z" fill="#fff" fillOpacity=".95" />}
       {Array.from({ length: pips }).map((_, i) => {
-        const y = 92 + i * 26 - (pips - 1) * 13
-        return <path key={i} d={`M62 ${y} L100 ${y + 22} L138 ${y} L138 ${y + 12} L100 ${y + 34} L62 ${y + 12} Z`} fill="#fff" fillOpacity=".92" />
+        const x = 100 + (i - (pips - 1) / 2) * 22
+        return <polygon key={i} points={`${x},196 ${x + 8},204 ${x},212 ${x - 8},204`} fill={`url(#${id}-gold)`} stroke="#5a430a" strokeOpacity=".6" strokeWidth="1" />
       })}
     </svg>
   )
@@ -191,7 +244,7 @@ export default function RandomMatchScreen({ team, spells, onChangeTeam, onRoom, 
         <section className="rk-mid">
           <div className="rk-title">{ranked ? 'ランクマッチ' : 'カジュアルマッチ'}</div>
           <p className="rk-desc">{ranked
-            ? 'ランクをかけて争う、ランダムマッチング戦です。勝つとバトルポイント(BP)が増え、一定のBPで段位が上がります。負けるとBPが減りますが、段位(ブロンズ・シルバー…)そのものは下がりません。'
+            ? 'ランクをかけて争う、ランダムマッチング戦です。勝つとバトルポイント(BP)が増え、一定のBPで段位が上がります。負けるとBPが減りますが、段位(エメラルド・トパーズ…)そのものは下がりません。'
             : 'ランクに影響しない、気軽なランダムマッチング戦です。BPは増減せず、すぐに相手が見つかります。ログインしていなくても、匿名プレイヤーとして遊べます。'}</p>
           <div className="rk-rules">
             <div className="rk-rule on" data-testid="rule-rotation"><span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><RotationMark size={30} />ローテーション</span><span className="dot" /></div>

@@ -41,7 +41,7 @@ a.send({ type: 'surrender' })
 const ra = await a.next('rank'), rb = await b.next('rank')
 ok(ra.delta < 0 && rb.delta > 0, `BPが動く(u1 ${ra.delta} / u2 +${rb.delta})`)
 ok(users.u2.rank.wins === 1 && users.u1.rank.losses === 1 && users.u1.rank.bp === ra.bp, '勝敗とBPが保存される')
-ok(typeof rb.label === 'string' && rb.label.includes('ブロンズ'), '段位の名前が付く ' + rb.label)
+ok(typeof rb.label === 'string' && rb.label.includes('エメラルド'), '段位の名前が付く ' + rb.label)
 // 部屋の中にいる間は、また入れない
 b.send({ type: 'queue', team, ranked: true }); const q2 = await b.next('queued').catch(async () => ({ err: (await b.next('error')).message })); ok(q2.bp === users.u2.rank.bp, '終わったあとは、また待ち行列に入れる ' + (q2.err || ''))
 b.send({ type: 'queue-cancel' }); await b.next('queue-left')
