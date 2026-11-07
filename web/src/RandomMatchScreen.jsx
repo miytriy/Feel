@@ -6,6 +6,7 @@ import { tone } from './FormationScreen.jsx'
 import BattleScreen from './BattleScreen.jsx'
 import { MatchedOverlay } from './PvpScreen.jsx'
 import RotationMark from './RotationMark.jsx'
+import UnlimitedMark from './UnlimitedMark.jsx'
 import { createPvpClient } from './pvp.js'
 import { fetchRank, getAllCharsToken } from './api.js'
 import { rankOf, emptyRank, TIERS, DIVS, matchWindow } from './battle/rank.js'
@@ -193,7 +194,7 @@ export default function RandomMatchScreen({ team, spells, onChangeTeam, onRoom, 
             : 'ランクに影響しない、気軽なランダムマッチング戦です。BPは増減せず、すぐに相手が見つかります。ログインしていなくても、匿名プレイヤーとして遊べます。'}</p>
           <div className="rk-rules">
             <div className="rk-rule on" data-testid="rule-rotation"><span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><RotationMark size={30} />ローテーション</span><span className="dot" /></div>
-            <div className="rk-rule off">アンリミテッド<small>準備中</small></div>
+            <div className="rk-rule off"><span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><UnlimitedMark size={30} />アンリミテッド</span><small>準備中</small></div>
           </div>
           <div className="rk-deck">
             <h3>使用デッキ<button type="button" className="rk-btn" onClick={onChangeTeam} disabled={busy} data-testid="rank-deck">確認・変更</button></h3>
