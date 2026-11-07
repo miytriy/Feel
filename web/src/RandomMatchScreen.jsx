@@ -5,6 +5,7 @@ import { Emblem } from './emblem.jsx'
 import { tone } from './FormationScreen.jsx'
 import BattleScreen from './BattleScreen.jsx'
 import { MatchedOverlay } from './PvpScreen.jsx'
+import RotationMark from './RotationMark.jsx'
 import { createPvpClient } from './pvp.js'
 import { fetchRank, getAllCharsToken } from './api.js'
 import { rankOf, emptyRank, TIERS, DIVS, matchWindow } from './battle/rank.js'
@@ -94,6 +95,7 @@ const CSS = `
 .rk-next { text-align: right; font-size: 12px; color: ${C.mute} }
 .rk-rec { display: flex; justify-content: space-between; width: 100%; font-size: 13px; color: #d8d3c0 }
 .rk-rec b { color: #fff; font-family: ${DISPLAY}; font-size: 18px }
+.rk-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 16px 4px 8px; border-radius: 999px; border: 1.5px solid #4d86e0; background: #11224a; color: #fff; font-weight: 800; font-size: 13px; margin-top: 4px }
 .rk-battle { position: relative; width: 148px; height: 148px; margin-top: 6px; border-radius: 50%; border: 3px solid #d8b85a; background: radial-gradient(circle at 50% 35%, #4aa8ff, #1553c4 60%, #0a2a6e); color: #fff; font-family: ${DISPLAY}; font-weight: 700; font-size: 30px; letter-spacing: .1em; cursor: pointer; display: grid; place-items: center }
 .rk-battle::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid #7fd0ff; animation: rk-ring 2.2s ease-out infinite }
 .rk-battle:hover:not(:disabled) { transform: scale(1.04) }
@@ -190,7 +192,7 @@ export default function RandomMatchScreen({ team, spells, onChangeTeam, onRoom, 
             ? 'ランクをかけて争う、ランダムマッチング戦です。勝つとバトルポイント(BP)が増え、一定のBPで段位が上がります。負けるとBPが減りますが、段位(ブロンズ・シルバー…)そのものは下がりません。'
             : 'ランクに影響しない、気軽なランダムマッチング戦です。BPは増減せず、すぐに相手が見つかります。ログインしていなくても、匿名プレイヤーとして遊べます。'}</p>
           <div className="rk-rules">
-            <div className="rk-rule on" data-testid="rule-rotation">ローテーション<span className="dot" /></div>
+            <div className="rk-rule on" data-testid="rule-rotation"><span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><RotationMark size={30} />ローテーション</span><span className="dot" /></div>
             <div className="rk-rule off">アンリミテッド<small>準備中</small></div>
           </div>
           <div className="rk-deck">
@@ -230,6 +232,7 @@ export default function RandomMatchScreen({ team, spells, onChangeTeam, onRoom, 
           ) : (
             <div style={{ padding: '70px 0', color: C.mute, fontSize: 13 }}>{err ? '' : '読み込み中…'}</div>
           )}
+          <div className="rk-chip" data-testid="rule-chip"><RotationMark size={22} />ローテーション</div>
           <button type="button" className="rk-battle" data-testid="rank-battle" disabled={busy || (ranked && !rank) || chars.length === 0} onClick={start}>バトル</button>
           {!ranked && onRoom && <button type="button" className="rk-btn" style={{ marginTop: 6 }} onClick={onRoom} disabled={busy} data-testid="to-room">部屋コードで友だちと対戦</button>}
         </aside>
