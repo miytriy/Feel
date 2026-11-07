@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useIsDesktop, C, FONT } from './ui.js'
 import { ScreenHeader } from './chrome.jsx'
+import EffectGallery from './EffectGallery.jsx'
 
 // ルール説明(ユーザー向けの、かんたんな版): 「公式ルールブック(ユーザー用)」の章立て・数字に合わせてある。
 // 戦闘処理の細かい規則は、別の「システム用ルールブック」にある。
@@ -486,6 +487,15 @@ const CHAPTERS = [
     ]
    ]
   ]
+ ],
+ [
+  "第9章　エフェクト一覧（実際の動き）",
+  [
+   [
+    "",
+    'FX'
+   ]
+  ]
  ]
 ]
 
@@ -579,7 +589,7 @@ export default function RulesScreen({ onExit, first = false }) {
             {secs.map(([st, items], k) => (
               <div key={k}>
                 {st && <h3 style={{ margin: '16px 0 4px', fontSize: 15, borderLeft: `4px solid ${C.player}`, paddingLeft: 8 }}>{st}</h3>}
-                {items === 'KW1' ? <KeywordGrid /> : items.map(([t, x], j) => <Item key={j} term={t} text={x} />)}
+                {items === 'KW1' ? <KeywordGrid /> : items === 'FX' ? <EffectGallery /> : items.map(([t, x], j) => <Item key={j} term={t} text={x} />)}
               </div>
             ))}
           </section>
