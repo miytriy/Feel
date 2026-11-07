@@ -1241,6 +1241,7 @@ export function legalActions(state) {
   if (state.actionsThisTurn < MAX_ACTIONS_PER_TURN) {
     for (const tr of actor.traits) {
       if (tr.charges != null && tr.charges <= 0) continue // 回数つきの特性は、使い切ったら使えない
+      if (tr.wait > 0) continue // 『Nターンに一度』の特性は、待ち時間が終わるまで使えない
       if (!tr.repeatable && actor.usedTraits.includes(tr.id)) continue // 同じ特性は1ターンに1回(連続使用できる特性は除く)
       if (state.mp[actor.team] < tr.cost) continue
       if (!checkCond(state, actor, tr.condition)) continue
@@ -1281,6 +1282,7 @@ function beginTurn(state, unit, opts) {
   emit(state, 'turn', { uid: unit.uid, name: unit.name, team: unit.team })
   unit.usedTraits = []
   unit.skillsThisTurn = 0
+  for (const tr of unit.traits || []) if (tr.wait > 0) tr.wait -= 1
   if (unit.stealthEvery && !unit.stealth && unit.stealthTimer != null) {
     unit.stealthTimer += 1
     if (unit.stealthTimer >= unit.stealthEvery) { unit.stealth = true; unit.stealthTimer = null; state.log.push(`${unit.name}は再び【潜伏】した`) }
@@ -1581,6 +1583,7 @@ function doTrait(state, actor, action, opts) {
   state.traitCount[actor.team] += 1 // 奥義ゲージに数えられる
   actor.usedTraits.push(trait.id)
   if (trait.charges != null) trait.charges -= 1
+  if (trait.cooldown) trait.wait = trait.cooldown // 使ったあと、自分のターンが cooldown 回まわってくるまで使えない
   recalc(state)
   state.log.push(`${actor.name}の特性【${trait.name}】(MP${trait.cost})`)
   noteAbility(state, '特性', actor.name, trait.name, trait.desc, actor.team)

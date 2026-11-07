@@ -3,8 +3,8 @@
 import { KEYWORDS, TRIGGER_LABELS, RELICS } from '../engine.js'
 
 // 画面で、クラスを並べるときの順番(編成・人事)
-export const CLASS_ORDER = ['ニュートラル', 'エルフ', 'ロイヤル', 'ウィッチ', 'ドラゴン', 'ナイトメア', 'ビショップ', 'ネメシス']
-export const CLASSES = ['エルフ', 'ロイヤル', 'ウィッチ', 'ドラゴン', 'ナイトメア', 'ビショップ', 'ネメシス', 'ニュートラル']
+export const CLASS_ORDER = ['ニュートラル', 'エルフ', 'ロイヤル', 'ウィッチ', 'ドラゴン', 'ナイトメア', 'ビショップ', 'ネメシス', 'クロノス']
+export const CLASSES = ['エルフ', 'ロイヤル', 'ウィッチ', 'ドラゴン', 'ナイトメア', 'ビショップ', 'ネメシス', 'クロノス', 'ニュートラル']
 export const RARITIES = ['legend', 'gold', 'silver', 'bronze']
 const SKILL_STATS = ['atk', 'mag']
 const DMG_TYPES = ['physical', 'magic', 'true']
@@ -110,6 +110,7 @@ export function validateCharacter(def, opts = {}) {
     ids.add(t.id)
     if (!isStr(t.name)) errs.push(`${label}: ${w}: name がありません`)
     if (!isNum(t.cost) || t.cost < 0) errs.push(`${label}: ${w}: cost(MP)は0以上の数字にしてください`)
+    if (t.cooldown != null && (!isNum(t.cooldown) || t.cooldown < 1)) errs.push(`${label}: ${w}: cooldown(Nターンに一度)は1以上の数字にしてください`)
     if (!TRAIT_TARGETS.includes(t.target)) errs.push(`${label}: ${w}: target「${t.target}」は使えません(${TRAIT_TARGETS.join(' / ')})`)
     checkCondition(t.condition, `${label}: ${w}`, errs)
     checkEffects(t.effects, `${label}: ${w}`, errs)

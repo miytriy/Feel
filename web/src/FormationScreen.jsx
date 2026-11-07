@@ -326,7 +326,7 @@ const FIGURES = [
 const Silhouette = ({ seed }) => <svg className="sil" viewBox="-2 0 44 100" preserveAspectRatio="xMidYMax meet" aria-hidden="true">{FIGURES[hash(seed) % FIGURES.length]}</svg>
 
 // クラスごとの色(クラスの絵の色)
-const CLASS_COLOR = { 'エルフ': '#439159', 'ロイヤル': '#797b1b', 'ニュートラル': '#858585', 'ウィッチ': '#535fa3', 'ネメシス': '#5bcce3', 'ビショップ': '#b0a98d', 'ナイトメア': '#8d1e41', 'ドラゴン': '#a05a12' }
+const CLASS_COLOR = { 'エルフ': '#439159', 'ロイヤル': '#797b1b', 'ニュートラル': '#858585', 'ウィッチ': '#535fa3', 'ネメシス': '#5bcce3', 'ビショップ': '#b0a98d', 'ナイトメア': '#8d1e41', 'ドラゴン': '#a05a12', 'クロノス': '#c9a227' }
 export const tone = (c) => (!c || !c.class ? '#858585' : CLASS_COLOR[c.class] || `hsl(${hash(c.class) % 360} 62% 54%)`)
 // レジェンドの枠は虹色(カードの枠の、光る虹色)。それ以外は、レアリティの色の1色
 const RAINBOW = 'linear-gradient(135deg, #c9a6ff 0%, #8fb4ff 20%, #7fe3ff 40%, #86f0d6 56%, #ff9fe0 78%, #c9a6ff 100%)'
