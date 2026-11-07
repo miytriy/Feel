@@ -254,7 +254,7 @@ function Skull() {
   )
 }
 // 消滅の最後に散る、青い粒と黒いかけら
-const SPARKS = Array.from({ length: 16 }, (_, n) => { const a = n * 2.4 + 0.7; const d = 20 + ((n * 5) % 6) * 7; return { dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d - 6)}px`, dark: n % 3 === 1 } })
+const SPARKS = Array.from({ length: 26 }, (_, n) => { const a = n * 2.4 + 0.7; const d = 34 + ((n * 5) % 7) * 12; return { dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d - 6)}px`, dark: n % 3 === 1 } })
 // 飛び散る紙片(破壊): 白くて透ける、三角や四角の破片。火の粉(黄色)と、暗い赤のかけら
 const CONFETTI = Array.from({ length: 16 }, (_, n) => { const a = n * 2.4 + 0.4; const d = 26 + ((n * 7) % 5) * 9; return { x: `${Math.round(Math.cos(a) * 10)}px`, y: `${Math.round(Math.sin(a) * 10)}px`, dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d)}px`, rot: `${(n % 2 ? 1 : -1) * (90 + n * 30)}deg`, size: 6 + (n % 3) * 2, tri: n % 2 === 0, delay: 0.1 + (n % 5) * 0.02 } })
 const EMBERS = Array.from({ length: 10 }, (_, n) => { const a = n * 0.63 + 0.2; const d = 18 + (n % 4) * 9; return { dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d)}px`, dark: n % 3 === 0 } })
@@ -311,7 +311,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         cursor: 'pointer', position: 'relative',
         ...(hl ? { boxShadow: `0 0 0 4px ${C.active}`, transform: 'scale(1.03)', zIndex: 2 } : {}),
         ...(fx && fx.kind === 'evolve' ? { zIndex: 4, animation: 'feel-ev-pop 1.2s ease-out both' } : {}),
-        ...(fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s${fx.die === 'destroy' ? ', feel-d-melt 0.18s ease-in forwards, ' + (unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade') + ' 0.27s ease-in 0.24s forwards' : fx.die === 'vanish' ? ', ' + (unit.field === 'main' ? 'feel-d-fade2m' : 'feel-d-fade2') + ' 0.2s ease-in 0.12s forwards' : ''}` } : fx && fx.die === 'destroy' ? { animation: `feel-d-melt 0.18s ease-in forwards, ${unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade'} 0.27s ease-in 0.24s forwards` } : fx && fx.die === 'vanish' ? { animation: `${unit.field === 'main' ? 'feel-d-fade2m' : 'feel-d-fade2'} 0.2s ease-in 0.12s forwards` } : {}), // 破壊: ドクロが出る前に、ユニットがぼやけて、下へ溶けるように崩れる
+        ...(fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s${fx.die === 'destroy' ? ', feel-d-melt 0.18s ease-in forwards, ' + (unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade') + ' 0.27s ease-in 0.24s forwards' : fx.die === 'vanish' ? ', ' + (unit.field === 'main' ? 'feel-d-fade2m' : 'feel-d-fade2') + ' 0.06s ease-in 0.05s forwards' : ''}` } : fx && fx.die === 'destroy' ? { animation: `feel-d-melt 0.18s ease-in forwards, ${unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade'} 0.27s ease-in 0.24s forwards` } : fx && fx.die === 'vanish' ? { animation: `${unit.field === 'main' ? 'feel-d-fade2m' : 'feel-d-fade2'} 0.06s ease-in 0.05s forwards` } : {}), // 破壊: ドクロが出る前に、ユニットがぼやけて、下へ溶けるように崩れる
         // 攻撃する側: チームの色で光って、相手のほうへ少し出る / 受ける側: 赤く縁どる(揺れとダメージの数字は、いままでどおり)
         ...(role === 'attacker' ? { boxShadow: `0 0 0 3px ${TEAM_COLOR[unit.team]}, 0 0 18px 2px ${alpha(TEAM_COLOR[unit.team], 60)}`, zIndex: 3, animation: `${unit.team === 'A' ? 'feel-lunge-up' : 'feel-lunge-down'} 0.5s ease-out` } : {}),
         // 倒れたキャラ: 外枠と背景を消して、名前とHPバーだけを薄く残す(場所はそのまま。並びがずれない)
@@ -337,7 +337,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
       )}
       {fx && fx.die === 'vanish' && (
         // 消滅の演出(動画の再現): ふわっとした青紫の光の円 → 縁に、水色の電気の網のような太い輪(内側はぎざぎざの暗い群青、中心は明るい青)→ 輪が小さく縮む → 白い光の核と暗いけむり → 水色の光の粒と黒いかけらが散って消える
-        <span key={`van-${tick}`} aria-hidden="true" data-testid="fx-vanish" style={{ position: 'absolute', left: '50%', top: '50%', height: '125%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }}>
+        <span key={`van-${tick}`} aria-hidden="true" data-testid="fx-vanish" style={{ position: 'absolute', left: '50%', top: '50%', height: '250%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }}>
           <svg width="0" height="0" style={{ position: 'absolute' }}>
             <defs>
               <filter id="feel-fuzzy" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="3" result="n" /><feDisplacementMap in="SourceGraphic" in2="n" scale="16" /></filter>
@@ -356,18 +356,18 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
               </filter>
             </defs>
           </svg>
-          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(70,140,255,1) 0%, rgba(24,52,200,1) 20%, rgba(10,22,105,1) 48%, rgba(8,16,82,1) 70%, rgba(95,55,190,0.9) 90%, rgba(120,80,215,0) 100%)', filter: 'url(#feel-fuzzy)', animation: 'feel-v-disc 0.5s ease-out both' }} />
-          <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', animation: 'feel-v-ring 0.5s ease-in-out both', filter: 'drop-shadow(0 0 3px #4fb4ff) drop-shadow(0 0 8px #2f6bff)' }}>
+          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(70,140,255,1) 0%, rgba(24,52,200,1) 20%, rgba(10,22,105,1) 48%, rgba(8,16,82,1) 70%, rgba(95,55,190,0.9) 90%, rgba(120,80,215,0) 100%)', filter: 'url(#feel-fuzzy)', animation: 'feel-v-disc 0.75s ease-out both' }} />
+          <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', animation: 'feel-v-ring 0.75s ease-in-out both', filter: 'drop-shadow(0 0 3px #4fb4ff) drop-shadow(0 0 8px #2f6bff)' }}>
             <circle cx="50" cy="50" r="40" fill="none" stroke="#7ee6ff" strokeWidth="13" filter="url(#feel-web)" />
             <circle cx="50" cy="50" r="44" fill="none" stroke="#45c8ff" strokeWidth="2.4" filter="url(#feel-bolt)" />
             <circle cx="50" cy="50" r="44" fill="none" stroke="#ffffff" strokeWidth="1" filter="url(#feel-bolt)" opacity="0.9" />
             <circle cx="50" cy="50" r="49" fill="none" stroke="#c9bdff" strokeWidth="0.8" filter="url(#feel-bolt)" opacity="0.5" />
           </svg>
-          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '70%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(40,40,52,0) 28%, rgba(55,55,68,0.75) 60%, rgba(60,60,74,0) 100%)', filter: 'url(#feel-rag)', animation: 'feel-v-smoke 0.5s ease-out both' }} />
-          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '40%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, #fff 0%, #fff 25%, rgba(190,235,255,0.9) 50%, rgba(110,190,255,0) 100%)', boxShadow: '0 0 14px 4px rgba(150,220,255,0.8)', animation: 'feel-v-core 0.5s ease-in-out both' }} />
-          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '46%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(170,230,255,0.75) 0%, rgba(110,190,255,0.45) 50%, rgba(110,190,255,0) 100%)', filter: 'url(#feel-rag)', animation: 'feel-v-glow 0.5s ease-out both' }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '70%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(40,40,52,0) 28%, rgba(55,55,68,0.75) 60%, rgba(60,60,74,0) 100%)', filter: 'url(#feel-rag)', animation: 'feel-v-smoke 0.75s ease-out both' }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '40%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, #fff 0%, #fff 25%, rgba(190,235,255,0.9) 50%, rgba(110,190,255,0) 100%)', boxShadow: '0 0 14px 4px rgba(150,220,255,0.8)', animation: 'feel-v-core 0.75s ease-in-out both' }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '46%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(170,230,255,0.75) 0%, rgba(110,190,255,0.45) 50%, rgba(110,190,255,0) 100%)', filter: 'url(#feel-rag)', animation: 'feel-v-glow 0.75s ease-out both' }} />
           {SPARKS.map((sp, n) => (
-            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: sp.dark ? 4 : 5, height: sp.dark ? 4 : 5, marginLeft: -2, marginTop: -2, borderRadius: sp.dark ? 1 : '50%', background: sp.dark ? '#14141c' : '#d8f4ff', boxShadow: sp.dark ? 'none' : '0 0 6px 2px #6ac4ff', '--dx': sp.dx, '--dy': sp.dy, animation: `feel-v-spark 0.5s ease-out both` }} />
+            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: sp.dark ? 4 : 5, height: sp.dark ? 4 : 5, marginLeft: -2, marginTop: -2, borderRadius: sp.dark ? 1 : '50%', background: sp.dark ? '#14141c' : '#d8f4ff', boxShadow: sp.dark ? 'none' : '0 0 6px 2px #6ac4ff', '--dx': sp.dx, '--dy': sp.dy, animation: `feel-v-spark 0.75s ease-out both` }} />
           ))}
         </span>
       )}
@@ -511,7 +511,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
           <LossBlink unit={unit} loss={loss} />
         </div>
       )}
-      <div style={{ marginTop: 2, color: C.mute, ...(dying && !unit.isAmulet ? { animation: `feel-d-fade2 ${vanishing ? '0.2s ease-in 0.12s' : '0.2s ease-in 0.3s'} forwards`, willChange: 'opacity' } : {}) }}>{unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive || dying ? <><AnimNum value={Math.ceil(unit.alive || vanishing ? hpShown : 0)} ms={300} />/{unit.maxHp}</> : ''}</div>
+      <div style={{ marginTop: 2, color: C.mute, ...(dying && !unit.isAmulet ? { animation: `feel-d-fade2 ${vanishing ? '0.06s ease-in 0.05s' : '0.2s ease-in 0.3s'} forwards`, willChange: 'opacity' } : {}) }}>{unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive || dying ? <><AnimNum value={Math.ceil(unit.alive || vanishing ? hpShown : 0)} ms={300} />/{unit.maxHp}</> : ''}</div>
       {unit.armor > 0 && <div style={{ color: C.player }}>アーマー {Math.ceil(unit.armor)}{unit.armorRate < 1 ? `(${Math.round(unit.armorRate * 100)}%)` : ''}</div>}
       {badges.length > 0 && (
         <div style={{ marginTop: 2, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
@@ -736,7 +736,7 @@ function reorderBoost(evs) {
   }
   return out
 }
-const EVENT_MS = { turn: 700, ability: 600, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 600, vanish: 520, av: 800, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 600, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 600, vanish: 760, av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null, online = null }) {
@@ -862,7 +862,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     if (play.i >= play.events.length) { setPlay(null); return }
     const grp = play.events.slice(play.i, groupEnd(play.events, play.i) + 1)
     const cut = grp.map(cutinOf).find(Boolean) // キャラ専用のカットイン演出がある場面は、その長さだけ待つ
-    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), cut ? cut.ms + 150 : Math.max(...grp.map((x) => (x.blast ? BLAST_MS : EVENT_MS[x.type] ?? 500))) * mult)
+    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), cut ? cut.ms + 150 : Math.max(...grp.map((x) => (x.blast ? Math.max(BLAST_MS, EVENT_MS.vanish) : EVENT_MS[x.type] ?? 500))) * mult)
     return () => clearTimeout(t)
   }, [play, mult, logOpen])
 
