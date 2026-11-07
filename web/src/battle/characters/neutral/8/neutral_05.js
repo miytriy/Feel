@@ -8,8 +8,8 @@ export default {
     effects: [{
       type: 'mode', prompt: 'モードを1つ選んでください',
       modes: [
-        { name: '召喚物を消滅', desc: '場の召喚物をすべて消滅。', effects: [{ type: 'vanish', target: 'fieldSummons' }] },
-        { name: 'アミュレットを消滅', desc: '場のアミュレットをすべて消滅。', effects: [{ type: 'vanish', target: 'fieldAmulets' }] },
+        { name: '召喚物を消滅', desc: '場の召喚物をすべて消滅。', effects: [{ type: 'vanish', target: 'fieldSummons', meteor: true }] },
+        { name: 'アミュレットを消滅', desc: '場のアミュレットをすべて消滅。', effects: [{ type: 'vanish', target: 'fieldAmulets', meteor: true }] },
         { name: 'クレストを消滅', desc: '場のクレストをすべて消滅。', effects: [{ type: 'clearCrests' }] },
       ],
     }],

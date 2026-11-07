@@ -311,7 +311,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         cursor: 'pointer', position: 'relative',
         ...(hl ? { boxShadow: `0 0 0 4px ${C.active}`, transform: 'scale(1.03)', zIndex: 2 } : {}),
         ...(fx && fx.kind === 'evolve' ? { zIndex: 4, animation: 'feel-ev-pop 1.2s ease-out both' } : {}),
-        ...(fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s${fx.die === 'destroy' ? ', feel-d-melt 0.3s ease-in forwards, ' + (unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade') + ' 0.45s ease-in 0.4s forwards' : fx.die === 'vanish' ? ', ' + (unit.field === 'main' ? 'feel-d-fade2m' : 'feel-d-fade2') + ' 0.4s ease-in 0.6s forwards' : ''}` } : fx && fx.die === 'destroy' ? { animation: `feel-d-melt 0.3s ease-in forwards, ${unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade'} 0.45s ease-in 0.4s forwards` } : fx && fx.die === 'vanish' ? { animation: `${unit.field === 'main' ? 'feel-d-fade2m' : 'feel-d-fade2'} 0.4s ease-in 0.6s forwards` } : {}), // 破壊: ドクロが出る前に、ユニットがぼやけて、下へ溶けるように崩れる
+        ...(fx && fx.kind === 'meteor' ? { animation: 'feel-shake 0.3s ease-out 0.42s' } : fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s${fx.die === 'destroy' ? ', feel-d-melt 0.3s ease-in forwards, ' + (unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade') + ' 0.45s ease-in 0.4s forwards' : fx.die === 'vanish' ? ', ' + (unit.field === 'main' ? 'feel-d-fade2m' : 'feel-d-fade2') + ' 0.4s ease-in 0.6s forwards' : ''}` } : fx && fx.die === 'destroy' ? { animation: `feel-d-melt 0.3s ease-in forwards, ${unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade'} 0.45s ease-in 0.4s forwards` } : fx && fx.die === 'vanish' ? { animation: `${unit.field === 'main' ? 'feel-d-fade2m' : 'feel-d-fade2'} 0.4s ease-in 0.6s forwards` } : {}), // 破壊: ドクロが出る前に、ユニットがぼやけて、下へ溶けるように崩れる
         // 攻撃する側: チームの色で光って、相手のほうへ少し出る / 受ける側: 赤く縁どる(揺れとダメージの数字は、いままでどおり)
         ...(role === 'attacker' ? { boxShadow: `0 0 0 3px ${TEAM_COLOR[unit.team]}, 0 0 18px 2px ${alpha(TEAM_COLOR[unit.team], 60)}`, zIndex: 3, animation: `${unit.team === 'A' ? 'feel-lunge-up' : 'feel-lunge-down'} 0.5s ease-out` } : {}),
         // 倒れたキャラ: 外枠と背景を消して、名前とHPバーだけを薄く残す(場所はそのまま。並びがずれない)
@@ -333,6 +333,15 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
           {EMBERS.map((m, n) => (
             <span key={`e${n}`} style={{ position: 'absolute', left: '50%', top: '50%', width: m.dark ? 4 : 5, height: m.dark ? 4 : 5, marginLeft: -2, marginTop: -2, borderRadius: m.dark ? 1 : '50%', background: m.dark ? '#5a1210' : '#ffd27a', boxShadow: m.dark ? 'none' : '0 0 6px 2px rgba(255,160,50,0.9)', '--dx': m.dx, '--dy': m.dy, animation: `feel-d-ember 0.8s ease-out 0.2s both` }} />
           ))}
+        </span>
+      )}
+      {fx && fx.kind === 'meteor' && (
+        // 隕石: 画面の右上から、このユニットの中心へ落ちて着弾 → 青白い閃光が広がる(動かすのは transform と opacity だけ)
+        <span key={`met-${tick}`} aria-hidden="true" data-testid="fx-meteor" style={{ position: 'absolute', left: '50%', top: '50%', width: 0, height: 0, pointerEvents: 'none', zIndex: 10 }}>
+          <span style={{ position: 'absolute', left: 0, top: 0, width: 0, height: 0, opacity: 0, animation: 'feel-met 0.7s linear forwards', willChange: 'transform, opacity' }}>
+            <img src={`${import.meta.env?.BASE_URL || '/'}fx/albion/meteor.webp`} alt="" draggable={false} style={{ position: 'absolute', width: '24vmax', left: '-21.6vmax', top: '-2.4vmax', transformOrigin: '90% 50%', transform: 'rotate(116deg)', display: 'block' }} />
+          </span>
+          <span style={{ position: 'absolute', left: 0, top: 0, width: '150%', aspectRatio: '1', minWidth: 90, borderRadius: '50%', background: 'radial-gradient(circle, #fff 0%, rgba(190,235,255,.95) 22%, rgba(70,140,255,.55) 52%, rgba(70,140,255,0) 72%)', opacity: 0, transform: 'translate(-50%, -50%) scale(.2)', animation: 'feel-met-hit 0.7s ease-out forwards', willChange: 'transform, opacity' }} />
         </span>
       )}
       {fx && fx.die === 'vanish' && (
@@ -681,7 +690,7 @@ const buttonStyle = (primary, disabled) => ({
 // ---- 再生(起きたことを、1つずつ順番に見せる。速さは、設定の「CPUの行動の待ち時間」に合わせる) ----
 // 連続する同じ種類の出来事(複数の召喚・複数への攻撃・複数のヒール)は、1つにまとめて一気に見せる。
 // 返す値は、まとめの最後の番号(まとまらなければ i のまま)。攻撃は、同じ攻撃元・同じ手段のものだけ。同じ相手が2回出たら、そこで区切る
-const GROUP_TYPES = ['damage', 'heal', 'summon', 'buff', 'keyword', 'destroy', 'vanish', 'av']
+const GROUP_TYPES = ['damage', 'heal', 'summon', 'buff', 'keyword', 'destroy', 'vanish', 'av', 'meteor']
 function groupEnd(events, i) {
   const e = events[i]
   if (!e || !GROUP_TYPES.includes(e.type)) return i
@@ -736,7 +745,7 @@ function reorderBoost(evs) {
   }
   return out
 }
-const EVENT_MS = { turn: 700, ability: 600, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 1000, vanish: 900, av: 800, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 600, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 1000, vanish: 900, meteor: 700, av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null, online = null }) {
@@ -1181,6 +1190,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     if (ev.type === 'keyword') return { kind: 'keyword', text: mine.filter((x) => x.type === 'keyword').map((x) => `【${x.label}】`).join('') + '獲得' } // 能力付与
     if (ev.type === 'evolve') return { kind: 'evolve', text: '' } // 進化: 光の柱・光の輪・舞い上がる光
     if (ev.type === 'destroy') return { kind: 'destroy', text: '', grave: !!ev.grave } // 破壊: 砕け散る
+    if (ev.type === 'meteor') return { kind: 'meteor', text: '' } // 隕石が落ちて着弾する(アルビオンバハムート。このあとに消滅の演出)
     if (ev.type === 'vanish') return { kind: 'vanish', text: '' } // 消滅: 青い光になって、円の中心へ収束して消える
     if (ev.type === 'heal') return { kind: 'heal', text: `+${ev.amount}` }
     if (ev.type === 'summon') return { kind: 'summon', text: '登場!' }

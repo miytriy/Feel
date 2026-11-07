@@ -967,6 +967,7 @@ function runEffects(state, source, effects, ctx = {}) {
       targets = []
       while (targets.length < n && pool.length) targets.push(pool.splice(Math.floor(rng() * pool.length), 1)[0])
     }
+    if (e.type === 'vanish' && e.meteor) for (const t of targets) if (t && t.alive) emit(state, 'meteor', { target: t.uid }) // 隕石が1体ずつに落ちてから、消滅する
     for (const t of targets) {
       if (!t) continue
       switch (e.type) {
