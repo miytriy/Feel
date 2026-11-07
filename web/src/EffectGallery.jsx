@@ -30,8 +30,8 @@ const LIST = [
   ['召喚', 'ユニットが場に出る。', 800, (p) => ({ unit: baseUnit, fx: p ? { kind: 'summon', text: '登場!' } : null })],
   ['攻撃を防ぐ', 'バリアや回避で、ダメージが入らない。', 800, (p) => ({ unit: baseUnit, fx: p ? { kind: 'block', text: '' } : null })],
   ['進化', '光の柱と光の輪。', 1500, (p) => ({ unit: baseUnit, fx: p ? { kind: 'evolve', text: '' } : null })],
-  ['破壊', '赤い円と、砕け散る破片。', 600, (p) => ({ unit: p ? { ...baseUnit, hp: 0, alive: false } : baseUnit, fx: p ? { kind: 'none', text: '', die: 'destroy', grave: false } : null })],
-  ['破壊(墓場へ)', 'ドクロ入りの赤い円。', 600, (p) => ({ unit: p ? { ...baseUnit, hp: 0, alive: false } : baseUnit, fx: p ? { kind: 'none', text: '', die: 'destroy', grave: true } : null })],
+  ['破壊(ラストワードなし)', '金白の閃光から、金色の粒になって散る。', 800, (p) => ({ unit: p ? { ...baseUnit, hp: 0, alive: false } : baseUnit, fx: p ? { kind: 'none', text: '', die: 'destroy', lw: false } : null })],
+  ['破壊(ラストワードあり)', '赤い円とドクロ。そのあと、ラストワードが発動する。', 800, (p) => ({ unit: p ? { ...baseUnit, hp: 0, alive: false } : baseUnit, fx: p ? { kind: 'none', text: '', die: 'destroy', lw: true } : null })],
   ['消滅', '電気の輪が広がって縮み、光の粒になる。', 950, (p) => ({ unit: p ? { ...baseUnit, hp: 0, alive: false } : baseUnit, fx: p ? { kind: 'none', text: '', die: 'vanish' } : null })],
 ]
 

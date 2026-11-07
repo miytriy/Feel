@@ -256,6 +256,7 @@ function Skull() {
 // 消滅の最後に散る、青い粒と黒いかけら
 const SPARKS = Array.from({ length: 26 }, (_, n) => { const a = n * 2.4 + 0.7; const d = 34 + ((n * 5) % 7) * 12; return { dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d - 6)}px`, dark: n % 3 === 1 } })
 // 飛び散る紙片(破壊): 白くて透ける、三角や四角の破片。火の粉(黄色)と、暗い赤のかけら
+const GOLD = Array.from({ length: 34 }, (_, n) => { const a = n * 2.4 + 0.3; const d = 22 + ((n * 7) % 9) * 9; return { dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d - 14)}px`, size: 3 + (n % 4) * 1.6, col: n % 3 === 0 ? '#ffffff' : n % 3 === 1 ? '#fff0a8' : '#ffd45e', delay: 0.1 + (n % 6) * 0.045, dur: 0.5 + (n % 5) * 0.1 } })
 const CONFETTI = Array.from({ length: 16 }, (_, n) => { const a = n * 2.4 + 0.4; const d = 26 + ((n * 7) % 5) * 9; return { x: `${Math.round(Math.cos(a) * 10)}px`, y: `${Math.round(Math.sin(a) * 10)}px`, dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d)}px`, rot: `${(n % 2 ? 1 : -1) * (90 + n * 30)}deg`, size: 6 + (n % 3) * 2, tri: n % 2 === 0, delay: 0.1 + (n % 5) * 0.02 } })
 const EMBERS = Array.from({ length: 10 }, (_, n) => { const a = n * 0.63 + 0.2; const d = 18 + (n % 4) * 9; return { dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d)}px`, dark: n % 3 === 0 } })
 
@@ -324,8 +325,10 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         // 破壊の演出: 白熱のフラッシュ → 赤い円(縁は桃色の輪、外側に暗い赤のにじみ。墓場が増えるときは、黒いドクロ入り)→ 透ける白い破片が散り、ドクロが溶け、円が赤いもやになって、火の粉と暗いかけらを散らして消える
         <span key={`des-${tick}`} aria-hidden="true" data-testid="fx-destroy" style={{ position: 'absolute', left: '50%', top: '50%', height: '120%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }}>
           <span style={{ position: 'absolute', inset: '8%', borderRadius: '24%', background: 'radial-gradient(circle, #fff 0%, #ffe2b0 45%, rgba(255,150,70,0.8) 75%, rgba(255,120,60,0) 100%)', boxShadow: '0 0 20px 6px rgba(255,170,90,0.8)', opacity: 0, animation: 'feel-d-flash 0.12s ease-out 0.12s forwards' }} />
+          {fx.lw && (
+            <>
           <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 50% 46%, #ff9a7e 0%, #fb6a50 55%, #ec4733 85%, #ffa58c 100%)', boxShadow: 'inset 0 0 0 2px rgba(255,205,180,0.85), 0 0 12px 3px rgba(255,80,60,0.85), 0 0 30px 12px rgba(120,10,10,0.55)', animation: 'feel-d-orb 0.48s ease-out 0.12s both' }}>
-            {fx.grave && <Skull />}
+            {fx.lw && <Skull />}
           </span>
           {CONFETTI.map((c, n) => (
             <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: c.size, height: c.size, marginLeft: -c.size / 2, marginTop: -c.size / 2, clipPath: c.tri ? 'polygon(0 100%, 50% 0, 100% 100%)' : 'polygon(10% 0, 100% 20%, 90% 100%, 0 80%)', background: 'linear-gradient(135deg, #ffffff 0%, #d6e8ff 50%, #ffe0ea 100%)', '--x': c.x, '--y': c.y, '--dx': c.dx, '--dy': c.dy, '--rot': c.rot, animation: `feel-d-conf 0.36s ease-out ${(c.delay + 0.2) * 0.6}s both` }} />
@@ -333,6 +336,17 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
           {EMBERS.map((m, n) => (
             <span key={`e${n}`} style={{ position: 'absolute', left: '50%', top: '50%', width: m.dark ? 4 : 5, height: m.dark ? 4 : 5, marginLeft: -2, marginTop: -2, borderRadius: m.dark ? 1 : '50%', background: m.dark ? '#5a1210' : '#ffd27a', boxShadow: m.dark ? 'none' : '0 0 6px 2px rgba(255,160,50,0.9)', '--dx': m.dx, '--dy': m.dy, animation: `feel-d-ember 0.48s ease-out 0.12s both` }} />
           ))}
+            </>
+          )}
+          {!fx.lw && (
+            // ラストワードなし: 金白の閃光 → 金色のもやと、きらめく粒が散って消える(ドクロも赤い円も出ない)
+            <>
+              <span style={{ position: 'absolute', inset: '-6%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,246,200,0.95) 0%, rgba(255,214,110,0.6) 40%, rgba(255,190,70,0) 72%)', opacity: 0, animation: 'feel-d-haze 0.8s ease-out 0.1s both', willChange: 'transform, opacity' }} />
+              {GOLD.map((g, n) => (
+                <span key={`g${n}`} style={{ position: 'absolute', left: '50%', top: '50%', width: g.size, height: g.size, marginLeft: -g.size / 2, marginTop: -g.size / 2, borderRadius: '50%', background: g.col, boxShadow: '0 0 6px 2px rgba(255,205,90,0.9)', opacity: 0, '--dx': g.dx, '--dy': g.dy, animation: `feel-d-gold ${g.dur}s ease-out ${g.delay}s both`, willChange: 'transform, opacity' }} />
+              ))}
+            </>
+          )}
         </span>
       )}
       {fx && fx.die === 'vanish' && (
@@ -736,7 +750,7 @@ function reorderBoost(evs) {
   }
   return out
 }
-const EVENT_MS = { turn: 700, ability: 600, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 600, vanish: 950, av: 800, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 600, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 800, vanish: 950, av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null, online = null }) {
@@ -1181,7 +1195,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     if (ev.type === 'buff') return { kind: 'buff', text: mine.filter((x) => x.type === 'buff').map((x) => `${x.text}↑`).join(' ') } // 強化(攻撃力+30↑ など)
     if (ev.type === 'keyword') return { kind: 'keyword', text: mine.filter((x) => x.type === 'keyword').map((x) => `【${x.label}】`).join('') + '獲得' } // 能力付与
     if (ev.type === 'evolve') return { kind: 'evolve', text: '' } // 進化: 光の柱・光の輪・舞い上がる光
-    if (ev.type === 'destroy') return { kind: 'destroy', text: '', grave: !!ev.grave } // 破壊: 砕け散る
+    if (ev.type === 'destroy') return { kind: 'destroy', text: '', grave: !!ev.grave, lw: !!ev.lw } // 破壊: 砕け散る
     if (ev.type === 'vanish') return { kind: 'vanish', text: '' } // 消滅: 青い光になって、円の中心へ収束して消える
     if (ev.type === 'heal') return { kind: 'heal', text: `+${ev.amount}` }
     if (ev.type === 'summon') return { kind: 'summon', text: '登場!' }
@@ -1192,7 +1206,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     const mine = groupEvs.filter((x) => x.target === uid)
     const dieEv = mine.find((x) => x.type === 'destroy' || x.type === 'vanish')
     const f = fxFor0(uid)
-    return dieEv ? { ...(f && f.kind !== 'destroy' && f.kind !== 'vanish' ? f : { kind: 'none', text: '' }), die: dieEv.type, grave: !!dieEv.grave } : f
+    return dieEv ? { ...(f && f.kind !== 'destroy' && f.kind !== 'vanish' ? f : { kind: 'none', text: '' }), die: dieEv.type, grave: !!dieEv.grave, lw: !!dieEv.lw } : f
   }
   // 攻撃した側・受けた側の印(まとまった出来事の全員ぶん)。全体攻撃なら、攻撃側1体と、受ける側が全員
   const attackerIds = new Set(); const targetIds = new Map()

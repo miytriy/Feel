@@ -109,6 +109,8 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-bar-out { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(22px); } }
     @keyframes feel-av-band { 0% { opacity: 0; transform: scaleX(0.4); } 15% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0; transform: scaleX(1.2); } }
     @keyframes feel-av-chev { 0% { opacity: 0; } 15% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; } }
+    @keyframes feel-d-haze { 0% { opacity: 0; transform: scale(0.5); } 15% { opacity: 0.9; transform: scale(0.9); } 100% { opacity: 0; transform: scale(1.5); } }
+    @keyframes feel-d-gold { 0%, 8% { opacity: 0; transform: translate(0, 0) scale(0.4); } 22% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); } }
     @keyframes feel-d-flash { 0% { opacity: 1; transform: scale(0.9); } 100% { opacity: 0; transform: scale(1.2); } }
     @keyframes feel-d-orb { 0% { opacity: 0; transform: scale(0.55); } 12% { opacity: 1; transform: scale(1.06); } 18% { transform: scale(1); } 56% { opacity: 1; transform: scale(1); filter: none; } 76% { opacity: 0.55; transform: scale(1.08); filter: blur(1.5px); } 100% { opacity: 0; transform: scale(1.3); filter: blur(6px); } }
     @keyframes feel-d-skull { 0%, 48% { opacity: 1; } 72% { opacity: 0.2; filter: blur(2px) brightness(0.8); } 100% { opacity: 0; } }
