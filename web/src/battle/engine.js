@@ -18,7 +18,7 @@ const MAX_ACTIONS_PER_TURN = 30 // 1ターンに使える特性・進化の回�
 const MAX_TURNS = 1500 // これを超えたら引き分け(膠着対策)
 const MAGIC_CONVERSION = 0.7 // 魔力参照の攻撃は、攻撃力の70%を魔力に変換する
 const FINISHER_RATE = 0.15 // 必殺: 相手の最大HPの15%
-const STATS = ['atk', 'mag', 'def', 'spd', 'critRate', 'critDmg', 'dmgResist']
+const STATS = ['atk', 'mag', 'def', 'spd', 'critRate', 'critDmg', 'dmgResist', 'dmgUp'] // dmgUp = 与ダメージ(%。+15なら、与えるダメージが1.15倍。効果だけで増える)
 
 // 画面表示用: キーワード能力の名前と説明
 // ---------- クラス特性 ----------
@@ -100,7 +100,7 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
   const s = { ...def.stats }
   const base = {
     atk: s.atk, mag: s.mag ?? 0, def: s.def, spd: s.spd,
-    critRate: s.critRate ?? 5, critDmg: s.critDmg ?? 50, dmgResist: s.dmgResist ?? 0,
+    critRate: s.critRate ?? 5, critDmg: s.critDmg ?? 50, dmgResist: s.dmgResist ?? 0, dmgUp: 0,
   }
   // 遺物のセット効果(def.relic に遺物の名前を書く)を、元のステータスに反映する
   const relic = def.relic ? RELICS[def.relic] : null
@@ -404,7 +404,8 @@ export function calcDamage(attacker, defender, skill, opts = {}) {
   if (attacker.ct === 'ロイヤル' && opts.bySkill) ctMul *= 1.2 // ロイヤル: 自分の場すべてのスキルダメージ+20%
   if (attacker.ct === 'ナイトメア' && hasTypeName(attacker, '死者')) ctMul *= 1.29 // ナイトメア: 「死者」のダメージ+29%
   if (defender.ct === 'ニュートラル' && skill.type === 'physical') ctMul *= 0.85 // ニュートラル: 物理耐性+15%
-  const raw = base * critMul * defCoef * resCoef * ctMul
+  const upCoef = 1 + Math.max(-90, attacker.dmgUp || 0) / 100 // 与ダメージ(効果で増減)
+  const raw = base * critMul * defCoef * resCoef * ctMul * upCoef
   return { damage: opts.expected ? raw : Math.max(1, Math.floor(raw)), isCrit }
 }
 
@@ -553,7 +554,7 @@ function resolveTargets(state, source, key, ctx) {
 }
 
 function statLabel(stat) {
-  return { atk: '攻撃力', mag: '魔力', def: '防御力', spd: '速度', critRate: 'クリティカルレート', critDmg: 'クリティカルダメージ', dmgResist: 'ダメージ耐性' }[stat] || stat
+  return { atk: '攻撃力', mag: '魔力', def: '防御力', spd: '速度', critRate: 'クリティカルレート', critDmg: 'クリティカルダメージ', dmgResist: 'ダメージ耐性', dmgUp: '与ダメージ' }[stat] || stat
 }
 
 // クレストを置く(最大5つ、同名は置けない)
@@ -986,9 +987,9 @@ function runEffects(state, source, effects, ctx = {}) {
           else heal(state, t, (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + graveBonus(state, source, e))
           break
         case 'buff':
-          const bf = { stat: e.stat, pct: (e.pct || 0) + graveBonus(state, source, e), flat: (e.flat || 0) + (e.perCombo || 0) * comboOf(state, source) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0), turns: e.turns ?? null } // perCombo: コンボ1つにつき、flat がその分だけ増える
+          const bf = { stat: e.stat, pct: (e.pct || 0) + graveBonus(state, source, e), flat: (e.flat || 0) + (e.perCombo || 0) * comboOf(state, source) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0), turns: e.turns ?? null, ...(e.turnsBy === 'source' ? { owner: source.uid } : {}) } // perCombo: コンボ1つにつき、flat がその分だけ増える
           t.buffs.push(bf)
-          emit(state, 'buff', { target: t.uid, stat: e.stat, text: `${statLabel(e.stat)}${bf.flat ? ` ${bf.flat >= 0 ? '+' : ''}${bf.flat}` : ''}${bf.pct ? ` ${bf.pct >= 0 ? '+' : ''}${bf.pct}%` : ''}`.replace(/\s+/g, ' ') })
+          emit(state, 'buff', { target: t.uid, stat: e.stat, text: `${statLabel(e.stat)}${bf.flat ? ` ${bf.flat >= 0 ? '+' : ''}${bf.flat}${e.stat === 'dmgUp' ? '%' : ''}` : ''}${bf.pct ? ` ${bf.pct >= 0 ? '+' : ''}${bf.pct}%` : ''}`.replace(/\s+/g, ' ') })
           state.log.push(`${t.name}の${statLabel(e.stat)}が上がった`)
           break
         case 'loseHp': { // 現在体力を直接減らす(ダメージではないので、防御・アーマー・バリアは関係なく、墓場も増えない)
@@ -1345,13 +1346,26 @@ function endTurn(state, actor) {
   actor.curAV = actor.baseAV
   actor.acts = (actor.acts || 0) + 1
   if (state.comboMode !== 'reset') actor.comboCount = 0 // 従来: コンボは、自分のターンが終わった後から数え直す(βでは、コンボリセットのターンで数え直す)
-  actor.buffs = actor.buffs
-    .map((b) => ({ ...b, turns: b.turns == null ? null : b.turns - 1 }))
-    .filter((b) => b.turns == null || b.turns > 0)
+  tickBuffs(state, actor)
   state.turns += 1
   state.active = null
   state.activeKind = null
   recalc(state)
+}
+
+// 効果ターンの数え方: ふつうは、効果を持っている本人のターンが終わるたびに1減る。
+// turnsBy: 'source' の効果(owner が付いている)は、かけた本人のターンが終わるたびに減る。かけた本人が倒れたら、消える
+function tickBuffs(state, actor) {
+  const ownerAlive = (uid) => state.units.some((x) => x.uid === uid && x.alive)
+  for (const u of state.units) {
+    u.buffs = u.buffs
+      .map((b) => {
+        if (b.turns == null) return b
+        const mine = b.owner ? b.owner === actor.uid : u === actor
+        return mine ? { ...b, turns: b.turns - 1 } : b
+      })
+      .filter((b) => (b.turns == null || b.turns > 0) && (!b.owner || ownerAlive(b.owner)))
+  }
 }
 
 // 行動バー上の全員の行動値を同じだけ進める(本体もアクセラレートも)
