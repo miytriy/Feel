@@ -13,6 +13,7 @@ import { useIsDesktop, C as BASE, alpha, DISPLAY } from './ui.js'
 import { StatIcon } from './icons.jsx'
 import { ME, OPP, setMe, winnerView } from './perspective.js'
 import { CutIn, cutinOf } from './cutin.jsx'
+import { VanishFx, VANISH_BASE_MS } from './VanishFx.jsx'
 const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', margin: '0 2px 0 0' }} />
 
 // 色: 自分=青、相手=赤紫、行動中=琥珀
@@ -253,13 +254,6 @@ function Skull() {
     </svg>
   )
 }
-// 消滅の最後に散る、青い粒と黒いかけら
-const SPARKS = Array.from({ length: 26 }, (_, n) => { const a = n * 2.4 + 0.7; const d = 34 + ((n * 5) % 7) * 12; return { dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d - 6)}px`, dark: n % 3 === 1 } })
-// 計測(テスト戦の検証用): 消滅の動きが、この端末で実際に何ミリ秒かかったかを、画面の上に出す
-const fxProbeStart = (e) => { e.currentTarget.__t0 = e.timeStamp }
-const fxProbeEnd = (e) => { const t0 = e.currentTarget.__t0; if (t0 != null && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('feel-fxprobe', { detail: `消滅(円) ${Math.round(e.timeStamp - t0)}ms` })) }
-// 消滅の焼き込み画像を、先に読み込んでおく(演出の最中に読み込むと、1コマ目が欠ける)
-if (typeof Image !== 'undefined') ['disc', 'smoke', 'glow', 'ring0', 'ring1', 'ring2', 'ring3', 'ring4', 'ring5'].forEach((n) => { const im = new Image(); im.decoding = 'async'; im.src = `/fx/vanish/${n}.webp` })
 // 飛び散る紙片(破壊): 白くて透ける、三角や四角の破片。火の粉(黄色)と、暗い赤のかけら
 const GOLD = Array.from({ length: 34 }, (_, n) => { const a = n * 2.4 + 0.3; const d = 22 + ((n * 7) % 9) * 9; return { dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d - 14)}px`, size: 3 + (n % 4) * 1.6, col: n % 3 === 0 ? '#ffffff' : n % 3 === 1 ? '#fff0a8' : '#ffd45e', delay: 0.1 + (n % 6) * 0.045, dur: 0.5 + (n % 5) * 0.1 } })
 const CONFETTI = Array.from({ length: 16 }, (_, n) => { const a = n * 2.4 + 0.4; const d = 26 + ((n * 7) % 5) * 9; return { x: `${Math.round(Math.cos(a) * 10)}px`, y: `${Math.round(Math.sin(a) * 10)}px`, dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d)}px`, rot: `${(n % 2 ? 1 : -1) * (90 + n * 30)}deg`, size: 6 + (n % 3) * 2, tri: n % 2 === 0, delay: 0.1 + (n % 5) * 0.02 } })
@@ -354,25 +348,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
           )}
         </span>
       )}
-      {fx && fx.die === 'vanish' && (
-        // 消滅の演出(動画の再現): ふわっとした青紫の光の円 → 縁に、水色の電気の網のような太い輪(内側はぎざぎざの暗い群青、中心は明るい青)→ 輪が小さく縮む → 白い光の核と暗いけむり → 水色の光の粒と黒いかけらが散って消える
-        <span key={`van-${tick}`} aria-hidden="true" data-testid="fx-vanish" style={{ position: 'absolute', left: '50%', top: '50%', height: '250%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }}>
-          {/* 重い部分(ゆらぐ円・電気の輪・けむり・光)は、画像に焼き込んである(public/fx/vanish/)。動かすのは transform と opacity だけ */}
-          <img src="/fx/vanish/disc.webp" alt="" draggable="false" onAnimationStart={fxProbeStart} onAnimationEnd={fxProbeEnd} style={{ position: 'absolute', left: '-25%', top: '-25%', width: '150%', height: '150%', animation: `feel-v-disc ${VANISH_S}s ease-out both` }} />
-          <span style={{ position: 'absolute', inset: 0, animation: `feel-v-ring ${VANISH_S}s ease-in-out both` }}>
-            {[0, 1, 2, 3, 4, 5].map((n) => (
-              // 電気がちらつく: 6枚を、0.06秒ずつ順に見せる
-              <img key={n} src={`/fx/vanish/ring${n}.webp`} alt="" draggable="false" style={{ position: 'absolute', left: '-10%', top: '-10%', width: '120%', height: '120%', opacity: 0, animation: `feel-v-flick 0.36s steps(1, end) ${n * -0.06}s infinite` }} />
-            ))}
-          </span>
-          <img src="/fx/vanish/smoke.webp" alt="" draggable="false" style={{ position: 'absolute', left: '50%', top: '50%', width: '113.2%', aspectRatio: '1', animation: `feel-v-smoke ${VANISH_S}s ease-out both` }} />
-          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '40%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, #fff 0%, #fff 25%, rgba(190,235,255,0.9) 50%, rgba(110,190,255,0) 100%)', boxShadow: '0 0 14px 4px rgba(150,220,255,0.8)', animation: `feel-v-core ${VANISH_S}s ease-in-out both` }} />
-          <img src="/fx/vanish/glow.webp" alt="" draggable="false" style={{ position: 'absolute', left: '50%', top: '50%', width: '75.5%', aspectRatio: '1', animation: `feel-v-glow ${VANISH_S}s ease-out both` }} />
-          {SPARKS.map((sp, n) => (
-            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: sp.dark ? 4 : 5, height: sp.dark ? 4 : 5, marginLeft: -2, marginTop: -2, borderRadius: sp.dark ? 1 : '50%', background: sp.dark ? '#14141c' : '#d8f4ff', boxShadow: sp.dark ? 'none' : '0 0 6px 2px #6ac4ff', '--dx': sp.dx, '--dy': sp.dy, animation: `feel-v-spark ${VANISH_S}s ease-out both` }} />
-          ))}
-        </span>
-      )}
+      {fx && fx.die === 'vanish' && <VanishFx key={`van-${tick}`} ms={VANISH_BASE_MS * VANISH_SLOW} />}
       {unit.alive && (unit.keywords || []).includes('guard') && (
         // 【守護】の盤面エフェクト: 縦長の盾(カードに収まる比率)の輪郭が、内側から現れて外側へ広がりながら消える。2枚が半周期ずらして繰り返す
         <span aria-hidden="true" data-testid="fx-guard-idle" style={{ position: 'absolute', left: '50%', top: '50%', height: '94%', aspectRatio: '0.78', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 4 }}>
@@ -739,7 +715,6 @@ function reorderBoost(evs) {
   return out
 }
 export const VANISH_SLOW = 1 // 消滅エフェクトの長さの倍率。1 = ルール画面(第9章)の消滅と同じ基準(0.9秒)。EFFECTS.md「基準の速さ」を参照。戦闘もルール画面も、この1か所で決まる
-const VANISH_S = 0.9 * VANISH_SLOW
 const EVENT_MS = { turn: 700, ability: 600, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ

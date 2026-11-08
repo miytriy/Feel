@@ -1,0 +1,7 @@
+/* 消滅エフェクトを焼き込むための、元の動き(tools/bake-vanish.cjs が読む)。実行時には使わない */
+@keyframes feel-v-disc { 0% { opacity: 0; transform: scale(0.55); } 8% { opacity: 1; transform: scale(1); } 22% { opacity: 1; transform: scale(1); } 34% { opacity: 0; transform: scale(0.5); } 100% { opacity: 0; } }
+@keyframes feel-v-ring { 0%, 3% { opacity: 0; transform: scale(1.05); } 10% { opacity: 1; transform: scale(1); } 20% { opacity: 1; transform: scale(1); } 30% { opacity: 1; transform: scale(0.5); } 36% { opacity: 0; transform: scale(0.28); } 100% { opacity: 0; } }
+@keyframes feel-v-smoke { 0%, 26% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); } 38% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.75); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.25); } }
+@keyframes feel-v-core { 0%, 24% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); } 30% { opacity: 1; transform: translate(-50%, -50%) scale(0.6); } 40% { opacity: 1; transform: translate(-50%, -50%) scale(0.45); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
+@keyframes feel-v-glow { 0%, 30% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 42% { opacity: 1; transform: translate(-50%, -50%) scale(0.9); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.15); } }
+@keyframes feel-v-spark { 0%, 28% { opacity: 0; transform: translate(0, 0); } 36% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)); } }

@@ -116,13 +116,8 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-d-skull { 0%, 48% { opacity: 1; } 72% { opacity: 0.2; filter: blur(2px) brightness(0.8); } 100% { opacity: 0; } }
     @keyframes feel-d-ember { 0%, 45% { opacity: 0; transform: translate(0, 0); } 58% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)); } }
     @keyframes feel-d-conf { 0% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(0); } 15% { opacity: 0.95; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); } }
-    @keyframes feel-v-disc { 0% { opacity: 0; transform: scale(0.55); } 8% { opacity: 1; transform: scale(1); } 22% { opacity: 1; transform: scale(1); } 34% { opacity: 0; transform: scale(0.5); } 100% { opacity: 0; } }
-    @keyframes feel-v-ring { 0%, 3% { opacity: 0; transform: scale(1.05); } 10% { opacity: 1; transform: scale(1); } 20% { opacity: 1; transform: scale(1); } 30% { opacity: 1; transform: scale(0.5); } 36% { opacity: 0; transform: scale(0.28); } 100% { opacity: 0; } }
-    @keyframes feel-v-smoke { 0%, 26% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); } 38% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.75); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.25); } }
-    @keyframes feel-v-core { 0%, 24% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); } 30% { opacity: 1; transform: translate(-50%, -50%) scale(0.6); } 40% { opacity: 1; transform: translate(-50%, -50%) scale(0.45); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
-    @keyframes feel-v-glow { 0%, 30% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 42% { opacity: 1; transform: translate(-50%, -50%) scale(0.9); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.15); } }
-    @keyframes feel-v-flick { 0% { opacity: 1; } 16.66% { opacity: 0; } 100% { opacity: 0; } }
-    @keyframes feel-v-spark { 0%, 28% { opacity: 0; transform: translate(0, 0); } 36% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)); } }
+    @keyframes vx-x { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+    @keyframes vx-y { from { transform: translateY(0); } to { transform: translateY(-100%); } }
     @keyframes feel-guard-wave { 0% { opacity: 0; transform: scale(0.7); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.12); } }
     @keyframes feel-aura-idle { 0% { opacity: 0; } 30% { opacity: 1; } 62% { opacity: 1; } 92%, 100% { opacity: 0; } }
     @keyframes feel-guard { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.35); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.7); } }
