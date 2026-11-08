@@ -713,7 +713,7 @@ function reorderBoost(evs) {
   }
   return out
 }
-export const VANISH_SLOW = 1 // 消滅エフェクトの長さの倍率。1 = ルール画面(第9章)の消滅と同じ基準(0.9秒)。EFFECTS.md「基準の速さ」を参照。戦闘もルール画面も、この1か所で決まる
+export const VANISH_SLOW = 2 // 消滅エフェクトの長さの倍率。1 = 0.9秒(速すぎると指摘された)、2 = 1.8秒。コマ数は同じ(56コマ)なので、2倍にすると約31コマ/秒。実機で合う長さが決まったら、その長さで60fpsに焼き直す(tools/bake-vanish.cjs)
 const EVENT_MS = { turn: 700, ability: 600, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ

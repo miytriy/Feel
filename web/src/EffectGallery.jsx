@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { C, FONT } from './ui.js'
-import { UnitCard } from './BattleScreen.jsx'
+import { UnitCard, VANISH_SLOW } from './BattleScreen.jsx'
 import { createBattle } from './battle/engine.js'
 
 // ルール画面の「エフェクト一覧」: 戦闘画面と同じエフェクトのコード(UnitCard)を、そのまま繰り返し再生する。
