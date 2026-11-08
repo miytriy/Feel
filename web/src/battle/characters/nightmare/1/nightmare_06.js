@@ -1,4 +1,4 @@
-import skeleton from './tokens/nightmare_token_01.js' // 召喚する「スケルトン」は nightmare_token_01.js のキャラです
+import skeleton from '../tokens/nightmare_token_01.js' // 召喚する「スケルトン」は nightmare_token_01.js のキャラです
 
 export default {
   id: 'nightmare_06', name: 'ボーンガール', class: 'ナイトメア', rarity: 'bronze',
