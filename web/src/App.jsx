@@ -34,7 +34,7 @@ import { ALL_SPELLS } from './battle/spells/index.js'
 import { loadParties, saveParty, getActiveParty, setActiveParty, partyToSlots, partyToSpells, partyCount } from './battle/parties.js'
 import ErrorBoundary from './ErrorBoundary.jsx'
 import GateScreen from './GateScreen.jsx'
-import { useIsDesktop, C, FONT } from './ui.js'
+import { useIsDesktop, useRemembered, C, FONT } from './ui.js'
 
 const PITY_COUNT = 40
 const COST = 500 // ガチャ1回のジェム(server/config.js の COST_PER_PULL と同じにする)
@@ -48,6 +48,14 @@ const RARITY = {
 
 // CPU戦のレベル一覧(レベルを選ぶ画面に出す)。報酬は server/config.js の BATTLE_REWARD と同じにする
 const BATTLE_REWARD = { 1: 10, 2: 20, 3: 30, 4: 40, 5: 60 }
+// テスト戦(マスターパスワードを解除した人だけ): 自分も相手も、好きなチームを組んで、CPUと戦う。報酬・戦績・記録はなし
+const TEST_ENTRY = {
+  id: 'test', test: true, num: 1,
+  name: 'テスト戦', title: 'テスト戦', area: 'CPU戦 ・ 検証用',
+  desc: '自分と相手のチームを、どちらも好きに選んで対戦します。能力・演出の検証用です。',
+  rule: 'マスターパスワードを解除している間だけ使えます。相手(CPU)は Lv.1(ランダムに行動)です。報酬・戦績・記録はありません。',
+  rewards: [],
+}
 const CPU_LEVEL_LIST = CPU_LEVELS.map((l) => ({
   id: `lv${l.level}`,
   num: l.level,
@@ -76,6 +84,8 @@ export default function App() {
   const [rulesBack, setRulesBack] = useState('play') // ルールを閉じたときに戻る画面
   // PLAY → 案内所(play) → CPU戦のレベル(cpu) → チーム(team) → 読み込み(loading) → 対戦(battle)
   const [cpuLevel, setCpuLevel] = useState(2) // 選んだCPUのレベル
+  const [cpuSel, setCpuSel] = useRemembered('cpu.level', 'lv2') // CPU戦で最後に選んでいた項目(レベル / テスト戦)
+  const [testMine, setTestMine] = useState(null) // テスト戦: 自分のチームを決めたあと、相手のチームを選ぶ間、ここに置いておく { team, spells }
   const [cpuRun, setCpuRun] = useState(null) // 対戦の準備 { id, level, team, spells }
   const [rankRun, setRankRun] = useState(null) // ランクマッチで使うチーム { team, spells }(なければ、保存した編成)
   const [pvpRun, setPvpRun] = useState(null) // 対人戦の準備 { id, team, spells }
@@ -389,10 +399,10 @@ export default function App() {
     return (
       <ErrorBoundary onExit={() => setScreen('play')}>
         <CpuBattleScreen
-          levels={CPU_LEVEL_LIST}
-          levelIdInit={`lv${cpuLevel}`}
-          onSelect={(l) => setCpuLevel(l.num)}
-          onChallenge={(l) => { setCpuLevel(l.num); setScreen('team') }}
+          levels={unlockLv >= 1 ? [...CPU_LEVEL_LIST, TEST_ENTRY] : CPU_LEVEL_LIST}
+          levelIdInit={unlockLv >= 1 || cpuSel !== 'test' ? cpuSel : `lv${cpuLevel}`}
+          onSelect={(l) => { setCpuSel(l.id); if (!l.test) setCpuLevel(l.num) }}
+          onChallenge={(l) => { setCpuSel(l.id); if (!l.test) setCpuLevel(l.num); setScreen('team') }}
           onExit={() => setScreen('play')}
         />
       </ErrorBoundary>
@@ -412,8 +422,31 @@ export default function App() {
           partyIdxInit={partyApi ? partyApi.activeIdx : null}
           onSaveParty={partyApi ? partyApi.save : null}
           onPartyChange={partyApi ? partyApi.setActive : null}
-          onStart={(chars, spells) => { setCpuRun({ id: Date.now(), level: cpuLevel, team: chars, spells: spells || [] }); setScreen('loading') }}
+          onStart={(chars, spells) => {
+            if (cpuSel === 'test' && unlockLv >= 1) { setTestMine({ team: chars, spells: spells || [] }); setScreen('testopp'); return }
+            setCpuRun({ id: Date.now(), level: cpuLevel, team: chars, spells: spells || [] }); setScreen('loading')
+          }}
           onExit={() => setScreen('cpu')}
+        />
+      </ErrorBoundary>
+    )
+  }
+
+  // テスト戦: 相手(CPU)のチームを選ぶ(マスターパスワードを解除している間だけ)
+  if (current === 'testopp') {
+    if (unlockLv < 1 || !testMine) return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onRandom={() => setScreen('random')} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
+    return (
+      <ErrorBoundary onExit={() => setScreen('cpu')}>
+        <FormationScreen
+          title="相手のチーム(テスト戦)"
+          allChars={ALL_CHARACTERS}
+          defaultIds={DEFAULT_PLAYER_IDS}
+          allSpells={ALL_SPELLS.filter((sp) => !String(sp.type || '').startsWith('トークン'))}
+          onStart={(chars, spells) => {
+            setCpuRun({ id: Date.now(), level: 1, team: testMine.team, spells: testMine.spells, test: { team: chars.filter(Boolean), spells: spells || [] } })
+            setScreen('loading')
+          }}
+          onExit={() => setScreen('team')}
         />
       </ErrorBoundary>
     )
@@ -430,6 +463,7 @@ export default function App() {
           levelInit={cpuRun.level}
           teamInit={cpuRun.team}
           spellsInit={cpuRun.spells}
+          testInit={cpuRun.test || null}
           onExit={() => setScreen('cpu')}
           onBackLevel={() => setScreen('cpu')}
           onBackTeam={() => setScreen('team')}

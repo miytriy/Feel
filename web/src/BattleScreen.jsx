@@ -755,9 +755,10 @@ const VANISH_S = 0.9 * VANISH_SLOW
 const EVENT_MS = { turn: 700, ability: 600, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
-export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null, online = null }) {
+export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: rewardApiProp = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null, online = null, testInit = null }) {
   // online(対人戦): { client, side, opp, init(サーバーが決めた最初の状態), left, turnMs }。サーバーが審判で、行動はサーバーに送り、返ってきた状態を再生する
   if (online) setMe(online.side); else setMe('A')
+  const rewardApi = testInit ? null : rewardApiProp // テスト戦(検証用): 報酬も戦績も、記録しない
   const flow = !!teamInit || !!online
   const [spellSet, setSpellSet] = useState(spellsInit || []) // 編成画面で決めたスペルセット(スペル定義の配列。同じスペルを複数入れてよい)
   const [team, setTeam] = useState(teamInit || (online ? [] : null)) // 編成画面で決めた自分のチーム(キャラ定義の配列)。nullなら編成画面を出す
@@ -895,7 +896,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
           .then(() => setCareerMsg('戦績を記録しました(キャリアで見られます)'))
           .catch((e) => { console.error('キャリアの記録に失敗', e); setCareerMsg(`戦績を記録できませんでした: ${e.message}`) })
       } else {
-        setCareerMsg('ログインしていないので、戦績は記録されません')
+        setCareerMsg(testInit ? 'テスト戦なので、戦績は記録されません' : 'ログインしていないので、戦績は記録されません')
       }
     } catch (e) {
       console.error('キャリアの記録に失敗', e)
@@ -951,8 +952,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     }
     setPlay(null)
     setFeed([])
-    const cpuTeam = buildCpuTeam(ALL_CHARACTERS, cpuChars, Math.random, level, ALL_SPELLS) // Lv.5以上は、シナジーのある編成
-    const cpuSpells = level >= SPELL_LEVEL ? buildCpuSpells(ALL_SPELLS, cpuTeam, Math.random, level) : [] // Lv.5以上のCPUは、編成に合う強いスペルを持つ
+    const cpuTeam = testInit ? testInit.team : buildCpuTeam(ALL_CHARACTERS, cpuChars, Math.random, level, ALL_SPELLS) // Lv.5以上は、シナジーのある編成。テスト戦は、自分で選んだ相手のチーム
+    const cpuSpells = testInit ? testInit.spells : level >= SPELL_LEVEL ? buildCpuSpells(ALL_SPELLS, cpuTeam, Math.random, level) : [] // Lv.5以上のCPUは、編成に合う強いスペルを持つ
     const first = createBattle(team.map((d) => enhanceDef(d)), cpuTeam, { comboMode, pool: ownedPool(cpuChars), spells: { A: spellSet, B: cpuSpells } })
     statsRef.current = newStats()
     const firstActor = first.units.find((u) => u.uid === first.active)
@@ -1133,7 +1134,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
           </div>
         </details>
         <p style={{ fontSize: 11, color: C.mute, margin: '0 0 12px' }}>
-          {rewardApi ? '勝利すると報酬(ジェム)がもらえます。' : 'ログインして対戦すると、勝利で報酬がもらえます。'}
+          {testInit ? 'テスト戦(検証用): 報酬・戦績は記録されません。' : rewardApi ? '勝利すると報酬(ジェム)がもらえます。' : 'ログインして対戦すると、勝利で報酬がもらえます。'}
         </p>
         <button onClick={startBattle} style={buttonStyle(true, false)}>バトル開始</button>{' '}
         <button onClick={() => setTeam(null)} style={buttonStyle(false, false)}>編成を変える</button>{' '}
