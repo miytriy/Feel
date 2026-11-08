@@ -13,12 +13,10 @@ const probeStart = (e) => { e.currentTarget.__t0 = e.timeStamp }
 const probeEnd = (e) => { const t0 = e.currentTarget.__t0; if (t0 != null && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('feel-fxprobe', { detail: `消滅 ${Math.round(e.timeStamp - t0)}ms` })) }
 
 // 親(カード)の中央に、カード高さの約2.75倍の四角(1コマ = 召喚物カードの250% + にじみ)を置く
+// ※シート全体を transform で動かすと、スマホでは巨大なレイヤー(約2300×2000px を3倍の解像度で)になって、何も出なくなる。
+//   そのため、1コマ分の小さな四角の中で、背景の位置だけを steps() でずらす
 export function VanishFx({ ms = VANISH_BASE_MS }) {
   return (
-    <span aria-hidden="true" data-testid="fx-vanish" style={{ position: 'absolute', left: '50%', top: '50%', height: '275.5%', aspectRatio: '1', transform: 'translate(-50%, -50%)', overflow: 'hidden', pointerEvents: 'none', zIndex: 9 }}>
-      <span onAnimationStart={probeStart} onAnimationEnd={probeEnd} style={{ position: 'absolute', left: 0, top: 0, width: `${COLS * 100}%`, height: `${ROWS * 100}%`, animation: `vx-y ${ms}ms steps(${ROWS}, end) both` }}>
-        <img src={SHEET} alt="" draggable="false" decoding="async" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', animation: `vx-x ${ms / ROWS}ms steps(${COLS}, end) ${ROWS} both` }} />
-      </span>
-    </span>
+    <span aria-hidden="true" data-testid="fx-vanish" onAnimationStart={probeStart} onAnimationEnd={probeEnd} style={{ position: 'absolute', left: '50%', top: '50%', height: '275.5%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9, backgroundImage: `url(${SHEET})`, backgroundRepeat: 'no-repeat', backgroundSize: `${COLS * 100}% ${ROWS * 100}%`, animation: `vx-y ${ms}ms steps(${ROWS}, end) both, vx-x ${ms / ROWS}ms steps(${COLS}, end) ${ROWS} both` }} />
   )
 }
