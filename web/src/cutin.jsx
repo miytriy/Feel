@@ -22,7 +22,7 @@ const T_END = 3100
 
 const CSS = `
 @keyframes cf-v1 { 0% { opacity: 0 } 1% { opacity: 1 } 99% { opacity: 1 } 100% { opacity: 0 } }
-@keyframes cf-v2 { 0% { opacity: 0 } 10% { opacity: 1 } 80% { opacity: 1 } 100% { opacity: 0 } }
+@keyframes cf-v2 { 0% { opacity: 0 } 8% { opacity: 1 } 88% { opacity: 1 } 100% { opacity: 0 } }
 @keyframes cf-w { 0% { opacity: 0 } 15% { opacity: 1 } 30% { opacity: 1 } 100% { opacity: 0 } }
 .cf-l { position: absolute; pointer-events: none; user-select: none; -webkit-user-drag: none; opacity: 0; animation-fill-mode: both; animation-timing-function: linear }
 .cf-v { inset: 0; width: 100%; height: 100%; object-fit: cover }
@@ -56,7 +56,7 @@ export function CutIn({ ms = T_END, onSkip }) {
 }
 
 // 爆発(動画2): 消滅のステップが始まると同時に、盤面の上に重ねる。ユニットは、この爆発の真下で消える(参考動画と同じ)。背景は撮影元の盤面なので、中心だけを切り出した動画
-export const BLAST_MS = 560
+export const BLAST_MS = 400 // fanfare-2.mp4 の長さ(0.4秒)。動画が終わって盤面が見えてから、消滅を始める
 export function AlbionBlast() {
   return (
     <div aria-hidden="true" data-testid="albion-blast" style={{ position: 'fixed', inset: 0, zIndex: 9000, pointerEvents: 'none', overflow: 'hidden' }}>
