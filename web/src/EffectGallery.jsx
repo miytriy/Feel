@@ -47,18 +47,20 @@ function useInView(ref) {
   return on
 }
 
-function Demo({ title, note, ms, make, index = 0 }) {
+const CYCLE = 3000 // 全部のデモが、同じ時計で同時に再生を始める(ずらさない)
+
+function Demo({ title, note, ms, make, tick }) {
   const [phase, setPhase] = useState(false) // 再生中か
-  const [n, setN] = useState(0)
   const box = useRef(null)
   const visible = useInView(box)
   useEffect(() => {
-    if (!visible) return undefined
-    // 止まる → 再生 → 止まる を繰り返す。最初は、1個ずつ少しずつずらして始める
-    const wait = phase ? ms + 150 : n === 0 ? 700 + (index % 4) * 450 : 1100
-    const t = setTimeout(() => { setPhase((p) => !p); setN((k) => k + 1) }, wait)
+    // 見えていないときは再生しない(スクロールで外れたまま「再生中」で止まって、消えたままになるのを防ぐ)
+    if (!visible) { setPhase(false); return undefined }
+    setPhase(true)
+    const t = setTimeout(() => setPhase(false), ms + 150)
     return () => clearTimeout(t)
-  }, [phase, ms, visible, n, index])
+  }, [tick, visible, ms])
+  const n = tick
   const { unit, fx } = make(phase)
   return (
     <div ref={box} style={{ display: 'flex', gap: 12, padding: 10, background: C.paper, borderRadius: 8, alignItems: 'center' }}>
@@ -71,11 +73,13 @@ function Demo({ title, note, ms, make, index = 0 }) {
 }
 
 export default function EffectGallery() {
+  const [tick, setTick] = useState(0)
+  useEffect(() => { const t = setInterval(() => setTick((k) => k + 1), CYCLE); return () => clearInterval(t) }, [])
   return (
     <div>
       <p style={{ fontSize: 13, color: C.mute, lineHeight: 1.7, margin: '4px 0 10px' }}>戦闘画面と同じエフェクトを、繰り返し再生しています。【守護】【潜伏】などの能力の盤面エフェクトは、7-2 の動画を見てください。</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
-        {LIST.map(([title, note, ms, make], i) => <Demo key={title} title={title} note={note} ms={ms} make={make} index={i} />)}
+        {LIST.map(([title, note, ms, make]) => <Demo key={title} title={title} note={note} ms={ms} make={make} tick={tick} />)}
       </div>
     </div>
   )
