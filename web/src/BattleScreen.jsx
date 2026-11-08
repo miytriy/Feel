@@ -288,14 +288,15 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
   // 破壊: HPの数字とバーが、同じ速さで0へ減っていく。消滅: HPは減らないので、消える直前の値のまま(0にしない)
   const lastHp = useRef(unit.hp)
   if (unit.alive) lastHp.current = unit.hp
+  const held = !!(fx && fx.die === 'wait') // 爆発の動画が終わるまでは、生きているときの見た目のまま待つ
   const vanishing = !!(fx && fx.die === 'vanish')
-  const hpShown = vanishing && !unit.alive ? lastHp.current : unit.hp
+  const hpShown = (vanishing || held) && !unit.alive ? lastHp.current : unit.hp
   const ratio = Math.max(0, hpShown / unit.maxHp)
   const hpColor = ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow
   const badges = unit.alive ? badgesOf(unit) : []
   // 破壊・消滅の演出中は、まだ生きているときの見た目のまま(演出のあと、暗い半透明の「戦闘不能」の札に変わって残らないように)。演出が終わったら、そっと消す
-  const dying = !!(fx && fx.die)
-  const gone = !unit.alive && !dying
+  const dying = !!(fx && fx.die && !held)
+  const gone = !unit.alive && !dying && !held
   return (
     <div
       data-uid={unit.uid}
@@ -1216,7 +1217,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const fxFor = (uid) => {
     const mine = groupEvs.filter((x) => x.target === uid)
     const dieEv = mine.find((x) => x.type === 'destroy' || x.type === 'vanish')
-    if (dieEv && blastNow && !blastDone) return null // 爆発の動画が終わるまでは、盤面にそのまま残す
+    if (dieEv && blastNow && !blastDone) return { kind: 'none', text: '', die: 'wait' } // 爆発の動画が終わるまでは、盤面にそのまま残す
     const f = fxFor0(uid)
     return dieEv ? { ...(f && f.kind !== 'destroy' && f.kind !== 'vanish' ? f : { kind: 'none', text: '' }), die: dieEv.type, grave: !!dieEv.grave, lw: !!dieEv.lw } : f
   }
