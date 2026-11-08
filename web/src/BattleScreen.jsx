@@ -12,7 +12,7 @@ import { CommentaryOverlay, collectHistory, addHistory, emptyHistory } from './B
 import { useIsDesktop, C as BASE, alpha, DISPLAY } from './ui.js'
 import { StatIcon } from './icons.jsx'
 import { ME, OPP, setMe, winnerView } from './perspective.js'
-import { CutIn, cutinOf, AlbionBlast, BLAST_MS } from './cutin.jsx'
+import { CutIn, cutinOf } from './cutin.jsx'
 const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', margin: '0 2px 0 0' }} />
 
 // 色: 自分=青、相手=赤紫、行動中=琥珀
@@ -288,15 +288,14 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
   // 破壊: HPの数字とバーが、同じ速さで0へ減っていく。消滅: HPは減らないので、消える直前の値のまま(0にしない)
   const lastHp = useRef(unit.hp)
   if (unit.alive) lastHp.current = unit.hp
-  const held = !!(fx && fx.die === 'wait') // 爆発の動画が終わるまでは、生きているときの見た目のまま待つ
   const vanishing = !!(fx && fx.die === 'vanish')
-  const hpShown = (vanishing || held) && !unit.alive ? lastHp.current : unit.hp
+  const hpShown = vanishing && !unit.alive ? lastHp.current : unit.hp
   const ratio = Math.max(0, hpShown / unit.maxHp)
   const hpColor = ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow
   const badges = unit.alive ? badgesOf(unit) : []
   // 破壊・消滅の演出中は、まだ生きているときの見た目のまま(演出のあと、暗い半透明の「戦闘不能」の札に変わって残らないように)。演出が終わったら、そっと消す
-  const dying = !!(fx && fx.die && !held)
-  const gone = !unit.alive && !dying && !held
+  const dying = !!(fx && fx.die)
+  const gone = !unit.alive && !dying
   return (
     <div
       data-uid={unit.uid}
@@ -877,20 +876,9 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     if (play.i >= play.events.length) { setPlay(null); return }
     const grp = play.events.slice(play.i, groupEnd(play.events, play.i) + 1)
     const cut = grp.map(cutinOf).find(Boolean) // キャラ専用のカットイン演出がある場面は、その長さだけ待つ
-    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), cut ? cut.ms + 150 : Math.max(...grp.map((x) => (x.blast ? 0 : EVENT_MS[x.type] ?? 500)), ...(grp.some((x) => x.blast) ? [EVENT_MS.vanish * mult + BLAST_MS] : [0])) * (grp.some((x) => x.blast) ? 1 : mult))
+    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), cut ? cut.ms + 150 : Math.max(...grp.map((x) => (x.type === 'vanish' ? EVENT_MS.vanish : (EVENT_MS[x.type] ?? 500) * mult))))
     return () => clearTimeout(t)
   }, [play, mult, logOpen])
-
-  // アルビオンバハムート: 爆発の動画が流れ終わってから、消滅の演出を始める
-  const [blastDone, setBlastDone] = useState(false)
-  useEffect(() => {
-    setBlastDone(false)
-    if (!play || logOpen) return
-    const g = play.events.slice(play.i, groupEnd(play.events, play.i) + 1)
-    if (!g.some((x) => x.blast)) return
-    const t = setTimeout(() => setBlastDone(true), BLAST_MS)
-    return () => clearTimeout(t)
-  }, [play?.i, logOpen])
 
   // 対戦が終わって再生も終わったら、キャリア(アカウントの対戦記録)に残す
   useEffect(() => {
@@ -1186,7 +1174,6 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   }
   const groupEvs = play ? play.events.slice(gStart, gEnd + 1) : []
   const cutNow = groupEvs.map(cutinOf).find(Boolean) || null
-  const blastNow = groupEvs.some((e) => e.blast) // アルビオンバハムートの消滅: 爆発の動画を上に重ねる
   const avFx = (() => { const m = {}; for (const x of groupEvs) if (x.type === 'av') m[x.target] = { dir: x.dir }; return Object.keys(m).length ? { ...m, tick: play ? play.i : 0 } : null })() // 行動順の上昇・下降: アクションバーの該当ユニットに出す
   const fxFor0 = (uid) => {
     const mine = groupEvs.filter((x) => x.target === uid) // まとまった出来事の中から、この人に起きたものを探す
@@ -1217,7 +1204,6 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const fxFor = (uid) => {
     const mine = groupEvs.filter((x) => x.target === uid)
     const dieEv = mine.find((x) => x.type === 'destroy' || x.type === 'vanish')
-    if (dieEv && blastNow && !blastDone) return { kind: 'none', text: '', die: 'wait' } // 爆発の動画が終わるまでは、盤面にそのまま残す
     const f = fxFor0(uid)
     return dieEv ? { ...(f && f.kind !== 'destroy' && f.kind !== 'vanish' ? f : { kind: 'none', text: '' }), die: dieEv.type, grave: !!dieEv.grave, lw: !!dieEv.lw } : f
   }
@@ -1461,7 +1447,6 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     <>
       {netBanner && <div data-testid="pvp-net" style={{ position: 'fixed', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 200, padding: '6px 14px', borderRadius: 999, background: 'rgba(20,20,28,.88)', color: '#fff', fontSize: 13, pointerEvents: 'none' }}>{netBanner}</div>}
       {!online && intro && <StageIntro level={level} levelInfo={levelInfo} cpuChars={cpuChars} first={introFirst} onClose={() => { setIntro(false); setIntroFirst(false) }} />}
-      {blastNow && !cutNow && !logOpen && <AlbionBlast key={`blast-${play.i}`} />}
       {cutNow && !logOpen && <CutIn key={`cut-${play.i}`} ms={cutNow.ms} onSkip={() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p))} />}
       {logOpen && <CommentaryOverlay units={view.units} active={view.active} round={view.round} log={view.log} ab={hist.ab} dead={hist.dead} events={hist.ev} onClose={() => setLogOpen(false)} />}
       {leaveAsk && <ExitConfirm onCancel={() => setLeaveAsk(false)} onExit={leave} online={!!online} />}
