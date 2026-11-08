@@ -193,7 +193,7 @@ export default function SettingsScreen({ user, settings, onChange, onLogin, onLo
           </div>
         </div>
       </div>
-      <div className="st-foot">{user ? `UID: ${user.uid}` : 'GUEST'}</div>
+      <div className="st-foot">{user ? `UID: ${user.uid}` : 'GUEST'} · ビルド {typeof __BUILD_ID__ === 'string' ? __BUILD_ID__ : 'dev'}</div>
     </div>
   )
 }
