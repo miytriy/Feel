@@ -1,3 +1,4 @@
+import ghostToken from './characters/nightmare/tokens/nightmare_token_02.js' // テスト戦の「ゴースト無限湧き」用
 import EARTH_SHARD from './amulet/witch/1/witch_amulet_01.js' // 土の印がないときに召喚される「大地の魔片」
 // Feel Battle - バトルの処理(段階4: アーマー・墓場・召喚物・アミュレット・遺物 を追加。段階3までの進化・EP・信仰値・カウントダウン・クレスト・連携・奥義・アクセラレートを含む)
 // 画面やFirebaseには依存しません。「状態 + 行動 → 新しい状態」の形で作ってあります。
@@ -1781,3 +1782,15 @@ export function applyAction(prev, action, opts = {}) {
 
 // テスト用(画面からは使わない): 土の印の内部処理
 export const _earthTest = { addEarth, summonEarth, vanishUnit }
+
+// テスト戦の検証用: 召喚物フィールドの空きを、ゴースト(トークン)で埋め続ける。mode = 'A' | 'B' | 'both'(自分 / 相手 / 両方)
+// 行動のあとに呼ぶ。出た分の 'summon' イベントが、そのまま画面で1体ずつ再生される
+export function addGhosts(state, mode) {
+  if (!state || state.winner || !mode || mode === 'none') return state
+  for (const team of mode === 'both' ? ['A', 'B'] : [mode]) {
+    const src = state.units.find((u) => u.alive && u.team === team && u.field !== 'summon')
+    if (!src) continue
+    for (let n = 0; n < SUMMON_MAX && summonsOf(state, src).length < SUMMON_MAX; n++) if (!summon(state, src, ghostToken, {})) break
+  }
+  return state
+}

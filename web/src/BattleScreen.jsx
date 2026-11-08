@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { addEvents, buildMatch, newStats } from './career.js'
-import { createBattle, applyAction, getActiveUnit, legalActions, getUnit, gaugeOf, calcDamage, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
+import { createBattle, applyAction, addGhosts, getActiveUnit, legalActions, getUnit, gaugeOf, calcDamage, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS, SPELL_LEVEL } from './battle/ai.js'
 import { DEFAULT_PLAYER_IDS, buildCpuTeam, buildCpuSpells, loadCpuCharSetting, saveCpuCharSetting, isTestChar, loadComboMode, saveComboMode } from './battle/teams.js'
 import { enhanceDef } from './enhance.js'
@@ -9,7 +9,7 @@ import { ALL_SPELLS } from './battle/spells/index.js'
 import FormationScreen from './FormationScreen.jsx'
 import { BattleHud, StageIntro, ExitConfirm, ResultBanner } from './BattleHud.jsx'
 import { CommentaryOverlay, collectHistory, addHistory, emptyHistory } from './BattleLog.jsx'
-import { useIsDesktop, C as BASE, alpha, DISPLAY } from './ui.js'
+import { useIsDesktop, C as BASE, alpha, DISPLAY, useRemembered } from './ui.js'
 import { StatIcon } from './icons.jsx'
 import { ME, OPP, setMe, winnerView } from './perspective.js'
 import { CutIn, cutinOf } from './cutin.jsx'
@@ -723,6 +723,13 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   if (online) setMe(online.side); else setMe('A')
   const rewardApi = testInit ? null : rewardApiProp // テスト戦(検証用): 報酬も戦績も、記録しない
   const [probe, setProbe] = useState('')
+  // テスト戦: ゴースト無限湧き(なし / 自分 / 相手 / 両方)。最後に選んだものを覚えておく
+  const [ghostMode, setGhostMode] = useRemembered('test.ghosts', 'none')
+  const ghostRef = useRef('none')
+  ghostRef.current = testInit ? ghostMode : 'none'
+  const GHOST_NEXT = { none: 'A', A: 'B', B: 'both', both: 'none' }
+  const GHOST_LABEL = { none: 'なし', A: '自分', B: '相手', both: '両方' }
+  const step = (st, a) => addGhosts(applyAction(st, a), ghostRef.current === 'A' ? ME : ghostRef.current === 'B' ? OPP() : ghostRef.current)
   useEffect(() => { if (!testInit) return undefined; const h = (e) => setProbe(e.detail); window.addEventListener('feel-fxprobe', h); return () => window.removeEventListener('feel-fxprobe', h) }, [testInit])
   const flow = !!teamInit || !!online
   const [spellSet, setSpellSet] = useState(spellsInit || []) // 編成画面で決めたスペルセット(スペル定義の配列。同じスペルを複数入れてよい)
@@ -806,11 +813,11 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
         action = acts.find((a) => a.type === 'skill') || acts.find((a) => a.type === 'endTurn') || acts[0]
       }
       try {
-        commit(applyAction(state, action))
+        commit(step(state, action))
       } catch (e) {
         console.error(e)
         setCpuError(`CPUの行動でエラー: ${e.message}`)
-        commit(applyAction(state, { type: 'endTurn' }))
+        commit(step(state, { type: 'endTurn' }))
       }
     }, cpuDelay)
     return () => clearTimeout(timer)
@@ -943,7 +950,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   const act = (action) => {
     reset()
     if (online) { if (waitingSend) return; setWaitingSend(true); online.client.action(action); return }
-    commit(applyAction(state, action))
+    commit(step(state, action))
   }
   // ---- 対人戦: サーバーからの知らせ ----
   useEffect(() => {
@@ -1415,6 +1422,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     <>
       {netBanner && <div data-testid="pvp-net" style={{ position: 'fixed', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 200, padding: '6px 14px', borderRadius: 999, background: 'rgba(20,20,28,.88)', color: '#fff', fontSize: 13, pointerEvents: 'none' }}>{netBanner}</div>}
       {!online && intro && <StageIntro level={level} levelInfo={levelInfo} cpuChars={cpuChars} first={introFirst} onClose={() => { setIntro(false); setIntroFirst(false) }} />}
+      {testInit && !online && <button type="button" data-testid="ghost-mode" onClick={() => setGhostMode(GHOST_NEXT[ghostMode] || 'none')} style={{ position: 'fixed', top: 6, right: 8, zIndex: 9500, background: ghostMode === 'none' ? 'rgba(0,0,0,0.75)' : 'rgba(120,70,200,0.9)', color: '#fff', border: '1px solid rgba(255,255,255,0.35)', padding: '4px 10px', borderRadius: 8, fontSize: 12, cursor: 'pointer' }}>ゴースト無限湧き: {GHOST_LABEL[ghostMode] || 'なし'}</button>}
       {testInit && probe && <div data-testid="fx-probe" style={{ position: 'fixed', top: 6, left: '50%', transform: 'translateX(-50%)', zIndex: 9500, background: 'rgba(0,0,0,0.8)', color: '#9ff', padding: '3px 10px', borderRadius: 6, fontSize: 12, pointerEvents: 'none' }}>{probe}</div>}
       {cutNow && !logOpen && <CutIn key={`cut-${play.i}`} ms={cutNow.ms} onSkip={() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p))} />}
       {logOpen && <CommentaryOverlay units={view.units} active={view.active} round={view.round} log={view.log} ab={hist.ab} dead={hist.dead} events={hist.ev} onClose={() => setLogOpen(false)} />}
