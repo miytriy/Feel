@@ -1,4 +1,4 @@
-import fox from './tokens/nightmare_token_05.js' // 召喚する「一ツ尾狐」は nightmare_token_05.js のキャラです
+import fox from '../tokens/nightmare_token_05.js' // 召喚する「一ツ尾狐」は nightmare_token_05.js のキャラです
 
 export default {
   id: 'nightmare_2_08', name: '双輪夜行・ギンセツ&ユヅキ', class: 'ナイトメア', rarity: 'legend',
