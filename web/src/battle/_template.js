@@ -16,7 +16,7 @@
 //             'guard'守護 'stealth'潜伏 'aura'オーラ 'intimidate'威圧 'rush'突進 'dash'疾走
 //             'finisher'必殺 'drain'ドレイン 'barrier'バリア
 //           効果つきは { name, trigger, desc, effects, min(連携・コンボの回数), condition }
-//             trigger: fanfare / constant / active / lastWord / onAttack / onEngage / combo / onEvolve(EP進化のときだけ) / onEvolved(進化したとき。効果での進化でも働く) / onEnter(場に出たとき。召喚された瞬間に働く。ファンファーレは最初の自分のターン開始時) / turnEnd(自分のターン終了時) / onLeave(場を離れる場合: 破壊の代わりに消滅する。effects は空で書く) / roundStart / allyTurnStart / link / onBoost(スペルブースト時)
+//             trigger: fanfare / constant / active / lastWord / onAttack / onEngage / combo / onEvolve(EP進化のときだけ) / onEvolved(進化したとき。効果での進化でも働く) / onEnter(場に出たとき。召喚された瞬間に働く。ファンファーレは最初の自分のターン開始時) / turnEnd(自分のターン終了時) / onLeave(場を離れる場合: 破壊の代わりに消滅する。effects は空で書く) / roundStart / allyTurnStart / link
 // traits  : 特性(MPを使う) { id, name, cost, target, desc, effects, repeatable, condition }
 //             target: self / allies / otherAllies / allyOne / enemies / enemyOne / enemyRandom / summons
 // accelerate: { id, name, speed, cost, target, desc, effects }  本体とは別の速度で番が回る特性
@@ -25,14 +25,17 @@
 // ---- effects(効果)の種類 ----
 //   { type:'damage', stat, mult, add, dmgType, target }
 //   { type:'heal', stat:'atk'|'maxHp', mult, flat, target }
-//   { type:'buff', stat, pct, flat, turns, target }   turns を省くと戦闘中ずっと
+//   { type:'buff', stat, pct, flat, turns, turnsBy, target }   turns を省くと戦闘中ずっと / stat に dmgUp(与ダメージ。flat: 15 なら+15%)も使える / turnsBy: 'source' なら、turns を「かけた本人のターン」で数える
 //   { type:'armor', stat, mult, flat, rate(吸収レート0.6〜1), target }   barrier: { type:'barrier', target }
-//   { type:'advance', pct, target }(行動順アップ)   { type:'delay', pct, target }(行動順ダウン)   { type:'mp', amount }   { type:'ep', amount }
+//   { type:'advance', pct, target }   { type:'mp', amount }   { type:'ep', amount }   { type:'growByDead', deadType }(このターン中に倒された自分のそのタイプのキャラの元の攻撃力・体力の合計だけ、これが強くなる)   { type:'evolve' }(これは進化する。EPは使わない)
 //   { type:'faith', amount }   { type:'graveyard', amount }(マイナスで消費)
+//   { type:'earth', amount }(土の印を増やす。場の【土の印】アミュレットに溜まる。アミュレットがなければ新しく出す。満員なら働かない)   { type:'earthSummon', amount }(【土の印】アミュレットを召喚する。満員でも上限を超えて出られ、すでにあるものは消滅してその数が足される)
 //   { type:'summon', unit:{ キャラのデータ }, count }   { type:'crest', crest:{ name, passives, countdown } }
 //   perGraveyard: 墓場1つにつき、効果が(heal/buff/armor/damageのadd)その分だけ増える
 //   condition: { link, gauge, ultimate, liberation, faith, graveyard, hpBelow, hpAbove, evolved, crests }
-//   target: self / opponent / allies / otherAllies / allyOne / enemies / enemyOne / enemyRandom / summons
+//   target: self / opponent / allies / otherAllies / allyOne / enemies / enemyOne / enemyRandom / summons / nearestAlly(最も近い味方1体: 自分以外の場のキャラで、いまの行動値が最も小さい1体。召喚物は含まない)
+//   split: true  合計(add / flat)を、対象の人数で等分する(「割りふる」)
+//   advance(行動順アップ): いまの行動値を、基準の行動値の pct% ぶん減らす。1回だけ効き、行動すると基準に戻るので、そのターンにしか効かない
 
 export default {
   id: 'sample_001',
