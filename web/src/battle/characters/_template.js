@@ -34,6 +34,8 @@
 //   perGraveyard: 墓場1つにつき、効果が(heal/buff/armor/damageのadd)その分だけ増える
 //   condition: { link, gauge, ultimate, liberation, faith, graveyard, hpBelow, hpAbove, evolved, crests }
 //   target: self / opponent / allies / otherAllies / allyOne / enemies / enemyOne / enemyRandom / summons
+//   onlyField: 'main'|'summon'  効果の対象を、場のキャラクターだけ('main')/召喚物だけ('summon')にしぼる(例: 攻撃時に、攻撃した相手が召喚物なら破壊する)
+//   extraSkill(クレストの常時効果 trigger:'constant' の中に書く): { type:'extraSkill', times: N, onlyName } 1ターンにN回までスキルを発動できる(MPは消費しない)。onlyName を書くと自分の場のその名前のキャラすべて、書かないとクレストを置いたキャラだけ。クレストが消えると元に戻る
 
 export default {
   id: 'sample_001',
