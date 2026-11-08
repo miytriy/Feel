@@ -255,6 +255,9 @@ function Skull() {
 }
 // 消滅の最後に散る、青い粒と黒いかけら
 const SPARKS = Array.from({ length: 26 }, (_, n) => { const a = n * 2.4 + 0.7; const d = 34 + ((n * 5) % 7) * 12; return { dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d - 6)}px`, dark: n % 3 === 1 } })
+// 計測(テスト戦の検証用): 消滅の動きが、この端末で実際に何ミリ秒かかったかを、画面の上に出す
+const fxProbeStart = (e) => { e.currentTarget.__t0 = e.timeStamp }
+const fxProbeEnd = (e) => { const t0 = e.currentTarget.__t0; if (t0 != null && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('feel-fxprobe', { detail: `消滅(円) ${Math.round(e.timeStamp - t0)}ms` })) }
 // 消滅の焼き込み画像を、先に読み込んでおく(演出の最中に読み込むと、1コマ目が欠ける)
 if (typeof Image !== 'undefined') ['disc', 'smoke', 'glow', 'ring0', 'ring1', 'ring2', 'ring3', 'ring4', 'ring5'].forEach((n) => { const im = new Image(); im.decoding = 'async'; im.src = `/fx/vanish/${n}.webp` })
 // 飛び散る紙片(破壊): 白くて透ける、三角や四角の破片。火の粉(黄色)と、暗い赤のかけら
@@ -355,7 +358,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         // 消滅の演出(動画の再現): ふわっとした青紫の光の円 → 縁に、水色の電気の網のような太い輪(内側はぎざぎざの暗い群青、中心は明るい青)→ 輪が小さく縮む → 白い光の核と暗いけむり → 水色の光の粒と黒いかけらが散って消える
         <span key={`van-${tick}`} aria-hidden="true" data-testid="fx-vanish" style={{ position: 'absolute', left: '50%', top: '50%', height: '250%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }}>
           {/* 重い部分(ゆらぐ円・電気の輪・けむり・光)は、画像に焼き込んである(public/fx/vanish/)。動かすのは transform と opacity だけ */}
-          <img src="/fx/vanish/disc.webp" alt="" draggable="false" style={{ position: 'absolute', left: '-25%', top: '-25%', width: '150%', height: '150%', animation: `feel-v-disc ${VANISH_S}s ease-out both` }} />
+          <img src="/fx/vanish/disc.webp" alt="" draggable="false" onAnimationStart={fxProbeStart} onAnimationEnd={fxProbeEnd} style={{ position: 'absolute', left: '-25%', top: '-25%', width: '150%', height: '150%', animation: `feel-v-disc ${VANISH_S}s ease-out both` }} />
           <span style={{ position: 'absolute', inset: 0, animation: `feel-v-ring ${VANISH_S}s ease-in-out both` }}>
             {[0, 1, 2, 3, 4, 5].map((n) => (
               // 電気がちらつく: 6枚を、0.06秒ずつ順に見せる
@@ -744,6 +747,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   // online(対人戦): { client, side, opp, init(サーバーが決めた最初の状態), left, turnMs }。サーバーが審判で、行動はサーバーに送り、返ってきた状態を再生する
   if (online) setMe(online.side); else setMe('A')
   const rewardApi = testInit ? null : rewardApiProp // テスト戦(検証用): 報酬も戦績も、記録しない
+  const [probe, setProbe] = useState('')
+  useEffect(() => { if (!testInit) return undefined; const h = (e) => setProbe(e.detail); window.addEventListener('feel-fxprobe', h); return () => window.removeEventListener('feel-fxprobe', h) }, [testInit])
   const flow = !!teamInit || !!online
   const [spellSet, setSpellSet] = useState(spellsInit || []) // 編成画面で決めたスペルセット(スペル定義の配列。同じスペルを複数入れてよい)
   const [team, setTeam] = useState(teamInit || (online ? [] : null)) // 編成画面で決めた自分のチーム(キャラ定義の配列)。nullなら編成画面を出す
@@ -1435,6 +1440,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     <>
       {netBanner && <div data-testid="pvp-net" style={{ position: 'fixed', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 200, padding: '6px 14px', borderRadius: 999, background: 'rgba(20,20,28,.88)', color: '#fff', fontSize: 13, pointerEvents: 'none' }}>{netBanner}</div>}
       {!online && intro && <StageIntro level={level} levelInfo={levelInfo} cpuChars={cpuChars} first={introFirst} onClose={() => { setIntro(false); setIntroFirst(false) }} />}
+      {testInit && probe && <div data-testid="fx-probe" style={{ position: 'fixed', top: 6, left: '50%', transform: 'translateX(-50%)', zIndex: 9500, background: 'rgba(0,0,0,0.8)', color: '#9ff', padding: '3px 10px', borderRadius: 6, fontSize: 12, pointerEvents: 'none' }}>{probe}</div>}
       {cutNow && !logOpen && <CutIn key={`cut-${play.i}`} ms={cutNow.ms} onSkip={() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p))} />}
       {logOpen && <CommentaryOverlay units={view.units} active={view.active} round={view.round} log={view.log} ab={hist.ab} dead={hist.dead} events={hist.ev} onClose={() => setLogOpen(false)} />}
       {leaveAsk && <ExitConfirm onCancel={() => setLeaveAsk(false)} onExit={leave} online={!!online} />}
