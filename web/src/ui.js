@@ -121,6 +121,7 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-v-smoke { 0%, 54% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); } 68% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.75); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.25); } }
     @keyframes feel-v-core { 0%, 50% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); } 62% { opacity: 1; transform: translate(-50%, -50%) scale(0.6); } 74% { opacity: 1; transform: translate(-50%, -50%) scale(0.45); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
     @keyframes feel-v-glow { 0%, 62% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 76% { opacity: 1; transform: translate(-50%, -50%) scale(0.9); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.15); } }
+    @keyframes feel-v-flick { 0% { opacity: 1; } 16.66% { opacity: 0; } 100% { opacity: 0; } }
     @keyframes feel-v-spark { 0%, 60% { opacity: 0; transform: translate(0, 0); } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)); } }
     @keyframes feel-guard-wave { 0% { opacity: 0; transform: scale(0.7); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.12); } }
     @keyframes feel-aura-idle { 0% { opacity: 0; } 30% { opacity: 1; } 62% { opacity: 1; } 92%, 100% { opacity: 0; } }

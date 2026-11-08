@@ -255,6 +255,8 @@ function Skull() {
 }
 // 消滅の最後に散る、青い粒と黒いかけら
 const SPARKS = Array.from({ length: 26 }, (_, n) => { const a = n * 2.4 + 0.7; const d = 34 + ((n * 5) % 7) * 12; return { dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d - 6)}px`, dark: n % 3 === 1 } })
+// 消滅の焼き込み画像を、先に読み込んでおく(演出の最中に読み込むと、1コマ目が欠ける)
+if (typeof Image !== 'undefined') ['disc', 'smoke', 'glow', 'ring0', 'ring1', 'ring2', 'ring3', 'ring4', 'ring5'].forEach((n) => { const im = new Image(); im.decoding = 'async'; im.src = `/fx/vanish/${n}.webp` })
 // 飛び散る紙片(破壊): 白くて透ける、三角や四角の破片。火の粉(黄色)と、暗い赤のかけら
 const GOLD = Array.from({ length: 34 }, (_, n) => { const a = n * 2.4 + 0.3; const d = 22 + ((n * 7) % 9) * 9; return { dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d - 14)}px`, size: 3 + (n % 4) * 1.6, col: n % 3 === 0 ? '#ffffff' : n % 3 === 1 ? '#fff0a8' : '#ffd45e', delay: 0.1 + (n % 6) * 0.045, dur: 0.5 + (n % 5) * 0.1 } })
 const CONFETTI = Array.from({ length: 16 }, (_, n) => { const a = n * 2.4 + 0.4; const d = 26 + ((n * 7) % 5) * 9; return { x: `${Math.round(Math.cos(a) * 10)}px`, y: `${Math.round(Math.sin(a) * 10)}px`, dx: `${Math.round(Math.cos(a) * d)}px`, dy: `${Math.round(Math.sin(a) * d)}px`, rot: `${(n % 2 ? 1 : -1) * (90 + n * 30)}deg`, size: 6 + (n % 3) * 2, tri: n % 2 === 0, delay: 0.1 + (n % 5) * 0.02 } })
@@ -352,34 +354,17 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
       {fx && fx.die === 'vanish' && (
         // 消滅の演出(動画の再現): ふわっとした青紫の光の円 → 縁に、水色の電気の網のような太い輪(内側はぎざぎざの暗い群青、中心は明るい青)→ 輪が小さく縮む → 白い光の核と暗いけむり → 水色の光の粒と黒いかけらが散って消える
         <span key={`van-${tick}`} aria-hidden="true" data-testid="fx-vanish" style={{ position: 'absolute', left: '50%', top: '50%', height: '250%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }}>
-          <svg width="0" height="0" style={{ position: 'absolute' }}>
-            <defs>
-              <filter id="feel-fuzzy" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="3" result="n" /><feDisplacementMap in="SourceGraphic" in2="n" scale="16" /></filter>
-              <filter id="feel-rag" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="3" seed="8" result="n" /><feDisplacementMap in="SourceGraphic" in2="n" scale="12" /></filter>
-              <filter id="feel-bolt" x="-30%" y="-30%" width="160%" height="160%">
-                <feTurbulence type="turbulence" baseFrequency="0.09" numOctaves="2" seed="1" result="n"><animate attributeName="seed" values="1;5;9;13;17;21" dur="0.36s" repeatCount="indefinite" calcMode="discrete" /></feTurbulence>
-                <feDisplacementMap in="SourceGraphic" in2="n" scale="9" result="d" />
-                <feGaussianBlur in="d" stdDeviation="0.7" result="b" />
-                <feMerge><feMergeNode in="b" /><feMergeNode in="d" /></feMerge>
-              </filter>
-              <filter id="feel-web" x="-30%" y="-30%" width="160%" height="160%">
-                <feTurbulence type="fractalNoise" baseFrequency="0.17" numOctaves="3" seed="2" result="n"><animate attributeName="seed" values="2;6;10;14;18" dur="0.3s" repeatCount="indefinite" calcMode="discrete" /></feTurbulence>
-                <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 14 -6.4" result="m" />
-                <feComposite in="SourceGraphic" in2="m" operator="in" result="web" />
-                <feGaussianBlur in="web" stdDeviation="0.45" />
-              </filter>
-            </defs>
-          </svg>
-          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(70,140,255,1) 0%, rgba(24,52,200,1) 20%, rgba(10,22,105,1) 48%, rgba(8,16,82,1) 70%, rgba(95,55,190,0.9) 90%, rgba(120,80,215,0) 100%)', filter: 'url(#feel-fuzzy)', animation: `feel-v-disc ${VANISH_S}s ease-out both` }} />
-          <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', animation: `feel-v-ring ${VANISH_S}s ease-in-out both`, filter: 'drop-shadow(0 0 3px #4fb4ff) drop-shadow(0 0 8px #2f6bff)' }}>
-            <circle cx="50" cy="50" r="40" fill="none" stroke="#7ee6ff" strokeWidth="13" filter="url(#feel-web)" />
-            <circle cx="50" cy="50" r="44" fill="none" stroke="#45c8ff" strokeWidth="2.4" filter="url(#feel-bolt)" />
-            <circle cx="50" cy="50" r="44" fill="none" stroke="#ffffff" strokeWidth="1" filter="url(#feel-bolt)" opacity="0.9" />
-            <circle cx="50" cy="50" r="49" fill="none" stroke="#c9bdff" strokeWidth="0.8" filter="url(#feel-bolt)" opacity="0.5" />
-          </svg>
-          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '70%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(40,40,52,0) 28%, rgba(55,55,68,0.75) 60%, rgba(60,60,74,0) 100%)', filter: 'url(#feel-rag)', animation: `feel-v-smoke ${VANISH_S}s ease-out both` }} />
+          {/* 重い部分(ゆらぐ円・電気の輪・けむり・光)は、画像に焼き込んである(public/fx/vanish/)。動かすのは transform と opacity だけ */}
+          <img src="/fx/vanish/disc.webp" alt="" draggable="false" style={{ position: 'absolute', left: '-25%', top: '-25%', width: '150%', height: '150%', animation: `feel-v-disc ${VANISH_S}s ease-out both` }} />
+          <span style={{ position: 'absolute', inset: 0, animation: `feel-v-ring ${VANISH_S}s ease-in-out both` }}>
+            {[0, 1, 2, 3, 4, 5].map((n) => (
+              // 電気がちらつく: 6枚を、0.06秒ずつ順に見せる
+              <img key={n} src={`/fx/vanish/ring${n}.webp`} alt="" draggable="false" style={{ position: 'absolute', left: '-10%', top: '-10%', width: '120%', height: '120%', opacity: 0, animation: `feel-v-flick 0.36s steps(1, end) ${n * -0.06}s infinite` }} />
+            ))}
+          </span>
+          <img src="/fx/vanish/smoke.webp" alt="" draggable="false" style={{ position: 'absolute', left: '50%', top: '50%', width: '113.2%', aspectRatio: '1', animation: `feel-v-smoke ${VANISH_S}s ease-out both` }} />
           <span style={{ position: 'absolute', left: '50%', top: '50%', width: '40%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, #fff 0%, #fff 25%, rgba(190,235,255,0.9) 50%, rgba(110,190,255,0) 100%)', boxShadow: '0 0 14px 4px rgba(150,220,255,0.8)', animation: `feel-v-core ${VANISH_S}s ease-in-out both` }} />
-          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '46%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(170,230,255,0.75) 0%, rgba(110,190,255,0.45) 50%, rgba(110,190,255,0) 100%)', filter: 'url(#feel-rag)', animation: `feel-v-glow ${VANISH_S}s ease-out both` }} />
+          <img src="/fx/vanish/glow.webp" alt="" draggable="false" style={{ position: 'absolute', left: '50%', top: '50%', width: '75.5%', aspectRatio: '1', animation: `feel-v-glow ${VANISH_S}s ease-out both` }} />
           {SPARKS.map((sp, n) => (
             <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: sp.dark ? 4 : 5, height: sp.dark ? 4 : 5, marginLeft: -2, marginTop: -2, borderRadius: sp.dark ? 1 : '50%', background: sp.dark ? '#14141c' : '#d8f4ff', boxShadow: sp.dark ? 'none' : '0 0 6px 2px #6ac4ff', '--dx': sp.dx, '--dy': sp.dy, animation: `feel-v-spark ${VANISH_S}s ease-out both` }} />
           ))}
