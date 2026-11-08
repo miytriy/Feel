@@ -750,7 +750,7 @@ function reorderBoost(evs) {
   }
   return out
 }
-export const VANISH_SLOW = 1.5 // 消滅エフェクトの長さの倍率(1 = 参考動画どおりの約0.9秒)。速すぎる/遅すぎるときは、ここだけ変える
+export const VANISH_SLOW = 1 // 消滅エフェクトの長さの倍率。1 = ルール画面(第9章)の消滅と同じ基準(0.9秒)。EFFECTS.md「基準の速さ」を参照。戦闘もルール画面も、この1か所で決まる
 const VANISH_S = 0.9 * VANISH_SLOW
 const EVENT_MS = { turn: 700, ability: 600, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
 
