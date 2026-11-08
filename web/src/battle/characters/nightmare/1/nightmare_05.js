@@ -1,4 +1,4 @@
-import bat from './tokens/nightmare_token_03.js' // 召喚する「バット」は nightmare_token_03.js のキャラです
+import bat from '../tokens/nightmare_token_03.js' // 召喚する「バット」は nightmare_token_03.js のキャラです
 
 export default {
   id: 'nightmare_05', name: 'ミッドナイトヴァンパイア・エラル', class: 'ナイトメア', rarity: 'bronze',
