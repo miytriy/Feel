@@ -32,7 +32,7 @@ const LIST = [
   ['進化', '光の柱と光の輪。', 1500, (p) => ({ unit: baseUnit, fx: p ? { kind: 'evolve', text: '' } : null })],
   ['破壊(ラストワードなし)', '金白の閃光から、金色の粒になって散る。', 800, (p) => ({ unit: p ? { ...baseUnit, hp: 0, alive: false } : baseUnit, fx: p ? { kind: 'none', text: '', die: 'destroy', lw: false } : null })],
   ['破壊(ラストワードあり)', '赤い円とドクロ。そのあと、ラストワードが発動する。', 800, (p) => ({ unit: p ? { ...baseUnit, hp: 0, alive: false } : baseUnit, fx: p ? { kind: 'none', text: '', die: 'destroy', lw: true } : null })],
-  ['消滅', '電気の輪が広がって縮み、光の粒になる。', Math.round(900 * VANISH_SLOW), (p) => ({ unit: p ? { ...baseUnit, hp: 0, alive: false } : baseUnit, fx: p ? { kind: 'none', text: '', die: 'vanish' } : null })],
+  ['消滅', '電気の輪が広がって縮み、光の粒になる。', Math.round(950 * VANISH_SLOW), (p) => ({ unit: p ? { ...baseUnit, hp: 0, alive: false } : baseUnit, fx: p ? { kind: 'none', text: '', die: 'vanish' } : null })],
 ]
 
 // 画面に見えているときだけ動かす(13個が同時に動いて重くならないように)
@@ -76,7 +76,7 @@ function AlbionDemo() {
   const [st, setSt] = useState('idle') // idle | cut | vanish
   const timer = useRef(null)
   useEffect(() => () => clearTimeout(timer.current), [])
-  const toBlast = () => { clearTimeout(timer.current); setSt('vanish'); timer.current = setTimeout(() => setSt('idle'), Math.round(1050 * VANISH_SLOW)) }
+  const toBlast = () => { clearTimeout(timer.current); setSt('vanish'); timer.current = setTimeout(() => setSt('idle'), Math.round(1100 * VANISH_SLOW)) }
   const play = () => { if (st !== 'idle') return; setSt('cut'); timer.current = setTimeout(toBlast, 3300) }
   const dead = st === 'vanish'
   const us = useMemo(() => [0, 1, 2].map((i) => ({ ...baseUnit, uid: `alb${i}`, field: 'summon', name: `召喚物${i + 1}` })), [])
