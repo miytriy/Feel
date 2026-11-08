@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { C, FONT } from './ui.js'
-import { UnitCard, VANISH_SLOW } from './BattleScreen.jsx'
+import { UnitCard } from './BattleScreen.jsx'
 import { createBattle } from './battle/engine.js'
-import { CutIn } from './cutin.jsx'
 
 // ルール画面の「エフェクト一覧」: 戦闘画面と同じエフェクトのコード(UnitCard)を、そのまま繰り返し再生する。
 // 動画ではなくコードで動くので、エフェクトを直したら、ここも自動で同じに変わる(新しいエフェクトは、ここにも足すこと)。
@@ -71,31 +70,6 @@ function Demo({ title, note, ms, make, index = 0 }) {
   )
 }
 
-// アルビオンバハムートのファンファーレ: 全画面の動画 → 白い閃光 → 盤面が見えたら消滅
-function AlbionDemo() {
-  const [st, setSt] = useState('idle') // idle | cut | vanish
-  const timer = useRef(null)
-  useEffect(() => () => clearTimeout(timer.current), [])
-  const toBlast = () => { clearTimeout(timer.current); setSt('vanish'); timer.current = setTimeout(() => setSt('idle'), Math.round(1100 * VANISH_SLOW)) }
-  const play = () => { if (st !== 'idle') return; setSt('cut'); timer.current = setTimeout(toBlast, 3300) }
-  const dead = st === 'vanish'
-  const us = useMemo(() => [0, 1, 2].map((i) => ({ ...baseUnit, uid: `alb${i}`, field: 'summon', name: `召喚物${i + 1}` })), [])
-  return (
-    <div style={{ padding: 10, background: C.paper, borderRadius: 8 }}>
-      <div style={{ fontSize: 13, lineHeight: 1.7, marginBottom: 8 }}><b>アルビオンバハムート【ファンファーレ】</b><div style={{ color: C.mute, fontSize: 12 }}>モードを選ぶと、全画面アニメ → 白い閃光 → 盤面が見えたら、対象が消滅します。</div></div>
-      <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
-        {us.map((u) => (
-          <div key={u.uid} style={{ width: 104 }}>
-            <UnitCard key={dead ? 'd' : 'a'} unit={dead ? { ...u, hp: 0, alive: false } : u} fx={dead ? { kind: 'none', text: '', die: 'vanish' } : null} tick={dead ? 1 : 0} />
-          </div>
-        ))}
-      </div>
-      <button onClick={play} disabled={st !== 'idle'} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: C.player, color: C.onAccent, fontFamily: FONT, fontWeight: 700, fontSize: 14, cursor: st === 'idle' ? 'pointer' : 'default', opacity: st === 'idle' ? 1 : 0.5 }}>▶ 再生する</button>
-      {st === 'cut' && <CutIn ms={3300} onSkip={toBlast} />}
-    </div>
-  )
-}
-
 export default function EffectGallery() {
   return (
     <div>
@@ -103,8 +77,6 @@ export default function EffectGallery() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
         {LIST.map(([title, note, ms, make], i) => <Demo key={title} title={title} note={note} ms={ms} make={make} index={i} />)}
       </div>
-      <h3 style={{ margin: '16px 0 8px', fontSize: 15, borderLeft: `4px solid ${C.player}`, paddingLeft: 8 }}>カットイン(必殺級の演出)</h3>
-      <AlbionDemo />
     </div>
   )
 }

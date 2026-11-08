@@ -798,8 +798,6 @@ function runEffects(state, source, effects, ctx = {}) {
       const m = e.modes[pick]
       if (m) {
         state.log.push(`モード【${m.name}】が働く`)
-        const la = state.lastAbility // モードが決まってから、キャラ専用のカットインを流す
-        if (la && la.owner === source.name) emit(state, 'cutin', { kind: la.kind, owner: la.owner, team: la.team, mode: pick })
         runEffects(state, source, m.effects, { ...ctx, mode: undefined, chosen: undefined, allowPending: false })
       }
       ctx = { ...ctx, mode: undefined }

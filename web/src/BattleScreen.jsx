@@ -12,7 +12,6 @@ import { CommentaryOverlay, collectHistory, addHistory, emptyHistory } from './B
 import { useIsDesktop, C as BASE, alpha, DISPLAY, useRemembered } from './ui.js'
 import { StatIcon } from './icons.jsx'
 import { ME, OPP, setMe, winnerView } from './perspective.js'
-import { CutIn, cutinOf } from './cutin.jsx'
 import { VanishFx, VANISH_BASE_MS } from './VanishFx.jsx'
 const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', margin: '0 2px 0 0' }} />
 
@@ -850,8 +849,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     if (!play || logOpen) return // 戦闘実況を開いている間は、再生を止める
     if (play.i >= play.events.length) { setPlay(null); return }
     const grp = play.events.slice(play.i, groupEnd(play.events, play.i) + 1)
-    const cut = grp.map(cutinOf).find(Boolean) // キャラ専用のカットイン演出がある場面は、その長さだけ待つ
-    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), cut ? cut.ms + 150 : Math.max(...grp.map((x) => (x.type === 'vanish' ? EVENT_MS.vanish : (EVENT_MS[x.type] ?? 500) * mult))))
+    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), Math.max(...grp.map((x) => (x.type === 'vanish' ? EVENT_MS.vanish : (EVENT_MS[x.type] ?? 500) * mult))))
     return () => clearTimeout(t)
   }, [play, mult, logOpen])
 
@@ -1148,7 +1146,6 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     }
   }
   const groupEvs = play ? play.events.slice(gStart, gEnd + 1) : []
-  const cutNow = groupEvs.map(cutinOf).find(Boolean) || null
   const avFx = (() => { const m = {}; for (const x of groupEvs) if (x.type === 'av') m[x.target] = { dir: x.dir }; return Object.keys(m).length ? { ...m, tick: play ? play.i : 0 } : null })() // 行動順の上昇・下降: アクションバーの該当ユニットに出す
   const fxFor0 = (uid) => {
     const mine = groupEvs.filter((x) => x.target === uid) // まとまった出来事の中から、この人に起きたものを探す
@@ -1424,7 +1421,6 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
       {!online && intro && <StageIntro level={level} levelInfo={levelInfo} cpuChars={cpuChars} first={introFirst} onClose={() => { setIntro(false); setIntroFirst(false) }} />}
       {testInit && !online && <button type="button" data-testid="ghost-mode" onClick={() => setGhostMode(GHOST_NEXT[ghostMode] || 'none')} style={{ position: 'fixed', top: 6, right: 8, zIndex: 9500, background: ghostMode === 'none' ? 'rgba(0,0,0,0.75)' : 'rgba(120,70,200,0.9)', color: '#fff', border: '1px solid rgba(255,255,255,0.35)', padding: '4px 10px', borderRadius: 8, fontSize: 12, cursor: 'pointer' }}>ゴースト無限湧き: {GHOST_LABEL[ghostMode] || 'なし'}</button>}
       {testInit && probe && <div data-testid="fx-probe" style={{ position: 'fixed', top: 6, left: '50%', transform: 'translateX(-50%)', zIndex: 9500, background: 'rgba(0,0,0,0.8)', color: '#9ff', padding: '3px 10px', borderRadius: 6, fontSize: 12, pointerEvents: 'none' }}>{probe}</div>}
-      {cutNow && !logOpen && <CutIn key={`cut-${play.i}`} ms={cutNow.ms} onSkip={() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p))} />}
       {logOpen && <CommentaryOverlay units={view.units} active={view.active} round={view.round} log={view.log} ab={hist.ab} dead={hist.dead} events={hist.ev} onClose={() => setLogOpen(false)} />}
       {leaveAsk && <ExitConfirm onCancel={() => setLeaveAsk(false)} onExit={leave} online={!!online} />}
       {state.winner && !playing && resultShown && !intro && <ResultBanner winner={state.winner} message={online ? onlineResultMsg : rewardMsg} buttons={resultButtons} onDismiss={() => setResultShown(false)} />}
