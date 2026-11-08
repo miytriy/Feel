@@ -370,18 +370,18 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
               </filter>
             </defs>
           </svg>
-          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(70,140,255,1) 0%, rgba(24,52,200,1) 20%, rgba(10,22,105,1) 48%, rgba(8,16,82,1) 70%, rgba(95,55,190,0.9) 90%, rgba(120,80,215,0) 100%)', filter: 'url(#feel-fuzzy)', animation: 'feel-v-disc 0.9s ease-out both' }} />
-          <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', animation: 'feel-v-ring 0.9s ease-in-out both', filter: 'drop-shadow(0 0 3px #4fb4ff) drop-shadow(0 0 8px #2f6bff)' }}>
+          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(70,140,255,1) 0%, rgba(24,52,200,1) 20%, rgba(10,22,105,1) 48%, rgba(8,16,82,1) 70%, rgba(95,55,190,0.9) 90%, rgba(120,80,215,0) 100%)', filter: 'url(#feel-fuzzy)', animation: `feel-v-disc ${VANISH_S}s ease-out both` }} />
+          <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', animation: `feel-v-ring ${VANISH_S}s ease-in-out both`, filter: 'drop-shadow(0 0 3px #4fb4ff) drop-shadow(0 0 8px #2f6bff)' }}>
             <circle cx="50" cy="50" r="40" fill="none" stroke="#7ee6ff" strokeWidth="13" filter="url(#feel-web)" />
             <circle cx="50" cy="50" r="44" fill="none" stroke="#45c8ff" strokeWidth="2.4" filter="url(#feel-bolt)" />
             <circle cx="50" cy="50" r="44" fill="none" stroke="#ffffff" strokeWidth="1" filter="url(#feel-bolt)" opacity="0.9" />
             <circle cx="50" cy="50" r="49" fill="none" stroke="#c9bdff" strokeWidth="0.8" filter="url(#feel-bolt)" opacity="0.5" />
           </svg>
-          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '70%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(40,40,52,0) 28%, rgba(55,55,68,0.75) 60%, rgba(60,60,74,0) 100%)', filter: 'url(#feel-rag)', animation: 'feel-v-smoke 0.9s ease-out both' }} />
-          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '40%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, #fff 0%, #fff 25%, rgba(190,235,255,0.9) 50%, rgba(110,190,255,0) 100%)', boxShadow: '0 0 14px 4px rgba(150,220,255,0.8)', animation: 'feel-v-core 0.9s ease-in-out both' }} />
-          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '46%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(170,230,255,0.75) 0%, rgba(110,190,255,0.45) 50%, rgba(110,190,255,0) 100%)', filter: 'url(#feel-rag)', animation: 'feel-v-glow 0.9s ease-out both' }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '70%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(40,40,52,0) 28%, rgba(55,55,68,0.75) 60%, rgba(60,60,74,0) 100%)', filter: 'url(#feel-rag)', animation: `feel-v-smoke ${VANISH_S}s ease-out both` }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '40%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, #fff 0%, #fff 25%, rgba(190,235,255,0.9) 50%, rgba(110,190,255,0) 100%)', boxShadow: '0 0 14px 4px rgba(150,220,255,0.8)', animation: `feel-v-core ${VANISH_S}s ease-in-out both` }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', width: '46%', aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(170,230,255,0.75) 0%, rgba(110,190,255,0.45) 50%, rgba(110,190,255,0) 100%)', filter: 'url(#feel-rag)', animation: `feel-v-glow ${VANISH_S}s ease-out both` }} />
           {SPARKS.map((sp, n) => (
-            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: sp.dark ? 4 : 5, height: sp.dark ? 4 : 5, marginLeft: -2, marginTop: -2, borderRadius: sp.dark ? 1 : '50%', background: sp.dark ? '#14141c' : '#d8f4ff', boxShadow: sp.dark ? 'none' : '0 0 6px 2px #6ac4ff', '--dx': sp.dx, '--dy': sp.dy, animation: `feel-v-spark 0.9s ease-out both` }} />
+            <span key={n} style={{ position: 'absolute', left: '50%', top: '50%', width: sp.dark ? 4 : 5, height: sp.dark ? 4 : 5, marginLeft: -2, marginTop: -2, borderRadius: sp.dark ? 1 : '50%', background: sp.dark ? '#14141c' : '#d8f4ff', boxShadow: sp.dark ? 'none' : '0 0 6px 2px #6ac4ff', '--dx': sp.dx, '--dy': sp.dy, animation: `feel-v-spark ${VANISH_S}s ease-out both` }} />
           ))}
         </span>
       )}
@@ -750,7 +750,9 @@ function reorderBoost(evs) {
   }
   return out
 }
-const EVENT_MS = { turn: 700, ability: 600, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 800, vanish: 950, av: 800, sync: 300 }
+export const VANISH_SLOW = 1.5 // 消滅エフェクトの長さの倍率(1 = 参考動画どおりの約0.9秒)。速すぎる/遅すぎるときは、ここだけ変える
+const VANISH_S = 0.9 * VANISH_SLOW
+const EVENT_MS = { turn: 700, ability: 600, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null, online = null }) {
