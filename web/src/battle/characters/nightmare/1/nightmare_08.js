@@ -1,5 +1,5 @@
-import ghost from './tokens/nightmare_token_02.js' // 召喚する「ゴースト」は nightmare_token_02.js のキャラです
-import bat from './tokens/nightmare_token_03.js' // 召喚する「バット」は nightmare_token_03.js のキャラです
+import ghost from '../tokens/nightmare_token_02.js' // 召喚する「ゴースト」は nightmare_token_02.js のキャラです
+import bat from '../tokens/nightmare_token_03.js' // 召喚する「バット」は nightmare_token_03.js のキャラです
 
 export default {
   id: 'nightmare_08', name: '怪奇の探索者・ユナ', class: 'ナイトメア', rarity: 'silver',
