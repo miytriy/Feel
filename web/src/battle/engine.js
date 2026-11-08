@@ -512,7 +512,10 @@ function resolveTargets(state, source, key, ctx) {
     case 'opponent': return ctx.other && ctx.other.alive ? [ctx.other] : []
     case 'allies': return allies
     case 'otherAllies': return allies.filter((u) => u !== source)
-    case 'nearestAlly': { // 最も近い味方1体: 自分以外の場のキャラのうち、行動順が最も近い(いまの行動値が最も小さい)1体
+    // 【最も近い味方1体】(target: 'nearestAlly')
+    //   効果が働いた時点(このキャラが行動中)で、自分以外の場のキャラ(召喚物・アミュレットは含まない)のうち、
+    //   いまの行動値(curAV)が最も小さい1体。同じ行動値なら、場の並びで先の1体。味方がいなければ何もしない
+    case 'nearestAlly': {
       const others = allies.filter((u) => u !== source && u.uid !== source.uid)
       return [[...others].sort((a, b) => a.curAV - b.curAV)[0]].filter(Boolean)
     }
@@ -1073,7 +1076,8 @@ function runEffects(state, source, effects, ctx = {}) {
           t.comboCount = 0
           state.log.push(`${t.name}は入場し直した`)
           break
-        case 'advance':
+        case 'advance': // 行動順アップ: いまの行動値(curAV)を、基準の行動値(baseAV)の pct% ぶん減らす(0未満にはならない)。
+          // 減らすのはその1回だけ。そのキャラが行動すると行動値は基準に戻る(curAV = baseAV)ので、アップはそのターンにしか効かない
           t.curAV = Math.max(0, t.curAV - (t.baseAV * (e.pct ?? 0)) / 100)
           state.log.push(`${t.name}の行動順が早まった`)
           emit(state, 'av', { target: t.uid, dir: 'up', pct: e.pct ?? 0 }) // アクションバーのエフェクト用
