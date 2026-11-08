@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import RulesScreen from './RulesScreen.jsx'
-import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
-import { auth, googleProvider } from './firebase.js'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { auth } from './firebase.js'
+import { openLogin } from './LoginDialog.jsx'
 import {
   gateStatus, gateEnter, gateCheck, gateMe, getGateToken, setGateToken, fetchMe, enhanceChar, fetchCareer, recordMatch, clearCareer, drawGacha, claimLoginBonus, startBattleTicket, finishBattle, fetchGifts, claimGift, redeemCode, markMailRead, setMailStar, deleteMail, purgeReadMail,
 } from './api.js'
@@ -202,14 +203,7 @@ export default function App() {
     return () => { setMe(null); setGifts([]) }
   }, [sandbox])
 
-  const handleLogin = async () => {
-    setError('')
-    try {
-      await signInWithPopup(auth, googleProvider)
-    } catch (e) {
-      setError('ログインに失敗しました: ' + e.code)
-    }
-  }
+  const handleLogin = () => { setError(''); openLogin() }
 
   const handleLogout = async () => {
     await signOut(auth)

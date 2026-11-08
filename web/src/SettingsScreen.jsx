@@ -115,7 +115,7 @@ export default function SettingsScreen({ user, settings, onChange, onLogin, onLo
         { type: 'text', label: 'UID', value: user ? user.uid : '-' },
         user
           ? { type: 'action', label: 'ログアウト', button: 'ログアウト', dark: true, onClick: onLogout }
-          : { type: 'action', label: 'ログイン', button: 'Googleでログイン', onClick: onLogin },
+          : { type: 'action', label: 'ログイン', button: 'ログイン', onClick: onLogin },
         ...(unlockLevel < 2 ? [{ type: 'secret', label: unlockLevel === 1 ? 'マスターパスワード(さらに上の権限)' : 'マスターパスワード(機能解放)' }] : []),
         ...(unlockLevel >= 1 ? [{ type: 'action', label: '解放の状態', button: 'もとに戻す', dark: true, onClick: onRelock, hint: unlockLevel >= 2 ? '最高権限: 人事・編成・足跡・ガチャ・メール' : '解放中: 人事・編成・足跡' }] : []),
       ],

@@ -33,13 +33,13 @@ export default function GateScreen({ user, notice, onEnter, onLogin, onLogout })
         <hr style={{ border: 'none', borderTop: `1px solid ${C.line}`, margin: '16px 0' }} />
         {user ? (
           <div style={{ fontSize: 13 }}>
-            <div style={{ marginBottom: 8 }}>ログイン中: <b>{user.displayName}</b>(このアカウントはまだ登録されていません。パスワードを入れて入ってください)</div>
+            <div style={{ marginBottom: 8 }}>ログイン中: <b>{user.displayName || user.email}</b>(このアカウントはまだ登録されていません。パスワードを入れて入ってください)</div>
             <button onClick={onLogout} style={btn(false)}>ログアウト</button>
           </div>
         ) : (
           <>
             <div style={{ fontSize: 12, color: C.mute, marginBottom: 6 }}>すでにアカウントをお持ちの方は、パスワードなしで入れます。</div>
-            <button onClick={onLogin} style={btn(false)}>Googleでログイン</button>
+            <button onClick={onLogin} style={btn(false)}>ログイン(Google / メール)</button>
           </>
         )}
       </div>
