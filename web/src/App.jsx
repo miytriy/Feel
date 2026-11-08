@@ -99,7 +99,9 @@ export default function App() {
   const [activeIdx, setActiveIdx] = useState(null) // 最後に選んだパーティーの番号
   const desktop = useIsDesktop() // 画面の幅が広い(PC)ときは、画面全体を使うレイアウトにする
   // 開発中の入口(マスターパスワード): checking=確認中 / locked=パスワードが必要 / open=入れる / offline=サーバーにつながらない
-  const [gate, setGate] = useState('checking')
+  // 入室制限がかかっていた訪問者(前回「入れなかった」端末)には、ロード画面を出さず、すぐ入口の画面を見せる。確認は裏で続け、入れると分かれば開く
+  const [gate, setGateRaw] = useState(() => { try { return localStorage.getItem('feel.gate.locked') === '1' ? 'locked' : 'checking' } catch { return 'checking' } })
+  const setGate = (v) => { setGateRaw(v); try { if (v === 'locked') localStorage.setItem('feel.gate.locked', '1'); else if (v === 'open') localStorage.removeItem('feel.gate.locked') } catch { /* 保存できない環境では、毎回ロード画面が出る */ } }
   const [gateTry, setGateTry] = useState(0)
   const [booted, setBooted] = useState(false) // 起動の準備(ログイン確認・入口・持ち物の読み込み)が終わったか。いちど終わったら、ロード画面は出さない
   const [rulesFirst, setRulesFirst] = useState(false) // 初回だけ、ルール説明を自動で開く
@@ -137,7 +139,7 @@ export default function App() {
   useEffect(() => {
     if (authLoading) return
     let alive = true
-    if (!booted) setGate('checking') // 起動中だけ。起動後の確かめ直しは、画面を変えずに裏で行う(ロード画面を出し直さない)
+    if (!booted && gate !== 'locked') setGate('checking') // 起動中だけ。起動後の確かめ直しは、画面を変えずに裏で行う(ロード画面を出し直さない)
     ;(async () => {
       try {
         const st = await gateStatus()
@@ -291,7 +293,7 @@ export default function App() {
     : null
 
   // 起動中は、ロード画面を出しつづける(準備が全部できてから、いちどだけ開ける)
-  if (!booted) {
+  if (!booted && gate !== 'locked') { // 入室制限で入れない人には、ロード画面を出さない
     return <LoadingScreen progress={bootProgress} note="サーバーが眠っていると、1分ほどかかることがあります" />
   }
   if (gate === 'checking') return <LoadingScreen note="サーバーが眠っていると、1分ほどかかることがあります" /> // 「もう一度つなぐ」を押したとき
