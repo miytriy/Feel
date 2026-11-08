@@ -17,6 +17,6 @@ const probeEnd = (e) => { if (e.animationName !== 'vx-y') return; const m = e.cu
 //   そのため、1コマ分の小さな四角の中で、背景の位置だけを steps() でずらす
 export function VanishFx({ ms = VANISH_BASE_MS }) {
   return (
-    <span aria-hidden="true" data-testid="fx-vanish" ref={probeRef} onAnimationEnd={probeEnd} style={{ position: 'absolute', left: '50%', top: '50%', height: '275.5%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9, backgroundImage: `url(${SHEET})`, backgroundRepeat: 'no-repeat', backgroundSize: `${COLS * 100}% ${ROWS * 100}%`, animation: `vx-y ${ms}ms steps(${ROWS}, end) both, vx-x ${ms / ROWS}ms steps(${COLS}, end) ${ROWS} both` }} />
+    <span aria-hidden="true" data-testid="fx-vanish" ref={probeRef} onAnimationEnd={probeEnd} style={{ position: 'absolute', left: '50%', top: '50%', height: '220%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9, backgroundImage: `url(${SHEET})`, backgroundRepeat: 'no-repeat', backgroundSize: `${COLS * 100}% ${ROWS * 100}%`, animation: `vx-y ${ms}ms steps(${ROWS}, end) both, vx-x ${ms / ROWS}ms steps(${COLS}, end) ${ROWS} both` }} />
   )
 }
