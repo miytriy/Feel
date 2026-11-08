@@ -876,9 +876,20 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
     if (play.i >= play.events.length) { setPlay(null); return }
     const grp = play.events.slice(play.i, groupEnd(play.events, play.i) + 1)
     const cut = grp.map(cutinOf).find(Boolean) // キャラ専用のカットイン演出がある場面は、その長さだけ待つ
-    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), cut ? cut.ms + 150 : Math.max(...grp.map((x) => (x.blast ? Math.max(BLAST_MS, EVENT_MS.vanish) : EVENT_MS[x.type] ?? 500))) * mult)
+    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), cut ? cut.ms + 150 : Math.max(...grp.map((x) => (x.blast ? 0 : EVENT_MS[x.type] ?? 500)), ...(grp.some((x) => x.blast) ? [EVENT_MS.vanish * mult + BLAST_MS] : [0])) * (grp.some((x) => x.blast) ? 1 : mult))
     return () => clearTimeout(t)
   }, [play, mult, logOpen])
+
+  // アルビオンバハムート: 爆発の動画が流れ終わってから、消滅の演出を始める
+  const [blastDone, setBlastDone] = useState(false)
+  useEffect(() => {
+    setBlastDone(false)
+    if (!play || logOpen) return
+    const g = play.events.slice(play.i, groupEnd(play.events, play.i) + 1)
+    if (!g.some((x) => x.blast)) return
+    const t = setTimeout(() => setBlastDone(true), BLAST_MS)
+    return () => clearTimeout(t)
+  }, [play?.i, logOpen])
 
   // 対戦が終わって再生も終わったら、キャリア(アカウントの対戦記録)に残す
   useEffect(() => {
@@ -1205,6 +1216,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi = null,
   const fxFor = (uid) => {
     const mine = groupEvs.filter((x) => x.target === uid)
     const dieEv = mine.find((x) => x.type === 'destroy' || x.type === 'vanish')
+    if (dieEv && blastNow && !blastDone) return null // 爆発の動画が終わるまでは、盤面にそのまま残す
     const f = fxFor0(uid)
     return dieEv ? { ...(f && f.kind !== 'destroy' && f.kind !== 'vanish' ? f : { kind: 'none', text: '' }), die: dieEv.type, grave: !!dieEv.grave, lw: !!dieEv.lw } : f
   }
