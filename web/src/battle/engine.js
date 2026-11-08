@@ -961,6 +961,7 @@ function runEffects(state, source, effects, ctx = {}) {
     if (e.onlyClass) targets = targets.filter((t) => t.class === e.onlyClass) // 指定のクラス(ロイヤルなど)だけ
     if (e.onlyType) targets = targets.filter((t) => hasType(t, e.onlyType)) // 指定のタイプ(式神など)だけ
     if (e.onlyName) targets = targets.filter((t) => t.name === e.onlyName) // 指定の名前のキャラ(トークンなど)だけ
+    if (e.onlyField) targets = targets.filter((t) => t.field === e.onlyField) // 'main'=場のキャラクターだけ / 'summon'=召喚物(アミュレットも)だけ(例: 攻撃時に、攻撃した相手が召喚物なら破壊する)
     // ランダムな相手の人数: count(基本は1体)。comboCount: { combo: 3, count: 3 } なら、コンボが3以上のとき3体(重ならないように選ぶ)
     if (((e.target || 'self') === 'enemyRandom' || e.target === 'enemyFieldRandom') && (e.count != null || e.comboCount)) {
       let n = e.count ?? 1
@@ -1228,6 +1229,29 @@ function spellActions(state, actor) {
 //  skill = スキル攻撃(ターン終了) / trait = 特性(MPを使う。ターンは続く)
 //  evolve = 進化(EPを使う。ターンは続く) / endTurn = 何もせず終える
 //  accelerate = アクセラレートの実行(アクセラレートの番のときだけ。実行すると本体の行動を消費する)
+// ---------- 1ターンにスキルを発動できる回数 ----------
+// 基本は1回。【アクティブ】「1ターンに2回スキルを発動できる」(gainDoubleSkill)を持つと2回(2回目はMPを消費)。
+// クレストの常時効果 { type: 'extraSkill', times: N, onlyName } があると、N回まで発動できる(MPは消費しない)。
+//   onlyName を書くと、自分の場のその名前のキャラすべてが対象。書かないと、そのクレストを置いたキャラだけ。クレストが消えると元に戻る
+function crestSkillMax(state, u) {
+  let max = 1
+  for (const crest of state.crests[u.team]) {
+    const src = crestSource(state, crest)
+    if (!src) continue
+    for (const p of crest.passives) {
+      if (p.trigger !== 'constant' || !checkCond(state, src, p.condition)) continue
+      for (const e of p.effects) {
+        if (e.type !== 'extraSkill') continue
+        if (e.onlyName ? u.name === e.onlyName : u.uid === src.uid) max = Math.max(max, e.times ?? 2)
+      }
+    }
+  }
+  return max
+}
+export const skillLimit = (state, u) => Math.max(u.doubleSkill ? 2 : 1, crestSkillMax(state, u))
+// すでに done 回スキルを発動したあと、次の1回に必要なMP(クレストで増えた回数はMPなし、【アクティブ】の2回目はMPを消費)
+const nextSkillMp = (state, u, done) => (done === 0 || done < crestSkillMax(state, u) ? 0 : u.doubleSkill ? u.doubleSkill.mpCost : 0)
+
 export function legalActions(state) {
   const actor = getActiveUnit(state)
   if (!actor || state.winner || !actor.alive) return []
@@ -1236,10 +1260,10 @@ export function legalActions(state) {
   // アクセラレートの番: 実行する(特性を使う) か、見送る(endTurn)
   if (state.activeKind === 'accel') return [...accelActions(state, actor), { type: 'endTurn' }]
   const actions = []
-  // 「1ターンに2回スキルを発動できる」(2回目はMPを消費)
+  // 「1ターンにN回スキルを発動できる」(skillLimit)。2回目以降に必要なMPは nextSkillMp
   const skillsDone = actor.skillsThisTurn || 0
-  const secondOk = !!actor.doubleSkill && skillsDone === 1 && state.mp[actor.team] >= actor.doubleSkill.mpCost
-  const canUseSkill = !actor.isAmulet && (actor.hasActed || hasKw(actor, 'rush') || hasKw(actor, 'dash')) && (skillsDone === 0 || secondOk)
+  const moreOk = skillsDone >= 1 && skillsDone < skillLimit(state, actor) && state.mp[actor.team] >= nextSkillMp(state, actor, skillsDone)
+  const canUseSkill = !actor.isAmulet && (actor.hasActed || hasKw(actor, 'rush') || hasKw(actor, 'dash')) && (skillsDone === 0 || moreOk)
   const targets = attackableTargets(state, actor)
   if (canUseSkill) for (const t of targets) actions.push({ type: 'skill', target: t.uid })
 
@@ -1725,14 +1749,16 @@ export function applyAction(prev, action, opts = {}) {
   }
 
   if (action.type === 'skill') {
-    if ((actor.skillsThisTurn || 0) >= 1) { // 2回目のスキル発動: MPを消費する
-      state.mp[actor.team] -= actor.doubleSkill.mpCost
-      state.log.push(`${actor.name}は2回目のスキルを発動(MP${actor.doubleSkill.mpCost})`)
+    const done = actor.skillsThisTurn || 0
+    if (done >= 1) { // 2回目以降のスキル発動(【アクティブ】の2回目はMPを消費する)
+      const mp = nextSkillMp(state, actor, done)
+      state.mp[actor.team] -= mp
+      state.log.push(`${actor.name}は${done + 1}回目のスキルを発動${mp > 0 ? `(MP${mp})` : ''}`)
     }
-    actor.skillsThisTurn = (actor.skillsThisTurn || 0) + 1
+    actor.skillsThisTurn = done + 1
     doSkill(state, actor, action.target, opts)
-    // 2回発動できるなら、1回目のあとはターンが続く(2回目が打てるとき)
-    if (actor.alive && !checkWinner(state) && actor.skillsThisTurn === 1 && actor.doubleSkill && legalActions(state).some((a) => a.type === 'skill')) return state
+    // まだ発動できる回数が残っていて、打てるなら、ターンが続く
+    if (actor.alive && !checkWinner(state) && actor.skillsThisTurn < skillLimit(state, actor) && legalActions(state).some((a) => a.type === 'skill')) return state
     endTurn(state, actor)
     return advance(state, opts)
   }
