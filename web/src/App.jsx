@@ -99,9 +99,10 @@ export default function App() {
   const [activeIdx, setActiveIdx] = useState(null) // 最後に選んだパーティーの番号
   const desktop = useIsDesktop() // 画面の幅が広い(PC)ときは、画面全体を使うレイアウトにする
   // 開発中の入口(マスターパスワード): checking=確認中 / locked=パスワードが必要 / open=入れる / offline=サーバーにつながらない
-  // 入室制限がかかっていた訪問者(前回「入れなかった」端末)には、ロード画面を出さず、すぐ入口の画面を見せる。確認は裏で続け、入れると分かれば開く
-  const [gate, setGateRaw] = useState(() => { try { return localStorage.getItem('feel.gate.locked') === '1' ? 'locked' : 'checking' } catch { return 'checking' } })
-  const setGate = (v) => { setGateRaw(v); try { if (v === 'locked') localStorage.setItem('feel.gate.locked', '1'); else if (v === 'open') localStorage.removeItem('feel.gate.locked') } catch { /* 保存できない環境では、毎回ロード画面が出る */ } }
+  // 入室制限の対象になりうる訪問者(初めての人も含む)には、ロード画面を出さず、すぐ入口の画面を見せる。確認は裏で続け、入れると分かれば開く。
+  // ロード画面を出すのは、前回「入れた」と分かっている端末だけ
+  const [gate, setGateRaw] = useState(() => { try { return localStorage.getItem('feel.gate.state') === 'open' ? 'checking' : 'locked' } catch { return 'locked' } })
+  const setGate = (v) => { setGateRaw(v); try { if (v === 'locked' || v === 'open') localStorage.setItem('feel.gate.state', v) } catch { /* 保存できない環境では、毎回入口の画面から始まる */ } }
   const [gateTry, setGateTry] = useState(0)
   const [booted, setBooted] = useState(false) // 起動の準備(ログイン確認・入口・持ち物の読み込み)が終わったか。いちど終わったら、ロード画面は出さない
   const [rulesFirst, setRulesFirst] = useState(false) // 初回だけ、ルール説明を自動で開く
