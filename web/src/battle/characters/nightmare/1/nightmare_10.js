@@ -1,4 +1,4 @@
-import ghost from './tokens/nightmare_token_02.js' // 召喚する「ゴースト」は nightmare_token_02.js のキャラです
+import ghost from '../tokens/nightmare_token_02.js' // 召喚する「ゴースト」は nightmare_token_02.js のキャラです
 
 export default {
   id: 'nightmare_10', name: '瞑地の天宮・ムカン', class: 'ナイトメア', rarity: 'gold',
