@@ -482,7 +482,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         </span>
         )
       )}
-      <div style={{ height: big ? 36 : 26, overflow: 'hidden', fontWeight: big ? 700 : 400 }}>{unit.name}</div>
+      <div style={{ height: big ? 36 : 26, overflow: 'hidden', fontWeight: big ? 700 : 400, ...(vanishing ? { animation: 'feel-d-fade2 0.03s ease-in 0.04s forwards', willChange: 'opacity' } : {}) }}>{unit.name}</div> {/* 消滅: 名前も、青い光の円が広がりきる0.07秒までに消す */}
       {!unit.isAmulet && (
         <div style={{ background: '#1b3a43', height: big ? 9 : 6, borderRadius: 3, marginTop: 3, position: 'relative' }}>
           <div style={{ width: '100%', height: '100%', borderRadius: 3, background: hpColor, transformOrigin: '0 50%', transform: `scaleX(${ratio})`, transition: 'transform 0.3s' }} />
