@@ -617,7 +617,7 @@ const hasFaith = (p) => p.condition?.faith != null || JSON.stringify(p.effects |
 // 能力を、表の順に並べたグループ(g)と、「」の区画(boxes)にする
 function abilityTable(unit, { full }) {
   const items = [] // { row, g, head, body, order }
-  const add = (row, head, body) => items.push({ row: row < 0 ? ROW_OTHER : row, g: groupOfRow(row), head, body, order: items.length })
+  const add = (row, head, body, kw) => items.push({ row: row < 0 ? ROW_OTHER : row, g: groupOfRow(row), head, body, kw, order: items.length })
   const boxes = []
   const faithLines = []
   const amulet = unit.isAmulet
@@ -627,7 +627,7 @@ function abilityTable(unit, { full }) {
     if (!full && k === 'stealth' && !unit.stealth) continue
     if (!full && k === 'barrier' && unit.barrier <= 0) continue
     const label = KEYWORDS[k]?.label ?? k
-    add(rowOf(label), `【${label}】`, KEYWORDS[k]?.desc ?? '')
+    add(rowOf(label), `【${label}】`, KEYWORDS[k]?.desc ?? '', label)
   }
   for (const p of unit.passiveObjs) {
     const text = passiveLine(p)
@@ -671,15 +671,20 @@ const CrestMark = () => <svg viewBox="0 0 24 24" width="1.1em" height="1.1em" st
 const FaithMark = () => <svg viewBox="0 0 24 24" width="1.1em" height="1.1em" style={{ verticalAlign: '-0.2em', marginRight: 4 }} fill="currentColor" aria-hidden="true"><path d="M12 2l2.4 7.6H22l-6.2 4.5 2.4 7.4-6.2-4.6-6.2 4.6 2.4-7.4L2 9.6h7.6z" /></svg>
 
 // 表の順に、グループごとに ── を引いて並べる。「」の区画は、前のグループから続けて(── なしで)書く
-function renderAbilities(unit, opts) {
-  const { groups, boxes } = abilityTable(unit, opts)
+// キーワードの説明は出さない。キーワードをタップすると「能力詳細」が開き、そこに説明が出る
+function Abilities({ unit, full }) {
+  const [open, setOpen] = useState(null) // 開いたとき、タップしたキーワードの名前
+  const { groups, boxes } = abilityTable(unit, { full })
   const filled = groups.filter((g) => g.length)
+  const kws = groups.flat().filter((it) => it.kw)
   const out = []
   filled.forEach((g, gi) => {
     if (gi) out.push(<Rule key={`r${gi}`} />)
     out.push(
       <div key={`g${gi}`} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {g.map((it, i) => <div key={i}>{it.head}{it.body ? <div style={{ color: C.mute, paddingLeft: '1em' }}>{it.body}</div> : null}</div>)}
+        {g.map((it, i) => (it.kw
+          ? <div key={i}><button type="button" data-testid="kw-open" onClick={(e) => { e.stopPropagation(); setOpen(it.kw) }} style={{ all: 'unset', cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: 3 }}>{it.head}</button></div>
+          : <div key={i}>{it.head}</div>))}
       </div>,
     )
   })
@@ -697,7 +702,30 @@ function renderAbilities(unit, opts) {
       </div>,
     )
   }
-  return out
+  const ordered = open ? [...kws.filter((k) => k.kw === open), ...kws.filter((k) => k.kw !== open)] : []
+  return (
+    <>
+      {out}
+      {open && (
+        <div role="dialog" aria-label="能力詳細" data-testid="kw-modal" onClick={(e) => { e.stopPropagation(); setOpen(null) }} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: alpha('#000000', 60), display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 'min(520px, 100%)', maxHeight: '80vh', display: 'flex', flexDirection: 'column', borderRadius: 12, overflow: 'hidden', background: C.card, border: `2px solid ${C.active}`, boxShadow: `0 8px 30px ${alpha('#000000', 50)}`, color: C.ink, fontSize: 14, lineHeight: 1.6 }}>
+            <div style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 800, fontSize: 16, background: `linear-gradient(90deg, ${alpha(C.active, 28)}, ${alpha(C.active, 8)})` }}>能力詳細</div>
+            <div style={{ overflowY: 'auto', padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {ordered.map((k) => (
+                <div key={k.kw}>
+                  <div style={{ color: C.active, fontWeight: 700 }}>{k.kw}</div>
+                  <div>{k.body}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ padding: 10, display: 'flex', justifyContent: 'center' }}>
+              <button type="button" data-testid="kw-close" onClick={() => setOpen(null)} style={buttonStyle(true, false)}>閉じる</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
 }
 
 function InfoCard({ testid, unit, accent, children, big = false, style }) {
@@ -728,7 +756,7 @@ function InfoCard({ testid, unit, accent, children, big = false, style }) {
 function InspectBox({ unit, big = false }) {
   return (
     <InfoCard testid="inspect" big={big} style={{ marginTop: 8 }} accent={TEAM_COLOR[unit.team]} unit={unit}>
-      {renderAbilities(unit, { full: true })}
+      <Abilities unit={unit} full />
     </InfoCard>
   )
 }
@@ -773,7 +801,7 @@ function TargetInfo({ unit, expected, loss = 0, big = false }) {
           {unit.barrier > 0 ? '(バリアで防がれる)' : !unit.isAmulet && <span style={{ color: C.mute, fontWeight: 400 }}> → HP {Math.ceil(unit.hp - loss)}/{unit.maxHp}</span>}
         </div>
       )}
-      {renderAbilities(unit, { full: false })}
+      <Abilities unit={unit} full={false} />
     </InfoCard>
   )
 }
