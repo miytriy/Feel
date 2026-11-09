@@ -573,6 +573,25 @@ function RecentFeed({ feed, big }) {
   )
 }
 
+// 左側のログ(最大 SIDE_LOG_MAX 個。超えると古いものから消える)。表示: 「名前 / 内容」
+const SIDE_LOG_MAX = 3
+function SideLog({ items, big = false }) {
+  if (!items.length) return null
+  return (
+    <div data-testid="side-log" aria-live="polite" style={{ position: 'fixed', left: 0, top: big ? '58%' : '34%', zIndex: 8, width: big ? 320 : 'min(230px, 56vw)', display: 'flex', flexDirection: 'column', gap: 6, pointerEvents: 'none' }}>
+      {items.map((it) => {
+        const col = it.team ? TEAM_COLOR[it.team] : C.active
+        return (
+          <div key={it.k} style={{ animation: 'feel-log-in 0.22s ease-out both', borderRadius: '0 8px 8px 0', overflow: 'hidden', background: alpha(C.card, 94), border: `1px solid ${alpha(col, 60)}`, borderLeft: 'none', boxShadow: `0 3px 10px ${alpha('#000000', 30)}`, fontSize: big ? 13 : 12, lineHeight: 1.5 }}>
+            <div style={{ padding: big ? '5px 12px' : '4px 10px', fontWeight: 800, color: C.ink, background: `linear-gradient(90deg, ${alpha(col, 38)}, ${alpha(col, 8)})`, overflowWrap: 'anywhere' }}>{it.name}</div>
+            <div style={{ padding: big ? '5px 12px 7px' : '4px 10px 6px', color: C.ink, overflowWrap: 'anywhere' }}>{it.text}</div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // 奥義・解放奥義の条件がついた能力には、頭に【奥義】【解放奥義】を付ける
 const tierPrefix = (cond) => (cond?.liberation ? '【解放奥義】' : cond?.ultimate ? '【奥義】' : '')
 
@@ -948,6 +967,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     : mode ? traitActions(mode).map((a) => a.target).filter(Boolean) : skillTargets
 
   const [feed, setFeed] = useState([]) // 「いま起きたこと」の履歴(再生に合わせて増える)
+  const [sideLog, setSideLog] = useState([]) // 左側のログ({ k, name, text, team })。最大 SIDE_LOG_MAX 個
+  const sideSeq = useRef(0)
   const [showDesc, setShowDesc] = useState(() => { try { return localStorage.getItem('feel-show-desc') === '1' } catch { return false } }) // 操作パネルの説明文を出すか
   const toggleDesc = () => { const v = !showDesc; setShowDesc(v); try { localStorage.setItem('feel-show-desc', v ? '1' : '0') } catch { /* 保存できなくても動く */ } }
   useSummonSlide() // 召喚物が消えたとき、隣のカードが一瞬で詰まらず、すっと滑って詰まる
@@ -1001,6 +1022,12 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     }
     const lines = []
     for (let k = play.i; k <= groupEnd(play.events, play.i); k++) { const l = lineOf(play.events[k]); if (l) lines.push(l) }
+    const logs = []
+    for (let k = play.i; k <= groupEnd(play.events, play.i); k++) {
+      const e = play.events[k]
+      if (e.type === 'ability') logs.push({ k: `sl${sideSeq.current++}`, name: e.owner, text: e.desc || `【${e.kind}】${e.name ?? ''}`, team: e.team }) // ログの内容は、これから決める(いまは能力の発動だけ)
+    }
+    if (logs.length) setSideLog((l) => [...l, ...logs].slice(-SIDE_LOG_MAX))
     if (lines.length) setFeed((f) => [...f, ...lines.map((line, n) => ({ k: `${Date.now()}-${f.length}-${play.i}-${n}`, ...line }))].slice(-8))
   }, [play && play.events, play && play.i]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1082,6 +1109,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     }
     setPlay(null)
     setFeed([])
+    setSideLog([])
     const cpuTeam = testInit ? testInit.team : buildCpuTeam(ALL_CHARACTERS, cpuChars, Math.random, level, ALL_SPELLS) // Lv.5以上は、シナジーのある編成。テスト戦は、自分で選んだ相手のチーム
     const cpuSpells = testInit ? testInit.spells : level >= SPELL_LEVEL ? buildCpuSpells(ALL_SPELLS, cpuTeam, Math.random, level) : [] // Lv.5以上のCPUは、編成に合う強いスペルを持つ
     const first = createBattle(team.map((d) => enhanceDef(d)), cpuTeam, { comboMode, pool: ownedPool(cpuChars), spells: { A: spellSet, B: cpuSpells } })
@@ -1592,6 +1620,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   if (desktop) {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 24px 16px', background: C.paper, color: C.ink, fontFamily: FONT, boxSizing: 'border-box', overflow: 'hidden' }}>
+        <SideLog items={sideLog} big />
         {hud}
         {overlays}
         {speedBar}
@@ -1622,6 +1651,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   // ---- スマホ: 1列。上に行動バーを固定、下に操作パネルを固定して、盤面をスクロールで見る ----
   return (
     <div style={wrap}>
+      <SideLog items={sideLog} />
       <div style={{ position: 'sticky', top: 0, zIndex: 9, background: C.paper, margin: '-12px -12px 0', padding: '8px 12px 2px', borderBottom: `1px solid ${C.line}` }}>
         {hud}
         {overlays}
