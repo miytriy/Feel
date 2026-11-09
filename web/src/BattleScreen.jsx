@@ -582,22 +582,52 @@ function passiveLine(p) {
   return `${tierPrefix(p.condition)}【${label}】${name}${p.desc ?? ''}`
 }
 
+// 選択・確認したキャラの情報カード(共通の枠)。見出し帯(名前・数値バッジ)→ 副帯(種別)→ 能力ごとの区画
+function InfoCard({ testid, title, sub, badges, accent, children, big = false, style }) {
+  const edge = accent ?? C.active
+  return (
+    <div data-testid={testid} style={{ borderRadius: 10, overflow: 'hidden', background: C.card, border: `2px solid ${edge}`, boxShadow: `0 0 0 1px ${alpha(edge, 35)}, 0 4px 14px ${alpha('#000000', 28)}`, fontSize: big ? 13 : 12, lineHeight: 1.55, ...style }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: big ? '8px 12px' : '6px 10px', background: `linear-gradient(90deg, ${alpha(edge, 30)}, ${alpha(edge, 6)})` }}>
+        <div style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: big ? 16 : 14, overflowWrap: 'anywhere' }}>{title}</div>
+        {badges}
+      </div>
+      {sub && <div style={{ padding: big ? '3px 12px' : '2px 10px', fontSize: big ? 11 : 10, color: C.mute, borderTop: `1px solid ${alpha(edge, 25)}`, borderBottom: `1px solid ${alpha(edge, 25)}` }}>{sub}</div>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: big ? 10 : 8 }}>{children}</div>
+    </div>
+  )
+}
+
+// 数値の丸バッジ(攻・防・速 など)
+function StatBadge({ children, color }) {
+  return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, padding: '1px 7px', borderRadius: 999, fontWeight: 800, fontSize: 12, color: C.ink, background: alpha(color ?? C.active, 22), border: `1px solid ${alpha(color ?? C.active, 70)}`, whiteSpace: 'nowrap' }}>{children}</span>
+}
+
+// 能力1つぶんの区画。kind: 'key'(キーワード) / 'pas'(パッシブ) / 'trait'(特性)
+function InfoSection({ kind, children }) {
+  const tone = kind === 'trait' ? C.player : kind === 'key' ? C.mute : C.active
+  return <div style={{ padding: '6px 9px', borderRadius: 6, background: alpha(tone, 12), borderLeft: `4px solid ${tone}` }}>{children}</div>
+}
+
 // キャラの詳細(能力の説明)
 function InspectBox({ unit, big = false }) {
-  const lines = []
-  for (const k of unit.keywords) lines.push(`【${KEYWORDS[k]?.label ?? k}】${KEYWORDS[k]?.desc ?? ''}`)
-  for (const p of unit.passiveObjs) lines.push(passiveLine(p))
-  for (const t of unit.traits) lines.push(`${tierPrefix(t.condition)}【特性 MP${t.cost}${t.repeatable ? ' 連続使用可' : ''}】${t.name}: ${t.desc ?? ''}`)
-  if (unit.accel) lines.push(`【アクセラレート_${unit.accel.speed}】${unit.accel.name}(MP${unit.accel.cost ?? 0}): ${unit.accel.desc ?? ''}`)
-  if (unit.countdown != null) lines.push(`【カウントダウン】あと${unit.countdown}回自分のターンが始まると破壊される`)
+  const secs = []
+  for (const k of unit.keywords) secs.push(['key', `【${KEYWORDS[k]?.label ?? k}】${KEYWORDS[k]?.desc ?? ''}`])
+  for (const p of unit.passiveObjs) secs.push(['pas', passiveLine(p)])
+  for (const t of unit.traits) secs.push(['trait', `${tierPrefix(t.condition)}【特性 MP${t.cost}${t.repeatable ? ' 連続使用可' : ''}】${t.name}: ${t.desc ?? ''}`])
+  if (unit.accel) secs.push(['trait', `【アクセラレート_${unit.accel.speed}】${unit.accel.name}(MP${unit.accel.cost ?? 0}): ${unit.accel.desc ?? ''}`])
+  if (unit.countdown != null) secs.push(['pas', `【カウントダウン】あと${unit.countdown}回自分のターンが始まると破壊される`])
+  const badges = (
+    <>
+      <StatBadge><SI k="atk" />{Math.round(unit.atk)}</StatBadge>
+      <StatBadge><SI k="def" />{Math.round(unit.def)}</StatBadge>
+      <StatBadge><SI k="spd" />{Math.round(unit.spd)}</StatBadge>
+      {(unit.skill.stat === 'mag' || unit.mag > 0) && <StatBadge><SI k="mag" />{Math.round(unit.mag)}</StatBadge>}
+    </>
+  )
   return (
-    <div data-testid="inspect" style={{ marginTop: 8, padding: 8, borderRadius: 8, background: C.card, border: `1px solid ${C.line}`, fontSize: big ? 13 : 11, lineHeight: 1.6 }}>
-      <b>{unit.name}</b>
-      <span style={{ color: C.mute }}>
-        {' '}{unit.evolved ? '(進化済) ' : ''}<SI k="atk" />{Math.round(unit.atk)} <SI k="def" />{Math.round(unit.def)} <SI k="spd" />{Math.round(unit.spd)}{(unit.skill.stat === 'mag' || unit.mag > 0) && <> <SI k="mag" />{Math.round(unit.mag)}</>} / スキル「{unit.skill.name}」({TYPE_LABEL[unit.skill.type]})
-      </span>
-      {lines.length === 0 ? <div style={{ color: C.mute }}>能力なし</div> : lines.map((l, i) => <div key={i}>{l}</div>)}
-    </div>
+    <InfoCard testid="inspect" big={big} style={{ marginTop: 8 }} accent={TEAM_COLOR[unit.team]} title={<>{unit.name}{unit.evolved ? '(進化済)' : ''}</>} badges={badges} sub={`スキル「${unit.skill.name}」(${TYPE_LABEL[unit.skill.type]})`}>
+      {secs.length === 0 ? <div style={{ color: C.mute }}>能力なし</div> : secs.map(([k, l], i) => <InfoSection key={i} kind={k}>{l}</InfoSection>)}
+    </InfoCard>
   )
 }
 
@@ -624,27 +654,32 @@ function AbilityBanner({ ability, now = '', big = false }) {
 // 選択中の相手(攻撃・特性の対象)の情報。予想ダメージつき
 function TargetInfo({ unit, expected, loss = 0, big = false }) {
   const ratio = Math.max(0, unit.hp / unit.maxHp)
-  const lines = []
+  const secs = []
   for (const k of unit.keywords) {
     if (k === 'stealth' && !unit.stealth) continue
     if (k === 'barrier' && unit.barrier <= 0) continue
-    lines.push(`【${KEYWORDS[k]?.label ?? k}】${KEYWORDS[k]?.desc ?? ''}`)
+    secs.push(['key', `【${KEYWORDS[k]?.label ?? k}】${KEYWORDS[k]?.desc ?? ''}`])
   }
-  for (const p of unit.passiveObjs) lines.push(passiveLine(p))
-  for (const t of unit.traits) lines.push(`【特性 MP${t.cost}】${t.name}: ${t.desc ?? ''}`)
+  for (const p of unit.passiveObjs) secs.push(['pas', passiveLine(p)])
+  for (const t of unit.traits) secs.push(['trait', `【特性 MP${t.cost}】${t.name}: ${t.desc ?? ''}`])
+  const badges = !unit.isAmulet && (
+    <>
+      <StatBadge><SI k="atk" />{Math.round(unit.atk)}</StatBadge>
+      <StatBadge><SI k="def" />{Math.round(unit.def)}</StatBadge>
+      <StatBadge><SI k="spd" />{Math.round(unit.spd)}</StatBadge>
+      {(unit.skill?.stat === 'mag' || unit.mag > 0) && <StatBadge><SI k="mag" />{Math.round(unit.mag)}</StatBadge>}
+    </>
+  )
   return (
-    <div data-testid="target-info" style={{ marginBottom: 8, padding: big ? 12 : 8, borderRadius: 10, background: C.softWarn, border: `2px solid ${C.active}`, fontSize: big ? 13 : 12, lineHeight: 1.5 }}>
-      <div style={{ fontSize: big ? 11 : 10, color: C.mute }}>選択中の{unit.team !== ME ? '相手' : '味方'}</div>
-      <div style={{ fontWeight: 700, fontSize: big ? 15 : 13 }}>{unit.name}{unit.evolved ? '(進化済)' : ''}{unit.field === 'summon' ? '(召喚物)' : ''}</div>
+    <InfoCard testid="target-info" big={big} style={{ marginBottom: 8 }} title={<>{unit.name}{unit.evolved ? '(進化済)' : ''}{unit.field === 'summon' ? '(召喚物)' : ''}</>} badges={badges} sub={`選択中の${unit.team !== ME ? '相手' : '味方'}`}>
       {!unit.isAmulet && (
-        <>
-          <div style={{ background: '#1b3a43', height: 10, borderRadius: 4, margin: '4px 0', position: 'relative' }}>
+        <div>
+          <div style={{ background: '#1b3a43', height: 10, borderRadius: 4, marginBottom: 3, position: 'relative' }}>
             <div style={{ width: `${ratio * 100}%`, height: '100%', borderRadius: 4, background: ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow }} />
             <LossBlink unit={unit} loss={loss} radius={4} />
           </div>
           <div><SI k="hp" />{Math.ceil(unit.hp)}/{unit.maxHp}{unit.armor > 0 ? ` ・ アーマー ${Math.ceil(unit.armor)}` : ''}{unit.barrier > 0 ? ' ・ バリア' : ''}</div>
-          <div style={{ color: C.mute }}><SI k="atk" />{Math.round(unit.atk)} <SI k="def" />{Math.round(unit.def)} <SI k="spd" />{Math.round(unit.spd)}{(unit.skill?.stat === 'mag' || unit.mag > 0) && <> <SI k="mag" />{Math.round(unit.mag)}</>}</div>
-        </>
+        </div>
       )}
       {expected != null && (
         <div style={{ fontWeight: 700, color: C.player }}>
@@ -652,8 +687,8 @@ function TargetInfo({ unit, expected, loss = 0, big = false }) {
           {unit.barrier > 0 ? '(バリアで防がれる)' : !unit.isAmulet && <span style={{ color: C.mute, fontWeight: 400 }}> → HP {Math.ceil(unit.hp - loss)}/{unit.maxHp}</span>}
         </div>
       )}
-      {lines.map((l, i) => <div key={i} style={{ fontSize: big ? 12 : 11, color: C.ink }}>{l}</div>)}
-    </div>
+      {secs.map(([k, l], i) => <InfoSection key={i} kind={k}>{l}</InfoSection>)}
+    </InfoCard>
   )
 }
 
