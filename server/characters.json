@@ -90,5 +90,6 @@
   { "id": "witch_09", "name": "黎明の錬金術師・ノノ", "class": "ウィッチ", "rarity": "gold", "rotation": "1" },
   { "id": "witch_10", "name": "マナリアフレンズ・アン&グレア", "class": "ウィッチ", "rarity": "legend", "rotation": "1" },
   { "id": "witch_11", "name": "マナリアの学徒・ウィリアム", "class": "ウィッチ", "rarity": "silver", "rotation": "1" },
-  { "id": "witch_12", "name": "五行の果て・クオン", "class": "ウィッチ", "rarity": "legend", "rotation": "1" }
+  { "id": "witch_12", "name": "五行の果て・クオン", "class": "ウィッチ", "rarity": "legend", "rotation": "1" },
+  { "id": "witch_amulet_01", "name": "大地の魔片", "class": "ウィッチ", "rarity": "bronze", "rotation": "1" }
 ]
