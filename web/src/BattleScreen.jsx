@@ -731,8 +731,8 @@ function Abilities({ unit, full }) {
 function InfoCard({ testid, unit, accent, children, big = false, style }) {
   const edge = accent ?? C.active
   const hp = Math.ceil(unit.hp) === unit.maxHp ? `${unit.maxHp}` : `${Math.ceil(unit.hp)}/${unit.maxHp}`
-  const HIDE_TYPES = ['トークン', 'スペル'] // この2つは表示しない(廃止予定の区分。データはそのまま)
-  const kind = [unit.class, ...String(unit.type || '').split('/').filter((t) => t && !HIDE_TYPES.includes(t))].filter(Boolean).join('/')
+  const HIDE_TYPES = ['トークン', 'スペル', 'アミュレット'] // ユニットタイプ(キャラクター/スペル/アミュレット)の区分は、タイプ欄に出さない。データはそのまま
+  const kind = [unit.class, ...String(unit.type || '').split('/').map((t) => t.replace(/^アミュレット・/, '')).filter((t) => t && !HIDE_TYPES.includes(t))].filter(Boolean).join('/')
   const mag = unit.skill?.stat === 'mag' || unit.mag > 0
   return (
     <div data-testid={testid} style={{ borderRadius: 10, overflow: 'hidden', background: C.card, border: `2px solid ${edge}`, boxShadow: `0 0 0 1px ${alpha(edge, 35)}, 0 4px 14px ${alpha('#000000', 28)}`, fontSize: big ? 13 : 12, lineHeight: 1.55, ...style }}>
