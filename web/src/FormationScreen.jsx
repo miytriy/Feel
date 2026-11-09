@@ -578,7 +578,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
             )}
             <div className="fm-grid">
               {(() => {
-                const list = allChars.filter((c) => !String(c.type || '').startsWith('トークン') && (quick ? !c.amulet : amuletPick ? c.amulet : !c.amulet))
+                const list = allChars.filter((c) => !c.token && (quick ? !c.amulet : amuletPick ? c.amulet : !c.amulet))
                 const ord = (c) => { const i = CLASS_ORDER.indexOf(c.class); return i === -1 ? CLASS_ORDER.length : i }
                 const sorted = list.map((c, i) => [c, i]).sort((x, y) => ord(x[0]) - ord(y[0]) || x[1] - y[1]).map((x) => x[0]) // クラス順(同じクラスの中は、もとの順)
                 return sorted.map((c, idx) => (idx === 0 || sorted[idx - 1].class !== c.class ? [c, true] : [c, false]))

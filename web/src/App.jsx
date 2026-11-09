@@ -369,7 +369,7 @@ export default function App() {
           title="使用デッキ"
           allChars={ALL_CHARACTERS}
           defaultIds={DEFAULT_PLAYER_IDS}
-          allSpells={ALL_SPELLS.filter((sp) => !String(sp.type || '').startsWith('トークン'))}
+          allSpells={ALL_SPELLS.filter((sp) => !sp.token)}
           parties={partyApi ? partyApi.parties : null}
           partyIdxInit={partyApi ? partyApi.activeIdx : null}
           onSaveParty={partyApi ? partyApi.save : null}
@@ -414,7 +414,7 @@ export default function App() {
           title="チーム"
           allChars={ALL_CHARACTERS}
           defaultIds={DEFAULT_PLAYER_IDS}
-          allSpells={ALL_SPELLS.filter((sp) => !String(sp.type || '').startsWith('トークン'))}
+          allSpells={ALL_SPELLS.filter((sp) => !sp.token)}
           parties={partyApi ? partyApi.parties : null}
           partyIdxInit={partyApi ? partyApi.activeIdx : null}
           onSaveParty={partyApi ? partyApi.save : null}
@@ -438,7 +438,7 @@ export default function App() {
           title="相手のチーム(テスト戦)"
           allChars={ALL_CHARACTERS}
           defaultIds={DEFAULT_PLAYER_IDS}
-          allSpells={ALL_SPELLS.filter((sp) => !String(sp.type || '').startsWith('トークン'))}
+          allSpells={ALL_SPELLS.filter((sp) => !sp.token)}
           onStart={(chars, spells) => {
             setCpuRun({ id: Date.now(), level: 1, team: testMine.team, spells: testMine.spells, test: { team: chars.filter(Boolean), spells: spells || [] } })
             setScreen('loading')
@@ -486,7 +486,7 @@ export default function App() {
         <FormationScreen
           title="編成"
           allChars={ALL_CHARACTERS}
-          allSpells={ALL_SPELLS.filter((sp) => !String(sp.type || '').startsWith('トークン'))}
+          allSpells={ALL_SPELLS.filter((sp) => !sp.token)}
           parties={partyApi.parties}
           partyIdxInit={activeIdx ?? 0}
           onSaveParty={partyApi.save}

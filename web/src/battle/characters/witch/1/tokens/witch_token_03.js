@@ -1,6 +1,6 @@
 // オニオン軍団(トークン。召喚されて出てくる。tokens フォルダの中は、キャラ一覧・ガチャには自動では入らない)
 export default {
-  id: 'witch_token_03', name: 'オニオン軍団', class: 'ウィッチ', rarity: 'silver', type: 'トークン',
+  id: 'witch_token_03', name: 'オニオン軍団', class: 'ウィッチ', rarity: 'silver', token: true,
   stats: { hp: 100, atk: 100, def: 90, spd: 100 },
   skill: { name: '攻撃', stat: 'mag', type: 'magic', mult: 1.25 }, // 敵単体に魔力125%分の魔法ダメージ
   passives: [

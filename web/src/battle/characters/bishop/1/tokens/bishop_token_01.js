@@ -1,6 +1,6 @@
 // 聖騎兵(トークン。召喚されて出てくる。tokens フォルダの中は、キャラ一覧・ガチャには自動では入らない)
 export default {
-  id: 'bishop_token_01', name: '聖騎兵', class: 'ビショップ', rarity: 'legend', type: 'トークン',
+  id: 'bishop_token_01', name: '聖騎兵', class: 'ビショップ', rarity: 'legend', token: true,
   stats: { hp: 200, atk: 100, def: 100, spd: 100 },
   passives: [
     'guard', // 【守護】

@@ -1,6 +1,6 @@
 // ゴースト(トークン。召喚されて出てくる。tokens フォルダの中は、キャラ一覧・ガチャには自動では入らない)
 export default {
-  id: 'nightmare_token_02', name: 'ゴースト', class: 'ナイトメア', rarity: 'bronze', type: 'トークン/死者',
+  id: 'nightmare_token_02', name: 'ゴースト', class: 'ナイトメア', rarity: 'bronze', token: true, type: '死者',
   stats: { hp: 100, atk: 100, def: 90, spd: 100 },
   passives: [
     'dash', // 【疾走】

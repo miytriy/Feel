@@ -1,6 +1,6 @@
 // 一ツ尾狐(トークン。「双輪夜行・ギンセツ&ユヅキ」の能力で出てくる。tokens フォルダの中は、キャラ一覧・ガチャには自動では入らない)
 export default {
-  id: 'nightmare_token_05', name: '一ツ尾狐', class: 'ナイトメア', rarity: 'legend', type: 'トークン',
+  id: 'nightmare_token_05', name: '一ツ尾狐', class: 'ナイトメア', rarity: 'legend', token: true,
   stats: { hp: 330, atk: 200, def: 100, spd: 80 },
   passives: [
     'rush', 'guard', // 【突進】【守護】

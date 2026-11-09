@@ -65,7 +65,7 @@ export function charFeatures(c) {
 }
 
 const median = (list) => { const a = [...list].sort((x, y) => x - y); return a.length ? a[Math.floor(a.length / 2)] : 1 }
-const typeTags = (c) => String(c.type || '').split('/').filter((t) => t && t !== 'トークン' && t !== 'アミュレット')
+const typeTags = (c) => String(c.type || '').split('/').filter(Boolean)
 
 // ---------------------------------------------------------------------------
 // 2. シナジーの規則(点数)。f は、編成の5体ぶんの特徴の合計

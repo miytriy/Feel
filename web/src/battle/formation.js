@@ -125,8 +125,7 @@ export const defaultFormation = (allChars, ids) =>
   quickFill(ids.map((id) => allChars.find((c) => c.id === id)).filter(Boolean))
 
 // ---- スペルセット(キャラ編成とは別)。最大 MAX_SPELL_SLOTS 回分を有効化できる。同じスペルを何回入れてもよい ----
-export const TOKEN_TYPE = 'トークン' // このタイプ(「トークン」「トークン/マナリア/スペル」のように、先頭がトークン)は編成(スペルセット)に入れられない
-export const isTokenSpell = (sp) => String(sp?.type || '').split('/')[0] === TOKEN_TYPE
+export const isTokenSpell = (sp) => sp?.token === true // token: true のスペルは、他のスペルから有効化されるだけで、編成(スペルセット)には入れられない
 export const SPELL_STORAGE_KEY = 'feel.spellset.v1'
 
 // スペルのクラス(「エルフ/スペル」→「エルフ」)。ニュートラルのスペルは、どのクラスの編成でも使える

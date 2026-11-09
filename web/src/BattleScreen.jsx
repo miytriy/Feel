@@ -731,8 +731,7 @@ function Abilities({ unit, full }) {
 function InfoCard({ testid, unit, accent, children, big = false, style }) {
   const edge = accent ?? C.active
   const hp = Math.ceil(unit.hp) === unit.maxHp ? `${unit.maxHp}` : `${Math.ceil(unit.hp)}/${unit.maxHp}`
-  const HIDE_TYPES = ['トークン', 'スペル', 'アミュレット'] // ユニットタイプ(キャラクター/スペル/アミュレット)の区分は、タイプ欄に出さない。データはそのまま
-  const kind = [unit.class, ...String(unit.type || '').split('/').map((t) => t.replace(/^アミュレット・/, '')).filter((t) => t && !HIDE_TYPES.includes(t))].filter(Boolean).join('/')
+  const kind = [unit.class, ...String(unit.type || '').split('/')].filter(Boolean).join('/')
   const mag = unit.skill?.stat === 'mag' || unit.mag > 0
   return (
     <div data-testid={testid} style={{ borderRadius: 10, overflow: 'hidden', background: C.card, border: `2px solid ${edge}`, boxShadow: `0 0 0 1px ${alpha(edge, 35)}, 0 4px 14px ${alpha('#000000', 28)}`, fontSize: big ? 13 : 12, lineHeight: 1.55, ...style }}>
@@ -740,6 +739,7 @@ function InfoCard({ testid, unit, accent, children, big = false, style }) {
         <div style={{ fontWeight: 800, fontSize: big ? 16 : 14, overflowWrap: 'anywhere' }}><SI k="spd" />{Math.round(unit.spd)}/{unit.name}{unit.evolved ? '(進化済)' : ''}{unit.field === 'summon' ? '(召喚物)' : ''}</div>
         {!unit.isAmulet && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 12px', alignItems: 'baseline', color: C.mute, fontSize: big ? 12 : 11, fontWeight: 600 }}>
+            {import.meta.env.DEV && unit.unitType && <span title="ユニットタイプ(開発用。本番では出さない)" style={{ opacity: 0.6 }}>[{unit.unitType}{unit.token ? '・トークン' : ''}]</span>}
             {kind && <span>{kind}</span>}
             <span><SI k="hp" />{hp}</span>
             <span><SI k="atk" />{Math.round(unit.atk)}</span>
@@ -1193,7 +1193,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
       <FormationScreen
         allChars={ALL_CHARACTERS}
         defaultIds={DEFAULT_PLAYER_IDS}
-        allSpells={ALL_SPELLS.filter((sp) => !String(sp.type || '').startsWith('トークン'))}
+        allSpells={ALL_SPELLS.filter((sp) => !sp.token)}
         parties={partyApi ? partyApi.parties : null}
         partyIdxInit={partyApi ? partyApi.activeIdx : null}
         onSaveParty={partyApi ? partyApi.save : null}

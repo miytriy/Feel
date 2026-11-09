@@ -16,7 +16,7 @@ for (const [path, mod] of Object.entries(modules)) {
   }
   if (list.some((c) => c.id === def.id)) { console.error(`[スペルデータの問題] ${path}: id「${def.id}」が重複しています`); continue }
   const rotation = def.rotation ?? rotationOfPath(path) // ローテーション(ピックアップの名前)
-  list.push(rotation ? { ...def, rotation } : def)
+  list.push({ ...def, unitType: 'スペル', ...(rotation ? { rotation } : {}) }) // ユニットタイプ: 開発用の区分(画面には出さない)
 }
 export const ALL_SPELLS = list.sort((a, b) => a.id.localeCompare(b.id))
 export const spellById = (id) => ALL_SPELLS.find((c) => c.id === id)

@@ -27,7 +27,8 @@ for (const [path, mod] of Object.entries(modules)) {
       continue
     }
     const rotation = def.rotation ?? rotationOfPath(path) // ローテーション(ピックアップの名前): ファイルに書いてあればそれ、なければフォルダから決まる
-    list.push(rotation ? { ...def, rotation } : def)
+    const unitType = def.amulet ? 'アミュレット' : 'キャラクター' // ユニットタイプ: 開発用の区分(画面には出さない)。タイプ(兵士・妖精など)とは別
+    list.push({ ...def, unitType, ...(rotation ? { rotation } : {}) })
   }
 }
 

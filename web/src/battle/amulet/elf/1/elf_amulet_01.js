@@ -3,7 +3,7 @@ import forestMystery from '../../../spells/elf/1/elf_spell_02.js' // 有効化�
 
 // アミュレット: 編成に入れると、バトル開始時からアミュレット置き場にいる(スキル攻撃はできない)
 export default {
-  id: 'elf_amulet_01', name: '燐光の岩', class: 'エルフ', rarity: 'silver', type: 'アミュレット', amulet: true,
+  id: 'elf_amulet_01', name: '燐光の岩', class: 'エルフ', rarity: 'silver', amulet: true,
   stats: { hp: 1, atk: 0, def: 0, spd: 80 }, // アミュレットには体力の概念がない(数字は使われません)
   skill: { name: '-', stat: 'atk', type: 'physical', mult: 0 },
   passives: [

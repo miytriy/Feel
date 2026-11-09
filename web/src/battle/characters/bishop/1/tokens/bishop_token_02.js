@@ -1,6 +1,6 @@
 // ホーリーファルコン(トークン。召喚されて出てくる。tokens フォルダの中は、キャラ一覧・ガチャには自動では入らない)
 export default {
-  id: 'bishop_token_02', name: 'ホーリーファルコン', class: 'ビショップ', rarity: 'bronze', type: 'トークン',
+  id: 'bishop_token_02', name: 'ホーリーファルコン', class: 'ビショップ', rarity: 'bronze', token: true,
   stats: { hp: 200, atk: 200, def: 90, spd: 80 },
   passives: [
     'dash', // 【疾走】

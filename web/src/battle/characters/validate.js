@@ -71,6 +71,9 @@ export function validateCharacter(def, opts = {}) {
   if (opts.expectedId && def.id !== opts.expectedId) add(`id「${def.id}」がファイル名「${opts.expectedId}」と違います`)
   if (!isStr(def.name)) add('name(名前)がありません')
   if (def.rarity != null && !RARITIES.includes(def.rarity)) add(`rarity「${def.rarity}」は使えません(${RARITIES.join(' / ')})`)
+  if (def.type != null && !isStr(def.type)) add('type は文字で書いてください(例: 兵士 / 兵士/妖精)')
+  if (isStr(def.type) && /トークン|スペル|アミュレット/.test(def.type)) add('type には、トークン・スペル・アミュレットは書けません(ユニットタイプは自動で決まります。召喚専用なら token: true)')
+  if (def.token != null && typeof def.token !== 'boolean') add('token は true か false で書いてください')
   if (!CLASSES.includes(def.class)) add(`class「${def.class}」は使えません(${CLASSES.join(' / ')})`)
 
   const s = def.stats

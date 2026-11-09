@@ -8,7 +8,7 @@ export const CPU_TEAM_IDS = ['test_06', 'test_09', 'test_10', 'test_15', 'test_1
 
 // ---- 開発者設定: CPUが使うキャラ('test' = テストキャラ / 'real' = 本実装キャラ) ----
 export const DEV_CPU_KEY = 'feel.dev.cpuChars'
-export const isTokenChar = (c) => String(c.type || '').startsWith('トークン') // タイプが「トークン」で始まるキャラは、召喚・設置専用(編成・CPU・ガチャには入らない。資料集には載る)
+export const isTokenChar = (c) => c.token === true // token: true のキャラは、召喚・設置専用(編成・CPU・ガチャには入らない。資料集には載る)
 export const isTestChar = (c) => c.id.startsWith('test_') // id が test_ で始まるキャラは、テスト用
 
 export function loadCpuCharSetting(storage = globalThis.localStorage) {

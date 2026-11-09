@@ -119,7 +119,7 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
   const clone = (x) => JSON.parse(JSON.stringify(x))
   return {
     ct: null, // ct: このキャラのチームで働いているクラス特性(クラス名。働いていなければ null)
-    uid: uid || `${team}${index}`, defId: def.id, name: def.name, class: def.class, type: def.type || null, team, relic: def.relic || null, // type: キャラのタイプ(妖精など)
+    uid: uid || `${team}${index}`, defId: def.id, name: def.name, class: def.class, type: def.type || null, unitType: def.amulet ? 'アミュレット' : 'キャラクター', token: def.token === true, team, relic: def.relic || null, // type: キャラのタイプ(妖精など)
     field, // 'main' = 場のキャラ / 'summon' = 召喚物フィールドの召喚物・アミュレット
     isAmulet: field === 'summon' && !!def.amulet, // アミュレット: スキル攻撃はできず、相手のスキル攻撃の対象にもならない
     maxHp: s.hp, baseMaxHp: s.hp, hp: s.hp, armor: 0, armorRate: 1,

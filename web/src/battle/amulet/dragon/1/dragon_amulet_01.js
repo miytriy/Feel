@@ -2,7 +2,7 @@ import guards from '../../../characters/dragon/1/tokens/dragon_token_03.js' // �
 
 // アミュレット: 編成に入れると、バトル開始時からアミュレット置き場にいる(スキル攻撃はできない)
 export default {
-  id: 'dragon_amulet_01', name: '乙姫の扇', class: 'ドラゴン', rarity: 'gold', type: 'アミュレット', amulet: true,
+  id: 'dragon_amulet_01', name: '乙姫の扇', class: 'ドラゴン', rarity: 'gold', amulet: true,
   stats: { hp: 1, atk: 0, def: 0, spd: 100 }, // アミュレットには体力の概念がない(数字は使われません)
   skill: { name: '-', stat: 'atk', type: 'physical', mult: 0 },
   traits: [{

@@ -205,7 +205,7 @@ export function CharDetail({ def, onOpen }) {
 
 export function SpellDetail({ def, onOpen }) {
   const rel = collectRelated(def)
-  const token = String(def.type || '').startsWith('トークン')
+  const token = def.token === true
   return (
     <>
       <Section title="スペル">
