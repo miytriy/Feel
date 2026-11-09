@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { C, FONT } from './ui.js'
-import { UnitCard } from './BattleScreen.jsx'
+import { UnitCard, VANISH_SLOW } from './BattleScreen.jsx'
 import { createBattle } from './battle/engine.js'
 
 // ルール画面の「エフェクト一覧」: 戦闘画面と同じエフェクトのコード(UnitCard)を、そのまま繰り返し再生する。
@@ -31,7 +31,7 @@ const LIST = [
   ['進化', '光の柱と光の輪。', 1500, (p) => ({ unit: baseUnit, fx: p ? { kind: 'evolve', text: '' } : null })],
   ['破壊(ラストワードなし)', '金白の閃光から、金色の粒になって散る。', 800, (p) => ({ unit: p ? { ...baseUnit, hp: 0, alive: false } : baseUnit, fx: p ? { kind: 'none', text: '', die: 'destroy', lw: false } : null })],
   ['破壊(ラストワードあり)', '赤い円とドクロ。そのあと、ラストワードが発動する。', 800, (p) => ({ unit: p ? { ...baseUnit, hp: 0, alive: false } : baseUnit, fx: p ? { kind: 'none', text: '', die: 'destroy', lw: true } : null })],
-  ['消滅', '電気の輪が広がって縮み、光の粒になる。', 950, (p) => ({ unit: p ? { ...baseUnit, hp: 0, alive: false } : baseUnit, fx: p ? { kind: 'none', text: '', die: 'vanish' } : null })],
+  ['消滅', '電気の輪が広がって縮み、光の粒になる。', Math.round(950 * VANISH_SLOW), (p) => ({ unit: p ? { ...baseUnit, hp: 0, alive: false } : baseUnit, fx: p ? { kind: 'none', text: '', die: 'vanish' } : null })],
 ]
 
 // 画面に見えているときだけ動かす(13個が同時に動いて重くならないように)
