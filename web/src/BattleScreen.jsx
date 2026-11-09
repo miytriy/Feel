@@ -573,6 +573,27 @@ function RecentFeed({ feed, big }) {
   )
 }
 
+// 選択したユニットの性能メモを、画面の左上か右上に出す。選んだユニットが左半分にいれば右上、右半分にいれば左上(邪魔にならない側)
+function SelInfoPanel({ uid, big = false, children }) {
+  const [side, setSide] = useState('right')
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = document.querySelector(`[data-uid="${uid}"]`)
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      setSide(r.left + r.width / 2 < window.innerWidth / 2 ? 'right' : 'left')
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [uid])
+  return (
+    <div data-testid="sel-info" data-side={side} style={{ position: 'fixed', top: big ? 136 : 160, [side]: big ? 16 : 6, zIndex: 10, width: big ? 360 : 'min(300px, 64vw)', maxHeight: big ? 'calc(100vh - 110px)' : '48vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }} className="no-sb">
+      {children}
+    </div>
+  )
+}
+
 // 左側のログ(最大 SIDE_LOG_MAX 個。超えると古いものから消える)。表示: 「名前 / 内容」
 const SIDE_LOG_MAX = 3
 function SideLog({ items, big = false }) {
@@ -1419,10 +1440,38 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   // 操作パネル(スキル・特性・スペル・進化・ターン終了など)。PCは右側、スマホは画面の下に固定
   // 「レベルを選ぶ / 強さを選び直す」。下の panelInner より前に置く(あとに置くと、勝敗がついた画面で「初期化する前に使っている」エラーになる)
   const backLevel = () => { if (flow) (onBackLevel || onExit)(); else setState(null) }
+  // スペル: 場の下の空いているところに出す(自分の番のとき)
+  const spellsBlock = state.spells[ME].length > 0 && !state.winner && !playing && !cpuTurn && !choosing && !isAccel && (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ fontSize: 11, color: C.mute, marginBottom: 4 }}>スペル(MPを使う・1枠につき1回・行動は消えません)</div>
+      {state.spells[ME].map((sp) => {
+        const usable = spellActs.some((a) => a.spell === sp.slot)
+        const why = sp.used ? '使用済み' : state.mp[ME] < sp.cost ? 'MP不足' : '使えません'
+        return (
+          <div key={sp.slot} style={{ marginBottom: 4 }}>
+            <button
+              onClick={() => act({ type: 'spell', spell: sp.slot })}
+              disabled={!usable}
+              style={{ ...buttonStyle(false, !usable), padding: '6px 10px', fontSize: 13 }}
+            >
+              ✦{sp.name}(MP{sp.cost}){!usable ? ` ${why}` : ''}
+            </button>
+            {showDesc && <span style={{ fontSize: 11, color: C.mute, ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> {sp.desc}</span>}
+          </div>
+        )
+      })}
+    </div>
+  )
+  // 選択したユニットの性能メモ: 左上か右上。選んだユニットと重ならない側に出す
+  const selInfo = (selectedUnit || inspected) && (
+    <SelInfoPanel uid={(selectedUnit || inspected).uid} big={desktop}>
+      {selectedUnit && <TargetInfo unit={selectedUnit} expected={expectedDmg} loss={lossShown} big={desktop} />}
+      {inspected && <InspectBox unit={inspected} big={desktop} />}
+    </SelInfoPanel>
+  )
   const panelInner = (
     <>
       <div style={{ textAlign: 'right', marginBottom: 4 }}><button type="button" data-testid="toggle-desc" onClick={toggleDesc} style={{ border: `1px solid ${C.line}`, background: 'transparent', color: C.mute, borderRadius: 999, padding: '1px 10px', fontSize: 11, cursor: 'pointer' }}>{showDesc ? '説明を隠す' : '説明を見る'}</button></div>
-      {selectedUnit && <TargetInfo unit={selectedUnit} expected={expectedDmg} loss={lossShown} big={desktop} />}
         {state.winner && !playing ? (
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>{resultText}</div>
@@ -1501,28 +1550,6 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
               <b>{actor.name}</b> の番: スキル「{actor.skill.name}」({TYPE_LABEL[actor.skill.type]}){actor.doubleSkill ? ` ・1ターンに2回(2回目はMP${actor.doubleSkill.mpCost})${(actor.skillsThisTurn || 0) >= 1 ? ' ・1回目は済み' : ''}` : ''}
             </div>
 
-            {state.spells[ME].length > 0 && !choosing && (
-              <div style={{ marginBottom: 8 }}>
-                <div style={{ fontSize: 11, color: C.mute, marginBottom: 4 }}>スペル(MPを使う・1枠につき1回・行動は消えません)</div>
-                {state.spells[ME].map((sp) => {
-                  const usable = spellActs.some((a) => a.spell === sp.slot)
-                  const why = sp.used ? '使用済み' : state.mp[ME] < sp.cost ? 'MP不足' : '使えません'
-                  return (
-                    <div key={sp.slot} style={{ marginBottom: 4 }}>
-                      <button
-                        onClick={() => act({ type: 'spell', spell: sp.slot })}
-                        disabled={!usable}
-                        style={{ ...buttonStyle(false, !usable), padding: '6px 10px', fontSize: 13 }}
-                      >
-                        ✦{sp.name}(MP{sp.cost}){!usable ? ` ${why}` : ''}
-                      </button>
-                      {showDesc && <span style={{ fontSize: 11, color: C.mute, ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> {sp.desc}</span>}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
             {actor.traits.length > 0 && (
               <div style={{ marginBottom: 8 }}>
                 <div style={{ fontSize: 11, color: C.mute, marginBottom: 4 }}>特性(MPを使う。使ってもターンは続きます)</div>
@@ -1581,7 +1608,6 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
             </div>
           </div>
         )}
-      {inspected && <div style={{ marginTop: 10 }}><InspectBox unit={inspected} big={desktop} /></div>}
     </>
   )
   const speedBar = null // スキップボタンは廃止(再生の速さは設定で決める)
@@ -1626,8 +1652,9 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
         {speedBar}
         {errBox}
         <ActionBar state={view} big avFx={avFx} />
-        <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(380px, 30vw)', gap: 20 }}>
-          <div className="no-sb" style={{ minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 8, paddingRight: 4 }}>
+        {selInfo}
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="no-sb" style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 8, width: '100%', maxWidth: 1100, margin: '0 auto', paddingRight: 4, boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <Row big extra={<TeamStatus state={view} team={OPP()} big inline />} title="相手" color={C.enemy}>{enemies.map(card)}</Row>
               <Row big title="相手の召喚物" color={C.enemy}>{summonCards(enemySummons)}</Row>
@@ -1637,11 +1664,10 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
               <Row big title="自分の召喚物" color={C.player}>{summonCards(playerSummons)}</Row>
               <Row big extra={<TeamStatus state={view} team={ME} big inline />} title="自分" color={C.player}>{players.map(card)}</Row>
             </div>
+            {spellsBlock}
           </div>
-          <div style={{ minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div className="no-sb" style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', padding: 14, borderRadius: 10, background: C.card, border: `1px solid ${C.line}`, fontSize: 14 }}>
-              {panelInner}
-            </div>
+          <div className="no-sb" style={{ flex: '0 0 auto', maxHeight: '34vh', overflowY: 'auto', width: '100%', maxWidth: 1100, margin: '0 auto', boxSizing: 'border-box', padding: 14, borderRadius: 10, background: C.card, border: `1px solid ${C.line}`, fontSize: 14 }}>
+            {panelInner}
           </div>
         </div>
       </div>
@@ -1651,6 +1677,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   // ---- スマホ: 1列。上に行動バーを固定、下に操作パネルを固定して、盤面をスクロールで見る ----
   return (
     <div style={wrap}>
+      {selInfo}
       <SideLog items={sideLog} />
       <div style={{ position: 'sticky', top: 0, zIndex: 9, background: C.paper, margin: '-12px -12px 0', padding: '8px 12px 2px', borderBottom: `1px solid ${C.line}` }}>
         {hud}
@@ -1668,6 +1695,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
 
       <Row tight title="自分の召喚物" color={C.player}>{summonCards(playerSummons)}</Row>
       <Row extra={<TeamStatus state={view} team={ME} inline />} title="自分" color={C.player}>{players.map(card)}</Row>
+      {spellsBlock && <div style={{ marginTop: 8 }}>{spellsBlock}</div>}
 
       <div className="no-sb" style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '14px -12px 0', padding: '10px 12px calc(10px + env(safe-area-inset-bottom))', height: 'min(230px, 42vh)', boxSizing: 'border-box', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
         {panelInner}
