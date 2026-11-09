@@ -1,41 +1,62 @@
-import { useEffect, useState } from 'react'
-// 消滅エフェクト。60fps の連番画像(スプライトシート)を、1コマずつ見せるだけ(動かすのは transform だけ)。
+import { useEffect, useRef } from 'react'
+// 消滅エフェクト。60fps の連番画像(スプライトシート)を、1コマずつ見せるだけ。
 // 画像は tools/bake-vanish.cjs で焼き込む(8列×7行 = 56コマ。0.9秒 = 約62fps)。設計・タイミングは web/EFFECTS.md「消滅」
+// 表示は <canvas>: 起動時に1回だけデコードした画像(ImageBitmap)を、全員で使い回す。1コマ分(400px)だけを描くので、
+// 「大きな画像を毎回デコードして固まる」「背景位置のアニメで再描画が走る」がなく、時計は経過時間で決める(重いときは、コマが飛ぶだけで、速さは変わらない)
 const SHEET = `${import.meta.env?.BASE_URL || '/'}fx/vanish/sheet.webp`
 export const VANISH_BASE_MS = 900
-const COLS = 8, ROWS = 7
+const COLS = 8, ROWS = 7, FRAME = 400
 
-// デコード済みか。出始めの瞬間に大きな画像のデコードで画面が固まると、その間も時計は進むので、
-// 「ときどきめっちゃ速く再生される(最初のコマが飛ぶ)」ようになる。そこで、デコードが終わるまでアニメを止めておき、終わってから動かす
-let decoded = false
-let decoding = null
-const decodeSheet = () => {
-  if (decoded || typeof Image === 'undefined') return Promise.resolve()
-  if (!decoding) {
-    const im = new Image(); im.src = SHEET
-    decoding = (im.decode ? im.decode() : Promise.resolve()).catch(() => {}).then(() => { decoded = true })
+let source = null // デコード済みの画像(ImageBitmap。使えない環境では HTMLImageElement)
+let loading = null
+const loadSheet = () => {
+  if (source || typeof window === 'undefined') return Promise.resolve(source)
+  if (!loading) {
+    loading = (async () => {
+      try {
+        if (typeof createImageBitmap === 'function') {
+          const blob = await (await fetch(SHEET)).blob()
+          source = await createImageBitmap(blob)
+        } else throw new Error('no bitmap')
+      } catch {
+        await new Promise((res) => { const im = new Image(); im.onload = () => { source = im; res() }; im.onerror = res; im.src = SHEET })
+      }
+      return source
+    })()
   }
-  return decoding
+  return loading
 }
-decodeSheet() // 先に読み込んで、デコードもしておく
+loadSheet() // 先に読み込んで、デコードもしておく
 
-// 端末で実際に何msかかったかを測る(テスト戦の検証用に、画面の上へ出す)。出始め(マウント)から、行送りの動きが終わるまで
-const probeRef = (el) => { if (el) el.__m = performance.now() }
-const probeEnd = (e) => { if (e.animationName !== 'vx-y') return; const m = e.currentTarget.__m; if (m != null && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('feel-fxprobe', { detail: `消滅 ${Math.round(performance.now() - m)}ms` })) }
-
-// 親(カード)の中央に、カード高さの約2.75倍の四角(1コマ = 召喚物カードの250% + にじみ)を置く
-// ※シート全体を transform で動かすと、スマホでは巨大なレイヤー(約2300×2000px を3倍の解像度で)になって、何も出なくなる。
-//   そのため、1コマ分の小さな四角の中で、背景の位置だけを steps() でずらす
+// 親(カード)の中央に、カード高さの約2.2倍の四角を置く
 export function VanishFx({ ms = VANISH_BASE_MS }) {
-  const [ok, setOk] = useState(decoded)
+  const cv = useRef(null)
   useEffect(() => {
-    if (ok) return undefined
-    let alive = true
-    const t = setTimeout(() => alive && setOk(true), 400) // 読み込めなかったときも、400msで動かす
-    decodeSheet().then(() => alive && setOk(true))
-    return () => { alive = false; clearTimeout(t) }
-  }, [ok])
-  return (
-    <span aria-hidden="true" data-testid="fx-vanish" ref={probeRef} onAnimationEnd={probeEnd} style={{ position: 'absolute', left: '50%', top: '50%', height: '220%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9, backgroundImage: `url(${SHEET})`, backgroundRepeat: 'no-repeat', backgroundSize: `${COLS * 100}% ${ROWS * 100}%`, visibility: ok ? 'visible' : 'hidden', animation: `vx-y ${ms}ms steps(${ROWS}, end) both, vx-x ${ms / ROWS}ms steps(${COLS}, end) ${ROWS} both`, animationPlayState: ok ? 'running' : 'paused' }} />
-  )
+    const el = cv.current
+    if (!el) return undefined
+    const ctx = el.getContext('2d')
+    const mount = performance.now()
+    let raf = 0, t0 = null, last = -1, dead = false
+    const n = COLS * ROWS
+    const tick = (now) => {
+      if (dead) return
+      if (!source) { raf = requestAnimationFrame(tick); return } // 読み込みが終わるまで待つ(終わってから、時計を始める)
+      if (t0 == null) t0 = now
+      const k = Math.floor(((now - t0) / ms) * n)
+      if (k >= n) {
+        ctx.clearRect(0, 0, FRAME, FRAME)
+        window.dispatchEvent(new CustomEvent('feel-fxprobe', { detail: `消滅 ${Math.round(performance.now() - mount)}ms` })) // テスト戦の検証用
+        return
+      }
+      if (k !== last) { // 飛ばされたコマがあっても、いまの時刻のコマを出す
+        last = k
+        ctx.clearRect(0, 0, FRAME, FRAME)
+        ctx.drawImage(source, (k % COLS) * FRAME, Math.floor(k / COLS) * FRAME, FRAME, FRAME, 0, 0, FRAME, FRAME)
+      }
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => { dead = true; cancelAnimationFrame(raf) }
+  }, [ms])
+  return <canvas ref={cv} width={FRAME} height={FRAME} aria-hidden="true" data-testid="fx-vanish" style={{ position: 'absolute', left: '50%', top: '50%', height: '220%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }} />
 }

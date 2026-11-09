@@ -117,8 +117,6 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-d-skull { 0%, 48% { opacity: 1; } 72% { opacity: 0.2; filter: blur(2px) brightness(0.8); } 100% { opacity: 0; } }
     @keyframes feel-d-ember { 0%, 45% { opacity: 0; transform: translate(0, 0); } 58% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)); } }
     @keyframes feel-d-conf { 0% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(0); } 15% { opacity: 0.95; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); } }
-    @keyframes vx-x { from { background-position-x: 0%; } to { background-position-x: 114.2857%; } }
-    @keyframes vx-y { from { background-position-y: 0%; } to { background-position-y: 116.6667%; } }
     @keyframes feel-guard-wave { 0% { opacity: 0; transform: scale(0.7); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.12); } }
     @keyframes feel-aura-idle { 0% { opacity: 0; } 30% { opacity: 1; } 62% { opacity: 1; } 92%, 100% { opacity: 0; } }
     @keyframes feel-guard { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.35); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.7); } }
