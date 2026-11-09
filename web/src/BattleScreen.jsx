@@ -282,6 +282,10 @@ function useSummonSlide() {
   })
 }
 
+const EVO_IMG = (n) => `url(${import.meta.env?.BASE_URL || '/'}fx/evolve/${n}.webp)`
+const EVO_L = { position: 'absolute', inset: 0, backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', willChange: 'transform, opacity' }
+const EVO_RB = [[0, 0.9], [0.13, 0.7]]
+const EVO_SPARK = Array.from({ length: 16 }, (_, n) => { const a = n * 2.39996; const rr = 30 + (n % 5) * 9; return { x: 50 + Math.cos(a) * rr * 0.8, y: 50 + Math.sin(a) * rr * 0.9, s: 2 + (n % 3) * 1.5, dx: Math.round(Math.cos(a) * 14), dy: -10 - (n % 4) * 6, d: 0.74 + (n % 6) * 0.06, dur: 0.5 + (n % 4) * 0.1 } })
 export function UnitCard({ unit, active, selected, selectable, inspected, onClick, big = false, fx = null, hl = false, tick = 0, loss = 0, role = null }) {
   // 破壊: HPの数字とバーが、同じ速さで0へ減っていく。消滅: HPは減らないので、消える直前の値のまま(0にしない)
   const lastHp = useRef(unit.hp)
@@ -309,7 +313,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         boxShadow: selected ? `0 0 0 3px ${alpha(C.active, 33)}` : active ? `0 0 0 3px ${alpha(TEAM_COLOR[unit.team], 20)}` : 'none',
         cursor: 'pointer', position: 'relative',
         ...(hl ? { boxShadow: `0 0 0 4px ${C.active}`, transform: 'scale(1.03)', zIndex: 2 } : {}),
-        ...(fx && fx.kind === 'evolve' ? { zIndex: 4, animation: 'feel-ev-pop 1.2s ease-out both' } : {}),
+        ...(fx && fx.kind === 'evolve' ? { zIndex: 4 } : {}),
         ...(fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s${fx.die === 'destroy' ? ', feel-d-melt 0.18s ease-in forwards, ' + (unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade') + ' 0.27s ease-in 0.24s forwards' : fx.die === 'vanish' ? ', feel-d-frame 0.03s ease-in 0.04s forwards' : ''}` } : fx && fx.die === 'destroy' ? { animation: `feel-d-melt 0.18s ease-in forwards, ${unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade'} 0.27s ease-in 0.24s forwards` } : fx && fx.die === 'vanish' ? { animation: 'feel-d-frame 0.03s ease-in 0.04s forwards' } : {}), // 破壊: ドクロが出る前に、ユニットがぼやけて、下へ溶けるように崩れる
         // 攻撃する側: チームの色で光って、相手のほうへ少し出る / 受ける側: 赤く縁どる(揺れとダメージの数字は、いままでどおり)
         ...(role === 'attacker' ? { boxShadow: `0 0 0 3px ${TEAM_COLOR[unit.team]}, 0 0 18px 2px ${alpha(TEAM_COLOR[unit.team], 60)}`, zIndex: 3, animation: `${unit.team === 'A' ? 'feel-lunge-up' : 'feel-lunge-down'} 0.5s ease-out` } : {}),
@@ -430,17 +434,22 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         </span>
       )}
       {fx && fx.kind === 'evolve' && (
-        // 進化のエフェクト: 足もとから光の柱が立ち上がり、細い光の輪が2重に広がる。カードが白く光って、光の粒が舞い上がる
+        // 進化のエフェクト(参考動画の再現。ユニットはひっくり返さない): ①虹色の波紋が広がり、細い光の筋が出る → ②白金の放射状の光が弾ける
+        // → ③縁が金色に光る → ④白い光の球がユニットを包む → ⑤白い鎖状の輪が回って消える。質感は web/tools/bake-evolve.py で画像に焼き込み済み(動かすのは transform と opacity だけ)
         <span key={`evo-${tick}`} aria-hidden="true" data-testid="fx-evolve" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 8 }}>
-          <span style={{ position: 'absolute', left: '12%', right: '12%', bottom: -6, height: 190, transformOrigin: '50% 100%', background: 'linear-gradient(to top, rgba(255,226,150,0) 0%, rgba(255,240,200,0.85) 35%, rgba(255,255,255,0.35) 75%, rgba(255,255,255,0) 100%)', WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 35%, #000 65%, transparent 100%)', maskImage: 'linear-gradient(90deg, transparent 0%, #000 35%, #000 65%, transparent 100%)', opacity: 0, animation: 'feel-ev-pillar 1.3s cubic-bezier(.2,.7,.2,1) both' }} />
-          {[0, 1].map((n) => (
-            <span key={n} style={{ position: 'absolute', left: '50%', top: '52%', width: '110%', aspectRatio: '1', marginLeft: '-55%', marginTop: '-55%', borderRadius: '50%', border: `${n ? 1.5 : 2.5}px solid ${n ? '#d9ccff' : '#ffe9a8'}`, boxShadow: `0 0 10px 1px ${n ? 'rgba(190,170,255,0.9)' : 'rgba(255,214,110,0.9)'}, inset 0 0 8px ${n ? 'rgba(190,170,255,0.6)' : 'rgba(255,214,110,0.6)'}`, opacity: 0, animation: `feel-ev-ring 1.1s ease-out ${0.25 + n * 0.16}s both` }} />
-          ))}
-          <span style={{ position: 'absolute', inset: 0, borderRadius: 8, background: 'radial-gradient(circle at 50% 55%, rgba(255,255,255,0.9) 0%, rgba(255,240,200,0.6) 40%, rgba(255,214,110,0) 75%)', opacity: 0, animation: 'feel-ev-flash 0.9s ease-out 0.25s both' }} />
-          <span style={{ position: 'absolute', left: '-25%', right: '-25%', top: '52%', height: 2, background: 'linear-gradient(90deg, rgba(255,255,255,0), #fff 50%, rgba(255,255,255,0))', boxShadow: '0 0 8px 1px rgba(255,235,170,0.9)', opacity: 0, animation: 'feel-ev-streak 0.7s ease-out 0.28s both' }} />
-          {[8, 20, 31, 44, 56, 67, 79, 90].map((x, n) => (
-            <span key={x} style={{ position: 'absolute', left: `${x}%`, bottom: '10%', width: n % 3 === 0 ? 7 : 5, height: n % 3 === 0 ? 7 : 5, marginLeft: -3, background: n % 2 ? '#fff3c4' : '#ffffff', clipPath: 'polygon(50% 0, 100% 50%, 50% 100%, 0 50%)', filter: 'drop-shadow(0 0 3px rgba(255,214,110,1))', '--rise': `${54 + (n * 17) % 40}px`, opacity: 0, animation: `feel-ev-part ${0.9 + (n % 3) * 0.15}s ease-out ${0.3 + (n * 0.07) % 0.4}s both` }} />
-          ))}
+          <span style={{ position: 'absolute', left: '50%', top: '50%', height: '280%', aspectRatio: '1', transform: 'translate(-50%, -50%)' }}>
+            {EVO_RB.map(([d, o], n) => <span key={`rb${n}`} style={{ ...EVO_L, backgroundImage: EVO_IMG('rainbow'), opacity: 0, animation: `feel-ev2-rb 0.6s ease-out ${d}s both`, '--o': o }} />)}
+            <span style={{ ...EVO_L, backgroundImage: EVO_IMG('rays'), opacity: 0, animation: 'feel-ev2-ray 0.5s ease-out 0.04s both' }} />
+            <span style={{ ...EVO_L, backgroundImage: EVO_IMG('rays'), opacity: 0, animation: 'feel-ev2-burst 0.34s ease-out 0.26s both' }} />
+          </span>
+          <span style={{ position: 'absolute', inset: 0, borderRadius: 8, background: '#fff', opacity: 0, animation: 'feel-ev2-flash 0.36s ease-out 0.26s both' }} />
+          <span style={{ position: 'absolute', inset: -2, borderRadius: 10, boxShadow: '0 0 16px 5px rgba(255,236,150,0.95), inset 0 0 14px 2px rgba(255,244,190,0.8)', opacity: 0, animation: 'feel-ev2-rim 1.15s ease-in-out 0.3s both', willChange: 'opacity' }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', height: '122%', aspectRatio: '1', transform: 'translate(-50%, -50%)' }}><span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.98) 0%, rgba(255,235,250,0.95) 45%, rgba(255,214,240,0.75) 72%, rgba(255,255,255,0) 100%)', opacity: 0, animation: 'feel-ev2-orb 0.34s ease-in-out 0.58s both', willChange: 'transform, opacity' }} /></span>
+          <span style={{ position: 'absolute', left: '50%', top: '50%', height: '210%', aspectRatio: '1', transform: 'translate(-50%, -50%)' }}>
+            <span style={{ ...EVO_L, backgroundImage: EVO_IMG('chain'), opacity: 0, animation: 'feel-ev2-chain 0.72s ease-out 0.7s both' }} />
+            <span style={{ ...EVO_L, backgroundImage: EVO_IMG('chain'), opacity: 0, animation: 'feel-ev2-chain2 0.72s ease-out 0.78s both' }} />
+          </span>
+          {EVO_SPARK.map((q, n) => <span key={`sp${n}`} style={{ position: 'absolute', left: `${q.x}%`, top: `${q.y}%`, width: q.s, height: q.s, marginLeft: -q.s / 2, marginTop: -q.s / 2, borderRadius: '50%', background: '#fff', boxShadow: '0 0 5px 1px rgba(255,240,190,0.95)', opacity: 0, '--dx': `${q.dx}px`, '--dy': `${q.dy}px`, animation: `feel-ev2-spark ${q.dur}s ease-out ${q.d}s both`, willChange: 'transform, opacity' }} />)}
         </span>
       )}
       {unit.alive && unit.barrier > 0 && !(fx && fx.kind === 'block') && (
