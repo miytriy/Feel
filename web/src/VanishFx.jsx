@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 // 消滅エフェクト。60fps の連番画像(スプライトシート)を、1コマずつ見せるだけ。
 // 画像は tools/bake-vanish.cjs で焼き込む(8列×7行 = 56コマ。0.9秒 = 約62fps)。設計・タイミングは web/EFFECTS.md「消滅」
 // 表示は <canvas>: 起動時に1回だけデコードした画像(ImageBitmap)を、全員で使い回す。1コマ分(400px)だけを描くので、
-// 「大きな画像を毎回デコードして固まる」「背景位置のアニメで再描画が走る」がなく、時計は経過時間で決める(重いときは、コマが飛ぶだけで、速さは変わらない)
+// 「大きな画像を毎回デコードして固まる」「背景位置のアニメで再描画が走る」がなく、時計は経過時間で決めるが、コマは飛ばさない(重いときは、終わりが遅れる)
 const SHEET = `${import.meta.env?.BASE_URL || '/'}fx/vanish/sheet.webp`
 export const VANISH_MS = 900 // 長さは、ここで固定(0.9秒)。倍率や、再生速度の設定では変えない
 const COLS = 8, ROWS = 7, FRAME = 400
@@ -43,13 +43,13 @@ export function VanishFx() {
       if (dead) return
       if (!source) { raf = requestAnimationFrame(tick); return } // 読み込みが終わるまで待つ(終わってから、時計を始める)
       if (t0 == null) t0 = now
-      const k = Math.floor(((now - t0) / ms) * n)
+      const k = Math.min(Math.floor(((now - t0) / ms) * n), last + 1) // 重くても、コマを飛ばさない(1回の描き換えで、最大1コマだけ進める)。そのぶん、重いときは0.9秒より長くなる
       if (k >= n) {
         ctx.clearRect(0, 0, FRAME, FRAME)
         window.dispatchEvent(new CustomEvent('feel-fxprobe', { detail: `消滅 ${Math.round(performance.now() - mount)}ms` })) // テスト戦の検証用
         return
       }
-      if (k !== last) { // 飛ばされたコマがあっても、いまの時刻のコマを出す
+      if (k !== last) {
         last = k
         ctx.clearRect(0, 0, FRAME, FRAME)
         ctx.drawImage(source, (k % COLS) * FRAME, Math.floor(k / COLS) * FRAME, FRAME, FRAME, 0, 0, FRAME, FRAME)
