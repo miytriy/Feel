@@ -802,26 +802,6 @@ function InspectBox({ unit, big = false }) {
   )
 }
 
-// 直近に発動した能力の説明(ファンファーレ・特性・スペル・進化など)。何が起きたかを、説明つきで見せる
-function AbilityBanner({ ability, now = '', big = false }) {
-  const slotH = big ? 76 : 72 // 能力の表示が出たり消えたりしても、画面が動かないように、場所をいつも同じだけ取る
-  if (!ability && !now) return <div aria-hidden="true" style={{ height: slotH }} />
-  const color = ability && ability.team !== ME ? C.enemy : C.player
-  return (
-    <div data-testid="ability" style={{ height: slotH, boxSizing: 'border-box', overflow: 'hidden', padding: big ? '10px 14px' : '8px 10px', borderRadius: 10, background: C.card, borderLeft: `6px solid ${color}`, border: `1px solid ${C.line}`, borderLeftWidth: 6, borderLeftColor: color, fontSize: big ? 14 : 12, lineHeight: 1.5 }}>
-      {now && <div data-testid="now" style={{ fontWeight: 800, marginBottom: 4, color: C.ink }}>{now}</div>}
-      {ability && (
-        <>
-          <div style={{ color, fontWeight: 700 }}>
-            <span style={{ color: C.mute, fontWeight: 400, fontSize: big ? 11 : 10 }}>直近の能力 </span>【{ability.kind}】{ability.owner}{ability.name ? ` ― ${ability.name}` : ''}
-          </div>
-          {ability.desc && <div>{ability.desc}</div>}
-        </>
-      )}
-    </div>
-  )
-}
-
 // 選択中の相手(攻撃・特性の対象)の情報。予想ダメージつき
 function TargetInfo({ unit, expected, loss = 0, big = false }) {
   const ratio = Math.max(0, unit.hp / unit.maxHp)
@@ -1610,6 +1590,12 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
         )}
     </>
   )
+  // 空いている所(カード・ボタン・性能メモ・操作バー以外)をタップすると、選択と性能メモを消す
+  const dismissInfo = (e) => {
+    if (e.target.closest('[data-uid], button, a, input, select, label, [data-testid="sel-info"], [data-keep], [role="dialog"]')) return
+    if (selected) setSelected(null)
+    if (inspect) setInspect(null)
+  }
   const speedBar = null // スキップボタンは廃止(再生の速さは設定で決める)
   const nameOf = (uid) => state.units.find((u) => u.uid === uid)?.name ?? ''
   const nowText = !ev ? '' : ev.type === 'damage' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}に${ev.amount}ダメージ${ev.crit ? '(クリティカル!)' : ''}` : ev.type === 'block' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}のバリアが防いだ(0ダメージ)` : ev.type === 'turn' ? `${ev.team === 'B' ? '相手' : 'あなた'}のターン: ${ev.name}` : ''
@@ -1645,7 +1631,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   // ---- PC: 画面全体を使う(左=盤面、右=詳細・ログ・操作) ----
   if (desktop) {
     return (
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 24px 16px', background: C.paper, color: C.ink, fontFamily: FONT, boxSizing: 'border-box', overflow: 'hidden' }}>
+      <div onClick={dismissInfo} style={{ height: '100vh', display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 24px 16px', background: C.paper, color: C.ink, fontFamily: FONT, boxSizing: 'border-box', overflow: 'hidden' }}>
         <SideLog items={sideLog} big />
         {hud}
         {overlays}
@@ -1659,14 +1645,13 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
               <Row big extra={<TeamStatus state={view} team={OPP()} big inline />} title="相手" color={C.enemy}>{enemies.map(card)}</Row>
               <Row big title="相手の召喚物" color={C.enemy}>{summonCards(enemySummons)}</Row>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}><AbilityBanner ability={view.lastAbility} big /></div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <Row big title="自分の召喚物" color={C.player}>{summonCards(playerSummons)}</Row>
               <Row big extra={<TeamStatus state={view} team={ME} big inline />} title="自分" color={C.player}>{players.map(card)}</Row>
             </div>
             {spellsBlock}
           </div>
-          <div className="no-sb" style={{ flex: '0 0 auto', maxHeight: '34vh', overflowY: 'auto', width: '100%', maxWidth: 1100, margin: '0 auto', boxSizing: 'border-box', padding: 14, borderRadius: 10, background: C.card, border: `1px solid ${C.line}`, fontSize: 14 }}>
+          <div data-keep="1" className="no-sb" style={{ flex: '0 0 auto', maxHeight: '34vh', overflowY: 'auto', width: '100%', maxWidth: 1100, margin: '0 auto', boxSizing: 'border-box', padding: 14, borderRadius: 10, background: C.card, border: `1px solid ${C.line}`, fontSize: 14 }}>
             {panelInner}
           </div>
         </div>
@@ -1676,7 +1661,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
 
   // ---- スマホ: 1列。上に行動バーを固定、下に操作パネルを固定して、盤面をスクロールで見る ----
   return (
-    <div style={wrap}>
+    <div style={wrap} onClick={dismissInfo}>
       {selInfo}
       <SideLog items={sideLog} />
       <div style={{ position: 'sticky', top: 0, zIndex: 9, background: C.paper, margin: '-12px -12px 0', padding: '8px 12px 2px', borderBottom: `1px solid ${C.line}` }}>
@@ -1691,13 +1676,11 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
       <Row extra={<TeamStatus state={view} team={OPP()} inline />} title="相手" color={C.enemy}>{enemies.map(card)}</Row>
       <Row tight title="相手の召喚物" color={C.enemy}>{summonCards(enemySummons)}</Row>
 
-      <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 6 }}><AbilityBanner ability={view.lastAbility} /></div>
-
       <Row tight title="自分の召喚物" color={C.player}>{summonCards(playerSummons)}</Row>
       <Row extra={<TeamStatus state={view} team={ME} inline />} title="自分" color={C.player}>{players.map(card)}</Row>
       {spellsBlock && <div style={{ marginTop: 8 }}>{spellsBlock}</div>}
 
-      <div className="no-sb" style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '14px -12px 0', padding: '10px 12px calc(10px + env(safe-area-inset-bottom))', height: 'min(230px, 42vh)', boxSizing: 'border-box', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
+      <div data-keep="1" className="no-sb" style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '14px -12px 0', padding: '10px 12px calc(10px + env(safe-area-inset-bottom))', height: 'min(230px, 42vh)', boxSizing: 'border-box', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
         {panelInner}
       </div>
     </div>
