@@ -591,7 +591,7 @@ function skillText(sk) {
   const add = sk.add ? `+${sk.add}` : ''
   return `相手単体に${STAT_NAME[sk.stat] ?? '攻撃力'}${pct}%${add}分の${TYPE_LABEL[sk.type] ?? '物理'}ダメージを与える。`
 }
-// 能力が持たせるクレスト(あれば)。『クレスト:◯◯』の中身を、最後にまとめて見せる
+// 能力が持たせるクレスト(あれば)。「」の区画として、最後にまとめて見せる
 function crestsOf(unit) {
   const out = []
   const walk = (effects) => { for (const e of effects || []) if (e?.type === 'crest' && e.crest) out.push(e.crest) }
@@ -599,21 +599,105 @@ function crestsOf(unit) {
   for (const t of unit.traits || []) walk(t.effects)
   return out
 }
-// 能力の区画の並び: [種類, 文] の配列にする(種類 'crest' は、見出し+中身)
-function abilitySections(unit, { full }) {
-  const secs = []
-  if (!unit.isAmulet && unit.skill) secs.push(['skill', `【スキル】${skillText(unit.skill)}`])
+
+// ---- 性能表の書き方(上の行ほど先に書く。グループの境目に ── を引く) ----
+// [グループ, [同じ行に並ぶ見出し]]。グループ: 0=召喚・融合・ブースト / 1=スキルと各種能力 / 2=キーワードと戦闘中の能力 / 3=進化時
+const TABLE = [
+  [0, ['直接召喚']], [0, ['融合']], [0, ['スペルブースト時']],
+  [1, ['スキル']], [1, ['ファンファーレ', 'モード', 'コンボ', '連携', '土の秘術', '土の印', '覚醒', 'ネクロマンス', 'リアニメイト']], [1, ['常時', 'アクティブ']], [1, ['エンハンス']], [1, ['奥義']], [1, ['解放奥義']],
+  [2, ['突進']], [2, ['疾走']], [2, ['必殺']], [2, ['守護']], [2, ['威圧']], [2, ['オーラ']], [2, ['潜伏']], [2, ['バリア']], [2, ['ドレイン']], [2, ['交戦時']], [2, ['攻撃時']], [2, ['ラストワード']],
+  [3, ['進化時']],
+]
+const ROW_OTHER = TABLE.findIndex((r) => r[1][0] === 'ラストワード') + 0.5 // 表にない能力(ターン終了時など)は、ラストワードの次(進化時の前)に置く
+const rowOf = (label) => { const i = TABLE.findIndex((r) => r[1].some((n) => label.includes(n))); return i }
+const groupOfRow = (i) => (i < 0 ? 2 : TABLE[i][0])
+
+const hasFaith = (p) => p.condition?.faith != null || JSON.stringify(p.effects || []).includes('"type":"faith"')
+
+// 能力を、表の順に並べたグループ(g)と、「」の区画(boxes)にする
+function abilityTable(unit, { full }) {
+  const items = [] // { row, g, head, body, order }
+  const add = (row, head, body) => items.push({ row: row < 0 ? ROW_OTHER : row, g: groupOfRow(row), head, body, order: items.length })
+  const boxes = []
+  const faithLines = []
+  const amulet = unit.isAmulet
+  const crystal = { lines: [], act: [] }
+  if (!amulet && unit.skill) add(rowOf('スキル'), `【スキル】${skillText(unit.skill)}`)
   for (const k of unit.keywords) {
     if (!full && k === 'stealth' && !unit.stealth) continue
     if (!full && k === 'barrier' && unit.barrier <= 0) continue
-    secs.push(['key', `【${KEYWORDS[k]?.label ?? k}】${KEYWORDS[k]?.desc ?? ''}`])
+    const label = KEYWORDS[k]?.label ?? k
+    add(rowOf(label), `【${label}】`, KEYWORDS[k]?.desc ?? '')
   }
-  for (const p of unit.passiveObjs) secs.push(['pas', passiveLine(p)])
-  for (const t of unit.traits) secs.push(['trait', `${tierPrefix(t.condition)}【特性 MP${t.cost}${t.repeatable ? ' 連続使用可' : ''}】${t.name}: ${t.desc ?? ''}`])
-  if (full && unit.accel) secs.push(['trait', `【アクセラレート_${unit.accel.speed}】${unit.accel.name}(MP${unit.accel.cost ?? 0}): ${unit.accel.desc ?? ''}`])
-  if (full && unit.countdown != null) secs.push(['pas', `【カウントダウン】あと${unit.countdown}回自分のターンが始まると破壊される`])
-  for (const c of crestsOf(unit)) secs.push(['crest', { name: c.name, desc: c.desc ?? '' }])
-  return secs
+  for (const p of unit.passiveObjs) {
+    const text = passiveLine(p)
+    if (hasFaith(p)) { faithLines.push(text); continue }
+    if (amulet) { crystal.lines.push(text); continue }
+    const tier = p.condition?.liberation ? '解放奥義' : p.condition?.ultimate ? '奥義' : null
+    const label = TRIGGER_LABELS[p.trigger] ?? p.trigger
+    add(tier ? rowOf(tier) : rowOf(`${p.name ?? ''}${label}`), text)
+  }
+  for (const t of unit.traits) {
+    const text = `${tierPrefix(t.condition)}【特性 MP${t.cost}${t.repeatable ? ' 連続使用可' : ''}】${t.name}: ${t.desc ?? ''}`
+    if (amulet) { crystal.act.push(text); continue }
+    const tier = t.condition?.liberation ? '解放奥義' : t.condition?.ultimate ? '奥義' : t.id === 'enhance' ? 'エンハンス' : 'アクティブ'
+    add(rowOf(tier), text)
+  }
+  items.sort((x, y) => x.row - y.row || x.order - y.order)
+  const groups = [[], [], [], []]
+  for (const it of items) groups[it.g].push(it)
+  for (const c of crestsOf(unit)) {
+    const lines = []
+    if (c.countdown != null && !(c.desc ?? '').includes('カウントダウン')) lines.push(`【カウントダウン_${c.countdown}】`)
+    lines.push(c.desc ?? '')
+    boxes.push({ icon: 'crest', title: 'クレスト', sub: `『${c.name}』`, parts: [lines] })
+  }
+  if (faithLines.length) boxes.push({ icon: 'faith', title: '信仰', parts: [['信仰値は0から始まる。'], faithLines] })
+  if (amulet) {
+    const parts = []
+    const cd = unit.countdown != null && full ? [`【カウントダウン】あと${unit.countdown}回自分のターンが始まると破壊される`] : []
+    if (cd.length || crystal.lines.length) parts.push([...cd, ...crystal.lines])
+    if (crystal.act.length) parts.push(crystal.act)
+    boxes.push({ icon: 'spd', title: '結晶', parts })
+  } else if (full && unit.countdown != null) {
+    groups[2].push({ head: `【カウントダウン】あと${unit.countdown}回自分のターンが始まると破壊される` })
+  }
+  if (unit.accel) boxes.push({ icon: 'spd', title: 'アクセラレート', parts: [[`【アクセラレート_${unit.accel.speed}】${unit.accel.name}(MP${unit.accel.cost ?? 0}): ${unit.accel.desc ?? ''}`]] })
+  return { groups, boxes }
+}
+
+const Rule = () => <div aria-hidden="true" style={{ height: 0, borderTop: `1px solid ${alpha(C.mute, 55)}`, margin: '2px 0' }} />
+const CrestMark = () => <svg viewBox="0 0 24 24" width="1.1em" height="1.1em" style={{ verticalAlign: '-0.2em', marginRight: 4 }} fill="currentColor" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9-8 11-4.6-2-8-6-8-11V5z" /></svg>
+const FaithMark = () => <svg viewBox="0 0 24 24" width="1.1em" height="1.1em" style={{ verticalAlign: '-0.2em', marginRight: 4 }} fill="currentColor" aria-hidden="true"><path d="M12 2l2.4 7.6H22l-6.2 4.5 2.4 7.4-6.2-4.6-6.2 4.6 2.4-7.4L2 9.6h7.6z" /></svg>
+
+// 表の順に、グループごとに ── を引いて並べる。「」の区画は、前のグループから続けて(── なしで)書く
+function renderAbilities(unit, opts) {
+  const { groups, boxes } = abilityTable(unit, opts)
+  const filled = groups.filter((g) => g.length)
+  const out = []
+  filled.forEach((g, gi) => {
+    if (gi) out.push(<Rule key={`r${gi}`} />)
+    out.push(
+      <div key={`g${gi}`} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {g.map((it, i) => <div key={i}>{it.head}{it.body ? <div style={{ color: C.mute, paddingLeft: '1em' }}>{it.body}</div> : null}</div>)}
+      </div>,
+    )
+  })
+  if (!out.length && !boxes.length) return <div style={{ color: C.mute }}>能力なし</div>
+  for (const [bi, b] of boxes.entries()) {
+    out.push(
+      <div key={`b${bi}`} style={{ marginTop: bi || out.length ? 4 : 0, padding: '5px 9px', borderRadius: 6, background: alpha(C.active, 10), borderLeft: `4px solid ${C.active}` }}>
+        <div style={{ fontWeight: 700 }}>{b.icon === 'crest' ? <CrestMark /> : b.icon === 'faith' ? <FaithMark /> : <SI k="spd" />}{b.title}{b.sub && <span style={{ color: C.mute, fontWeight: 400 }}> {b.sub}</span>}</div>
+        {b.parts.map((lines, pi) => (
+          <div key={pi}>
+            {pi > 0 && <Rule />}
+            {lines.map((l, li) => <div key={li}>{l}</div>)}
+          </div>
+        ))}
+      </div>,
+    )
+  }
+  return out
 }
 
 function InfoCard({ testid, unit, accent, children, big = false, style }) {
@@ -640,22 +724,11 @@ function InfoCard({ testid, unit, accent, children, big = false, style }) {
   )
 }
 
-// 能力1つぶんの区画
-function InfoSection({ kind, children }) {
-  const tone = kind === 'trait' ? C.player : kind === 'key' ? C.mute : kind === 'crest' ? C.enemy : C.active
-  return <div style={{ padding: '6px 9px', borderRadius: 6, background: alpha(tone, 12), borderLeft: `4px solid ${tone}` }}>{children}</div>
-}
-const renderSecs = (secs) => secs.map(([k, l], i) => (
-  <InfoSection key={i} kind={k}>
-    {k === 'crest' ? <><div style={{ fontWeight: 700 }}>クレスト</div><div><span style={{ color: C.mute }}>『{l.name}』 </span>{l.desc}</div></> : l}
-  </InfoSection>
-))
-
 // キャラの詳細(能力の説明)
 function InspectBox({ unit, big = false }) {
   return (
     <InfoCard testid="inspect" big={big} style={{ marginTop: 8 }} accent={TEAM_COLOR[unit.team]} unit={unit}>
-      {renderSecs(abilitySections(unit, { full: true }))}
+      {renderAbilities(unit, { full: true })}
     </InfoCard>
   )
 }
@@ -700,7 +773,7 @@ function TargetInfo({ unit, expected, loss = 0, big = false }) {
           {unit.barrier > 0 ? '(バリアで防がれる)' : !unit.isAmulet && <span style={{ color: C.mute, fontWeight: 400 }}> → HP {Math.ceil(unit.hp - loss)}/{unit.maxHp}</span>}
         </div>
       )}
-      {renderSecs(abilitySections(unit, { full: false }))}
+      {renderAbilities(unit, { full: false })}
     </InfoCard>
   )
 }
