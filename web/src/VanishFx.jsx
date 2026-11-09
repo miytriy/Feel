@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 // 表示は <canvas>: 起動時に1回だけデコードした画像(ImageBitmap)を、全員で使い回す。1コマ分(400px)だけを描くので、
 // 「大きな画像を毎回デコードして固まる」「背景位置のアニメで再描画が走る」がなく、時計は経過時間で決める(重いときは、コマが飛ぶだけで、速さは変わらない)
 const SHEET = `${import.meta.env?.BASE_URL || '/'}fx/vanish/sheet.webp`
-export const VANISH_BASE_MS = 900
+export const VANISH_MS = 900 // 長さは、ここで固定(0.9秒)。倍率や、再生速度の設定では変えない
 const COLS = 8, ROWS = 7, FRAME = 400
 
 let source = null // デコード済みの画像(ImageBitmap。使えない環境では HTMLImageElement)
@@ -29,7 +29,8 @@ const loadSheet = () => {
 loadSheet() // 先に読み込んで、デコードもしておく
 
 // 親(カード)の中央に、カード高さの約2.2倍の四角を置く
-export function VanishFx({ ms = VANISH_BASE_MS }) {
+export function VanishFx() {
+  const ms = VANISH_MS
   const cv = useRef(null)
   useEffect(() => {
     const el = cv.current
@@ -57,6 +58,6 @@ export function VanishFx({ ms = VANISH_BASE_MS }) {
     }
     raf = requestAnimationFrame(tick)
     return () => { dead = true; cancelAnimationFrame(raf) }
-  }, [ms])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   return <canvas ref={cv} width={FRAME} height={FRAME} aria-hidden="true" data-testid="fx-vanish" style={{ position: 'absolute', left: '50%', top: '50%', height: '220%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }} />
 }
