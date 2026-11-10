@@ -991,10 +991,10 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   const cpuTurn = !online && !!actor && actor.team === 'B' && !state.winner
   const playerTurn = !!actor && actor.team === ME && !state.winner && !playing && !(online && waitingSend)
   const legal = playerTurn ? legalActions(state) : []
-  const legalTargetKey = legal.map((a) => a.target).filter(Boolean).join(',')
-  useEffect(() => { // 自分の番で、選んでいた対象が倒れた・選べなくなったときだけ、選択を消す
-    if (playerTurn && selected && !legal.some((a) => a.target === selected)) setSelected(null)
-  }, [playerTurn, legalTargetKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  const selectedGone = !!(selected && state && !state.units.some((u) => u.uid === selected && u.alive))
+  useEffect(() => { // 選んでいた対象が倒れて(いなくなって)いたときだけ、選択を消す。スキルを使えない番(入場直後など)を挟んでも、選択は残す
+    if (selectedGone) setSelected(null)
+  }, [selectedGone])
   const skillTargets = legal.filter((a) => a.type === 'skill').map((a) => a.target)
   const traitActions = (id) => legal.filter((a) => a.type === 'trait' && a.trait === id)
   const spellActs = legal.filter((a) => a.type === 'spell')
@@ -1182,7 +1182,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const act = (action) => {
-    setMode(null) // 対象の選択(selected)は残す
+    setMode(null) // 相手の選択(selected)は残す。味方を選んでいたとき(特性など)は消す(次の攻撃のボタンが押せなくならないように)
+    if (selected && state?.units.find((u) => u.uid === selected)?.team === ME) setSelected(null)
     if (online) { if (waitingSend) return; setWaitingSend(true); online.client.action(action); return }
     commit(step(state, action))
   }
@@ -1238,7 +1239,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     setMode(mode === trait.id ? null : trait.id)
   }
   const handleConfirm = () => {
-    if (!selected) return
+    if (!selected || !selectableSet.includes(selected)) return
     act(mode ? { type: 'trait', trait: mode, target: selected } : { type: 'skill', target: selected })
   }
   const handleAccel = () => {
@@ -1629,7 +1630,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
 
             <div style={desktop ? undefined : { position: 'sticky', bottom: -10, background: C.card, padding: '6px 0 2px', marginTop: 4 }}>
             {(mode || skillTargets.length > 0) && (
-              <button onClick={handleConfirm} disabled={!selected} style={buttonStyle(true, !selected)}>
+              <button onClick={handleConfirm} disabled={!selected || !selectableSet.includes(selected)} style={buttonStyle(true, !selected || !selectableSet.includes(selected))}>
                 {mode ? `${modeTrait?.name}を使う` : '攻撃する'}
               </button>
             )}{' '}
