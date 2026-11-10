@@ -19,8 +19,9 @@ export const ROTATIONS = {
 //   rotation  : ローテーション = 「ローテーション対象」のピックアップだけ使える
 //   unlimited : アンリミテッド = これまでに登場したすべてのピックアップが使える(一部のユニットは使用禁止になることがある)
 //   infinity  : インフィニティ = これまでに登場したすべてのピックアップが使える(使用禁止ユニットが指定されてからの登場。指定までは未公開)
-// ローテーション対象のピックアップは、ここの ROTATION_TARGETS に書く(いまは全ピックアップ。対象が決まったら絞る)
-export const ROTATION_TARGETS = ['basic', ...Object.keys(ROTATIONS).filter((k) => k !== 'basic')]
+// ローテーション対象のピックアップは、ここの ROTATION_TARGETS に書く(期が変わったら書き換える)。
+// 今期: 伝説の幕開け(1)。ベーシックは、毎期いつでも使える扱いにしている(仮定)
+export const ROTATION_TARGETS = ['basic', '1']
 // 使用禁止にするユニット(キャラ・スペル・アミュレットのid、遺物は名前)を、形式ごとに書く
 export const BANNED = { rotation: [], unlimited: [], infinity: [] }
 export const FORMATS = {
