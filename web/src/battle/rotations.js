@@ -15,6 +15,22 @@ export const ROTATIONS = {
   9: 'アズヴォルト・レヴナント',
   10: 'ニーゲルヘリア神殺事件',
 }
+// ルール(対戦の形式)ごとに、使えるローテーションの範囲。ユニット・スペル・遺物で、同じ表を使う。
+//   rotation  : ローテーション(いまは、すべての弾が使える。範囲をしぼるときは、ここの rotations を書き換える)
+//   unlimited : アンリミテッド(すべての弾が使える)
+export const FORMATS = {
+  rotation: { name: 'ローテーション', rotations: ['basic', ...Object.keys(ROTATIONS).filter((k) => k !== 'basic')] },
+  unlimited: { name: 'アンリミテッド', rotations: 'all' },
+}
+export const DEFAULT_FORMAT = 'rotation' // ランダムマッチ(ランク・カジュアル)・ルーム対戦は、いまはローテーションだけ
+// そのローテーション(フォルダ名 'basic' / 1 / 2… でも、名前 'ベーシック' / '伝説の幕開け' でもよい)は、その形式で使えるか
+export function rotationAllowed(format, rotation) {
+  const f = FORMATS[format]
+  if (!f) return false
+  if (f.rotations === 'all') return true
+  const key = Object.keys(ROTATIONS).find((k) => k === String(rotation) || ROTATIONS[k] === rotation)
+  return key != null && f.rotations.includes(key)
+}
 // 英語の名前(ない(まだ決まっていない)ものは書かない)
 export const ROTATIONS_EN = {
   basic: 'Basic',

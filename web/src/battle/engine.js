@@ -63,12 +63,13 @@ export const TRIGGER_LABELS = {
 
 // ---------- 遺物(頭・胴・脚・靴のセットを装備したキャラに、セット効果がつく) ----------
 // pct = 元のステータスに対する+%、flat = そのまま足す値(少女の物語は%ではなく、耐性値+10)
+// rotation: その遺物が属するローテーション(フォルダ名と同じ 'basic' / 1 / 2…)。対戦の形式ごとに使える範囲は battle/rotations.js の FORMATS
 export const RELICS = {
-  'ピエロの祝福': { desc: '攻撃力 +12%', mods: [{ stat: 'atk', pct: 12 }] },
-  '鬼の形相': { desc: 'HP +21%', mods: [{ stat: 'hp', pct: 21 }] },
-  '月と太陽の印字': { desc: '魔力 +13%', mods: [{ stat: 'mag', pct: 13 }] },
-  '紅血の証': { desc: '防御力 +29%', mods: [{ stat: 'def', pct: 29 }] },
-  '少女の物語': { desc: 'ダメージ耐性値 +10', mods: [{ stat: 'dmgResist', flat: 10 }] },
+  'ピエロの祝福': { rotation: 'basic', desc: '攻撃力 +12%', mods: [{ stat: 'atk', pct: 12 }] },
+  '鬼の形相': { rotation: 'basic', desc: 'HP +21%', mods: [{ stat: 'hp', pct: 21 }] },
+  '月と太陽の印字': { rotation: 'basic', desc: '魔力 +13%', mods: [{ stat: 'mag', pct: 13 }] },
+  '紅血の証': { rotation: 'basic', desc: '防御力 +29%', mods: [{ stat: 'def', pct: 29 }] },
+  '少女の物語': { rotation: 'basic', desc: 'ダメージ耐性値 +10', mods: [{ stat: 'dmgResist', flat: 10 }] },
 }
 
 // ---------- ユニットの作成 ----------

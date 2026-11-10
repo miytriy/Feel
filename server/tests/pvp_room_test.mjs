@@ -33,5 +33,11 @@ const mkRoom = () => { const log = []; const r = new Room({ code: 'TEST22', reg,
   ok(buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: 'でたらめ' } }).error, '知らない遺物は断る')
   ok(buildTeam(reg, { ids, spells: [], relics: { 'nobody': '鬼の形相' } }).error, '編成にいないキャラの遺物は断る')
   ok(buildTeam(reg, { ids, spells: [], relics: ['鬼の形相'] }).error, '遺物の指定の形が違うものは断る')
+  ok(!buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: '鬼の形相' } }, { format: 'unlimited' }).error, 'アンリミテッドでは遺物を持たせられる')
+  const saved = reg.engine.RELICS['鬼の形相'].rotation
+  reg.engine.RELICS['鬼の形相'].rotation = 'unknown-rot'
+  ok(buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: '鬼の形相' } }).error, 'ローテーションに入らない遺物は断る')
+  ok(!buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: '鬼の形相' } }, { format: 'unlimited' }).error, '…でもアンリミテッドなら使える')
+  reg.engine.RELICS['鬼の形相'].rotation = saved
   ok(!buildTeam(reg, { ids, spells: [] }).error, '遺物の指定がなくても、今までどおり通る') }
 console.log(failed ? `失敗 ${failed}` : '全部OK'); process.exit(failed ? 1 : 0)

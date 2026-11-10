@@ -64,8 +64,9 @@ export async function loadRegistry() {
   const engine = await import(pathToFileURL(path.join(BATTLE, 'engine.js')).href)
   const ai = await import(pathToFileURL(path.join(BATTLE, 'ai.js')).href)
   const formation = await import(pathToFileURL(path.join(BATTLE, 'formation.js')).href)
+  const rotations = await import(pathToFileURL(path.join(BATTLE, 'rotations.js')).href)
   const enhance = await import(pathToFileURL(path.join(BATTLE, '../enhance.js')).href)
   const testChars = await import(pathToFileURL(path.join(BATTLE, 'characters/test/test_chars.js')).href).catch(() => null)
-  cache = { chars, spells, engine, ai, formation, enhance, charById: new Map(chars.map((c) => [c.id, c])), spellById: new Map(spells.map((s) => [s.id, s])), testChars }
+  cache = { chars, spells, engine, ai, formation, rotations, enhance, charById: new Map(chars.map((c) => [c.id, c])), spellById: new Map(spells.map((s) => [s.id, s])), testChars }
   return cache
 }

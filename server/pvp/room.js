@@ -14,7 +14,7 @@ export const makeCode = (rng = Math.random) => Array.from({ length: 6 }, () => C
 
 // 画面から届いた編成 { ids: [...], spells: [...] } を、サーバー側で検査して、バトル用の定義にする。
 // owned: そのユーザーの所持 { キャラid: 数 }(null なら所持は確かめない) / enh: 強化レベル { キャラid: Lv }
-export function buildTeam(reg, team, { owned = null, enh = {} } = {}) {
+export function buildTeam(reg, team, { owned = null, enh = {}, format = reg.rotations.DEFAULT_FORMAT } = {}) {
   const ids = Array.isArray(team?.ids) ? team.ids : null
   const spellIds = Array.isArray(team?.spells) ? team.spells : []
   if (!ids || !ids.length || ids.length > 7 || ids.some((x) => typeof x !== 'string')) return { error: '編成が正しくありません' }
@@ -25,6 +25,7 @@ export function buildTeam(reg, team, { owned = null, enh = {} } = {}) {
   for (const [rid, rname] of Object.entries(relicsIn)) {
     if (!ids.includes(rid)) return { error: '編成にいないキャラの遺物が指定されています' }
     if (typeof rname !== 'string' || (rname !== '' && !Object.prototype.hasOwnProperty.call(reg.engine.RELICS, rname))) return { error: `知らない遺物です(${String(rname).slice(0, 20)})` }
+    if (rname !== '' && !reg.rotations.rotationAllowed(format, reg.engine.RELICS[rname].rotation)) return { error: `遺物「${rname}」は、${reg.rotations.FORMATS[format]?.name ?? format}では使えません` }
   }
   const withRelic = (d) => {
     if (!Object.prototype.hasOwnProperty.call(relicsIn, d.id)) return d

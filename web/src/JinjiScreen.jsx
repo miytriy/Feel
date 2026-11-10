@@ -3,7 +3,7 @@ import { useIsDesktop, C, FONT, DISPLAY, useRemembered } from './ui.js'
 import { ALL_CHARACTERS } from './battle/characters/index.js'
 import { CLASS_ORDER } from './battle/characters/validate.js'
 import { KEYWORDS, TRIGGER_LABELS, RELICS } from './battle/engine.js'
-import { relicOf, hasRelicChoice, setRelicChoice, useRelicChoices } from './relicStore.js'
+import { relicFormats, relicRotationName, relicOf, hasRelicChoice, setRelicChoice, useRelicChoices } from './relicStore.js'
 import { RARITY, fold, collectRelated } from './CodexScreen.jsx'
 import { Emblem, hash } from './emblem.jsx'
 import { artOf, useArtStatus } from './charArt.jsx'
@@ -510,11 +510,12 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
         <div className="jp-sec">遺物を持たせる</div>
         <div className="jp-relics" data-testid="relic-picker">
           {[['', 'なし'], ...Object.keys(RELICS).map((n) => [n, n])].map(([n, label]) => (
-            <button key={label} type="button" data-testid={`relic-${label}`} className={`jp-rp${(relicName || '') === n ? ' on' : ''}`} onClick={() => setRelicChoice(c, n)}>{label}</button>
+            <button key={label} type="button" data-testid={`relic-${label}`} className={`jp-rp${(relicName || '') === n ? ' on' : ''}`} title={n ? `${relicRotationName(n)}:${relicFormats(n).join('・')}` : undefined} onClick={() => setRelicChoice(c, n)}>{label}</button>
           ))}
           {hasRelicChoice(c) && <button type="button" data-testid="relic-reset" className="jp-rp reset" onClick={() => setRelicChoice(c, null)}>もとにもどす{c.relic ? `(${c.relic})` : '(なし)'}</button>}
         </div>
         <div className="jp-row"><p>持たせた遺物は、CPU戦・テスト戦の自分のチームに反映されます。</p></div>
+        {relicName && <div className="jp-row"><p data-testid="relic-formats">{relicRotationName(relicName)}の遺物 ／ 使える形式:{relicFormats(relicName).join("・")}</p></div>}
         <div className="jp-sec">特性</div>
         {(c.traits || []).length === 0 && <div className="jp-row"><p>特性はありません。</p></div>}
         {(c.traits || []).map((t) => <AbilityRow key={t.id} head={t.name} tag={`MP${t.cost}`} desc={`${t.desc || ''}${t.repeatable ? ' ※1ターンに複数回使える' : ''}`} />)}

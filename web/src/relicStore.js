@@ -3,6 +3,7 @@
 // 保存の形: { キャラのid: 遺物の名前 | '' }   '' は「遺物なし」。載っていないキャラは、キャラ本来の遺物のまま。
 import { useSyncExternalStore } from 'react'
 import { RELICS } from './battle/engine.js'
+import { rotationAllowed, DEFAULT_FORMAT, FORMATS, ROTATIONS } from './battle/rotations.js'
 
 const KEY = 'feel.relics'
 const listeners = new Set()
@@ -45,7 +46,19 @@ export const withRelic = (def) => {
   return r ? { ...rest, relic: r } : rest
 }
 // 対人戦のサーバーへ送る、編成のキャラに持たせた遺物 { キャラid: 遺物の名前 | '' }(選んでいないキャラは含めない)
-export const relicPayload = (defs) => { const m = load(), o = {}; for (const d of defs || []) if (d.id in m) o[d.id] = m[d.id]; return o }
+// 対人戦に送る遺物。その形式で使えない遺物は、送らずに「遺物なし」にする(サーバー側でも同じ検査をする)
+export const relicPayload = (defs, format = DEFAULT_FORMAT) => {
+  const m = load(), o = {}
+  for (const d of defs || []) {
+    if (!(d.id in m)) continue
+    const n = m[d.id]
+    o[d.id] = n && !rotationAllowed(format, RELICS[n]?.rotation) ? '' : n
+  }
+  return o
+}
+// 遺物が、どの形式で使えるか(人事画面の表示用)。例: 'ベーシック / ローテーション・アンリミテッド'
+export const relicFormats = (name) => Object.keys(FORMATS).filter((f) => rotationAllowed(f, RELICS[name]?.rotation)).map((f) => FORMATS[f].name)
+export const relicRotationName = (name) => { const r = RELICS[name]?.rotation; return ROTATIONS[r] ?? String(r ?? '') }
 export function useRelicChoices() {
   return useSyncExternalStore((f) => { listeners.add(f); return () => listeners.delete(f) }, () => load())
 }
