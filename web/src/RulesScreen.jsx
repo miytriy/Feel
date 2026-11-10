@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react'
-import { useIsDesktop, C, FONT } from './ui.js'
+import { useEffect, useRef, useState } from 'react'
+import { useIsDesktop, C, FONT, DISPLAY, alpha } from './ui.js'
 import { ScreenHeader } from './chrome.jsx'
 import EffectGallery from './EffectGallery.jsx'
 
@@ -534,9 +534,65 @@ const KW1 = [
 ]
 
 
+// ---- 見た目(読んでいて楽しい版)。動かすのは transform / opacity だけ(web/EFFECTS.md)----
+const HUES = ['#e8c800', '#ff7a45', '#4d9dff', '#37d2a0', '#b07cff', '#ff5c8a', '#4fd6ee', '#8fd14f', '#f2a93b'] // 章ごとの色
+const chapterInfo = (title) => { const m = String(title).match(/^第(\d+)章[\s　]*(.*)$/); return m ? { n: m[1], name: m[2] } : { n: '', name: title } }
+
+const CSS = `
+.rl { position: relative; min-height: 100vh; background: ${C.paper}; color: ${C.ink}; font-family: ${FONT}; overflow-x: hidden }
+.rl-progress { position: fixed; left: 0; right: 0; top: 0; height: 3px; z-index: 40; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, #e8c800, #ff7a45, #b07cff, #4fd6ee); will-change: transform }
+.rl-hero { position: relative; overflow: hidden; border-radius: 16px; padding: 26px 20px 22px; margin-bottom: 16px; color: #fff4c8; background: radial-gradient(ellipse at 80% 20%, #4a3d1a 0%, #1a1712 55%, #0c0b0e 100%); border: 1px solid ${alpha('#e8c800', 35)}; animation: rl-up .5s ease-out backwards }
+.rl-hero h1 { position: relative; margin: 0 0 6px; font-family: ${DISPLAY}; font-size: 30px; letter-spacing: .1em; font-weight: 800 }
+.rl-hero p { position: relative; margin: 0; font-size: 13.5px; line-height: 1.7; color: #e6dcb5 }
+.rl-hero .beam { position: absolute; top: -20%; height: 140%; width: 90px; background: #e8c800; opacity: .08; transform: skewX(-24deg); will-change: transform; animation: rl-beam 8s ease-in-out infinite alternate }
+.rl-hero .beam.b2 { width: 16px; opacity: .22; animation-duration: 6s; animation-delay: -2s }
+.rl-hero .mote { position: absolute; bottom: -8px; width: 4px; height: 4px; border-radius: 50%; background: #ffe58a; opacity: 0; will-change: transform, opacity; animation: rl-rise var(--d, 7s) var(--dl, 0s) linear infinite }
+.rl-hero .mote.b { background: #8fd4ff }
+@keyframes rl-beam { from { transform: skewX(-24deg) translateX(-30px) } to { transform: skewX(-24deg) translateX(50px) } }
+@keyframes rl-rise { 0% { transform: translateY(0) scale(.6); opacity: 0 } 15% { opacity: .9 } 100% { transform: translateY(-190px) translateX(var(--dx, 20px)) scale(1.2); opacity: 0 } }
+@keyframes rl-up { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: none } }
+.rl-toc { background: ${C.card}; border: 1px solid ${C.line}; border-radius: 14px; padding: 12px; margin-bottom: 16px; animation: rl-up .5s .08s ease-out backwards }
+.rl-toc > button { background: none; border: none; font-family: ${FONT}; font-size: 15px; font-weight: 800; color: ${C.ink}; cursor: pointer; padding: 0; width: 100%; text-align: left; display: flex; justify-content: space-between }
+.rl-toc ol { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; grid-template-columns: 1fr }
+.rl-chip { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid ${C.line}; background: ${C.paper}; color: ${C.ink}; font-family: ${FONT}; font-size: 13.5px; text-align: left; cursor: pointer; transition: transform .16s ease-out; animation: rl-up .45s var(--i, 0ms) ease-out backwards }
+.rl-chip:hover { transform: translateY(-2px) }
+.rl-chip:active { transform: scale(.98) }
+.rl-chip .num { flex: 0 0 auto; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; font-family: ${DISPLAY}; font-weight: 800; font-size: 14px; color: #1b1500; background: var(--h) }
+.rl-ch { position: relative; border-radius: 16px; margin-bottom: 18px; background: ${C.card}; border: 1px solid ${C.line}; overflow: hidden; scroll-margin-top: 56px }
+.rl-ch.pre { opacity: 0; transform: translateY(26px) }
+.rl-ch.in { opacity: 1; transform: none; transition: opacity .55s ease-out, transform .55s cubic-bezier(.2, .8, .2, 1) }
+.rl-ch-head { position: relative; display: flex; align-items: center; gap: 14px; padding: 16px 16px 14px; background: linear-gradient(100deg, ${alpha('var(--h)', 30)}, ${alpha('var(--h)', 4)} 70%); border-bottom: 1px solid ${alpha('var(--h)', 40)} }
+.rl-ch-head::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: linear-gradient(90deg, var(--h), transparent); transform-origin: left; transform: scaleX(0); transition: transform .9s .25s cubic-bezier(.2, .8, .2, 1) }
+.rl-ch.in .rl-ch-head::after { transform: scaleX(1) }
+.rl-badge { position: relative; flex: 0 0 auto; width: 52px; height: 52px; display: grid; place-items: center; font-family: ${DISPLAY}; font-weight: 800; font-size: 26px; color: #1b1500; background: linear-gradient(160deg, #fff, var(--h) 55%); clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%) }
+.rl-ch.in .rl-badge { animation: rl-pop .7s .15s cubic-bezier(.2, 1.3, .4, 1) backwards }
+@keyframes rl-pop { from { opacity: 0; transform: scale(.4) rotate(-30deg) } to { opacity: 1; transform: none } }
+.rl-ch-head small { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: .22em; color: var(--h); filter: none }
+.rl-ch-head h2 { margin: 2px 0 0; font-size: 18px; line-height: 1.35 }
+.rl-body { padding: 4px 16px 16px }
+.rl-sec { display: flex; align-items: center; gap: 8px; margin: 20px 0 6px; font-size: 15px; font-weight: 800 }
+.rl-sec::before { content: ''; flex: 0 0 auto; width: 10px; height: 10px; background: var(--h); transform: rotate(45deg) }
+.rl-sec::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, ${alpha('var(--h)', 55)}, transparent) }
+.rl-item { margin: 8px 0; font-size: 14px; line-height: 1.85; padding: 6px 10px; border-radius: 8px; border-left: 3px solid transparent; transition: transform .16s ease-out }
+.rl-item:hover { transform: translateX(3px) }
+.rl-item.t { border-left-color: ${alpha('var(--h)', 70)}; background: ${alpha('var(--h)', 7)} }
+.rl-term { display: inline-block; margin-right: 8px; padding: 0 10px; border-radius: 999px; font-weight: 800; font-size: 13px; line-height: 1.7; color: #1b1500; background: var(--h) }
+.rl-kw { display: flex; gap: 10px; padding: 10px; border-radius: 10px; align-items: center; background: ${C.paper}; border: 1px solid ${C.line}; transition: transform .18s ease-out }
+.rl-kw:hover { transform: translateY(-3px) }
+.rl-kw b { color: var(--h) }
+.rl-top { position: fixed; right: 14px; bottom: calc(18px + env(safe-area-inset-bottom)); z-index: 30; width: 46px; height: 46px; border-radius: 50%; border: 2px solid #d8b85a; background: ${C.card}; color: ${C.ink}; font-size: 20px; cursor: pointer; opacity: 0; transform: translateY(14px) scale(.8); pointer-events: none; transition: opacity .25s, transform .25s }
+.rl-top.on { opacity: 1; transform: none; pointer-events: auto }
+.rl-go { position: relative; width: 100%; margin-top: 8px; padding: 16px; border-radius: 14px; border: none; background: ${C.player}; color: ${C.onAccent}; font-family: ${FONT}; font-weight: 800; font-size: 18px; cursor: pointer; overflow: hidden; animation: rl-breathe 2.4s ease-in-out infinite; will-change: transform }
+.rl-go::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 30%; background: linear-gradient(105deg, rgba(255,255,255,0), rgba(255,255,255,.5), rgba(255,255,255,0)); transform: translateX(-200%) skewX(-18deg); animation: rl-sweep 3s 1s ease-in-out infinite }
+@keyframes rl-breathe { 0%, 100% { transform: scale(1) } 50% { transform: scale(1.02) } }
+@keyframes rl-sweep { 0% { transform: translateX(-200%) skewX(-18deg) } 45%, 100% { transform: translateX(500%) skewX(-18deg) } }
+@media (min-width: 900px) { .rl-toc ol { grid-template-columns: 1fr 1fr } .rl-hero h1 { font-size: 38px } .rl-hero { padding: 34px 28px 28px } }
+@media (prefers-reduced-motion: reduce) { .rl *, .rl-top { animation-duration: .01s !important; animation-iteration-count: 1 !important; transition-duration: .01s !important } .rl-ch.pre { opacity: 1; transform: none } }
+`
+
 const Item = ({ term, text }) => (
-  <div style={{ margin: '7px 0', fontSize: 14, lineHeight: 1.8 }}>
-    {term ? <><b>{term}</b>　{text}</> : text}
+  <div className={`rl-item${term ? ' t' : ''}`}>
+    {term ? <><span className="rl-term">{term}</span>{text}</> : text}
   </div>
 )
 
@@ -546,8 +602,8 @@ function KeywordGrid() {
       {KW1.map(([name, text, media]) => {
         const [file, cap] = media ? media.split('|') : []
         return (
-          <div key={name} style={{ display: 'flex', gap: 10, padding: 10, background: C.paper, borderRadius: 8, alignItems: 'center' }}>
-            {file && <video src={M(file)} aria-label={`【${name}】${cap}`} autoPlay loop muted playsInline preload="metadata" width={96} height={96} style={{ flex: '0 0 auto', borderRadius: 6, objectFit: 'cover', background: '#0b0b0e' }} />}
+          <div key={name} className="rl-kw">
+            {file && <video src={M(file)} aria-label={`【${name}】${cap}`} autoPlay loop muted playsInline preload="metadata" width={96} height={96} style={{ flex: '0 0 auto', borderRadius: 8, objectFit: 'cover', background: '#0b0b0e' }} />}
             <div style={{ fontSize: 13, lineHeight: 1.7 }}>
               <b>【{name}】</b>　{text}
               {cap && <div style={{ fontSize: 11, color: C.mute }}>{cap}</div>}
@@ -559,47 +615,86 @@ function KeywordGrid() {
   )
 }
 
+const MOTES = Array.from({ length: 10 }, (_, i) => ({ x: (i * 41 + 9) % 95 + 2, d: 6 + (i * 3) % 5, dl: -((i * 2.3) % 8), dx: ((i * 23) % 50) - 25 }))
+
 export default function RulesScreen({ onExit, first = false }) {
   const desktop = useIsDesktop()
   const refs = useRef({})
+  const barRef = useRef(null)
   const [toc, setToc] = useState(false)
+  const [topOn, setTopOn] = useState(false)
   const jump = (i) => refs.current[i]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  // 読んだ量のバー(transform だけ)と、「上へ」ボタン。スクロールの親は画面全体(window)
+  useEffect(() => {
+    let raf = 0
+    const on = () => {
+      if (raf) return
+      raf = requestAnimationFrame(() => {
+        raf = 0
+        const h = document.documentElement
+        const max = Math.max(1, h.scrollHeight - window.innerHeight)
+        if (barRef.current) barRef.current.style.transform = `scaleX(${Math.min(1, window.scrollY / max)})`
+        setTopOn(window.scrollY > 600)
+      })
+    }
+    on()
+    window.addEventListener('scroll', on, { passive: true })
+    return () => { window.removeEventListener('scroll', on); if (raf) cancelAnimationFrame(raf) }
+  }, [])
+  // 章は、画面に入ったときにふわっと現れる(IntersectionObserver が使えない端末では、最初から見える)
+  useEffect(() => {
+    const els = Object.values(refs.current).filter(Boolean)
+    if (typeof IntersectionObserver === 'undefined') { els.forEach((el) => el.classList.add('in')); return }
+    els.forEach((el) => el.classList.add('pre'))
+    const io = new IntersectionObserver((ents) => ents.forEach((e) => { if (e.isIntersecting) { e.target.classList.remove('pre'); e.target.classList.add('in'); io.unobserve(e.target) } }), { rootMargin: '0px 0px -8% 0px', threshold: 0.04 })
+    els.forEach((el) => io.observe(el))
+    return () => io.disconnect()
+  }, [])
   return (
-    <div style={{ minHeight: '100vh', background: C.paper, color: C.ink, fontFamily: FONT, padding: desktop ? 24 : 12 }}>
+    <div className="rl" style={{ padding: desktop ? 24 : 12 }}>
+      <style>{CSS}</style>
+      <div className="rl-progress" ref={barRef} aria-hidden="true" />
       <div style={{ margin: desktop ? '-24px -24px 16px' : '-12px -12px 12px' }}><ScreenHeader title={first ? 'はじめに' : 'ルール'} onClose={onExit} /></div>
       <div style={{ maxWidth: 860, margin: '0 auto' }}>
-        <p style={{ fontSize: 14, color: C.mute, lineHeight: 1.7, margin: '0 0 10px' }}>
-          公式ルールブックです。{first ? 'まずは第1章〜第5章を読めば遊べます。' : '知りたい章を目次から探してください。'}
-        </p>
-        <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 12, padding: '10px 12px', marginBottom: 14 }}>
-          <button onClick={() => setToc((v) => !v)} style={{ background: 'none', border: 'none', fontFamily: FONT, fontSize: 15, fontWeight: 700, color: C.ink, cursor: 'pointer', padding: 0, width: '100%', textAlign: 'left', display: 'flex', justifyContent: 'space-between' }}>
-            <span>目次</span><span style={{ color: C.mute }}>{toc || desktop ? '▲' : '▼'}</span>
-          </button>
+        <header className="rl-hero">
+          <span className="beam" style={{ right: '6%' }} /><span className="beam b2" style={{ right: '16%' }} />
+          {MOTES.map((m, i) => <span key={i} className={`mote${i % 3 === 2 ? ' b' : ''}`} style={{ left: `${m.x}%`, '--d': `${m.d}s`, '--dl': `${m.dl}s`, '--dx': `${m.dx}px` }} />)}
+          <h1>{first ? 'はじめに' : 'ルールブック'}</h1>
+          <p>{first ? 'まずは第1章〜第5章を読めば遊べます。' : '知りたい章を、目次から探してください。'}<br />動くエフェクトは、第9章でそのまま見られます。</p>
+        </header>
+        <div className="rl-toc">
+          <button onClick={() => setToc((v) => !v)}><span>目次</span><span style={{ color: C.mute }}>{toc || desktop ? '▲' : '▼'}</span></button>
           {(toc || desktop) && (
-            <ol style={{ margin: '8px 0 0', padding: 0, listStyle: 'none', display: 'grid', gridTemplateColumns: desktop ? '1fr 1fr' : '1fr', gap: 2 }}>
-              {CHAPTERS.map(([title], i) => (
-                <li key={title}><button onClick={() => jump(i)} style={{ background: 'none', border: 'none', fontFamily: FONT, fontSize: 14, color: C.player, cursor: 'pointer', padding: '5px 0', textAlign: 'left' }}>{title}</button></li>
-              ))}
+            <ol>
+              {CHAPTERS.map(([title], i) => {
+                const { n, name } = chapterInfo(title)
+                return <li key={title}><button className="rl-chip" style={{ '--h': HUES[i % HUES.length], '--i': `${i * 40}ms` }} onClick={() => jump(i)}><span className="num">{n}</span>{name}</button></li>
+              })}
             </ol>
           )}
         </div>
-        {CHAPTERS.map(([title, secs], i) => (
-          <section key={title} ref={(n) => { refs.current[i] = n }} style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 12, padding: '4px 14px 14px', marginBottom: 12, scrollMarginTop: 56 }}>
-            <h2 style={{ fontSize: 17, margin: '12px 0 6px', paddingBottom: 6, borderBottom: `1px solid ${C.line}` }}>{title}</h2>
-            {secs.map(([st, items], k) => (
-              <div key={k}>
-                {st && <h3 style={{ margin: '16px 0 4px', fontSize: 15, borderLeft: `4px solid ${C.player}`, paddingLeft: 8 }}>{st}</h3>}
-                {items === 'KW1' ? <KeywordGrid /> : items === 'FX' ? <EffectGallery /> : items.map(([t, x], j) => <Item key={j} term={t} text={x} />)}
+        {CHAPTERS.map(([title, secs], i) => {
+          const { n, name } = chapterInfo(title)
+          return (
+            <section key={title} ref={(el) => { refs.current[i] = el }} className="rl-ch" style={{ '--h': HUES[i % HUES.length] }}>
+              <div className="rl-ch-head">
+                <div className="rl-badge">{n}</div>
+                <div><small>CHAPTER {n}</small><h2>{name}</h2></div>
               </div>
-            ))}
-          </section>
-        ))}
-        {first && (
-          <button onClick={onExit} style={{ width: '100%', marginTop: 8, padding: '16px', borderRadius: 12, border: 'none', background: C.player, color: C.onAccent, fontFamily: FONT, fontWeight: 700, fontSize: 18, cursor: 'pointer' }}>
-            あそびはじめる
-          </button>
-        )}
+              <div className="rl-body">
+                {secs.map(([st, items], k) => (
+                  <div key={k}>
+                    {st && <h3 className="rl-sec">{st}</h3>}
+                    {items === 'KW1' ? <KeywordGrid /> : items === 'FX' ? <EffectGallery /> : items.map(([t, x], j) => <Item key={j} term={t} text={x} />)}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )
+        })}
+        {first && <button className="rl-go" onClick={onExit}>あそびはじめる</button>}
       </div>
+      <button type="button" className={`rl-top${topOn ? ' on' : ''}`} aria-label="いちばん上へ" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>↑</button>
     </div>
   )
 }
