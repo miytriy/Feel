@@ -594,21 +594,30 @@ function SelInfoPanel({ uid, big = false, children }) {
   )
 }
 
-// 左側のログ(最大 SIDE_LOG_MAX 個。超えると古いものから消える)。表示: 「名前 / 内容」
+// 左側のログ(最大 SIDE_LOG_MAX 個。超えると古いものから消える。出てから SIDE_LOG_LIFE_MS 経つとフェードアウトして消える)。表示: 「名前 / 内容」
 const SIDE_LOG_MAX = 3
-function SideLog({ items, big = false }) {
+const SIDE_LOG_LIFE_MS = 3000
+const SIDE_LOG_FADE_MS = 400
+function SideLogItem({ it, big, onGone }) {
+  const [fading, setFading] = useState(false)
+  useEffect(() => {
+    const t1 = setTimeout(() => setFading(true), SIDE_LOG_LIFE_MS)
+    const t2 = setTimeout(() => onGone(it.k), SIDE_LOG_LIFE_MS + SIDE_LOG_FADE_MS)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [it.k]) // eslint-disable-line react-hooks/exhaustive-deps
+  const col = it.team ? TEAM_COLOR[it.team] : C.active
+  return (
+    <div style={{ animation: fading ? `feel-log-out ${SIDE_LOG_FADE_MS}ms ease-in forwards` : 'feel-log-in 0.22s ease-out both', borderRadius: '0 8px 8px 0', overflow: 'hidden', background: alpha(C.card, 94), border: `1px solid ${alpha(col, 60)}`, borderLeft: 'none', boxShadow: `0 3px 10px ${alpha('#000000', 30)}`, fontSize: big ? 13 : 12, lineHeight: 1.5 }}>
+      <div style={{ padding: big ? '5px 12px' : '4px 10px', fontWeight: 800, color: C.ink, background: `linear-gradient(90deg, ${alpha(col, 38)}, ${alpha(col, 8)})`, overflowWrap: 'anywhere' }}>{it.name}</div>
+      <div style={{ padding: big ? '5px 12px 7px' : '4px 10px 6px', color: C.ink, overflowWrap: 'anywhere' }}>{it.text}</div>
+    </div>
+  )
+}
+function SideLog({ items, big = false, onGone }) {
   if (!items.length) return null
   return (
     <div data-testid="side-log" aria-live="polite" style={{ position: 'fixed', left: 0, top: big ? '58%' : '34%', zIndex: 8, width: big ? 320 : 'min(230px, 56vw)', display: 'flex', flexDirection: 'column', gap: 6, pointerEvents: 'none' }}>
-      {items.map((it) => {
-        const col = it.team ? TEAM_COLOR[it.team] : C.active
-        return (
-          <div key={it.k} style={{ animation: 'feel-log-in 0.22s ease-out both', borderRadius: '0 8px 8px 0', overflow: 'hidden', background: alpha(C.card, 94), border: `1px solid ${alpha(col, 60)}`, borderLeft: 'none', boxShadow: `0 3px 10px ${alpha('#000000', 30)}`, fontSize: big ? 13 : 12, lineHeight: 1.5 }}>
-            <div style={{ padding: big ? '5px 12px' : '4px 10px', fontWeight: 800, color: C.ink, background: `linear-gradient(90deg, ${alpha(col, 38)}, ${alpha(col, 8)})`, overflowWrap: 'anywhere' }}>{it.name}</div>
-            <div style={{ padding: big ? '5px 12px 7px' : '4px 10px 6px', color: C.ink, overflowWrap: 'anywhere' }}>{it.text}</div>
-          </div>
-        )
-      })}
+      {items.map((it) => <SideLogItem key={it.k} it={it} big={big} onGone={onGone} />)}
     </div>
   )
 }
@@ -970,6 +979,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   const [feed, setFeed] = useState([]) // 「いま起きたこと」の履歴(再生に合わせて増える)
   const [sideLog, setSideLog] = useState([]) // 左側のログ({ k, name, text, team })。最大 SIDE_LOG_MAX 個
   const sideSeq = useRef(0)
+  const dropSideLog = (k) => setSideLog((l) => l.filter((x) => x.k !== k))
   const [showDesc, setShowDesc] = useState(() => { try { return localStorage.getItem('feel-show-desc') === '1' } catch { return false } }) // 操作パネルの説明文を出すか
   const toggleDesc = () => { const v = !showDesc; setShowDesc(v); try { localStorage.setItem('feel-show-desc', v ? '1' : '0') } catch { /* 保存できなくても動く */ } }
   useSummonSlide() // 召喚物が消えたとき、隣のカードが一瞬で詰まらず、すっと滑って詰まる
@@ -1632,7 +1642,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   if (desktop) {
     return (
       <div onClick={dismissInfo} style={{ height: '100vh', display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 24px 16px', background: C.paper, color: C.ink, fontFamily: FONT, boxSizing: 'border-box', overflow: 'hidden' }}>
-        <SideLog items={sideLog} big />
+        <SideLog items={sideLog} big onGone={dropSideLog} />
         {hud}
         {overlays}
         {speedBar}
@@ -1663,7 +1673,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   return (
     <div style={wrap} onClick={dismissInfo}>
       {selInfo}
-      <SideLog items={sideLog} />
+      <SideLog items={sideLog} onGone={dropSideLog} />
       <div style={{ position: 'sticky', top: 0, zIndex: 9, background: C.paper, margin: '-12px -12px 0', padding: '8px 12px 2px', borderBottom: `1px solid ${C.line}` }}>
         {hud}
         {overlays}
