@@ -3,6 +3,7 @@ import { useIsDesktop, C, FONT, DISPLAY, useRemembered } from './ui.js'
 import { ALL_CHARACTERS } from './battle/characters/index.js'
 import { CLASS_ORDER } from './battle/characters/validate.js'
 import { KEYWORDS, TRIGGER_LABELS, RELICS } from './battle/engine.js'
+import { relicOf, hasRelicChoice, setRelicChoice, useRelicChoices } from './relicStore.js'
 import { RARITY, fold, collectRelated } from './CodexScreen.jsx'
 import { Emblem, hash } from './emblem.jsx'
 import { artOf, useArtStatus } from './charArt.jsx'
@@ -188,6 +189,11 @@ const CSS = `
 .jp-yel .tiles small { display: block; font-size: 18px; color: #c9c9ce; } .jp-yel .tiles b { font-family: ${DISPLAY}; font-size: 36px; }
 
 /* 右端: 縦のタブ */
+.jp-relics { display: flex; flex-wrap: wrap; gap: 10px; padding: 6px 0 10px; }
+.jp-rp { min-height: 0; padding: 12px 20px; font-size: 24px; font-weight: 700; border: 2px solid #3a3a40; border-radius: 10px; background: #2b2b2f; color: #cfcfd4; cursor: pointer; transition: transform .15s ease-out; }
+.jp-rp:hover { transform: translateY(-2px); } .jp-rp:active { transform: scale(.97); }
+.jp-rp.on { background: #fff; color: #111; border-color: ${C.player}; }
+.jp-rp.reset { background: transparent; color: #aaa; border-style: dashed; }
 .jp-tabs { position: absolute; z-index: 12; right: 56px; top: 170px; width: 100px; display: flex; flex-direction: column; gap: 14px; }
 .jp-tab { position: relative; width: 100px; height: 148px; padding: 0; min-height: 0; border: 0; background: #2b2b2f; color: #cfcfd4; cursor: pointer; display: grid; place-items: center; font-size: 46px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: background 0.15s, color 0.15s, transform 0.15s; animation: jp-right 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(0.3s + var(--i) * 60ms); }
 .jp-tab small { position: absolute; left: 0; right: 0; bottom: 8px; font-size: 17px; font-weight: 700; }
@@ -401,7 +407,9 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
   }
   const tabDef = TABS.find((t) => t.k === tab) || TABS[0]
   const dark = tab === 'rl'
-  const relic = c && c.relic ? RELICS[c.relic] : null
+  useRelicChoices() // 遺物を持たせ直したら、画面を更新する
+  const relicName = c ? relicOf(c) : null
+  const relic = relicName ? RELICS[relicName] : null
   const rel = c ? collectRelated(c) : { units: [], spells: [] }
   const relCount = rel.units.length + rel.spells.length
   const vars = c ? { '--rc': rarityColor(c), '--rbg': rarityBg(c), '--tc': tone(c) } : {}
@@ -459,7 +467,7 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
       <div className="big"><small>×</small>{sigN}</div>
       <div className="cap">{c.name}の署名 / SIGNATURE</div>
       <div className="rar"><span>{RARITY[c.rarity]?.label || c.rarity}</span><span className="pp">{'◆'.repeat(PIPS[c.rarity] || 0)}</span></div>
-      <div className="relic">{relic ? <><small>遺物</small><b>{c.relic}</b><div>{relic.desc}</div></> : <><small>遺物</small><b>なし</b></>}</div>
+      <div className="relic">{relic ? <><small>遺物</small><b>{relicName}</b><div>{relic.desc}</div></> : <><small>遺物</small><b>なし</b></>}</div>
       <div className="tiles">
         <div><small>パッシブ</small><b>{(c.passives || []).length}</b></div>
         <div><small>特性</small><b>{(c.traits || []).length + (c.accelerate ? 1 : 0)}</b></div>
@@ -492,13 +500,21 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
   } else if (c && tab === 'tr') {
     pane = (
       <div className={`jp-pane${tabGone ? ' gone' : ''}`}>
-        <div className="jp-ph">遺物ボーナス<em>{c.relic || 'なし'}</em></div>
+        <div className="jp-ph">遺物ボーナス<em>{relicName || 'なし'}</em></div>
         {relic ? (
           <>
             {relic.mods.map((m, i) => <div className="jp-hi" key={i} style={i ? { background: 'transparent', fontSize: 26 } : undefined}>{STAT_LABEL[m.stat] || m.stat}<b>{m.pct != null ? `+${m.pct}%` : `+${m.flat}`}</b></div>)}
             <div className="jp-row"><p>{relic.desc}</p></div>
           </>
         ) : <div className="jp-empty">遺物は持っていません。</div>}
+        <div className="jp-sec">遺物を持たせる</div>
+        <div className="jp-relics" data-testid="relic-picker">
+          {[['', 'なし'], ...Object.keys(RELICS).map((n) => [n, n])].map(([n, label]) => (
+            <button key={label} type="button" data-testid={`relic-${label}`} className={`jp-rp${(relicName || '') === n ? ' on' : ''}`} onClick={() => setRelicChoice(c, n)}>{label}</button>
+          ))}
+          {hasRelicChoice(c) && <button type="button" data-testid="relic-reset" className="jp-rp reset" onClick={() => setRelicChoice(c, null)}>もとにもどす{c.relic ? `(${c.relic})` : '(なし)'}</button>}
+        </div>
+        <div className="jp-row"><p>持たせた遺物は、CPU戦・テスト戦の自分のチームに反映されます。</p></div>
         <div className="jp-sec">特性</div>
         {(c.traits || []).length === 0 && <div className="jp-row"><p>特性はありません。</p></div>}
         {(c.traits || []).map((t) => <AbilityRow key={t.id} head={t.name} tag={`MP${t.cost}`} desc={`${t.desc || ''}${t.repeatable ? ' ※1ターンに複数回使える' : ''}`} />)}

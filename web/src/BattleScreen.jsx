@@ -11,6 +11,7 @@ import { BattleHud, StageIntro, ExitConfirm, ResultBanner } from './BattleHud.js
 import { CommentaryOverlay, collectHistory, addHistory, emptyHistory } from './BattleLog.jsx'
 import { useIsDesktop, C as BASE, alpha, DISPLAY, useRemembered } from './ui.js'
 import { StatIcon } from './icons.jsx'
+import { withRelic } from './relicStore.js'
 import { ME, OPP, setMe, winnerView } from './perspective.js'
 import { VanishFx, VANISH_BASE_MS } from './VanishFx.jsx'
 // 強化のエフェクトで、文字ではなくアイコンで見せるステータス
@@ -1154,7 +1155,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     setSideLog([])
     const cpuTeam = testInit ? testInit.team : buildCpuTeam(ALL_CHARACTERS, cpuChars, Math.random, level, ALL_SPELLS) // Lv.5以上は、シナジーのある編成。テスト戦は、自分で選んだ相手のチーム
     const cpuSpells = testInit ? testInit.spells : level >= SPELL_LEVEL ? buildCpuSpells(ALL_SPELLS, cpuTeam, Math.random, level) : [] // Lv.5以上のCPUは、編成に合う強いスペルを持つ
-    const first = createBattle(team.map((d) => enhanceDef(d)), cpuTeam, { comboMode, pool: ownedPool(cpuChars), spells: { A: spellSet, B: cpuSpells } })
+    const first = createBattle(team.map((d) => enhanceDef(withRelic(d))), cpuTeam, { comboMode, pool: ownedPool(cpuChars), spells: { A: spellSet, B: cpuSpells } })
     statsRef.current = newStats()
     const firstActor = first.units.find((u) => u.uid === first.active)
     if (firstActor) statsRef.current.turns[firstActor.team]++ // 最初のターンも数える
