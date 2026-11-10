@@ -13,6 +13,8 @@ import { useIsDesktop, C as BASE, alpha, DISPLAY, useRemembered } from './ui.js'
 import { StatIcon } from './icons.jsx'
 import { ME, OPP, setMe, winnerView } from './perspective.js'
 import { VanishFx, VANISH_BASE_MS } from './VanishFx.jsx'
+// 強化のエフェクトで、文字ではなくアイコンで見せるステータス
+const BUFF_ICON = new Set(['hp', 'atk', 'def', 'spd', 'mag', 'critRate', 'critDmg', 'dmgResist'])
 const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', margin: '0 2px 0 0' }} />
 
 // 色: 自分=青、相手=赤紫、行動中=琥珀
@@ -487,7 +489,14 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
           </span>
         ) : (
         <span key={tick} style={{ position: 'absolute', left: '50%', top: '30%', zIndex: 5, pointerEvents: 'none', fontWeight: 800, fontSize: fx.crit ? (big ? 26 : 20) : (big ? 22 : 17), color: fx.kind === 'heal' ? '#3ddc97' : fx.kind === 'damage' ? '#ff5a5a' : fx.kind === 'buff' ? '#ffd24a' : fx.kind === 'keyword' ? '#66e0ff' : C.player, textShadow: '0 0 3px #000, 0 0 3px #000, 0 0 3px #000', whiteSpace: 'nowrap', animation: 'feel-float 1.2s ease-out forwards' }}>
-          {fx.text}
+          {fx.kind === 'buff' && fx.buffs ? fx.buffs.map((b, n) => (
+            <span key={n} style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginRight: n < fx.buffs.length - 1 ? 8 : 0 }}>
+              {BUFF_ICON.has(b.stat)
+                ? <StatIcon stat={b.stat} style={{ width: '1.15em', height: '1.15em', filter: 'drop-shadow(0 0 2px #000)' }} />
+                : b.label}
+              {b.val}↑
+            </span>
+          )) : fx.text}
         </span>
         )
       )}
@@ -1384,7 +1393,10 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
       if (fin.length) parts.push({ text: `必殺 ${fin.reduce((a, x) => a + x.amount, 0)}`, dmgType: 'true' })
       return { kind: 'damage', text: parts.map((x) => x.text).join(' '), crit, parts }
     }
-    if (ev.type === 'buff') return { kind: 'buff', text: mine.filter((x) => x.type === 'buff').map((x) => `${x.text}↑`).join(' ') } // 強化(攻撃力+30↑ など)
+    if (ev.type === 'buff') { // 強化: ステータスは文字ではなくアイコンで見せる(アイコンがないステータスだけ、文字のまま)
+      const bs = mine.filter((x) => x.type === 'buff')
+      return { kind: 'buff', text: bs.map((x) => `${x.text}↑`).join(' '), buffs: bs.map((x) => ({ stat: x.stat, label: String(x.text).split(' ')[0], val: String(x.text).split(' ').slice(1).join(' ') })) }
+    }
     if (ev.type === 'keyword') return { kind: 'keyword', text: mine.filter((x) => x.type === 'keyword').map((x) => `【${x.label}】`).join('') + '獲得' } // 能力付与
     if (ev.type === 'evolve') return { kind: 'evolve', text: '' } // 進化: 光の柱・光の輪・舞い上がる光
     if (ev.type === 'destroy') return { kind: 'destroy', text: '', grave: !!ev.grave, lw: !!ev.lw } // 破壊: 砕け散る
