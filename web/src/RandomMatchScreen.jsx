@@ -308,6 +308,9 @@ export default function RandomMatchScreen({ team, spells, onChangeTeam, onRoom, 
   const cancel = () => { if (clientRef.current) { clientRef.current.cancelQueue(); clientRef.current.close(); clientRef.current = null } setPhase('menu') }
   const leaveBattle = () => { setOnline(null); setPhase('menu'); load() } // 対戦のあと: 最新の BP を読み直す
 
+  // フックは、早期リターン(下の対戦中の return)より前に呼ぶ。後ろに置くと、対戦が始まった描画でフックの数が減って、React エラー #300 になる
+  const bpShown = useCountUp(rank ? rank.bp : null)
+
   if (phase === 'battle' && online) {
     return (
       <>
@@ -317,7 +320,6 @@ export default function RandomMatchScreen({ team, spells, onChangeTeam, onRoom, 
     )
   }
 
-  const bpShown = useCountUp(rank ? rank.bp : null)
   const ri = rank ? rankOf(rank.bp) : null
   const tc = ri ? ri.tier.color : '#c98a52'
   const busy = phase !== 'menu'
