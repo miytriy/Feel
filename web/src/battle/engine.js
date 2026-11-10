@@ -466,7 +466,7 @@ function fireCrestsOnHeal(state, team) {
       if (!source) continue
       crest.healUsed = true
       state.log.push(`クレスト【${crest.name}】が働いた`)
-      noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team)
+      noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team, p.log)
       runEffects(state, source, p.effects, {})
     }
   }
@@ -492,11 +492,12 @@ function emit(state, type, data = {}) {
 }
 
 // 直近に発動した能力(画面に説明を出すための記録): kind=種類(ファンファーレ・特性・スペルなど) owner=持ち主の名前 name=能力名 desc=説明
-function noteAbility(state, kind, owner, name, desc, team) {
+// log=左のログに出す文(なければ desc)
+function noteAbility(state, kind, owner, name, desc, team, log) {
   state.abilitySeq += 1
   state.lastAbility = { seq: state.abilitySeq, kind, owner, name: name || '', desc: desc || '', team: team ?? null }
   state.means = name || kind
-  emit(state, 'ability', { kind, owner, name: name || '', desc: desc || '', team: team ?? null })
+  emit(state, 'ability', { kind, owner, name: name || '', desc: desc || '', log: log || '', team: team ?? null })
 }
 
 // ---------- 効果の実行 ----------
@@ -1105,7 +1106,7 @@ function fire(state, trigger, unit, ctx = {}, from = 0) {
     if (p.enterName && ctx.other.name !== p.enterName) continue // 指定の名前のキャラ(トークンなど)が出たときだけ
     if (p.deathKeyword && !(ctx.other && hasKw(ctx.other, p.deathKeyword))) continue // 指定のキーワード(守護など)を持つキャラが倒れたときだけ(allyDeath用)
     state.log.push(`${unit.name}の【${p.name || TRIGGER_LABELS[trigger]}】`)
-    noteAbility(state, TRIGGER_LABELS[trigger] ?? trigger, unit.name, p.name && p.name !== TRIGGER_LABELS[trigger] ? p.name : '', p.desc, unit.team)
+    noteAbility(state, TRIGGER_LABELS[trigger] ?? trigger, unit.name, p.name && p.name !== TRIGGER_LABELS[trigger] ? p.name : '', p.desc, unit.team, p.log)
     runEffects(state, unit, p.effects, { ...ctx, trigger, nextPassive: i + 1 })
     if (state.pending) return // 選ぶのを待つ。続きは、選ばれたあとに行う
   }
@@ -1120,7 +1121,7 @@ function fireCrests(state, team, trigger, subject, opts) {
       const source = trigger === 'allyTurnStart' ? subject : crestSource(state, crest)
       if (!source || !checkCond(state, source, p.condition)) continue
       state.log.push(`クレスト【${crest.name}】が働いた`)
-      noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team)
+      noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team, p.log)
       runEffects(state, source, p.effects, { opts })
     }
   }
@@ -1140,7 +1141,7 @@ function tickCrest(state, crest, opts) {
       const src = crestSource(state, crest)
       if (!src) continue
       state.log.push(`クレスト【${crest.name}】の【ラストワード】`)
-      noteAbility(state, 'クレスト・ラストワード', crest.name, p.name, p.desc ?? crest.desc, crest.team)
+      noteAbility(state, 'クレスト・ラストワード', crest.name, p.name, p.desc ?? crest.desc, crest.team, p.log)
       runEffects(state, src, p.effects, { opts, crest })
     }
   }
@@ -1160,7 +1161,7 @@ function resolveDeaths(state, opts) {
         u.buffs = []; u.armor = 0; u.barrier = 0; u.stealth = false
         state.log.push(`${u.name}は消滅した`)
         emit(state, 'vanish', { target: u.uid })
-        noteAbility(state, TRIGGER_LABELS.onLeave, u.name, leave.name && leave.name !== TRIGGER_LABELS.onLeave ? leave.name : '', leave.desc, u.team)
+        noteAbility(state, TRIGGER_LABELS.onLeave, u.name, leave.name && leave.name !== TRIGGER_LABELS.onLeave ? leave.name : '', leave.desc, u.team, leave.log)
         continue
       }
       u.deathHandled = true
@@ -1333,7 +1334,7 @@ function beginTurn(state, unit, opts) {
     for (const p of crest.passives) {
       if (p.trigger !== 'turnStart' || !checkCond(state, unit, p.condition)) continue
       state.log.push(`クレスト【${crest.name}】が働いた`)
-      noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team)
+      noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team, p.log)
       runEffects(state, unit, p.effects, { opts })
     }
   }
@@ -1354,7 +1355,7 @@ function endTurn(state, actor) {
       for (const p of crest.passives) {
         if (p.trigger !== 'turnEnd' || !checkCond(state, actor, p.condition)) continue
         state.log.push(`クレスト【${crest.name}】が働いた`)
-        noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team)
+        noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team, p.log)
         runEffects(state, actor, p.effects, {})
       }
     }
@@ -1627,7 +1628,7 @@ function doTrait(state, actor, action, opts) {
   if (trait.cooldown) trait.wait = trait.cooldown // 使ったあと、自分のターンが cooldown 回まわってくるまで使えない
   recalc(state)
   state.log.push(`${actor.name}の特性【${trait.name}】(MP${trait.cost})`)
-  noteAbility(state, '特性', actor.name, trait.name, trait.desc, actor.team)
+  noteAbility(state, '特性', actor.name, trait.name, trait.desc, actor.team, trait.log)
   runEffects(state, actor, trait.effects, { opts, chosen: action.target })
   // アミュレットの【アクト】をしたとき: 同じ側の場のキャラの【味方がアミュレットをアクトしたとき】が働く
   if (actor.isAmulet) for (const a of state.units.filter((x) => x.alive && x.team === actor.team && !x.isAmulet && x.field === 'main')) fire(state, 'allyAmuletAct', a, { other: actor, opts })

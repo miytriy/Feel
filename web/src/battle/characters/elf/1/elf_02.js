@@ -5,6 +5,7 @@ export default {
   passives: [{
     name: 'ファンファーレ【コンボ_3】', trigger: 'fanfare', condition: { combo: 3 },
     desc: 'コンボ3以上のとき、自分の場すべて(召喚物も含む)は攻撃力・HP+100%。',
+    log: '【コンボ_3】自分の場すべては攻撃力・HP+100%。', // 左のログに出す文
     effects: [
       { type: 'buff', stat: 'atk', pct: 100, target: 'allyField' },
       { type: 'maxHp', pct: 100, target: 'allyField' },
