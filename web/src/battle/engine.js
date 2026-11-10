@@ -999,7 +999,8 @@ function runEffects(state, source, effects, ctx = {}) {
         case 'loseHp': { // 現在体力を直接減らす(ダメージではないので、防御・アーマー・バリアは関係なく、墓場も増えない)
           if (t.isAmulet || !t.alive) break
           const before = t.hp
-          t.hp = Math.max(0, t.hp - (e.amount || 0))
+          // to を書くと「現在体力が to になる」(いまの体力が to 以下なら、変わらない = 回復はしない)。amount を書くと、その分だけ減る
+          t.hp = e.to != null ? Math.min(t.hp, Math.max(0, e.to)) : Math.max(0, t.hp - (e.amount || 0))
           state.log.push(`${t.name}の現在体力が${Math.round(before - t.hp)}減った`)
           if (t.hp <= 0) { t.alive = false; t.killedBy = source.uid }
           break
