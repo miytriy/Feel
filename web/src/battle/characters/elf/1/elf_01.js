@@ -4,6 +4,6 @@ export default {
   id: 'elf_01', name: '純粋なるウォーターフェアリー', class: 'エルフ', rarity: 'silver',
   stats: { hp: 102, atk: 100, def: 90, spd: 100 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
-  passives: [{ name: 'ラストワード', trigger: 'lastWord', desc: '「フェアリー」1体を召喚する。',
+  passives: [{ name: 'ラストワード', trigger: 'lastWord', desc: '「フェアリー」1体を召喚する。', log: '『フェアリー』1体を召喚する。',
     effects: [{ type: 'summon', count: 1, unit: fairy }] }],
 }
