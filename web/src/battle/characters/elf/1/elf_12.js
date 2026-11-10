@@ -7,6 +7,7 @@ export default {
   passives: [{
     name: 'ファンファーレ', trigger: 'fanfare',
     desc: '自分の場に「フェアリー」を1体召喚する。自分以外の味方1体を最大HP10×X%ヒール。Xは現在の召喚物の数。',
+    log: '自分の場に『フェアリー』1体を召喚する。自分以外の味方1体を最大HPX%分ヒール。',
     effects: [
       { type: 'summon', count: 1, unit: fairy },
       { type: 'heal', pctPerSummon: 10, target: 'otherAllyOne', choose: true },
