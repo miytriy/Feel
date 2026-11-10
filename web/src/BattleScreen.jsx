@@ -594,7 +594,7 @@ function SelInfoPanel({ uid, big = false, children }) {
   )
 }
 
-// 左側のログ(最大 SIDE_LOG_MAX 個。超えると古いものから消える。出てから SIDE_LOG_LIFE_MS 経つとフェードアウトして消える)。表示: 「名前 / 内容」
+// 左側のログ(下から順に積む: 最初のログが一番下、新しいものはその上。最大 SIDE_LOG_MAX 個。超えると古いものから消える。出てから SIDE_LOG_LIFE_MS 経つとフェードアウトして消える)。表示: 「名前 / 内容」
 const SIDE_LOG_MAX = 3
 const SIDE_LOG_LIFE_MS = 3000
 const SIDE_LOG_FADE_MS = 400
@@ -616,8 +616,8 @@ function SideLogItem({ it, big, onGone }) {
 function SideLog({ items, big = false, onGone }) {
   if (!items.length) return null
   return (
-    <div data-testid="side-log" aria-live="polite" style={{ position: 'fixed', left: 0, top: big ? '58%' : '34%', zIndex: 8, width: big ? 320 : 'min(230px, 56vw)', display: 'flex', flexDirection: 'column', gap: 6, pointerEvents: 'none' }}>
-      {items.map((it) => <SideLogItem key={it.k} it={it} big={big} onGone={onGone} />)}
+    <div data-testid="side-log" aria-live="polite" style={{ position: 'fixed', left: 0, bottom: big ? '38%' : '30%', zIndex: 8, width: big ? 320 : 'min(230px, 56vw)', display: 'flex', flexDirection: 'column-reverse', gap: 6, pointerEvents: 'none' }}>
+      {items.map((it) => <SideLogItem key={it.k} it={it} big={big} onGone={onGone} />)} {/* column-reverse なので、先のログほど下に並ぶ */}
     </div>
   )
 }
