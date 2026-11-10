@@ -1068,7 +1068,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     const logs = []
     for (let k = play.i; k <= groupEnd(play.events, play.i); k++) {
       const e = play.events[k]
-      if (e.type === 'ability') logs.push({ k: `sl${sideSeq.current++}`, name: e.owner, text: e.log || e.desc || `【${e.kind}】${e.name ?? ''}`, team: e.team }) // ログの内容は、これから決める(いまは能力の発動だけ)
+      if (e.type === 'ability' && e.kind !== '進化') logs.push({ k: `sl${sideSeq.current++}`, name: e.owner, text: e.log || e.desc || `【${e.kind}】${e.name ?? ''}`, team: e.team }) // ログの内容は、これから決める(いまは能力の発動だけ)
     }
     if (logs.length) setSideLog((l) => [...l, ...logs].slice(-SIDE_LOG_MAX))
     if (lines.length) setFeed((f) => [...f, ...lines.map((line, n) => ({ k: `${Date.now()}-${f.length}-${play.i}-${n}`, ...line }))].slice(-8))
