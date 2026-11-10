@@ -991,6 +991,10 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   const cpuTurn = !online && !!actor && actor.team === 'B' && !state.winner
   const playerTurn = !!actor && actor.team === ME && !state.winner && !playing && !(online && waitingSend)
   const legal = playerTurn ? legalActions(state) : []
+  const legalTargetKey = legal.map((a) => a.target).filter(Boolean).join(',')
+  useEffect(() => { // 自分の番で、選んでいた対象が倒れた・選べなくなったときだけ、選択を消す
+    if (playerTurn && selected && !legal.some((a) => a.target === selected)) setSelected(null)
+  }, [playerTurn, legalTargetKey]) // eslint-disable-line react-hooks/exhaustive-deps
   const skillTargets = legal.filter((a) => a.type === 'skill').map((a) => a.target)
   const traitActions = (id) => legal.filter((a) => a.type === 'trait' && a.trait === id)
   const spellActs = legal.filter((a) => a.type === 'spell')
@@ -1127,6 +1131,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     setSelected(null)
     setMode(null)
   }
+  // 行動のあとは、選んでいた対象(相手など)をそのまま残す。ターンをまたいでも保持し、自分の番で選べなくなっていたら消す(下の useEffect)
   // 所持キャラクター(「所持キャラから召喚する」能力の候補)。いまはガチャの所持データとはつないでいないので、実装済みの本実装キャラ全員を所持とみなす
   const ownedPool = (cpuMode) => {
     const real = ALL_CHARACTERS.filter((c) => !isTestChar(c))
@@ -1177,7 +1182,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const act = (action) => {
-    reset()
+    setMode(null) // 対象の選択(selected)は残す
     if (online) { if (waitingSend) return; setWaitingSend(true); online.client.action(action); return }
     commit(step(state, action))
   }
