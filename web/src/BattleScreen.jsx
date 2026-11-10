@@ -1255,6 +1255,9 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     if (playerTurn && selectableSet.includes(u.uid)) {
       setSelected(u.uid)
       setInspect(u.uid)
+    } else if (u.team !== ME && u.alive && !choosing) {
+      setSelected(u.uid) // 相手の番・再生中・スキルを使えない番でも、相手を選んでおける(選んだままターンをまたぐ)
+      setInspect(u.uid)
     } else {
       setInspect(inspect === u.uid ? null : u.uid)
     }
@@ -1442,7 +1445,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   const resultText = state.winner === ME ? '勝利!' : state.winner === 'A' || state.winner === 'B' ? '敗北…' : '引き分け'
   const inspected = inspect && inspect !== selected ? getUnit(state, inspect) : null // 選択中の相手は、操作パネルに詳しく出すので、ここでは重ねて出さない
   const modeTrait = mode ? actor.traits.find((t) => t.id === mode) : null
-  const selectedUnit = playerTurn && selected ? getUnit(state, selected) : null
+  const selectedUnit = selected ? getUnit(state, selected) : null // いつでも(相手の番でも)選んでおける
   let expectedDmg = null
   if (selectedUnit && !mode && !isAccel && skillTargets.includes(selected)) {
     try { expectedDmg = calcDamage(actor, selectedUnit, actor.skill, { expected: true, bySkill: true }).damage } catch { expectedDmg = null }
