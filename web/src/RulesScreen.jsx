@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useIsDesktop, C, FONT, DISPLAY, alpha } from './ui.js'
 import { ScreenHeader } from './chrome.jsx'
 import EffectGallery from './EffectGallery.jsx'
+import { StatIcon } from './icons.jsx'
+import { classElf, classRoyal, classNeutral, classWitch, classNemesis, classBishop, classNightmare, classDragon } from './classIcons.js'
 
 // ルール説明(ユーザー向けの、かんたんな版): 「公式ルールブック(ユーザー用)」の章立て・数字に合わせてある。
 // 戦闘処理の細かい規則は、別の「システム用ルールブック」にある。
@@ -590,9 +592,23 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) { .rl *, .rl-top { animation-duration: .01s !important; animation-iteration-count: 1 !important; transition-duration: .01s !important } .rl-ch.pre { opacity: 1; transform: none } }
 `
 
+// 文章の中の、クラス名とステータス名(体力・攻撃力など)に、アイコンをつける
+const CLASS_ICON = { 'エルフ': classElf, 'ロイヤル': classRoyal, 'ニュートラル': classNeutral, 'ウィッチ': classWitch, 'ネメシス': classNemesis, 'ビショップ': classBishop, 'ナイトメア': classNightmare, 'ドラゴン': classDragon }
+const STAT_KEY = { '体力': 'hp', '攻撃力': 'atk', '防御力': 'def', '速度': 'spd', '魔力': 'mag', 'クリティカル率': 'critRate', 'クリティカルレート': 'critRate', 'ダメージ耐性': 'dmgResist', 'クリティカルダメージ': 'critDmg' }
+const ICON_RE = new RegExp(`(${[...Object.keys(CLASS_ICON), ...Object.keys(STAT_KEY)].sort((a, b) => b.length - a.length).join('|')})`)
+function Rich({ children, big = false }) {
+  if (typeof children !== 'string') return children
+  const sz = big ? '1.5em' : '1.15em'
+  return children.split(ICON_RE).map((part, i) => {
+    if (CLASS_ICON[part]) return <span key={i} style={{ whiteSpace: 'nowrap' }}><img src={CLASS_ICON[part]} alt="" draggable={false} style={{ height: sz, width: sz, objectFit: 'contain', verticalAlign: '-0.28em', marginRight: 3 }} />{part}</span>
+    if (STAT_KEY[part]) return <span key={i} style={{ whiteSpace: 'nowrap' }}><StatIcon stat={STAT_KEY[part]} style={{ width: '1.05em', height: '1.05em', verticalAlign: '-0.18em', marginRight: 2 }} />{part}</span>
+    return part
+  })
+}
+
 const Item = ({ term, text }) => (
   <div className={`rl-item${term ? ' t' : ''}`}>
-    {term ? <><span className="rl-term">{term}</span>{text}</> : text}
+    {term ? <><span className="rl-term"><Rich big>{term}</Rich></span><Rich>{text}</Rich></> : <Rich>{text}</Rich>}
   </div>
 )
 

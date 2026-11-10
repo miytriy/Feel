@@ -1380,8 +1380,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
       const fin = dmgs.filter((x) => x.means === '必殺')
       const crit = main.some((x) => x.crit)
       const parts = []
-      if (main.length) parts.push({ text: `-${main.reduce((a, x) => a + x.amount, 0)}${crit ? '!!' : ''}`, dmgType: main[0].dmgType || 'physical' })
-      if (fin.length) parts.push({ text: `必殺 -${fin.reduce((a, x) => a + x.amount, 0)}`, dmgType: 'true' })
+      if (main.length) parts.push({ text: `${main.reduce((a, x) => a + x.amount, 0)}${crit ? '!!' : ''}`, dmgType: main[0].dmgType || 'physical' })
+      if (fin.length) parts.push({ text: `必殺 ${fin.reduce((a, x) => a + x.amount, 0)}`, dmgType: 'true' })
       return { kind: 'damage', text: parts.map((x) => x.text).join(' '), crit, parts }
     }
     if (ev.type === 'buff') return { kind: 'buff', text: mine.filter((x) => x.type === 'buff').map((x) => `${x.text}↑`).join(' ') } // 強化(攻撃力+30↑ など)
