@@ -594,11 +594,11 @@ function SelInfoPanel({ uid, big = false, children }) {
   )
 }
 
-// 左側のログ(下から順に積む: 最初のログが一番下、新しいものはその上。最大 SIDE_LOG_MAX 個。超えると古いものから消える。出てから SIDE_LOG_LIFE_MS 経つとフェードアウトして消える)。表示: 「名前 / 内容」
+// 左側のログ(最大 SIDE_LOG_MAX 個。超えると古いものから消える。出てから SIDE_LOG_LIFE_MS 経つとフェードアウトして消える)。表示: 「名前 / 内容」
 const SIDE_LOG_MAX = 3
 const SIDE_LOG_LIFE_MS = 3000
 const SIDE_LOG_FADE_MS = 400
-function SideLogItem({ it, big, onGone }) {
+function SideLogItem({ it, big, onGone, setRef }) {
   const [fading, setFading] = useState(false)
   useEffect(() => {
     const t1 = setTimeout(() => setFading(true), SIDE_LOG_LIFE_MS)
@@ -607,17 +607,39 @@ function SideLogItem({ it, big, onGone }) {
   }, [it.k]) // eslint-disable-line react-hooks/exhaustive-deps
   const col = it.team ? TEAM_COLOR[it.team] : C.active
   return (
-    <div style={{ animation: fading ? `feel-log-out ${SIDE_LOG_FADE_MS}ms ease-in forwards` : 'feel-log-in 0.22s ease-out both', borderRadius: '0 8px 8px 0', overflow: 'hidden', background: alpha(C.card, 94), border: `1px solid ${alpha(col, 60)}`, borderLeft: 'none', boxShadow: `0 3px 10px ${alpha('#000000', 30)}`, fontSize: big ? 13 : 12, lineHeight: 1.5 }}>
-      <div style={{ padding: big ? '5px 12px' : '4px 10px', fontWeight: 800, color: C.ink, background: `linear-gradient(90deg, ${alpha(col, 38)}, ${alpha(col, 8)})`, overflowWrap: 'anywhere' }}>{it.name}</div>
-      <div style={{ padding: big ? '5px 12px 7px' : '4px 10px 6px', color: C.ink, overflowWrap: 'anywhere' }}>{it.text}</div>
+    <div ref={(el) => setRef(it.k, el)} style={{ willChange: 'transform, opacity' }}>
+      <div style={{ animation: fading ? `feel-log-out ${SIDE_LOG_FADE_MS}ms ease-in forwards` : 'feel-log-in 0.22s ease-out both', borderRadius: '0 8px 8px 0', overflow: 'hidden', background: alpha(C.card, 94), border: `1px solid ${alpha(col, 60)}`, borderLeft: 'none', boxShadow: `0 3px 10px ${alpha('#000000', 30)}`, fontSize: big ? 13 : 12, lineHeight: 1.5 }}>
+        <div style={{ padding: big ? '5px 12px' : '4px 10px', fontWeight: 800, color: C.ink, background: `linear-gradient(90deg, ${alpha(col, 38)}, ${alpha(col, 8)})`, overflowWrap: 'anywhere' }}>{it.name}</div>
+        <div style={{ padding: big ? '5px 12px 7px' : '4px 10px 6px', color: C.ink, overflowWrap: 'anywhere' }}>{it.text}</div>
+      </div>
     </div>
   )
 }
+// 常に一番新しいログが一番下。新しいログが出ると、古いログは下から上へ滑って移動する(位置は下端を基準に固定。transform だけで動かす)
 function SideLog({ items, big = false, onGone }) {
+  const els = useRef(new Map())
+  const tops = useRef(new Map())
+  const setRef = (k, el) => { if (el) els.current.set(k, el); else els.current.delete(k) }
+  useLayoutEffect(() => {
+    const next = new Map()
+    for (const [k, el] of els.current) {
+      const top = el.getBoundingClientRect().top
+      next.set(k, top)
+      const prev = tops.current.get(k)
+      if (prev != null && Math.abs(prev - top) > 0.5) {
+        el.style.transition = 'none'
+        el.style.transform = `translateY(${prev - top}px)`
+        el.getBoundingClientRect() // 反映してから、元の位置へ滑らせる
+        el.style.transition = 'transform 0.25s ease-out'
+        el.style.transform = 'translateY(0)'
+      }
+    }
+    tops.current = next
+  }, [items])
   if (!items.length) return null
   return (
-    <div data-testid="side-log" aria-live="polite" style={{ position: 'fixed', left: 0, bottom: big ? '38%' : '30%', zIndex: 8, width: big ? 320 : 'min(230px, 56vw)', display: 'flex', flexDirection: 'column-reverse', gap: 6, pointerEvents: 'none' }}>
-      {items.map((it) => <SideLogItem key={it.k} it={it} big={big} onGone={onGone} />)} {/* column-reverse なので、先のログほど下に並ぶ */}
+    <div data-testid="side-log" aria-live="polite" style={{ position: 'fixed', left: 0, bottom: big ? '38%' : '30%', zIndex: 8, width: big ? 320 : 'min(230px, 56vw)', display: 'flex', flexDirection: 'column', gap: 6, pointerEvents: 'none' }}>
+      {items.map((it) => <SideLogItem key={it.k} it={it} big={big} onGone={onGone} setRef={setRef} />)}
     </div>
   )
 }
