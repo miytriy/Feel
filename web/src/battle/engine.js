@@ -887,6 +887,17 @@ function runEffects(state, source, effects, ctx = {}) {
       state.graveyard[source.team] = next
       continue
     }
+    if (e.type === 'summon' && e.fromOwned && e.fromField) { // 自分の場のキャラクター(召喚物・アミュレットは除く)から、速度が コンボ数×10以下(最大10コンボ)のランダム1体と同名を召喚する
+      const x = Math.min(e.maxCombo ?? 10, comboOf(state, source))
+      const spd = x * (e.speedPerCombo ?? 10)
+      const cands = state.units.filter((u) => u.alive && u.team === source.team && u.field === 'main' && !u.isAmulet && u.charDef && u.spd <= spd)
+      if (!cands.length) { state.log.push(`コンボ${x}(速度${spd}以下)の場のキャラがいないので、召喚はなし`); continue }
+      const rng = ctx.opts?.rng || Math.random
+      const pick = cands[Math.floor(rng() * cands.length)]
+      state.log.push(`コンボ${x}: 速度${spd}以下の場のキャラから${pick.name}が選ばれた`)
+      summon(state, source, pick.charDef)
+      continue
+    }
     if (e.type === 'summon' && e.fromOwned) { // 所持キャラクターから、速度が コンボ数×10(最大10コンボ)のキャラをランダムに1体召喚する
       const x = Math.min(e.maxCombo ?? 10, comboOf(state, source))
       const spd = x * (e.speedPerCombo ?? 10)
