@@ -44,6 +44,8 @@ export const withRelic = (def) => {
   const { relic: _old, ...rest } = def
   return r ? { ...rest, relic: r } : rest
 }
+// 対人戦のサーバーへ送る、編成のキャラに持たせた遺物 { キャラid: 遺物の名前 | '' }(選んでいないキャラは含めない)
+export const relicPayload = (defs) => { const m = load(), o = {}; for (const d of defs || []) if (d.id in m) o[d.id] = m[d.id]; return o }
 export function useRelicChoices() {
   return useSyncExternalStore((f) => { listeners.add(f); return () => listeners.delete(f) }, () => load())
 }

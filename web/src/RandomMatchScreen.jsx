@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { relicPayload } from './relicStore.js'
 import { C, FONT, DISPLAY, useIsDesktop, useRemembered } from './ui.js'
 import { ScreenHeader } from './chrome.jsx'
 import { Emblem } from './emblem.jsx'
@@ -303,7 +304,7 @@ export default function RandomMatchScreen({ team, spells, onChangeTeam, onRoom, 
       else if (m.type === 'offline') back('対戦サーバーにつながりませんでした。サーバーが起動中の可能性があります。少し待って、もう一度お試しください。')
     })
     setPhase('connecting')
-    client.queue({ ids: chars.map((c) => c.id), spells: (spells || []).map((s) => s.id) }, ranked)
+    client.queue({ ids: chars.map((c) => c.id), spells: (spells || []).map((s) => s.id), relics: relicPayload(chars) }, ranked)
   }
   const cancel = () => { if (clientRef.current) { clientRef.current.cancelQueue(); clientRef.current.close(); clientRef.current = null } setPhase('menu') }
   const leaveBattle = () => { setOnline(null); setPhase('menu'); load() } // 対戦のあと: 最新の BP を読み直す

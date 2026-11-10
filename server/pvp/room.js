@@ -19,6 +19,18 @@ export function buildTeam(reg, team, { owned = null, enh = {} } = {}) {
   const spellIds = Array.isArray(team?.spells) ? team.spells : []
   if (!ids || !ids.length || ids.length > 7 || ids.some((x) => typeof x !== 'string')) return { error: '編成が正しくありません' }
   if (spellIds.length > 20 || spellIds.some((x) => typeof x !== 'string')) return { error: 'スペルの指定が正しくありません' }
+  // 人事画面で持たせた遺物 { キャラid: 遺物の名前 | '' }('' は遺物なし)。編成に入っているキャラの、知っている遺物だけ受け付ける
+  const relicsIn = team?.relics ?? {}
+  if (typeof relicsIn !== 'object' || Array.isArray(relicsIn) || Object.keys(relicsIn).length > 20) return { error: '遺物の指定が正しくありません' }
+  for (const [rid, rname] of Object.entries(relicsIn)) {
+    if (!ids.includes(rid)) return { error: '編成にいないキャラの遺物が指定されています' }
+    if (typeof rname !== 'string' || (rname !== '' && !Object.prototype.hasOwnProperty.call(reg.engine.RELICS, rname))) return { error: `知らない遺物です(${String(rname).slice(0, 20)})` }
+  }
+  const withRelic = (d) => {
+    if (!Object.prototype.hasOwnProperty.call(relicsIn, d.id)) return d
+    const { relic: _old, ...rest } = d
+    return relicsIn[d.id] ? { ...rest, relic: relicsIn[d.id] } : rest
+  }
   const chars = []
   for (const id of ids) {
     const c = reg.charById.get(id)
@@ -36,7 +48,7 @@ export function buildTeam(reg, team, { owned = null, enh = {} } = {}) {
   }
   const sv = reg.formation.validateSpellSet(spells, chars)
   if (!sv.ok) return { error: sv.reason }
-  return { defs: chars.map((d) => reg.enhance.enhanceDef(d, enh[d.id] || 0)), spells, chars }
+  return { defs: chars.map((d) => reg.enhance.enhanceDef(withRelic(d), enh[d.id] || 0)), spells, chars }
 }
 
 export class Room {

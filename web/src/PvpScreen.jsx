@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { relicPayload } from './relicStore.js'
 import { C, FONT, DISPLAY, useIsDesktop } from './ui.js'
 import { ScreenHeader } from './chrome.jsx'
 import { Emblem } from './emblem.jsx'
@@ -93,7 +94,7 @@ export default function PvpScreen({ team, spells, onExit, onBackTeam, myName = '
   const [online, setOnline] = useState(null)
   const [matched, setMatched] = useState(false)
   const chars = team.filter(Boolean)
-  const teamPayload = () => ({ ids: chars.map((c) => c.id), spells: (spells || []).map((s) => s.id) })
+  const teamPayload = () => ({ ids: chars.map((c) => c.id), spells: (spells || []).map((s) => s.id), relics: relicPayload(chars) })
 
   const connect = (mode) => {
     setErr('')

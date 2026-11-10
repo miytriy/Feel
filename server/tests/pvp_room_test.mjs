@@ -25,4 +25,13 @@ const mkRoom = () => { const log = []; const r = new Room({ code: 'TEST22', reg,
 { const { r, log } = mkRoom(); r.surrender('u1'); const end = log.find(([, m]) => m.type === 'end'); ok(end && end[1].winner === 'B', '降参すると相手の勝ち') }
 { const log = []; const r = new Room({ code: 'WAIT22', reg, send: (s, m) => log.push(m), now: () => t, setTimer, clearTimer }); r.join('u1', 'A', mk(0, 3)); advance(CONFIG.WAIT_MS + 100)
   ok(r.phase === 'done' && log.some((m) => m.type === 'closed'), '誰も来ないルームは、一定時間で閉じる') }
+
+// 人事画面で持たせた遺物が、サーバーのバトル用の定義に反映される(知らない遺物・編成にいないキャラは断る)
+{ const ids = mains.slice(0, 3).map((c) => c.id)
+  const a = buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: '鬼の形相', [ids[1]]: '' } })
+  ok(!a.error && a.defs[0].relic === '鬼の形相' && !a.defs[1].relic, '持たせた遺物がバトル用の定義に反映される(空は遺物なし)')
+  ok(buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: 'でたらめ' } }).error, '知らない遺物は断る')
+  ok(buildTeam(reg, { ids, spells: [], relics: { 'nobody': '鬼の形相' } }).error, '編成にいないキャラの遺物は断る')
+  ok(buildTeam(reg, { ids, spells: [], relics: ['鬼の形相'] }).error, '遺物の指定の形が違うものは断る')
+  ok(!buildTeam(reg, { ids, spells: [] }).error, '遺物の指定がなくても、今までどおり通る') }
 console.log(failed ? `失敗 ${failed}` : '全部OK'); process.exit(failed ? 1 : 0)
