@@ -52,12 +52,12 @@ export const relicPayload = (defs, format = DEFAULT_FORMAT) => {
   for (const d of defs || []) {
     if (!(d.id in m)) continue
     const n = m[d.id]
-    o[d.id] = n && !rotationAllowed(format, RELICS[n]?.rotation) ? '' : n
+    o[d.id] = n && !rotationAllowed(format, RELICS[n]?.rotation, n) ? '' : n
   }
   return o
 }
 // 遺物が、どの形式で使えるか(人事画面の表示用)。例: 'ベーシック / ローテーション・アンリミテッド'
-export const relicFormats = (name) => Object.keys(FORMATS).filter((f) => rotationAllowed(f, RELICS[name]?.rotation)).map((f) => FORMATS[f].name)
+export const relicFormats = (name) => Object.keys(FORMATS).filter((f) => FORMATS[f].open !== false && rotationAllowed(f, RELICS[name]?.rotation, name)).map((f) => FORMATS[f].name)
 export const relicRotationName = (name) => { const r = RELICS[name]?.rotation; return ROTATIONS[r] ?? String(r ?? '') }
 export function useRelicChoices() {
   return useSyncExternalStore((f) => { listeners.add(f); return () => listeners.delete(f) }, () => load())

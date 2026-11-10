@@ -15,18 +15,26 @@ export const ROTATIONS = {
   9: 'アズヴォルト・レヴナント',
   10: 'ニーゲルヘリア神殺事件',
 }
-// ルール(対戦の形式)ごとに、使えるローテーションの範囲。ユニット・スペル・遺物で、同じ表を使う。
-//   rotation  : ローテーション(いまは、すべての弾が使える。範囲をしぼるときは、ここの rotations を書き換える)
-//   unlimited : アンリミテッド(すべての弾が使える)
+// ルール(対戦の形式)。ユニット・スペル・アミュレット・遺物で、同じ表を使う。
+//   rotation  : ローテーション = 「ローテーション対象」のピックアップだけ使える
+//   unlimited : アンリミテッド = これまでに登場したすべてのピックアップが使える(一部のユニットは使用禁止になることがある)
+//   infinity  : インフィニティ = これまでに登場したすべてのピックアップが使える(使用禁止ユニットが指定されてからの登場。指定までは未公開)
+// ローテーション対象のピックアップは、ここの ROTATION_TARGETS に書く(いまは全ピックアップ。対象が決まったら絞る)
+export const ROTATION_TARGETS = ['basic', ...Object.keys(ROTATIONS).filter((k) => k !== 'basic')]
+// 使用禁止にするユニット(キャラ・スペル・アミュレットのid、遺物は名前)を、形式ごとに書く
+export const BANNED = { rotation: [], unlimited: [], infinity: [] }
 export const FORMATS = {
-  rotation: { name: 'ローテーション', rotations: ['basic', ...Object.keys(ROTATIONS).filter((k) => k !== 'basic')] },
+  rotation: { name: 'ローテーション', rotations: ROTATION_TARGETS },
   unlimited: { name: 'アンリミテッド', rotations: 'all' },
+  infinity: { name: 'インフィニティ', rotations: 'all', open: false }, // open:false = まだ遊べない(使用禁止ユニットの指定待ち)
 }
 export const DEFAULT_FORMAT = 'rotation' // ランダムマッチ(ランク・カジュアル)・ルーム対戦は、いまはローテーションだけ
-// そのローテーション(フォルダ名 'basic' / 1 / 2… でも、名前 'ベーシック' / '伝説の幕開け' でもよい)は、その形式で使えるか
-export function rotationAllowed(format, rotation) {
+// そのローテーション(フォルダ名 'basic' / 1 / 2… でも、名前 'ベーシック' / '伝説の幕開け' でもよい)は、その形式で使えるか。
+// id(または遺物の名前)を渡すと、使用禁止かどうかも見る
+export function rotationAllowed(format, rotation, id) {
   const f = FORMATS[format]
   if (!f) return false
+  if (id != null && (BANNED[format] || []).includes(id)) return false
   if (f.rotations === 'all') return true
   const key = Object.keys(ROTATIONS).find((k) => k === String(rotation) || ROTATIONS[k] === rotation)
   return key != null && f.rotations.includes(key)

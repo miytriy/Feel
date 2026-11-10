@@ -25,7 +25,7 @@ export function buildTeam(reg, team, { owned = null, enh = {}, format = reg.rota
   for (const [rid, rname] of Object.entries(relicsIn)) {
     if (!ids.includes(rid)) return { error: '編成にいないキャラの遺物が指定されています' }
     if (typeof rname !== 'string' || (rname !== '' && !Object.prototype.hasOwnProperty.call(reg.engine.RELICS, rname))) return { error: `知らない遺物です(${String(rname).slice(0, 20)})` }
-    if (rname !== '' && !reg.rotations.rotationAllowed(format, reg.engine.RELICS[rname].rotation)) return { error: `遺物「${rname}」は、${reg.rotations.FORMATS[format]?.name ?? format}では使えません` }
+    if (rname !== '' && !reg.rotations.rotationAllowed(format, reg.engine.RELICS[rname].rotation, rname)) return { error: `遺物「${rname}」は、${reg.rotations.FORMATS[format]?.name ?? format}では使えません` }
   }
   const withRelic = (d) => {
     if (!Object.prototype.hasOwnProperty.call(relicsIn, d.id)) return d
