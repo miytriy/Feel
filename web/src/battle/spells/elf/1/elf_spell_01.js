@@ -5,5 +5,6 @@ export default {
   id: 'elf_spell_01', name: '妖精の招集', class: 'エルフ/スペル', rarity: 'bronze',
   cost: 1, // MP
   desc: '「フェアリー」2体を召喚する。',
+  log: '『フェアリー』2体を召喚する。',
   effects: [{ type: 'summon', count: 2, unit: fairy }],
 }

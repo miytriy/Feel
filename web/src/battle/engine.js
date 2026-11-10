@@ -1665,7 +1665,7 @@ function doSpell(state, actor, action, opts) {
   state.log.push(`${actor.team === 'A' ? '自分' : '相手'}のスペル【${sp.name}】(MP${sp.cost})`)
   state.casting = sp.name
   state.castingSlot = sp.slot
-  noteAbility(state, 'スペル', actor.team === 'A' ? '自分' : '相手', sp.name, sp.desc, actor.team)
+  noteAbility(state, 'スペル', actor.team === 'A' ? '自分' : '相手', sp.name, sp.desc, actor.team, sp.log)
   recalc(state)
   runEffects(state, actor, sp.effects, { opts, spell: true, allowPending: true })
   state.casting = null

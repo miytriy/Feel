@@ -5,5 +5,6 @@ export default {
   id: 'elf_spell_03', name: '薫交の思慕', class: 'エルフ/スペル', rarity: 'silver',
   cost: 3, // MP
   desc: '「森の神秘」1回を有効化する。',
+  log: '『森の神秘』1回を有効化する。',
   effects: [{ type: 'enableSpell', spell: forestMystery }],
 }
