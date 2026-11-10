@@ -680,6 +680,7 @@ function afterEnter(state, u) {
     if (!oe || (oe.type && !hasType(u, oe.type)) || !oe.gainKeyword || u.keywords.includes(oe.gainKeyword)) continue
     u.keywords.push(oe.gainKeyword)
     state.log.push(`【${crest.name}】の効果で、${u.name}は【${KEYWORDS[oe.gainKeyword]?.label || oe.gainKeyword}】を持つ`)
+    if (oe.log) noteAbility(state, 'クレスト', `クレスト：${crest.name}`, '', crest.desc, crest.team, oe.log) // 左のログ(oe.log があるときだけ)
   }
   // 自分の場の「味方が場に出たとき」(enterType があれば、そのタイプのキャラが出たときだけ)
   for (const a of state.units.filter((x) => x.alive && x.team === u.team && x.uid !== u.uid)) fire(state, 'allyEnter', a, { other: u })

@@ -15,7 +15,7 @@ export default {
           name: '自然の妖精姫・アリア',
           desc: '自分の妖精・フォロワーが場に出たとき、それは【疾走】を持つ。',
           passives: [],
-          onEnter: { type: '妖精', gainKeyword: 'dash' },
+          onEnter: { type: '妖精', gainKeyword: 'dash', log: 'それは【疾走】を持つ。' },
         },
       }],
     },
