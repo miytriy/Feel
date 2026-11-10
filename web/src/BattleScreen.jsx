@@ -1497,10 +1497,13 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     </div>
   )
   // 選択したユニットの性能メモ: 左上か右上。選んだユニットと重ならない側に出す
-  const selInfo = (selectedUnit || inspected) && (
-    <SelInfoPanel uid={(selectedUnit || inspected).uid} big={desktop}>
-      {selectedUnit && <TargetInfo unit={selectedUnit} expected={expectedDmg} loss={lossShown} big={desktop} />}
-      {inspected && <InspectBox unit={inspected} big={desktop} />}
+  // 性能メモは常に1つだけ。最後にタップしたユニット(なければ選択中のユニット)のものを出す
+  const infoUnit = (inspect && getUnit(state, inspect)) || selectedUnit
+  const selInfo = infoUnit && (
+    <SelInfoPanel uid={infoUnit.uid} big={desktop}>
+      {infoUnit.uid === selected
+        ? <TargetInfo unit={infoUnit} expected={expectedDmg} loss={lossShown} big={desktop} />
+        : <InspectBox unit={infoUnit} big={desktop} />}
     </SelInfoPanel>
   )
   const panelInner = (
