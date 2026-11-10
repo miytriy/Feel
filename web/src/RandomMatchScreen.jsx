@@ -163,8 +163,105 @@ const CSS = `
 .rk-radar i:nth-child(2) { animation-delay: .8s } .rk-radar i:nth-child(3) { animation-delay: 1.6s }
 .rk-radar u { position: absolute; inset: 54px; border-radius: 50%; background: #6fe0ff }
 .rk-time { font-family: ${DISPLAY}; font-size: 42px; font-weight: 700; margin: 6px 0 }
+/* ---- 動き(すべて transform / opacity だけ) ---- */
+.rk-bg i { will-change: transform, opacity; animation: rk-beam 9s ease-in-out infinite alternate }
+.rk-bg i:nth-child(2) { animation-duration: 6.5s; animation-delay: -2s }
+@keyframes rk-beam { from { transform: skewX(-24deg) translateX(-40px) } to { transform: skewX(-24deg) translateX(60px) } }
+.rk-glow { position: absolute; border-radius: 50%; will-change: transform, opacity; background: radial-gradient(circle, rgba(255,214,90,.34) 0%, rgba(255,214,90,0) 66%) }
+.rk-glow.g1 { width: 760px; height: 760px; right: -160px; top: 4%; animation: rk-drift 14s ease-in-out infinite alternate }
+.rk-glow.g2 { width: 560px; height: 560px; left: -200px; bottom: -120px; background: radial-gradient(circle, rgba(70,150,255,.26) 0%, rgba(70,150,255,0) 66%); animation: rk-drift 18s -6s ease-in-out infinite alternate-reverse }
+@keyframes rk-drift { from { transform: translate(0, 0) scale(1); opacity: .65 } to { transform: translate(-60px, 40px) scale(1.18); opacity: 1 } }
+.rk-mote { position: absolute; bottom: -12px; width: 5px; height: 5px; border-radius: 50%; background: #ffe58a; box-shadow: 0 0 0 0 transparent; opacity: 0; will-change: transform, opacity; animation: rk-rise var(--d, 9s) var(--dl, 0s) linear infinite }
+.rk-mote.b { background: #8fd4ff }
+@keyframes rk-rise { 0% { transform: translate3d(0, 0, 0) scale(.6); opacity: 0 } 12% { opacity: .9 } 70% { opacity: .6 } 100% { transform: translate3d(var(--dx, 30px), -105vh, 0) scale(1.3); opacity: 0 } }
+@media (max-width: 899px) { .rk-mote:nth-child(n+9) { display: none } }
+
+/* 入場: 順番にすべり込む */
+@keyframes rk-pop { from { opacity: 0; transform: scale(.6) rotate(-8deg) } 60% { opacity: 1; transform: scale(1.07) rotate(1.5deg) } to { opacity: 1; transform: none } }
+@keyframes rk-grow { from { transform: scaleX(0) } }
+@keyframes rk-fill { from { transform: scaleX(0) } }
+@keyframes rk-tick { from { opacity: .5; transform: scale(1.18) } to { opacity: 1; transform: scale(1) } }
+.rk-in { animation: rk-up .5s var(--i, 0ms) cubic-bezier(.2, .8, .2, 1) backwards }
+.rk-rail .rk-mode:nth-child(2) { animation: rk-left .4s .08s ease-out backwards }
+.rk-title::after { transform-origin: left; animation: rk-grow .8s .25s cubic-bezier(.2, .8, .2, 1) backwards }
+.rk-right { animation: rk-right .5s .12s cubic-bezier(.2, .8, .2, 1) backwards }
+.rk-badge > svg, .rk-badge > .rk-clip { animation: rk-pop .8s .3s cubic-bezier(.2, 1.3, .4, 1) backwards }
+.rk-badge > svg { will-change: transform }
+.rk-float { animation: rk-bob 4.2s ease-in-out infinite; will-change: transform }
+@keyframes rk-bob { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-7px) } }
+.rk-rank { animation: rk-up .5s .55s ease-out backwards }
+.rk-bp { animation: rk-up .5s .65s ease-out backwards }
+.rk-bar i { animation: rk-fill 1.1s .8s cubic-bezier(.2, .8, .2, 1) backwards }
+.rk-rec { animation: rk-up .5s .8s ease-out backwards }
+.rk-chip { animation: rk-up .5s .9s ease-out backwards }
+
+/* バッジの光: 斜めの光がゆっくり横切る + きらめき */
+.rk-clip { position: absolute; inset: 15% 14%; border-radius: 50%; overflow: hidden; pointer-events: none }
+.rk-clip::after { content: ''; position: absolute; top: -10%; bottom: -10%; left: 0; width: 38%; background: linear-gradient(105deg, rgba(255,255,255,0), rgba(255,255,255,.55), rgba(255,255,255,0)); transform: translateX(-160%) skewX(-18deg); animation: rk-sweep 4.6s 1.4s ease-in-out infinite; will-change: transform }
+@keyframes rk-sweep { 0% { transform: translateX(-160%) skewX(-18deg) } 38%, 100% { transform: translateX(380%) skewX(-18deg) } }
+.rk-spark { position: absolute; width: 16px; height: 16px; background: #fff; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); opacity: 0; will-change: transform, opacity; animation: rk-twinkle 2.8s var(--dl, 0s) ease-in-out infinite }
+@keyframes rk-twinkle { 0%, 70%, 100% { opacity: 0; transform: scale(.2) rotate(0) } 82% { opacity: 1; transform: scale(1) rotate(45deg) } }
+
+/* モードボタン: 選んでいるものは光が走る。さわると浮く */
+.rk-mode { overflow: hidden; transition: transform .18s ease-out }
+.rk-mode:hover:not(.on):not(:disabled) { transform: translateY(-3px) }
+.rk-mode:active:not(:disabled) { transform: scale(.97) }
+.rk-mode.on::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 45%; pointer-events: none; background: linear-gradient(105deg, rgba(255,255,255,0), rgba(255,255,255,.6), rgba(255,255,255,0)); transform: translateX(-160%) skewX(-18deg); animation: rk-sweep 3.4s .6s ease-in-out infinite }
+.rk-mode.on svg { animation: rk-pulse 2.4s ease-in-out infinite }
+@keyframes rk-pulse { 0%, 100% { transform: scale(1) } 50% { transform: scale(1.1) } }
+.rk-rule.on .dot { animation: rk-pulse 1.8s ease-in-out infinite }
+.rk-unit { transition: transform .18s ease-out }
+.rk-unit:hover { transform: translateY(-4px) }
+
+/* バトルボタン: 呼吸 + 二重の波紋 + 光 + 回る点線の輪 */
+.rk-bwrap { position: relative; display: grid; place-items: center; margin-top: 6px; width: 196px; height: 196px }
+.rk-bwrap > .rk-breathe { display: grid; place-items: center; animation: rk-breathe 2.6s ease-in-out infinite; will-change: transform }
+@keyframes rk-breathe { 0%, 100% { transform: scale(1) } 50% { transform: scale(1.045) } }
+.rk-bwrap .rk-orbit { position: absolute; inset: 4px; border-radius: 50%; border: 2px dashed rgba(127,208,255,.55); animation: rk-spin 16s linear infinite; will-change: transform; pointer-events: none }
+.rk-bwrap .rk-orbit.r { inset: 14px; border-color: rgba(216,184,90,.45); animation-direction: reverse; animation-duration: 22s }
+.rk-bwrap .rk-wave { position: absolute; width: 148px; height: 148px; border-radius: 50%; border: 2px solid #7fd0ff; opacity: 0; pointer-events: none; will-change: transform, opacity; animation: rk-ring 2.2s 1.1s ease-out infinite }
+.rk-battle { margin-top: 0 !important; overflow: visible }
+.rk-bclip { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; pointer-events: none }
+.rk-bclip::after { content: ''; position: absolute; top: -10%; bottom: -10%; left: 0; width: 34%; background: linear-gradient(105deg, rgba(255,255,255,0), rgba(255,255,255,.6), rgba(255,255,255,0)); transform: translateX(-180%) skewX(-18deg); animation: rk-sweep 3.2s .8s ease-in-out infinite; will-change: transform }
+.rk-battle:disabled ~ .rk-orbit, .rk-bwrap:has(.rk-battle:disabled) .rk-orbit, .rk-bwrap:has(.rk-battle:disabled) .rk-wave, .rk-bwrap:has(.rk-battle:disabled) .rk-breathe { animation: none }
+.rk-battle:active:not(:disabled) { transform: scale(.94) }
+.rk-battle { transition: transform .15s ease-out }
+
+/* 検索中: レーダー */
+.rk-search { animation: rk-fade .3s ease-out backwards }
+.rk-search .box { animation: rk-pop .55s cubic-bezier(.2, 1.2, .4, 1) backwards }
+.rk-radar { width: 190px; height: 190px }
+.rk-radar .grid { position: absolute; inset: 0; border-radius: 50%; border: 1px solid rgba(111,224,255,.3); background: radial-gradient(circle, rgba(111,224,255,.12), rgba(111,224,255,0) 70%) }
+.rk-radar .grid.s1 { inset: 31px } .rk-radar .grid.s2 { inset: 62px }
+.rk-radar .beam { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, rgba(111,224,255,0) 0deg, rgba(111,224,255,0) 250deg, rgba(111,224,255,.6) 360deg); animation: rk-spin 2.2s linear infinite; will-change: transform }
+.rk-radar .sat { position: absolute; inset: -14px; border-radius: 50%; animation: rk-spin 7s linear infinite; will-change: transform }
+.rk-radar .sat b { position: absolute; left: 50%; top: -4px; width: 9px; height: 9px; margin-left: -4.5px; border-radius: 50%; background: #ffe58a }
+.rk-radar .sat b:nth-child(2) { top: auto; bottom: -4px; background: #8fd4ff }
+.rk-radar .blip { position: absolute; width: 10px; height: 10px; margin: -5px; border-radius: 50%; background: #fff; opacity: 0; will-change: transform, opacity; animation: rk-blip 2.2s var(--dl, 0s) ease-out infinite }
+@keyframes rk-blip { 0% { opacity: 0; transform: scale(.3) } 8% { opacity: 1; transform: scale(1.4) } 60% { opacity: .35; transform: scale(1) } 100% { opacity: 0; transform: scale(1) } }
+.rk-radar u { inset: 86px; animation: rk-glow 1.4s ease-in-out infinite; will-change: transform, opacity }
+.rk-dots span { display: inline-block; animation: rk-hop 1.1s ease-in-out infinite }
+.rk-dots span:nth-child(2) { animation-delay: .15s } .rk-dots span:nth-child(3) { animation-delay: .3s }
+@keyframes rk-hop { 0%, 60%, 100% { transform: translateY(0) } 30% { transform: translateY(-6px) } }
+.rk-time > span { display: inline-block; animation: rk-tick .35s ease-out backwards }
 @media (prefers-reduced-motion: reduce) { .rk *, .rk-search * { animation-duration: .01s !important; animation-iteration-count: 1 !important } }
 `
+
+// 背景に漂う光の粒(位置・速さは固定の並び。毎回同じ)
+const MOTES = Array.from({ length: 16 }, (_, i) => ({ x: (i * 37 + 11) % 97 + 1, d: 8 + (i * 5) % 7, dl: -((i * 3.7) % 10), dx: ((i * 29) % 80) - 40, s: 3 + (i % 3) * 2 }))
+
+// 数字を、0から目標まで数え上げる(rAF。画面の見た目だけ)
+function useCountUp(target, ms = 900) {
+  const [v, setV] = useState(0)
+  useEffect(() => {
+    if (target == null) return
+    let raf, t0
+    const tick = (t) => { t0 ??= t; const k = Math.min(1, (t - t0) / ms); setV(Math.round(target * (1 - Math.pow(1 - k, 3)))); if (k < 1) raf = requestAnimationFrame(tick) }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [target, ms])
+  return v
+}
 
 const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
@@ -220,13 +317,14 @@ export default function RandomMatchScreen({ team, spells, onChangeTeam, onRoom, 
     )
   }
 
+  const bpShown = useCountUp(rank ? rank.bp : null)
   const ri = rank ? rankOf(rank.bp) : null
   const tc = ri ? ri.tier.color : '#c98a52'
   const busy = phase !== 'menu'
   return (
     <div className="rk theme-dark" data-testid="random-screen">
       <style>{CSS}</style>
-      <div className="rk-bg"><i /><i /></div>
+      <div className="rk-bg" aria-hidden="true"><i /><i /><span className="rk-glow g1" /><span className="rk-glow g2" />{MOTES.map((m, i) => <span key={i} className={`rk-mote${i % 3 === 2 ? ' b' : ''}`} style={{ left: `${m.x}%`, '--d': `${m.d}s`, '--dl': `${m.dl}s`, '--dx': `${m.dx}px`, width: m.s, height: m.s }} />)}</div>
       <ScreenHeader title="ランダムマッチ" onClose={onExit} />
       <div className="rk-wrap">
         <nav className="rk-rail" aria-label="モード">
@@ -247,15 +345,15 @@ export default function RandomMatchScreen({ team, spells, onChangeTeam, onRoom, 
             ? 'ランクをかけて争う、ランダムマッチング戦です。勝つとバトルポイント(BP)が増え、一定のBPで段位が上がります。負けるとBPが減りますが、段位(エメラルド・トパーズ…)そのものは下がりません。'
             : 'ランクに影響しない、気軽なランダムマッチング戦です。BPは増減せず、すぐに相手が見つかります。ログインしていなくても、匿名プレイヤーとして遊べます。'}</p>
           <div className="rk-rules">
-            <div className="rk-rule on" data-testid="rule-rotation"><span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><RotationMark size={30} />ローテーション</span><span className="dot" /></div>
-            <div className="rk-rule off"><span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><UnlimitedMark size={30} />アンリミテッド</span><small>準備中</small></div>
-            <div className="rk-rule off"><span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><InfinityMark size={30} />インフィニティ</span><small>準備中</small></div>
+            <div className="rk-rule on rk-in" style={{ '--i': '120ms' }} data-testid="rule-rotation"><span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><RotationMark size={30} />ローテーション</span><span className="dot" /></div>
+            <div className="rk-rule off rk-in" style={{ '--i': '200ms' }}><span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><UnlimitedMark size={30} />アンリミテッド</span><small>準備中</small></div>
+            <div className="rk-rule off rk-in" style={{ '--i': '280ms' }}><span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><InfinityMark size={30} />インフィニティ</span><small>準備中</small></div>
           </div>
           <div className="rk-deck">
             <h3>使用デッキ<button type="button" className="rk-btn" onClick={onChangeTeam} disabled={busy} data-testid="rank-deck">確認・変更</button></h3>
             <div className="rk-units">
-              {chars.map((c) => (
-                <div key={c.id} className="rk-unit" style={{ '--rc': tone(c) }}>
+              {chars.map((c, i) => (
+                <div key={c.id} className="rk-unit rk-in" style={{ '--rc': tone(c), '--i': `${360 + i * 70}ms` }}>
                   <div className="fig"><Emblem seed={c.id} /></div>
                   <div className="n">{c.name}</div>
                 </div>
@@ -276,10 +374,10 @@ export default function RandomMatchScreen({ team, spells, onChangeTeam, onRoom, 
             </>
           ) : ri ? (
             <>
-              <div className="rk-badge"><RankBadge rank={ri} size={desktop ? 190 : 150} /></div>
+              <div className="rk-badge"><div className="rk-float" style={{ position: 'relative' }}><RankBadge rank={ri} size={desktop ? 190 : 150} /><span className="rk-clip" /><i className="rk-spark" style={{ left: '8%', top: '22%', '--dl': '0.4s' }} /><i className="rk-spark" style={{ right: '6%', top: '14%', width: 22, height: 22, '--dl': '1.3s' }} /><i className="rk-spark" style={{ right: '14%', bottom: '26%', width: 12, height: 12, '--dl': '2.1s' }} /></div></div>
               <div className="rk-rank" data-testid="rank-label">{ri.label}</div>
               <div className="rk-bp">
-                <div className="row"><span>BP</span><b data-testid="rank-bp">{rank.bp}</b></div>
+                <div className="row"><span>BP</span><b data-testid="rank-bp">{bpShown}</b></div>
                 <div className="rk-bar"><i style={{ transform: `scaleX(${Math.max(0.02, ri.progress)})` }} /></div>
                 <div className="rk-next">{ri.next == null ? '最高ランク' : `NEXT ${ri.next - rank.bp}`}</div>
               </div>
@@ -289,7 +387,7 @@ export default function RandomMatchScreen({ team, spells, onChangeTeam, onRoom, 
             <div style={{ padding: '70px 0', color: C.mute, fontSize: 13 }}>{err ? '' : '読み込み中…'}</div>
           )}
           <div className="rk-chip" data-testid="rule-chip"><RotationMark size={22} />ローテーション</div>
-          <button type="button" className="rk-battle" data-testid="rank-battle" disabled={busy || (ranked && !rank) || chars.length === 0} onClick={start}>バトル</button>
+          <div className="rk-bwrap"><span className="rk-orbit" /><span className="rk-orbit r" /><span className="rk-wave" /><div className="rk-breathe"><button type="button" className="rk-battle" data-testid="rank-battle" disabled={busy || (ranked && !rank) || chars.length === 0} onClick={start}><span className="rk-bclip" /><span style={{ position: 'relative' }}>バトル</span></button></div></div>
           {!ranked && onRoom && <button type="button" className="rk-btn" style={{ marginTop: 6 }} onClick={onRoom} disabled={busy} data-testid="to-room">部屋コードで友だちと対戦</button>}
         </aside>
       </div>
@@ -297,10 +395,10 @@ export default function RandomMatchScreen({ team, spells, onChangeTeam, onRoom, 
       {busy && (
         <div className="rk-search" data-testid="random-search">
           <div className="box">
-            <div className="rk-radar"><i /><i /><i /><u /></div>
-            <div style={{ fontWeight: 800, fontSize: 18 }}>{phase === 'connecting' ? 'サーバーにつないでいます…' : '対戦相手を探しています…'}</div>
+            <div className="rk-radar" aria-hidden="true"><span className="grid" /><span className="grid s1" /><span className="grid s2" /><span className="beam" /><span className="sat"><b /><b /></span><i /><i /><i /><u /><span className="blip" style={{ left: '72%', top: '30%', '--dl': '.3s' }} /><span className="blip" style={{ left: '28%', top: '64%', '--dl': '1.1s' }} /><span className="blip" style={{ left: '58%', top: '78%', '--dl': '1.7s' }} /></div>
+            <div style={{ fontWeight: 800, fontSize: 18 }}>{phase === 'connecting' ? 'サーバーにつないでいます' : '対戦相手を探しています'}<span className="rk-dots"><span>.</span><span>.</span><span>.</span></span></div>
             {phase === 'searching' && <>
-              <div className="rk-time">{fmt(waited)}</div>
+              <div className="rk-time"><span key={waited}>{fmt(waited)}</span></div>
               <div style={{ fontSize: 12, color: C.mute }}>{ranked ? `探している範囲: BP ±${matchWindow(waited)}(待つほど広がります)` : 'カジュアルマッチ'}</div>
             </>}
             {phase === 'connecting' && <div style={{ fontSize: 12, color: C.mute, marginTop: 8 }}>サーバーが眠っていると、30秒ほどかかることがあります</div>}
