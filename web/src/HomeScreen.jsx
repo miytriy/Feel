@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { C, FONT, DISPLAY } from './ui.js'
 import { ScreenHeader } from './chrome.jsx'
-import { IconPlay, IconCareer, IconCollection, IconAgents, IconParty, IconStore, IconLock, IconRules, IconGem, IconEvent, IconGacha, IconGear, IconMail, IconPower, IconPlus } from './icons.jsx'
+import { IconPlay, IconCareer, IconCollection, IconAgents, IconParty, IconStore, IconLock, IconRules, IconGem, IconEvent, IconGacha, IconGear, IconMail, IconPower, IconPlus, IconNews } from './icons.jsx'
+import { unreadCount } from './news.js'
 
 // ホーム画面(参考: エンドフィールドのホーム)
 //   上の行: 設定・メールボックス / 左の列: 人事・イベント・ガチャ・購買部 / 右の列: 足跡・Wiki・編成… / 中央: 輪と PLAY
@@ -17,6 +18,7 @@ export const HOME_ITEMS = [
   { key: 'career', label: '足跡', no: '05', side: 'right', account: true, Icon: IconCareer },
   { key: 'codex', label: 'Wiki', no: '06', side: 'right', Icon: IconCollection },
   { key: 'party', label: '編成', no: '07', side: 'right', account: true, Icon: IconParty },
+  { key: 'news', label: 'ニュース', no: '08', side: 'right', Icon: IconNews },
 ]
 export const TOP_ITEMS = [
   { key: 'settings', label: '設定', Icon: IconGear },
@@ -102,6 +104,7 @@ export const HOME_CSS = `
 .hud-right .hud-soon { right: 0; left: 0; bottom: 8px; text-align: center; }
 .hud-badge { position: absolute; right: 14%; top: -5px; width: 14px; height: 14px; background: var(--c-badge); transform: rotate(45deg); box-shadow: 0 0 10px rgba(255,122,0,0.7); z-index: 2; }
 .hud-right .hud-badge { right: 8px; top: 6px; }
+.hud-right .hud-badge.lo, .hud-badge.lo { top: auto; bottom: 10px; }
 .hud-empty { aspect-ratio: 1 / 0.95; background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.18); display: grid; place-items: center; color: rgba(255,255,255,0.22); font-size: 22px; font-family: ${DISPLAY}; clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px)); }
 
 /* まるい飾りの輪 + PLAY */
@@ -145,7 +148,6 @@ export const HOME_CSS = `
   .hud-left .hud-cell, .hud-left .hud-cell::before, .hud-right .hud-cell, .hud-right .hud-cell::before { clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); }
   .hud-cell::before { transform: translate(5px, 5px); }
   .hud-left .hud-panel, .hud-right .hud-panel { height: 80px; aspect-ratio: auto; flex-direction: row; justify-content: flex-start; padding: 0 12px 0 14px; gap: 12px; text-align: left; }
-  .hud-right .hud-cell:nth-child(3) { grid-column: 1 / -1; }
   .hud-empty { display: none; }
   .hud-panel .hud-label, .hud-right .hud-panel .hud-label { font-size: 17px; letter-spacing: 0.04em; }
   .hud-panel .hud-ico, .hud-right .hud-panel .hud-ico { font-size: 30px; }
@@ -153,6 +155,7 @@ export const HOME_CSS = `
   .hud-lock, .hud-right .hud-lock { right: 12px; top: auto; bottom: 8px; }
   .hud-soon, .hud-right .hud-soon { right: 12px; left: auto; bottom: 8px; }
   .hud-badge, .hud-right .hud-badge { right: 6px; top: 4px; }
+  .hud-badge.lo, .hud-right .hud-badge.lo { top: auto; bottom: 10px; right: 10px; }
   .hud-panel:focus-visible, .hud-panel:active, .hud-right .hud-panel:focus-visible, .hud-right .hud-panel:active { transform: none; }
   .hud-foot { padding: 6px 14px 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
   .hud-play { height: 68px; font-size: 32px; }
@@ -199,7 +202,7 @@ function Panel({ item, locked, badge, onPress }) {
         <span className="hud-label">{item.label}</span>
         {locked && <IconLock className="hud-lock" aria-label="ログインが必要" />}
         {item.soon && <span className="hud-soon">COMING SOON</span>}
-        {badge && <i className="hud-badge" aria-label="受け取れるものがあります" />}
+        {badge && <i className={`hud-badge${item.key === 'news' ? ' lo' : ''}`} aria-label="新しいものがあります" />}
       </button>
     </div>
   )
@@ -255,7 +258,7 @@ export default function HomeScreen({ user, me, giftCount = 0, lockedKey, unlockL
           <div className="hud-logo">FEEL · BATTLE SYSTEM</div>
         </div>
         <div className="hud-right">
-          {right.map((it) => <Panel key={it.key} item={it} locked={isLocked(it)} onPress={press} />)}
+          {right.map((it) => <Panel key={it.key} item={it} locked={isLocked(it)} badge={it.key === 'news' && unreadCount() > 0} onPress={press} />)}
           {Array.from({ length: empties }, (_, i) => <div key={'e' + i} className="hud-empty" aria-hidden="true">＋</div>)}
         </div>
       </div>

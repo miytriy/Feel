@@ -70,3 +70,4 @@ export const StatIcon = ({ stat, ...p }) => {
       return <svg {...base} {...p}><circle cx="12" cy="12" r="5" /></svg>
   }
 }
+export const IconNews = (p) => <svg {...base} {...p}><path d="M4 4h13a1 1 0 0 1 1 1v3h2a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a1 1 0 0 1 1-1zm2 3v2h9V7zm0 4v2h9v-2zm0 4v2h6v-2zm12-5v7h1v-7z" fillRule="evenodd" /></svg>

@@ -16,6 +16,7 @@ import GachaScreen from './GachaScreen.jsx'
 import StoreScreen from './StoreScreen.jsx'
 import { showRewards } from './RewardScreen.jsx'
 import FormationScreen from './FormationScreen.jsx'
+import NewsScreen from './NewsScreen.jsx'
 import HomeScreen, { ACCOUNT_SCREENS, canOpen } from './HomeScreen.jsx'
 import { unlockLevel, tryUnlock, relock } from './unlock.js'
 import { createSandbox } from './sandbox.js'
@@ -503,6 +504,10 @@ export default function App() {
 
   if (current === 'rules') {
     return <ErrorBoundary onExit={() => setScreen('home')}><RulesScreen first={rulesFirst} onExit={() => { setRulesFirst(false); setScreen(rulesFirst ? 'home' : rulesBack) }} /></ErrorBoundary>
+  }
+
+  if (current === 'news') {
+    return <ErrorBoundary onExit={() => setScreen('home')}><NewsScreen onExit={() => setScreen('home')} /></ErrorBoundary>
   }
 
   if (current === 'codex') {
