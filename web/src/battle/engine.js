@@ -144,7 +144,7 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
 export const MAX_SPELL_SLOTS = 3 // スペルセットで有効化できる回数(環境を見て変更する予定)
 
 function makeSpell(def, i) {
-  const sp = { slot: `sp${i}`, id: def.id, name: def.name, cost: def.cost ?? 0, baseDesc: def.desc ?? '', desc: def.desc ?? '', baseEffects: def.effects, effects: def.effects, onBoost: def.onBoost || null, x: def.onBoost?.startX ?? 1, used: false }
+  const sp = { slot: `sp${i}`, id: def.id, name: def.name, cost: def.cost ?? 0, baseDesc: def.desc ?? '', desc: def.desc ?? '', baseEffects: def.effects, effects: def.effects, log: def.log, onBoost: def.onBoost || null, x: def.onBoost?.startX ?? 1, used: false }
   refreshSpell(sp)
   return sp
 }
@@ -498,7 +498,7 @@ function noteAbility(state, kind, owner, name, desc, team, log) {
   state.abilitySeq += 1
   state.lastAbility = { seq: state.abilitySeq, kind, owner, name: name || '', desc: desc || '', team: team ?? null }
   state.means = name || kind
-  emit(state, 'ability', { kind, owner, name: name || '', desc: desc || '', log: log || '', team: team ?? null })
+  emit(state, 'ability', { kind, owner, name: name || '', desc: desc || '', log: log || '', nolog: log === false, team: team ?? null }) // log: false = 左のログには出さない
 }
 
 // ---------- 効果の実行 ----------
@@ -790,7 +790,7 @@ function runEffects(state, source, effects, ctx = {}) {
           state.pending = {
             uid: source.uid, effects: effects.slice(idx), candidates: e.modes.map((_, i) => `mode${i}`),
             modes: e.modes.map((m) => ({ name: m.name, desc: m.desc || '' })), prompt: e.prompt || 'モードを1つ選んでください',
-            trigger: ctx.trigger || null, nextPassive: ctx.nextPassive ?? null, spell: !!ctx.spell,
+            trigger: ctx.trigger || null, nextPassive: ctx.nextPassive ?? null, spell: !!ctx.spell, spellName: ctx.spellName || state.casting || null,
           }
           state.log.push(`${source.name}の効果: モードを選んでください`)
           recalc(state)
@@ -801,6 +801,7 @@ function runEffects(state, source, effects, ctx = {}) {
       const m = e.modes[pick]
       if (m) {
         state.log.push(`モード【${m.name}】が働く`)
+        if (ctx.spell && m.log) noteAbility(state, 'スペル', source.team === 'A' ? '自分' : '相手', ctx.spellName || state.casting || m.name, m.desc, source.team, m.log) // 選んだモードのログ(左のログ)
         runEffects(state, source, m.effects, { ...ctx, mode: undefined, chosen: undefined, allowPending: false })
       }
       ctx = { ...ctx, mode: undefined }
@@ -1739,7 +1740,7 @@ export function applyAction(prev, action, opts = {}) {
     if (p.modes) {
       const idx = Number(String(action.target).replace('mode', ''))
       state.log.push(p.mpPick ? `MPを${idx}消費することにした` : `モード【${p.modes[idx]?.name}】を選んだ`)
-      runEffects(state, actor, p.effects, { opts, mode: p.mpPick ? undefined : idx, mpSpent: p.mpPick ? idx : undefined, trigger: p.trigger, spell: p.spell })
+      runEffects(state, actor, p.effects, { opts, mode: p.mpPick ? undefined : idx, mpSpent: p.mpPick ? idx : undefined, trigger: p.trigger, spell: p.spell, spellName: p.spellName })
       if (p.spell && !state.pending) countCombos(state, actor, opts) // スペルは特性として数える
     } else if (p.confirm) {
       state.log.push(action.target === 'yes' ? '使うことにした' : '使わないことにした')

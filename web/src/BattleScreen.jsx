@@ -1077,7 +1077,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     for (let k = play.i; k <= gEnd; k++) {
       const e = play.events[k]
       if (e.type === 'ability') {
-        if (e.kind !== '進化') pendingLog.current.push({ k: `sl${sideSeq.current++}`, name: e.kind === 'スペル' ? e.name : e.owner, text: e.log || e.desc || `【${e.kind}】${e.name ?? ''}`, team: e.team })
+        if (e.kind !== '進化' && !e.nolog) pendingLog.current.push({ k: `sl${sideSeq.current++}`, name: e.kind === 'スペル' ? e.name : e.owner, text: e.log || e.desc || `【${e.kind}】${e.name ?? ''}`, team: e.team })
       } else hasEffect = true
     }
     const logs = hasEffect || (gEnd >= play.events.length - 1 && !(state && state.pending)) ? pendingLog.current.splice(0) : [] // 対象を選ぶ能力(選択式)は、選んで効果が働くまで、ログを保留したままにする
