@@ -310,7 +310,7 @@ export const hasComboAbility = (u) => u.passiveObjs.some((p) => p.trigger === 'c
 // 自分の場(場のキャラ + 召喚物フィールド)にいる、指定のタイプのキャラの数
 // タイプの判定: 「トークン/兵士」のように「/」でつないだタイプは、どの部分にも当てはまる(兵士でもあり、トークンでもある)
 const hasType = (u, type) => !!u && !!u.type && String(u.type).split('/').includes(type)
-const typeCount = (state, source, type) => state.units.filter((u) => u.alive && u.team === source.team && hasType(u, type)).length
+const typeCount = (state, source, type) => state.units.filter((u) => u.alive && !u.isAmulet && u.team === source.team && hasType(u, type)).length // フォロワー(キャラ + 召喚物)の数。アミュレットは数えない
 const comboHolders = (state, team) => state.units.filter((u) => u.alive && u.field === 'main' && u.team === team && hasComboAbility(u))
 
 // βのコンボリセット(システムターン)の行動値を、味方のコンボ持ちの数Nに合わせる: Tr = K × N
