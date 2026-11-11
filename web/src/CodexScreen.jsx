@@ -169,7 +169,7 @@ export function CharDetail({ def, onOpen }) {
       {(def.passives || []).length > 0 && (
         <Section title="パッシブ">
           {def.passives.map((p, i) => (
-            <AbilityRow key={i} head={`【${passiveLabel(p)}】`} tag={triggerLabel(p) || (typeof p === 'string' ? 'キーワード' : '')} desc={passiveDesc(p)} />
+            <AbilityRow key={i} head={`【${passiveLabel(p)}】`} desc={passiveDesc(p)} />
           ))}
         </Section>
       )}
@@ -184,7 +184,7 @@ export function CharDetail({ def, onOpen }) {
 
       {def.accelerate && (
         <Section title="アクセラレート">
-          <AbilityRow head={`【${def.accelerate.name || 'アクセラレート'}_${def.accelerate.speed}】`} tag={`MP${def.accelerate.cost}`} desc={`${def.accelerate.desc || ''}(速度 ${def.accelerate.speed}・対象: ${TARGET_LABELS[def.accelerate.target] || def.accelerate.target})`} />
+          <AbilityRow head={`【${def.accelerate.name || 'アクセラレート'}_${def.accelerate.speed}】`} desc={`MP${def.accelerate.cost} ${def.accelerate.desc || ''}(速度 ${def.accelerate.speed}・対象: ${TARGET_LABELS[def.accelerate.target] || def.accelerate.target})`} />
         </Section>
       )}
 
