@@ -8,7 +8,7 @@ export default {
         { type: 'damage', stat: 'atk', mult: 0, add: 200, split: true, dmgType: 'physical', target: 'allyField' },
         { type: 'advance', pct: 20, target: 'nearestAlly' },
       ] },
-    { name: '進化時', trigger: 'onEvolve', desc: '相手の場のキャラクター1体を選ぶ。それに300の物理ダメージ。',
+    { name: '進化時', trigger: 'onEvolve', desc: '相手の場のフォロワー1体を選ぶ。それに300の物理ダメージ。',
       effects: [{ type: 'damage', stat: 'atk', mult: 0, add: 300, dmgType: 'physical', target: 'enemyOne' }] },
   ],
 }

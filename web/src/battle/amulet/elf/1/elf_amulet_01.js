@@ -12,7 +12,7 @@ export default {
   ],
   traits: [{
     id: 'act', name: 'アクト', cost: 0, target: 'allyOne',
-    desc: '【アクト】これを破壊。自分の場のキャラクター1体を選ぶ。それは「攻撃力・体力+30」を行う。',
+    desc: '【アクト】これを破壊。自分の場のフォロワー1体を選ぶ。それは「攻撃力・体力+30」を行う。',
     effects: [
       { type: 'buff', stat: 'atk', flat: 30, target: 'allyOne' },
       { type: 'maxHp', flat: 30, target: 'allyOne' },

@@ -18,10 +18,10 @@ export default {
         type: 'crest', onEnemy: true, // 相手が持つクレスト(そのため「自分の」は、クレストを持つ相手側のこと)
         crest: {
           name: '灼熱のアナテマ・バーンドナイト',
-          desc: '自分のターン開始時、キャラクターすべてに50ダメージ。自分のキャラクターが回復したとき、自分のターンごとに1回、自分のキャラクターすべてに50ダメージ。',
+          desc: '自分のターン開始時、フォロワーすべてに50ダメージ。自分のフォロワーが回復したとき、自分のターンごとに1回、自分のフォロワーすべてに50ダメージ。',
           passives: [
-            { name: 'ターン開始時', trigger: 'allyTurnStart', desc: 'キャラクターすべてに50ダメージ。', effects: [{ type: 'damage', stat: 'atk', mult: 0, add: 50, dmgType: 'true', target: 'allies' }] },
-            { name: '回復したとき', trigger: 'allyHeal', oncePerTurn: true, desc: '自分のターンごとに1回、自分のキャラクターすべてに50ダメージ。', effects: [{ type: 'damage', stat: 'atk', mult: 0, add: 50, dmgType: 'true', target: 'allies' }] },
+            { name: 'ターン開始時', trigger: 'allyTurnStart', desc: 'フォロワーすべてに50ダメージ。', effects: [{ type: 'damage', stat: 'atk', mult: 0, add: 50, dmgType: 'true', target: 'allies' }] },
+            { name: '回復したとき', trigger: 'allyHeal', oncePerTurn: true, desc: '自分のターンごとに1回、自分のフォロワーすべてに50ダメージ。', effects: [{ type: 'damage', stat: 'atk', mult: 0, add: 50, dmgType: 'true', target: 'allies' }] },
           ],
         },
       }],

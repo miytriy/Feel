@@ -2,7 +2,7 @@
 export default {
   id: 'witch_spell_token_01', name: '成長したですぅ!', class: 'ウィッチ/スペル', rarity: 'gold', token: true, type: 'マナリア',
   cost: 1, // MP
-  desc: '2回スペルブーストする。相手の場のキャラクターからランダム1体に120の魔法ダメージ。',
+  desc: '2回スペルブーストする。相手の場のフォロワーからランダム1体に120の魔法ダメージ。',
   effects: [
     { type: 'boost', amount: 2 },
     { type: 'damage', stat: 'mag', mult: 0, add: 120, dmgType: 'magic', target: 'enemyRandom' },

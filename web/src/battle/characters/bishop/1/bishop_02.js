@@ -6,7 +6,7 @@ export default {
   passives: [
     {
       name: '常時', trigger: 'allyDeath', deathKeyword: 'guard',
-      desc: '自分の【守護】を持つキャラクターが破壊されたとき、これは「攻撃力・体力+60される。」',
+      desc: '自分の【守護】を持つフォロワーが破壊されたとき、これは「攻撃力・体力+60される。」',
       effects: [
         { type: 'buff', stat: 'atk', flat: 60, target: 'self' },
         { type: 'maxHp', flat: 60, target: 'self' },

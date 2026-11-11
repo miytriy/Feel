@@ -7,7 +7,7 @@ export default {
     { name: 'スペルブースト時', trigger: 'onBoost', desc: 'これのXを+1する。(Xは0から始まる)', effects: [] },
     {
       name: 'ファンファーレ', trigger: 'fanfare',
-      desc: '相手の場のキャラクターすべてに30×Xダメージ。',
+      desc: '相手の場のフォロワーすべてに30×Xダメージ。',
       effects: [{ type: 'damage', stat: 'atk', mult: 0, add: 0, perBoost: 30, dmgType: 'magic', target: 'enemies' }],
     },
     {

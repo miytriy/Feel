@@ -6,7 +6,7 @@ export default {
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '自分の場の土の印を+1する。', effects: [{ type: 'earth', amount: 1 }] },
     {
       name: '進化時', trigger: 'onEvolve',
-      desc: '相手の場のキャラクター1体を選ぶ。それに250の物理ダメージ。',
+      desc: '相手の場のフォロワー1体を選ぶ。それに250の物理ダメージ。',
       effects: [{ type: 'damage', stat: 'atk', mult: 0, add: 250, dmgType: 'physical', target: 'enemyOne', choose: true }],
     },
   ],

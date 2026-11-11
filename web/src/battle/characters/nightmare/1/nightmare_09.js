@@ -8,7 +8,7 @@ export default {
     'barrier', // 【バリア】(特性の「これは【バリア】を持つ」)
     {
       name: 'ターン終了時', trigger: 'turnEnd',
-      desc: '自分のターン終了時、自分の場のキャラクターからランダム1体を150ヒール。これが進化後なら、150ヒールではなく250ヒール。',
+      desc: '自分のターン終了時、自分の場のフォロワーからランダム1体を150ヒール。これが進化後なら、150ヒールではなく250ヒール。',
       effects: [
         { type: 'heal', flat: 150, target: 'allyFieldRandom', condition: { evolved: false } },
         { type: 'heal', flat: 250, target: 'allyFieldRandom', condition: { evolved: true } },

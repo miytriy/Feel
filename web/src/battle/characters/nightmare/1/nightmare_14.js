@@ -4,7 +4,7 @@ export default {
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 相手単体に攻撃力100%分の物理ダメージ
   passives: [
     'rush', // 【突進】
-    { name: '攻撃時', trigger: 'onAttack', desc: '召喚物への攻撃なら、ターゲットを破壊。キャラクターへの攻撃なら、追加で攻撃力50%分の物理ダメージ。',
+    { name: '攻撃時', trigger: 'onAttack', desc: '召喚物への攻撃なら、ターゲットを破壊。フォロワーへの攻撃なら、追加で攻撃力50%分の物理ダメージ。',
       effects: [
         { type: 'destroy', target: 'opponent', onlyField: 'summon' },
         { type: 'damage', stat: 'atk', mult: 0.5, dmgType: 'physical', target: 'opponent', onlyField: 'main' },

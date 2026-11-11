@@ -5,8 +5,8 @@ export default {
   passives: [
     {
       name: 'ファンファーレ', trigger: 'fanfare',
-      desc: '相手の場のユニット1体を選ぶ。それに250の物理ダメージ。',
-      log: '相手の場のユニット1体を選ぶ。それに250の物理ダメージ。',
+      desc: '相手の場のフォロワー1体を選ぶ。それに250の物理ダメージ。',
+      log: '相手の場のフォロワー1体を選ぶ。それに250の物理ダメージ。',
       effects: [{ type: 'damage', stat: 'atk', mult: 0, add: 250, dmgType: 'physical', target: 'enemyFieldOne', choose: true }],
     },
   ],

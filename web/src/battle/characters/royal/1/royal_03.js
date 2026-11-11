@@ -7,7 +7,7 @@ export default {
   passives: [
     {
       name: '常時', trigger: 'allyEnter', enterType: '兵士',
-      desc: '自分の「兵士タイプ」のユニットが場に出たとき、それは【突進】を持つ。',
+      desc: '自分の「兵士タイプ」のフォロワーが場に出たとき、それは【突進】を持つ。',
       log: 'それは【突進】を持つ。',
       effects: [{ type: 'gainKeyword', keyword: 'rush', target: 'entered' }],
     },

@@ -6,8 +6,8 @@ export default {
     'guard', // 【守護】
     {
       name: 'ファンファーレ', trigger: 'fanfare',
-      desc: '自分の場の他のユニット1体を選ぶ。それは攻撃力+100、体力+100する。',
-      log: '自分の場の他のユニット1体を選ぶ。それは+100/+100する。',
+      desc: '自分の場の他のフォロワー1体を選ぶ。それは攻撃力+100、体力+100する。',
+      log: '自分の場の他のフォロワー1体を選ぶ。それは+100/+100する。',
       effects: [
         { type: 'buff', stat: 'atk', flat: 100, target: 'otherAllyOne', choose: true }, // ここで対象を選ぶ(次の効果も同じ対象)
         { type: 'maxHp', flat: 100, target: 'otherAllyOne' },

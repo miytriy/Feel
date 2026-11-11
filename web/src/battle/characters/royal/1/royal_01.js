@@ -7,7 +7,7 @@ export default {
   passives: [
     {
       name: '常時', trigger: 'allyEnter', enterType: '兵士',
-      desc: '自分の「兵士タイプ」ユニットが、場に出たとき、これは攻撃力+50する。',
+      desc: '自分の「兵士タイプ」フォロワーが、場に出たとき、これは攻撃力+50する。',
       log: 'これは攻撃力+50する。',
       effects: [{ type: 'buff', stat: 'atk', flat: 50, target: 'self' }],
     },

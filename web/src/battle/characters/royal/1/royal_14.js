@@ -16,7 +16,7 @@ export default {
     },
     {
       name: '進化時', trigger: 'onEvolve',
-      desc: '自身以外のすべての「クラス:ロイヤル」のキャラクターは【バリア】を持つ。',
+      desc: '自身以外のすべての「クラス:ロイヤル」のフォロワーは【バリア】を持つ。',
       effects: [{ type: 'gainKeyword', keyword: 'barrier', target: 'otherAllyField', onlyClass: 'ロイヤル' }],
     },
   ],

@@ -19,14 +19,14 @@ export default {
     },
     {
       name: '進化時', trigger: 'onEvolve',
-      desc: '自分の場の「タイプ:式神」のキャラクター1体を選ぶ。それは【疾走】を持つ。',
+      desc: '自分の場の「タイプ:式神」のフォロワー1体を選ぶ。それは【疾走】を持つ。',
       effects: [{ type: 'gainKeyword', keyword: 'dash', target: 'allyFieldOne', onlyType: '式神', choose: true }],
     },
   ],
   // 【エンハンス_10】: MP10を消費すると働く特性(自分のターンに、ボタンで使う)
   traits: [{
     id: 'enhance', name: 'エンハンス_10', cost: 10, target: 'self',
-    desc: '【エンハンス_10】MP10を消費すると、自分の場の「タイプ:式神」のキャラクターすべてを破壊。『式神・貴人』1体を自分の場に出す。',
+    desc: '【エンハンス_10】MP10を消費すると、自分の場の「タイプ:式神」のフォロワーすべてを破壊。『式神・貴人』1体を自分の場に出す。',
     effects: [
       { type: 'destroy', target: 'allyField', onlyType: '式神', settle: true }, // 先に破壊の処理を済ませる(そのあとに出る貴人が、倒された式神の分だけ強くなる)
       { type: 'summon', count: 1, unit: kijin },

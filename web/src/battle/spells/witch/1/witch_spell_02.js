@@ -3,6 +3,6 @@
 export default {
   id: 'witch_spell_02', name: '虹の奇跡', class: 'ウィッチ/スペル', rarity: 'bronze',
   cost: 2, // MP
-  desc: '自分の【スペルブースト時】を持つキャラクター・スペル1つを選ぶ。それは1回スペルブーストする。',
+  desc: '自分の【スペルブースト時】を持つフォロワー・スペル1つを選ぶ。それは1回スペルブーストする。',
   effects: [{ type: 'boostPick', amount: 1 }],
 }

@@ -9,7 +9,7 @@ export default {
   traits: [
     {
       id: 'chrono_field_boost', name: 'アクティブ', cost: 2, cooldown: 5, target: 'self', // 5ターンに一度有効。MPを2消費
-      desc: '5ターンに一度有効。MPを2消費する。自分の場のすべてのキャラクターの行動順+100%。そのターゲットの与ダメージ+15%、アレイのターン基準に2ターン継続。',
+      desc: '5ターンに一度有効。MPを2消費する。自分の場のすべてのフォロワーの行動順+100%。そのターゲットの与ダメージ+15%、アレイのターン基準に2ターン継続。',
       effects: [
         { type: 'advance', pct: 100, target: 'allyField' },
         // turnsBy: 'source' = 2ターンを、アレイのターンで数える(アレイのターンが2回終わるまで)

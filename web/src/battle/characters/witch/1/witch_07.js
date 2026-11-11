@@ -5,7 +5,7 @@ export default {
   passives: [
     {
       name: 'ファンファーレ', trigger: 'fanfare',
-      desc: '相手の場のキャラクター1体を選ぶ。それにXの物理ダメージ。Xはこれの攻撃力である。',
+      desc: '相手の場のフォロワー1体を選ぶ。それにXの物理ダメージ。Xはこれの攻撃力である。',
       effects: [{ type: 'damage', stat: 'atk', mult: 1, dmgType: 'physical', target: 'enemyOne', choose: true }],
     },
     {

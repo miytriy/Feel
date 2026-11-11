@@ -7,7 +7,7 @@ export default {
   passives: [
     {
       name: '常時', trigger: 'allyEnter', enterType: '兵士',
-      desc: '自分の場に「タイプ:兵士」のキャラクターが出たとき、それは【守護】を持つ。',
+      desc: '自分の場に「タイプ:兵士」のフォロワーが出たとき、それは【守護】を持つ。',
       effects: [{ type: 'gainKeyword', keyword: 'guard', target: 'entered' }],
     },
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '「スティールナイト」3体を召喚する。', effects: [{ type: 'summon', count: 3, unit: steelKnight }] },

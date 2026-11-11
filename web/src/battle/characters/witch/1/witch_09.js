@@ -7,7 +7,7 @@ export default {
   passives: [
     {
       name: 'ファンファーレ', trigger: 'fanfare',
-      desc: '相手の場のキャラクター1体を選ぶ。それに50×Xダメージ。Xは自分の場の土の印の数である。',
+      desc: '相手の場のフォロワー1体を選ぶ。それに50×Xダメージ。Xは自分の場の土の印の数である。',
       effects: [{ type: 'damage', stat: 'atk', mult: 0, add: 0, perEarth: 50, dmgType: 'magic', target: 'enemyOne', choose: true }],
     },
     {

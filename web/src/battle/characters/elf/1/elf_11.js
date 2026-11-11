@@ -6,7 +6,7 @@ export default {
     'guard', // 【守護】
     {
       name: 'ファンファーレ', trigger: 'fanfare',
-      desc: '相手の場のキャラクター1体を選ぶ。それに攻撃力100%分の物理ダメージ。',
+      desc: '相手の場のフォロワー1体を選ぶ。それに攻撃力100%分の物理ダメージ。',
       effects: [{ type: 'damage', stat: 'atk', mult: 1.0, dmgType: 'physical', target: 'enemyOne', choose: true }],
     },
   ],

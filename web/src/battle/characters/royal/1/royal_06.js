@@ -13,7 +13,7 @@ export default {
     },
     {
       name: '常時', trigger: 'allyEnter', enterType: '兵士',
-      desc: '自分の兵士・ユニットが場に出たとき、自分の場すべてを100ヒール。',
+      desc: '自分の兵士・フォロワーが場に出たとき、自分の場すべてを100ヒール。',
       log: '自分の場すべてを100ヒール。',
       effects: [{ type: 'heal', flat: 100, target: 'allyField' }],
     },
