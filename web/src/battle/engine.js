@@ -1690,16 +1690,17 @@ function doAccelerate(state, actor, action, opts) {
   emit(state, 'sync')
 }
 
-// 進化: EPを1つ使い、HPと攻撃力が+100%、突進と同じ効果(進化したターンからスキルを使える)を得る
+// 進化: EPを1つ使い、HPと攻撃力が+200、突進と同じ効果(進化したターンからスキルを使える)を得る
+const EVOLVE_BONUS = 200 // 進化で増える攻撃力・体力
 function doEvolve(state, actor, opts, free = false) { // free: 能力の効果で進化する(EPは使わない。死亡の処理は、呼び出し元がまとめて行う)
-  noteAbility(state, '進化', actor.name, '', '体力と攻撃力が2倍になり、【突進】を得る。', actor.team) // 能力の表示は、数値が変わる前の盤面で出す(演出の前に強くならないように)
+  noteAbility(state, '進化', actor.name, '', '攻撃力・体力+200、【突進】を得る。', actor.team) // 能力の表示は、数値が変わる前の盤面で出す(演出の前に強くならないように)
   if (!free) state.ep[actor.team] -= 1
   actor.evolved = true
-  actor.maxHp += actor.baseMaxHp
-  actor.hp += actor.baseMaxHp
-  actor.buffs.push({ stat: 'atk', pct: 100, flat: 0, turns: null })
+  actor.maxHp += EVOLVE_BONUS
+  actor.hp += EVOLVE_BONUS
+  actor.buffs.push({ stat: 'atk', pct: 0, flat: EVOLVE_BONUS, turns: null })
   if (!actor.keywords.includes('rush')) actor.keywords.push('rush')
-  state.log.push(`${actor.name}は進化した!(体力と攻撃力が2倍に)`)
+  state.log.push(`${actor.name}は進化した!(攻撃力・体力+${EVOLVE_BONUS})`)
   recalc(state)
   emit(state, 'evolve', { target: actor.uid }) // 進化の演出(盤面の数字も、ここで進化後になる)
   if (!free) fire(state, 'onEvolve', actor, { opts, allowPending: true }) // 【進化時】は、EPを使った進化のときだけ働く。選ぶ効果は、プレイヤーが選ぶまで待つ

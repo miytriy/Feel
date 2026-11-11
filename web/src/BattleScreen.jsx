@@ -1626,7 +1626,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
                 >
                   進化(EP1){!canEvolve ? ` ${actor.evolved ? '進化済み' : state.ep[ME] < 1 ? 'EPなし' : ''}` : ''}
                 </button>
-                {showDesc && <span style={{ fontSize: 11, color: C.mute, ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> 体力と攻撃力が2倍。進化したターンからスキルを使える</span>}
+                {showDesc && <span style={{ fontSize: 11, color: C.mute, ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> 攻撃力・体力+200。進化したターンからスキルを使える</span>}
               </div>
             )}
 
