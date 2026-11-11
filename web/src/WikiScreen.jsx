@@ -91,6 +91,10 @@ const CSS = `
 .wk-search:focus-within { border-color: ${C.player}; box-shadow: 0 0 0 2px rgba(255,230,0,0.5); }
 .wk-search button { border: 0; background: none; color: #6e6e76; font-size: 18px; cursor: pointer; padding: 0 2px; min-height: 0; }
 .wk-round { flex: none; width: 46px; height: 46px; border-radius: 50%; border: 0; background: #3a3a3e; color: #fff; font-size: 28px; display: grid; place-items: center; cursor: pointer; padding: 0; min-height: 0; transition: background 0.15s, color 0.15s, transform 0.15s; }
+.wk-pg { position: fixed; top: 50%; z-index: 20; width: 44px; height: 64px; margin-top: -32px; border: 0; border-radius: 14px; background: rgba(58,58,62,0.78); color: #fff; font-size: 34px; line-height: 1; display: grid; place-items: center; cursor: pointer; padding: 0 0 4px; }
+.wk-pg.l { left: 6px; } .wk-pg.r { right: 6px; }
+.wk-pg:hover, .wk-pg:focus-visible { background: ${C.player}; color: #111; outline: none; }
+@media (max-width: 700px) { .wk-detail { padding: 0 30px; box-sizing: border-box; } .wk-pg { width: 34px; height: 52px; margin-top: -26px; font-size: 28px; border-radius: 10px; } .wk-pg.l { left: 2px; } .wk-pg.r { right: 2px; } }
 .wk-round:hover, .wk-round:focus-visible { background: ${C.player}; color: #111; outline: none; transform: scale(1.06); }
 
 /* ---- 出入りのアニメーション(参考: エンドフィールドのWiki) ---- */
@@ -389,6 +393,28 @@ export default function WikiScreen({ onExit }) {
     </div>
   )
 
+  // 詳細で、左右の矢印(< >)で前後のページへ。開いた一覧(分類・レアリティ・検索)の並びのとおりに進み、端からは反対の端へつながる。
+  // 関連のリンクなどから開いて、いまの一覧に入っていないときは、同じ分類の中の並びで進む
+  const ring = (() => {
+    if (!selected) return []
+    if (shown.some((x) => x.d.id === selected.id)) return shown
+    const me = index.find((x) => x.sec === nav.section && x.d.id === selected.id)
+    return me ? index.filter((x) => x.sec === me.sec && subOf(x) === subOf(me)) : []
+  })()
+  const ringAt = ring.findIndex((x) => x.d.id === selected?.id)
+  const step = (dir) => {
+    if (ring.length < 2 || ringAt < 0) return
+    const to = ring[(ringAt + dir + ring.length) % ring.length]
+    setBack(false)
+    setNav((n) => ({ ...n, section: to.sec, itemId: to.d.id }))
+  }
+  const pager = selected && ring.length > 1 && (
+    <>
+      <button type="button" className="wk-pg l" data-testid="wk-prev" onClick={() => step(-1)} aria-label="前のページ">‹</button>
+      <button type="button" className="wk-pg r" data-testid="wk-next" onClick={() => step(1)} aria-label="次のページ">›</button>
+    </>
+  )
+
   const showSide = !!sec && sec.subs.length > 0 && !selected // 項目の中だけ、左に分類を出す(全体の検索結果では出さない)
   const subs = sec ? sec.subs : []
   const filters = (!sec || sec.rarity) && (
@@ -418,7 +444,7 @@ export default function WikiScreen({ onExit }) {
           </nav>
         )}
         <div className="wk-main">
-          {selected ? detail : (
+          {selected ? <>{pager}{detail}</> : (
             <>
               {filters}
               {shown.length === 0
