@@ -648,7 +648,7 @@ function SideLog({ items, big = false, onGone }) {
   }, [items])
   if (!items.length) return null
   return (
-    <div data-testid="side-log" aria-live="polite" style={{ position: 'fixed', left: 0, bottom: big ? '38%' : '30%', zIndex: 8, width: big ? 320 : 'min(230px, 56vw)', display: 'flex', flexDirection: 'column', gap: 6, pointerEvents: 'none' }}>
+    <div data-testid="side-log" aria-live="polite" style={{ position: 'fixed', left: 0, bottom: big ? '38%' : 'calc(min(168px, 30vh) + 8px + env(safe-area-inset-bottom))', zIndex: 8, width: big ? 320 : 'min(230px, 56vw)', display: 'flex', flexDirection: 'column', gap: 6, pointerEvents: 'none' }}>
       {items.map((it) => <SideLogItem key={it.k} it={it} big={big} onGone={onGone} setRef={setRef} />)}
     </div>
   )
@@ -1718,7 +1718,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
 
   // ---- スマホ: 1列。上に行動バーを固定、下に操作パネルを固定して、盤面をスクロールで見る ----
   return (
-    <div style={wrap} onClick={dismissInfo}>
+    <div style={{ ...wrap, display: 'flex', flexDirection: 'column', minHeight: '100dvh' }} onClick={dismissInfo}>{/* 内容が短くても、操作パネルを画面の下に付ける(下に黒い余白が出ないように) */}
       {selInfo}
       <SideLog items={sideLog} onGone={dropSideLog} />
       <div style={{ position: 'sticky', top: 0, zIndex: 9, background: C.paper, margin: '-12px -12px 0', padding: '8px 12px 2px', borderBottom: `1px solid ${C.line}` }}>
@@ -1737,7 +1737,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
       <Row extra={<TeamStatus state={view} team={ME} inline />} title="自分" color={C.player}>{players.map(card)}</Row>
       {spellsBlock && <div style={{ marginTop: 8 }}>{spellsBlock}</div>}
 
-      <div data-keep="1" className="no-sb" style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '10px -12px 0', padding: '6px 12px calc(6px + env(safe-area-inset-bottom))', height: 'min(168px, 30vh)', boxSizing: 'border-box', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
+      <div style={{ flex: 1, minHeight: 10 }} />
+      <div data-keep="1" className="no-sb" style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '0 -12px', padding: '6px 12px calc(6px + env(safe-area-inset-bottom))', height: 'min(168px, 30vh)', boxSizing: 'border-box', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
         {panelInner}
       </div>
     </div>
