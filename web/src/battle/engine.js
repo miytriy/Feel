@@ -247,8 +247,8 @@ const enemiesOf = (state, u) => state.units.filter((x) => x.alive && x.field ===
 const allyFieldOf = (state, u) => state.units.filter((x) => x.alive && x.team === u.team)
 const summonsOf = (state, u) => state.units.filter((x) => x.alive && x.field === 'summon' && x.team === u.team)
 const SUMMON_MAX = 5 // 召喚物フィールドは最大5体
-// 相手のユニット = 場のキャラクター + 召喚物(アミュレットは、召喚物フィールドに置かれるが、召喚物ではない)
-const enemyUnitsOf = (state, u) => [...enemiesOf(state, u).filter(abilityTargetable), ...state.units.filter((x) => x.alive && x.field === 'summon' && !x.isAmulet && x.team !== u.team && abilityTargetable(x))]
+// 相手のユニット = 場のキャラクター + 召喚物 + アミュレット(フォロワー = キャラクター + 召喚物。アミュレットは召喚物ではない)
+const enemyUnitsOf = (state, u) => [...enemiesOf(state, u).filter(abilityTargetable), ...state.units.filter((x) => x.alive && x.field === 'summon' && x.team !== u.team && abilityTargetable(x) && !hasKw(x, 'earthSign'))]
 const enemiesSummonsOf = (state, u) => state.units.filter((x) => x.alive && x.field === 'summon' && x.team !== u.team)
 const abilityTargetable = (u) => u.alive && !u.stealth && !hasKw(u, 'aura')
 // 単体を選ぶ能力の候補: 相手の場のキャラ + 相手のアミュレット(アミュレットは、単体指定の能力で消滅させられる)
@@ -700,7 +700,7 @@ function candidatesOf(state, source, e) {
   else if (key === 'allyFieldOne') list = [...alliesOf(state, source), ...summonsOf(state, source)]
   else if (key === 'allyAmuletOne') list = summonsOf(state, source).filter((u) => u.isAmulet)
   else if (key === 'enemyOne') list = enemyOneList(state, source)
-  else if (key === 'enemyFieldOne') list = enemyUnitsOf(state, source) // 相手の場のユニット(キャラ + 召喚物。アミュレットは、召喚物ではないので含まない)
+  else if (key === 'enemyFieldOne') list = enemyUnitsOf(state, source) // 相手の場のユニット(キャラ + 召喚物 + アミュレット)
   else list = resolveTargets(state, source, key, {})
   if (e.onlyName) list = list.filter((u) => u.name === e.onlyName) // onlyName: 指定の名前のキャラだけ
   return e.onlyType ? list.filter((u) => hasType(u, e.onlyType)) : list // onlyType: 指定のタイプ(式神など)だけ
