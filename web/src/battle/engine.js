@@ -98,7 +98,17 @@ function witchBonus(state, team, kind, n) {
   return extra
 }
 
+// 説明文(desc)に「フォロワー」を含む能力の効果には followers: true を付ける(対象が、キャラクター + 召喚物になる)。何度呼んでも同じ
+const followerDone = new WeakSet()
+function markFollowers(o) {
+  if (!o || typeof o !== 'object' || followerDone.has(o)) return
+  followerDone.add(o)
+  if (Array.isArray(o)) { o.forEach(markFollowers); return }
+  if (typeof o.desc === 'string' && o.desc.includes('フォロワー') && Array.isArray(o.effects)) o.effects.forEach((e) => { if (e && typeof e === 'object' && e.followers === undefined) e.followers = true })
+  for (const k of Object.keys(o)) if (k !== 'effects' || !Array.isArray(o.effects)) markFollowers(o[k])
+}
 function makeUnit(def, team, index, field = 'main', uid = null) {
+  markFollowers(def)
   const s = { ...def.stats }
   const base = {
     atk: s.atk, mag: s.mag ?? 0, def: s.def, spd: s.spd,
@@ -144,6 +154,7 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
 export const MAX_SPELL_SLOTS = 3 // スペルセットで有効化できる回数(環境を見て変更する予定)
 
 function makeSpell(def, i) {
+  markFollowers(def)
   const sp = { slot: `sp${i}`, id: def.id, name: def.name, cost: def.cost ?? 0, baseDesc: def.desc ?? '', desc: def.desc ?? '', baseEffects: def.effects, effects: def.effects, log: def.log, onBoost: def.onBoost || null, x: def.onBoost?.startX ?? 1, used: false }
   refreshSpell(sp)
   return sp
@@ -507,8 +518,10 @@ function noteAbility(state, kind, owner, name, desc, team, log) {
 
 function resolveTargets(state, source, key, ctx) {
   const rng = ctx.opts?.rng || Math.random
-  const allies = alliesOf(state, source)
-  const enemies = enemiesOf(state, source).filter(abilityTargetable)
+  const alliesMain = alliesOf(state, source)
+  // followers: 説明文が「フォロワー」(= キャラクター + 召喚物。アミュレットは含まない)の能力は、場のキャラに加えて召喚物も対象にする
+  const allies = ctx.followers ? [...alliesMain, ...summonsOf(state, source).filter((u) => !u.isAmulet)] : alliesMain
+  const enemies = [...enemiesOf(state, source), ...(ctx.followers ? enemiesSummonsOf(state, source).filter((u) => !u.isAmulet) : [])].filter(abilityTargetable)
   const only = ctx.only || {} // onlyName / onlyType / onlyClass: ランダムに選ぶ前に、候補をしぼる
   const keep = (u) => !(only.onlyName && u.name !== only.onlyName) && !(only.onlyType && !hasType(u, only.onlyType)) && !(only.onlyClass && u.class !== only.onlyClass)
   const pickRandom = (list0) => { const list = list0.filter(keep); return list.length ? [list[Math.floor(rng() * list.length)]] : [] }
@@ -521,7 +534,7 @@ function resolveTargets(state, source, key, ctx) {
     //   効果が働いた時点(このキャラが行動中)で、自分以外の場のキャラ(召喚物・アミュレットは含まない)のうち、
     //   いまの行動値(curAV)が最も小さい1体。同じ行動値なら、場の並びで先の1体。味方がいなければ何もしない
     case 'nearestAlly': {
-      const others = allies.filter((u) => u !== source && u.uid !== source.uid)
+      const others = alliesMain.filter((u) => u !== source && u.uid !== source.uid)
       return [[...others].sort((a, b) => a.curAV - b.curAV)[0]].filter(Boolean)
     }
     case 'otherAllyOne': {
@@ -695,13 +708,14 @@ function afterEnter(state, u) {
 function candidatesOf(state, source, e) {
   const key = e.target || 'self'
   let list
-  if (key === 'otherAllyOne') list = alliesOf(state, source).filter((u) => u.uid !== source.uid)
-  else if (key === 'allyOne') list = alliesOf(state, source)
+  const fol = e.followers ? summonsOf(state, source).filter((u) => !u.isAmulet) : [] // フォロワーなら、召喚物も選べる
+  if (key === 'otherAllyOne') list = [...alliesOf(state, source), ...fol].filter((u) => u.uid !== source.uid)
+  else if (key === 'allyOne') list = [...alliesOf(state, source), ...fol]
   else if (key === 'allyFieldOne') list = [...alliesOf(state, source), ...summonsOf(state, source)]
   else if (key === 'allyAmuletOne') list = summonsOf(state, source).filter((u) => u.isAmulet)
-  else if (key === 'enemyOne') list = enemyOneList(state, source)
+  else if (key === 'enemyOne') list = e.followers ? [...enemiesOf(state, source), ...enemiesSummonsOf(state, source).filter((u) => !u.isAmulet)].filter(abilityTargetable) : enemyOneList(state, source)
   else if (key === 'enemyFieldOne') list = enemyUnitsOf(state, source) // 相手の場のユニット(キャラ + 召喚物 + アミュレット)
-  else list = resolveTargets(state, source, key, {})
+  else list = resolveTargets(state, source, key, { followers: e.followers })
   if (e.onlyName) list = list.filter((u) => u.name === e.onlyName) // onlyName: 指定の名前のキャラだけ
   return e.onlyType ? list.filter((u) => hasType(u, e.onlyType)) : list // onlyType: 指定のタイプ(式神など)だけ
 }
@@ -852,7 +866,7 @@ function runEffects(state, source, effects, ctx = {}) {
     }
     if (e.type === 'boost' && e.target) { // 対象つき: 場のキャラ(と召喚物)それぞれが、ブーストされた回数を数える
       const n = (e.amount ?? 1) + witchBonus(state, source.team, 'boost', e.amount ?? 1)
-      for (const t of resolveTargets(state, source, e.target, ctx)) {
+      for (const t of resolveTargets(state, source, e.target, { ...ctx, followers: e.followers })) {
         boostUnit(state, t, n)
       }
       continue
@@ -975,7 +989,7 @@ function runEffects(state, source, effects, ctx = {}) {
       continue
     }
 
-    let targets = resolveTargets(state, source, e.target || 'self', { ...ctx, only: e })
+    let targets = resolveTargets(state, source, e.target || 'self', { ...ctx, only: e, followers: e.followers })
     if (e.onlyClass) targets = targets.filter((t) => t.class === e.onlyClass) // 指定のクラス(ロイヤルなど)だけ
     if (e.onlyType) targets = targets.filter((t) => hasType(t, e.onlyType)) // 指定のタイプ(式神など)だけ
     if (e.onlyName) targets = targets.filter((t) => t.name === e.onlyName) // 指定の名前のキャラ(トークンなど)だけ
