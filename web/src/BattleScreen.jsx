@@ -1080,7 +1080,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
         if (e.kind !== '進化') pendingLog.current.push({ k: `sl${sideSeq.current++}`, name: e.kind === 'スペル' ? e.name : e.owner, text: e.log || e.desc || `【${e.kind}】${e.name ?? ''}`, team: e.team })
       } else hasEffect = true
     }
-    const logs = hasEffect || gEnd >= play.events.length - 1 ? pendingLog.current.splice(0) : []
+    const logs = hasEffect || (gEnd >= play.events.length - 1 && !(state && state.pending)) ? pendingLog.current.splice(0) : [] // 対象を選ぶ能力(選択式)は、選んで効果が働くまで、ログを保留したままにする
     if (logs.length) setSideLog((l) => [...l, ...logs].slice(-SIDE_LOG_MAX))
     if (lines.length) setFeed((f) => [...f, ...lines.map((line, n) => ({ k: `${Date.now()}-${f.length}-${play.i}-${n}`, ...line }))].slice(-8))
   }, [play && play.events, play && play.i]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -1191,6 +1191,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   const act = (action) => {
     setMode(null) // 相手の選択(selected)は残す。味方を選んでいたとき(特性など)は消す(次の攻撃のボタンが押せなくならないように)
     if (selected && state?.units.find((u) => u.uid === selected)?.team === ME) setSelected(null)
+    if (action.type !== 'choose' || action.target === 'no') pendingLog.current = [] // 選ばなかった(使わない・ほかの行動)なら、保留中のログは捨てる
     if (online) { if (waitingSend) return; setWaitingSend(true); online.client.action(action); return }
     commit(step(state, action))
   }
