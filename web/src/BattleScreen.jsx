@@ -1737,7 +1737,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
       <Row extra={<TeamStatus state={view} team={ME} inline />} title="自分" color={C.player}>{players.map(card)}</Row>
       {spellsBlock && <div style={{ marginTop: 8 }}>{spellsBlock}</div>}
 
-      <div data-keep="1" className="no-sb" style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '14px -12px 0', padding: '10px 12px calc(10px + env(safe-area-inset-bottom))', height: 'min(230px, 42vh)', boxSizing: 'border-box', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
+      <div data-keep="1" className="no-sb" style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '10px -12px 0', padding: '6px 12px calc(6px + env(safe-area-inset-bottom))', height: 'min(168px, 30vh)', boxSizing: 'border-box', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
         {panelInner}
       </div>
     </div>
