@@ -124,7 +124,7 @@ export class Room {
       this.step(side, a, true)
     } catch (e) {
       const acts = this.reg.engine.legalActions(this.state)
-      const fallback = acts.find((x) => x.type === 'endTurn') || acts[0]
+      const fallback = acts.find((x) => x.type === 'skill') || acts.find((x) => x.type === 'endTurn') || acts[0] // 時間切れは、攻撃できるなら攻撃する
       if (fallback) this.step(side, fallback, true)
     }
   }

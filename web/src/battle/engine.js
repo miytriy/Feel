@@ -1293,7 +1293,7 @@ export function legalActions(state) {
     if (actor.evolvable && !actor.evolved && state.ep[actor.team] >= 1) actions.push({ type: 'evolve' })
   }
   actions.push(...spellActions(state, actor)) // スペルはキャラの行動を消費しない
-  if (!canUseSkill || targets.length === 0 || skillsDone > 0) actions.push({ type: 'endTurn' })
+  actions.push({ type: 'endTurn' }) // ターン終了(スキル攻撃ができるときも、攻撃せずに終えられる。CPUは、攻撃できるなら攻撃を選ぶ)
   return actions
 }
 

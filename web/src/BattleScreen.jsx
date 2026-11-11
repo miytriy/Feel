@@ -1649,7 +1649,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
               </button>
             )}{' '}
             {mode && <button onClick={() => { setMode(null); setSelected(null) }} style={buttonStyle(false, false)}>やめる</button>}{' '}
-            {canEnd && !mode && <button onClick={() => act({ type: 'endTurn' })} style={buttonStyle(skillTargets.length === 0, false)}>ターン終了</button>}
+            {canEnd && !mode && <button data-testid="end-turn" onClick={() => act({ type: 'endTurn' })} style={buttonStyle(skillTargets.length === 0, false)}>ターン終了</button>}
             </div>
           </div>
         )}
