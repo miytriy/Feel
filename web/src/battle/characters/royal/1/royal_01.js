@@ -7,10 +7,10 @@ export default {
   passives: [
     {
       name: '常時', trigger: 'allyEnter', enterType: '兵士',
-      desc: '自分の場に「タイプ:兵士」のキャラクターが出たとき、これは攻撃力+50する。(重なる)',
+      desc: '自分の「兵士タイプ」ユニットが、場に出たとき、これは攻撃力+50する。',
       log: 'これは攻撃力+50する。',
       effects: [{ type: 'buff', stat: 'atk', flat: 50, target: 'self' }],
     },
-    { name: '進化時', trigger: 'onEvolve', desc: '「ナイト」を1体召喚する。', log: '『ナイト』1体を召喚する。', effects: [{ type: 'summon', count: 1, unit: knight }] },
+    { name: '進化時', trigger: 'onEvolve', desc: '『ナイト』1体を召喚する。', log: '『ナイト』1体を召喚する。', effects: [{ type: 'summon', count: 1, unit: knight }] },
   ],
 }
