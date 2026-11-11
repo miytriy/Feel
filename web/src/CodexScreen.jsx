@@ -26,7 +26,7 @@ export const RARITY = {
 }
 const TARGET_LABELS = {
   self: '自分', opponent: '相手', allies: '味方全体', otherAllies: '自分以外の味方全体', allyOne: '味方1体', otherAllyOne: '自分以外の味方1体',
-  enemies: '相手全体', enemyOne: '相手1体', enemyRandom: '相手ランダム', summons: '召喚物', allyField: '自分の場', otherAllyField: '自分以外の場', entered: '入場したキャラ',
+  enemies: '相手全体', enemyOne: '相手1体', enemyFieldOne: '相手の場1体', enemyRandom: '相手ランダム', summons: '召喚物', allyField: '自分の場', otherAllyField: '自分以外の場', entered: '入場したキャラ',
 }
 const STAT_ROWS = [
   ['hp', 'HP'], ['atk', '攻撃力'], ['def', '防御力'], ['spd', '速度'],

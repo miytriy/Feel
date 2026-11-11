@@ -553,6 +553,7 @@ function resolveTargets(state, source, key, ctx) {
     case 'enemies': return enemies
     case 'enemyField': return [...enemies, ...enemiesSummonsOf(state, source).filter(abilityTargetable)] // 相手の場すべて(場のキャラ + 召喚物)
     case 'enemyOne': return ctx.chosen ? [getUnit(state, ctx.chosen)] : pickRandom(enemies)
+    case 'enemyFieldOne': return ctx.chosen ? [getUnit(state, ctx.chosen)] : pickRandom([...enemies, ...enemiesSummonsOf(state, source).filter(abilityTargetable)])
     case 'enemyRandom': return pickRandom(enemies)
     case 'enemyFieldRandom': return pickRandom([...enemies, ...enemiesSummonsOf(state, source).filter(abilityTargetable)]) // 相手の場(場のキャラ + 召喚物)からランダム1体。count があれば、その数(重ならない)
     default: return []
@@ -697,6 +698,7 @@ function candidatesOf(state, source, e) {
   else if (key === 'allyFieldOne') list = [...alliesOf(state, source), ...summonsOf(state, source)]
   else if (key === 'allyAmuletOne') list = summonsOf(state, source).filter((u) => u.isAmulet)
   else if (key === 'enemyOne') list = enemyOneList(state, source)
+  else if (key === 'enemyFieldOne') list = [...enemiesOf(state, source).filter(abilityTargetable), ...enemiesSummonsOf(state, source).filter(abilityTargetable)] // 相手の場のユニット(キャラ + 召喚物・アミュレット)
   else list = resolveTargets(state, source, key, {})
   if (e.onlyName) list = list.filter((u) => u.name === e.onlyName) // onlyName: 指定の名前のキャラだけ
   return e.onlyType ? list.filter((u) => hasType(u, e.onlyType)) : list // onlyType: 指定のタイプ(式神など)だけ
@@ -738,7 +740,7 @@ function runEffects(state, source, effects, ctx = {}) {
       if (ctx.answer === undefined) {
         if (e.mpCost && state.mp[source.team] < e.mpCost) { state.log.push(`MPが足りないので、追加の効果はなし`); continue }
         if (ctx.allowPending) {
-          state.pending = { uid: source.uid, effects: effects.slice(idx), candidates: ['yes', 'no'], confirm: true, prompt: e.prompt || '追加の効果を使いますか?', trigger: ctx.trigger || null, nextPassive: ctx.nextPassive ?? null, spell: !!ctx.spell }
+          state.pending = { uid: source.uid, effects: effects.slice(idx), candidates: ['yes', 'no'], confirm: true, prompt: e.prompt || '追加の効果を使いますか?', trigger: ctx.trigger || null, nextPassive: ctx.nextPassive ?? null, spell: !!ctx.spell, spellName: ctx.spellName || state.casting || null }
           state.log.push(`${source.name}の効果: ${state.pending.prompt}`)
           recalc(state)
           return
@@ -754,7 +756,7 @@ function runEffects(state, source, effects, ctx = {}) {
       if (cands.length === 0) { state.log.push(`${source.name}の効果の対象がいなかった`); continue }
       if (cands.length > 1) {
         // 選んでもらうために止まる(残りの効果と、あとに続くパッシブは、選ばれたあとに続けて行う)
-        state.pending = { uid: source.uid, effects: effects.slice(idx), candidates: cands.map((u) => u.uid), trigger: ctx.trigger || null, nextPassive: ctx.nextPassive ?? null, spell: !!ctx.spell }
+        state.pending = { uid: source.uid, effects: effects.slice(idx), candidates: cands.map((u) => u.uid), trigger: ctx.trigger || null, nextPassive: ctx.nextPassive ?? null, spell: !!ctx.spell, spellName: ctx.spellName || state.casting || null }
         state.log.push(`${source.name}の効果: 対象を選んでください`)
         recalc(state)
         return
@@ -989,6 +991,12 @@ function runEffects(state, source, effects, ctx = {}) {
       if (!t) continue
       switch (e.type) {
         case 'damage': {
+          if (e.summonDestroy && t.field === 'summon') { // 相手が召喚物のときは、ダメージの代わりに破壊する(キャラクターなら、下のダメージ)
+            if (e.logSummon && ctx.spell) noteAbility(state, 'スペル', source.team === 'A' ? '自分' : '相手', ctx.spellName || state.casting || '', e.desc || '', source.team, e.logSummon)
+            if (!hasKw(t, 'earthSign') && t.alive) { t.hp = 0; t.alive = false; state.log.push(`${t.name}は破壊された`) }
+            break
+          }
+          if (e.logChar && ctx.spell) noteAbility(state, 'スペル', source.team === 'A' ? '自分' : '相手', ctx.spellName || state.casting || '', e.desc || '', source.team, e.logChar) // 相手がキャラクターのときのログ
           if (e.perMpSpent != null && !(ctx.mpSpent > 0)) break // perMpSpent: 消費したMP1つにつき、倍率が perMpSpent ずつ増える(MPを使わなかったら何もしない)
           const skill = { stat: e.stat || 'atk', mult: (e.perMpSpent != null ? (e.mult ?? 0) + e.perMpSpent * ctx.mpSpent : e.mult ?? 1), add: (e.split && e.add != null ? e.add / targets.length : (e.add || 0)) + graveBonus(state, source, e) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0) + (e.perEarth ? e.perEarth * state.earth[source.team] : 0), type: e.dmgType || 'physical' } // perEarth: 自分の場の土の印1つにつき、add が perEarth ずつ増える / perType: 自分の場の「そのタイプ」のキャラ1体につき、add が perTypeFlat(省くと1)ずつ増える
           const { damage } = calcDamage(source, t, skill, ctx.opts)
@@ -1748,7 +1756,7 @@ export function applyAction(prev, action, opts = {}) {
       if (p.spell && !state.pending) countCombos(state, actor, opts)
     } else {
       state.log.push(`${getUnit(state, action.target).name}を選んだ`)
-      runEffects(state, actor, p.effects, { opts, chosen: action.target, trigger: p.trigger, spell: p.spell, allowPending: !!p.spell })
+      runEffects(state, actor, p.effects, { opts, chosen: action.target, trigger: p.trigger, spell: p.spell, spellName: p.spellName, allowPending: !!p.spell })
       if (p.spell && !state.pending) countCombos(state, actor, opts)
     }
     if (p.trigger && p.nextPassive != null) fire(state, p.trigger, actor, { opts, allowPending: true }, p.nextPassive) // 続きのパッシブ
