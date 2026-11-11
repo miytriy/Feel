@@ -306,7 +306,7 @@ function crestSource(state, crest) {
 // ---------- ステータスの再計算(バフ・常時・アクティブ・クレスト) ----------
 
 // 【コンボ_◯】を持っているキャラ(コンボのパッシブ、または条件 combo を持つ能力がある、場の生きているキャラ)
-export const hasComboAbility = (u) => u.passiveObjs.some((p) => p.trigger === 'combo' || p.condition?.combo != null || p.usesCombo || p.effects?.some((e) => e.fromOwned || e.perCombo || e.comboCount))
+export const hasComboAbility = (u) => u.passiveObjs.some((p) => p.trigger === 'combo' || p.condition?.combo != null || p.usesCombo || p.effects?.some((e) => e.fromOwned || e.perCombo || e.comboCount)) || (u.traits || []).some((t) => t.usesCombo || t.effects?.some((e) => e.perCombo))
 // 自分の場(場のキャラ + 召喚物フィールド)にいる、指定のタイプのキャラの数
 // タイプの判定: 「トークン/兵士」のように「/」でつないだタイプは、どの部分にも当てはまる(兵士でもあり、トークンでもある)
 const hasType = (u, type) => !!u && !!u.type && String(u.type).split('/').includes(type)
