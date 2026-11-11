@@ -1014,6 +1014,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
 
   const [feed, setFeed] = useState([]) // 「いま起きたこと」の履歴(再生に合わせて増える)
   const [sideLog, setSideLog] = useState([]) // 左側のログ({ k, name, text, team })。最大 SIDE_LOG_MAX 個
+  const pendingLog = useRef([]) // 能力の表示のあと、盤面に働くまで保留している左のログ
   const sideSeq = useRef(0)
   const dropSideLog = (k) => setSideLog((l) => l.filter((x) => x.k !== k))
   const [showDesc, setShowDesc] = useState(() => { try { return localStorage.getItem('feel-show-desc') === '1' } catch { return false } }) // 操作パネルの説明文を出すか
@@ -1069,11 +1070,17 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     }
     const lines = []
     for (let k = play.i; k <= groupEnd(play.events, play.i); k++) { const l = lineOf(play.events[k]); if (l) lines.push(l) }
-    const logs = []
-    for (let k = play.i; k <= groupEnd(play.events, play.i); k++) {
+    // 左のログは、その能力が盤面に実際に働くタイミング(能力のあとの、ダメージ・召喚・強化などが映るとき)に出す。
+    // 能力の表示の瞬間には出さず、保留しておき、次の「働き」の出来事と一緒に出す。後ろに働きがなければ、そのまま出す
+    const gEnd = groupEnd(play.events, play.i)
+    let hasEffect = false
+    for (let k = play.i; k <= gEnd; k++) {
       const e = play.events[k]
-      if (e.type === 'ability' && e.kind !== '進化') logs.push({ k: `sl${sideSeq.current++}`, name: e.kind === 'スペル' ? e.name : e.owner, text: e.log || e.desc || `【${e.kind}】${e.name ?? ''}`, team: e.team }) // ログの内容は、これから決める(いまは能力の発動だけ)
+      if (e.type === 'ability') {
+        if (e.kind !== '進化') pendingLog.current.push({ k: `sl${sideSeq.current++}`, name: e.kind === 'スペル' ? e.name : e.owner, text: e.log || e.desc || `【${e.kind}】${e.name ?? ''}`, team: e.team })
+      } else hasEffect = true
     }
+    const logs = hasEffect || gEnd >= play.events.length - 1 ? pendingLog.current.splice(0) : []
     if (logs.length) setSideLog((l) => [...l, ...logs].slice(-SIDE_LOG_MAX))
     if (lines.length) setFeed((f) => [...f, ...lines.map((line, n) => ({ k: `${Date.now()}-${f.length}-${play.i}-${n}`, ...line }))].slice(-8))
   }, [play && play.events, play && play.i]) // eslint-disable-line react-hooks/exhaustive-deps
