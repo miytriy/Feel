@@ -9,7 +9,7 @@ const X = await import(B + (process.env.X_AI || 'ai.js'))
 const Y = await import(B + (process.env.Y_AI || 'ai_old.js'))
 const LX = +(process.env.X_LV || 5), LY = +(process.env.Y_LV || 5)
 const N = +(process.env.N || 20)
-const pool = reg.chars.filter((c) => !c.amulet && !c.id.startsWith('test_'))
+const pool = reg.chars.filter((c) => !c.amulet && !c.id.startsWith('test_') && !c.id.includes('_token_'))
 let seed = +(process.env.SEED || 1)
 const rnd = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296 }
 const pick5 = () => { const a = [...pool]; const out = []; while (out.length < 5) out.push(a.splice(Math.floor(rnd() * a.length), 1)[0]); return out }
