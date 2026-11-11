@@ -16,7 +16,7 @@ const TRAIT_MIN_GAIN = 0.01 // レベル3: 盤面が これ以上よくなる特
 const LOOKAHEAD = 50 // レベル4: 最大何回先の行動まで読むか
 const SAMPLES = 3 // レベル4: 乱数(クリティカル)を入れた試行の回数
 const SPELL_MIN_GAIN = 0.01 // レベル5: 盤面がこれ以上よくなるスペルだけ使う
-const MARGIN = 0.15 // レベル4: レベル3の選択より、これ以上よいときだけ選び直す
+const MARGIN = 0 // レベル4: 先読みの結果が、レベル3の選択より少しでもよければ選び直す(0.15だと、レベル3の選択に引っ張られて弱かった。自動対戦で 0 のほうが 77勝41敗)
 const TEMPO_WEIGHT = 0.1 // 行動バーの進み具合を、盤面の評価にどれだけ入れるか
 
 const pickRandom = (list, rng) => list[Math.floor(rng() * list.length)]
