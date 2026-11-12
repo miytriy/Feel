@@ -289,18 +289,20 @@ const EVO_IMG = (n) => `url(${import.meta.env?.BASE_URL || '/'}fx/evolve/${n}.we
 const EVO_L = { position: 'absolute', inset: 0, backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', willChange: 'transform, opacity' }
 const EVO_RB = [[0, 0.9], [0.13, 0.7]]
 const EVO_SPARK = Array.from({ length: 16 }, (_, n) => { const a = n * 2.39996; const rr = 30 + (n % 5) * 9; return { x: 50 + Math.cos(a) * rr * 0.8, y: 50 + Math.sin(a) * rr * 0.9, s: 2 + (n % 3) * 1.5, dx: Math.round(Math.cos(a) * 14), dy: -10 - (n % 4) * 6, d: 0.74 + (n % 6) * 0.06, dur: 0.5 + (n % 4) * 0.1 } })
-// 名前が枠に入り切らないときは、2行にせず、左へ流れる(駅の電光掲示板のように)。
-// 末尾まで見えたら少し止まって、先頭に戻る(ずっと循環はしない)。transform だけで動かす
-const MARQUEE_PX_PER_S = 34 // 流れる速さ(px/秒)
-function NameMarquee({ text, style }) {
+// 名前が枠に入り切らないときは、2行にせず、1行に収まるまで文字を小さくする(動かさない)。
+// 小さくしすぎて読めなくならないよう、下限(元の約55%)で止め、それでも入らない分は「…」で省く
+const NAME_MIN_RATIO = 0.55
+function NameFit({ text, style }) {
   const box = useRef(null)
   const one = useRef(null)
-  const [over, setOver] = useState(0) // 枠からはみ出している長さ(px)。0 = 収まっている
+  const [ratio, setRatio] = useState(1)
   useLayoutEffect(() => {
     const measure = () => {
       const b = box.current, t = one.current
       if (!b || !t) return
-      setOver(Math.max(0, t.offsetWidth - b.clientWidth + 2))
+      t.style.fontSize = '' // 元の大きさで測る
+      const natural = t.offsetWidth, room = b.clientWidth
+      setRatio(natural > room && room > 0 ? Math.max(NAME_MIN_RATIO, room / natural) : 1)
     }
     measure()
     if (typeof ResizeObserver === 'undefined') return undefined
@@ -308,10 +310,9 @@ function NameMarquee({ text, style }) {
     ro.observe(box.current)
     return () => ro.disconnect()
   }, [text])
-  const moving = over > 3
   return (
-    <div ref={box} style={{ overflow: 'hidden', whiteSpace: 'nowrap', ...style }}>
-      <span ref={one} style={moving ? { display: 'inline-block', '--mq': `${over}px`, animation: `feel-marq ${((over / MARQUEE_PX_PER_S) / 0.55).toFixed(2)}s linear infinite`, willChange: 'transform' } : { display: 'inline-block' }}>{text}</span>
+    <div ref={box} style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', ...style }}>
+      <span ref={one} style={{ display: 'inline-block', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', verticalAlign: 'top', ...(ratio < 1 ? { fontSize: `${(ratio * 100).toFixed(1)}%` } : {}) }}>{text}</span>
     </div>
   )
 }
@@ -528,7 +529,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         </span>
         )
       )}
-      <NameMarquee text={unit.name} style={{ height: big ? 36 : 26, fontWeight: big ? 700 : 400, ...(vanishing ? { animation: 'feel-d-fade2 0.03s ease-in 0.04s forwards', willChange: 'opacity' } : {}) }} /> {/* 消滅: 名前も、青い光の円が広がりきる0.07秒までに消す */}
+      <NameFit text={unit.name} style={{ height: big ? 36 : 26, fontWeight: big ? 700 : 400, ...(vanishing ? { animation: 'feel-d-fade2 0.03s ease-in 0.04s forwards', willChange: 'opacity' } : {}) }} /> {/* 消滅: 名前も、青い光の円が広がりきる0.07秒までに消す */}
       {!unit.isAmulet && (
         <div style={{ background: '#1b3a43', height: big ? 9 : 6, borderRadius: 3, marginTop: 3, position: 'relative' }}>
           <div style={{ width: '100%', height: '100%', borderRadius: 3, background: hpColor, transformOrigin: '0 50%', transform: `scaleX(${ratio})`, transition: 'transform 0.3s' }} />
