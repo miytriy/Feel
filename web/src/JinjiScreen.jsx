@@ -4,7 +4,8 @@ import { ALL_CHARACTERS } from './battle/characters/index.js'
 import { CLASS_ORDER } from './battle/characters/validate.js'
 import { KEYWORDS, TRIGGER_LABELS, RELICS } from './battle/engine.js'
 import { useRelicInv, equippedOf, ownerMap, equipRelic, forgeRelic, deleteRelic } from './relicInv.js'
-import { RELIC_PARTS, PART_IDS, RELIC_RARITIES, relicLines, relicTotals, statText } from './battle/relicRules.js'
+import { RELIC_PARTS, PART_IDS, RELIC_RARITIES, relicLines, relicTotals, statText, applyRelics } from './battle/relicRules.js'
+import { ENHANCE_STEP } from './enhance.js'
 import { unlockLevel } from './unlock.js'
 import { RARITY, fold, collectRelated } from './CodexScreen.jsx'
 import { Emblem, hash } from './emblem.jsx'
@@ -191,6 +192,16 @@ const CSS = `
 .jp-yel .tiles small { display: block; font-size: 18px; color: #c9c9ce; } .jp-yel .tiles b { font-family: ${DISPLAY}; font-size: 36px; }
 
 
+
+.jp-bar.tap { cursor: pointer; } .jp-stats.tap { cursor: pointer; } .jp-bar.tap:hover { background: rgba(0,0,0,0.68); }
+.jp-stats b u, .jp-mini b u { text-decoration: none; font-size: 0.55em; color: #1a73d9; margin-left: 4px; font-family: ${FONT}; }
+.jp-sd { position: absolute; inset: 0; z-index: 70; display: grid; place-items: center; background: rgba(0,0,0,0.55); animation: jp-tile-in 0.15s linear; }
+.jp-sd-box { width: min(680px, 92%); max-height: 90%; overflow-y: auto; padding: 22px 28px 20px; background: #1d1d21; color: #fff; box-shadow: 0 10px 40px rgba(0,0,0,0.5); font-size: 28px; }
+.jp-sd-h { display: flex; align-items: center; font-size: 32px; font-weight: 700; padding-bottom: 8px; } .jp-sd-h button { margin-left: auto; min-height: 0; width: 48px; height: 48px; padding: 0; font-size: 30px; border: 0; background: transparent; color: #fff; cursor: pointer; }
+.jp-sd-t { margin: 14px 0 4px; padding: 6px 12px; background: #3a3a42; font-size: 24px; font-weight: 700; letter-spacing: 0.06em; }
+.jp-sd-row { display: flex; align-items: baseline; padding: 8px 12px; border-bottom: 1px solid #34343a; } .jp-sd-row span { color: #d6d6dc; }
+.jp-sd-row b { margin-left: auto; font-family: ${DISPLAY}; font-size: 34px; } .jp-sd-row em { font-style: normal; color: #6cb6ff; margin-left: 12px; font-size: 30px; }
+.jp-sd-n { margin-top: 12px; font-size: 19px; color: #9a9aa2; }
 /* 遺物(部位つき) */
 .jp-rl-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 6px 0 10px; }
 .jp-rl-tab { min-height: 0; padding: 10px 8px; border: 2px solid #3a3a40; border-radius: 10px; background: #2b2b2f; color: #cfcfd4; cursor: pointer; font-size: 22px; font-weight: 700; line-height: 1.2; transition: transform .15s ease-out; }
@@ -330,6 +341,41 @@ function Tiles({ cols, rows, close }) {
 }
 
 
+
+// 能力値の内訳: 基礎(キャラ本来の値)と、強化・セット遺物・部位つき遺物で足されている分(extra)。バトルに出るときの計算(engine.js)と同じ順
+function statBreakdown(c, pieces, enhLv) {
+  const s = c.stats
+  const base = { hp: s.hp, atk: s.atk, def: s.def, spd: s.spd, mag: s.mag ?? 0, critRate: s.critRate ?? 5, critDmg: s.critDmg ?? 50, dmgResist: s.dmgResist ?? 0, physUp: 0, magUp: 0, healUp: 0, effHit: 0 }
+  const f = { ...base }
+  if (enhLv > 0 && !c.amulet) for (const k of ['hp', 'atk', 'def', 'spd']) f[k] += enhLv * ENHANCE_STEP
+  if (enhLv > 0 && !c.amulet && s.mag != null) f.mag += enhLv * ENHANCE_STEP
+  for (const m of (c.relic && RELICS[c.relic] ? RELICS[c.relic].mods : [])) f[m.stat] = Math.round(f[m.stat] * (1 + (m.pct || 0) / 100) + (m.flat || 0))
+  const g = pieces.length ? applyRelics(f, pieces) : f
+  const out = {}
+  for (const k of Object.keys(base)) out[k] = { base: base[k], extra: Math.round((g[k] - base[k]) * 10) / 10 }
+  return out
+}
+const SD_BASIC = [['spd', '速度', ''], ['atk', '攻撃力', ''], ['hp', '体力', ''], ['def', '防御力', ''], ['mag', '魔力', '']]
+const SD_ADV = [['critRate', 'クリティカルレート', '%'], ['critDmg', 'クリティカルダメージ', '%'], ['healUp', '治癒量', '%'], ['effHit', '効果効率', '%'], ['dmgResist', '耐性値', ''], ['physUp', '物理ダメージ', '%'], ['magUp', '魔法ダメージ', '%']]
+function StatDetail({ c, sb, onClose }) {
+  const row = ([k, label, u]) => {
+    const v = sb[k]
+    return <div className="jp-sd-row" key={k} data-testid={`sd-${k}`}><span>{label}</span><b>{v.base}{u}{v.extra ? <em>{v.extra > 0 ? '+' : ''}{v.extra}{u}</em> : null}</b></div>
+  }
+  return (
+    <div className="jp-sd" data-testid="stat-detail" onClick={onClose}>
+      <div className="jp-sd-box" onClick={(e) => e.stopPropagation()}>
+        <div className="jp-sd-h">{c.name}<button type="button" aria-label="閉じる" onClick={onClose}>×</button></div>
+        <div className="jp-sd-t">基礎ステータス</div>
+        {SD_BASIC.filter(([k]) => k !== 'mag' || sb.mag.base || sb.mag.extra).map(row)}
+        <div className="jp-sd-t">上級ステータス</div>
+        {SD_ADV.map(row)}
+        <div className="jp-sd-n">左が基礎値、右の青い数字が、強化・遺物などで足されている分です。</div>
+      </div>
+    </div>
+  )
+}
+
 // 遺物(部位つき): 6つの部位から選んで、持っている遺物を装備する。保存はサーバー(アカウント)
 const starsOf = (r) => '★'.repeat(r.stars)
 function RelicCard({ r, on, who, onClick, onDelete }) {
@@ -453,6 +499,7 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
   }
   useEffect(() => {
     const h = (e) => {
+      if (statOpen) { if (e.key === 'Escape') setStatOpen(false); return }
       if (gridOpen) { if (e.key === 'Escape') closeGrid(); return }
       if (searchOpen && e.target && e.target.tagName === 'INPUT') { if (e.key === 'Escape') setSearchOpen(false); return }
       if (e.key === 'Escape') close()
@@ -488,6 +535,8 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
   const relicName = c ? c.relic || null : null // キャラ本来のセット遺物(ある場合)
   const relic = relicName ? RELICS[relicName] : null
   const relicCount = c ? equippedOf(c.id, relInv).length : 0
+  const [statOpen, setStatOpen] = useState(false)
+  const sb = c ? statBreakdown(c, equippedOf(c.id, relInv), (enhMap && enhMap[c.id]) || 0) : null
   const rel = c ? collectRelated(c) : { units: [], spells: [] }
   const relCount = rel.units.length + rel.spells.length
   const vars = c ? { '--rc': rarityColor(c), '--rbg': rarityBg(c), '--tc': tone(c) } : {}
@@ -512,16 +561,16 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
         <span>{c.class}</span>
         {RARITY[c.rarity] && <span>{RARITY[c.rarity].label}</span>}
       </div>
-      <div className="jp-bar">能力値<em>•••</em></div>
-      <div className="jp-stats">
+      <div className="jp-bar tap" data-testid="jp-stat-open" role="button" tabIndex={0} onClick={() => setStatOpen(true)} onKeyDown={(e) => { if (e.key === 'Enter') setStatOpen(true) }}>能力値<em>詳細 ›</em></div>
+      <div className="jp-stats tap" role="button" tabIndex={0} onClick={() => setStatOpen(true)}>
         {['hp', 'atk', 'def', 'spd'].map((k) => (
-          <div key={k}><div className="ic"><StatIcon stat={k} /></div><small>{STAT_LABEL[k]}</small><b>{c.stats[k]}</b></div>
+          <div key={k}><div className="ic"><StatIcon stat={k} /></div><small>{STAT_LABEL[k]}</small><b>{c.stats[k]}{sb[k].extra ? <u>{sb[k].extra > 0 ? '+' : ''}{sb[k].extra}</u> : null}</b></div>
         ))}
       </div>
       <div className="jp-mini">
         {['mag', 'critRate', 'critDmg', 'dmgResist'].map((k) => {
           const v = k === 'mag' && c.stats.mag == null && c.skill?.stat === 'mag' ? 0 : showStat(k)
-          return <div key={k}><span><StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', marginRight: 4 }} />{STAT_LABEL[k]}</span><b>{v == null ? '-' : v}{v != null && (k === 'critRate' || k === 'critDmg') ? '%' : ''}</b></div>
+          return <div key={k}><span><StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', marginRight: 4 }} />{STAT_LABEL[k]}</span><b>{v == null ? '-' : v}{v != null && (k === 'critRate' || k === 'critDmg') ? '%' : ''}{sb[k]?.extra ? <u>{sb[k].extra > 0 ? '+' : ''}{sb[k].extra}{k === 'critRate' || k === 'critDmg' ? '%' : ''}</u> : null}</b></div>
         })}
       </div>
       <div className="jp-bar" style={{ marginTop: 18 }}>スキル</div>
@@ -655,6 +704,7 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
         {c && tab === 'ov' && infoBlock}
         {c && tab === 'ov' && yel}
         {pane}
+        {statOpen && c && <StatDetail c={c} sb={sb} onClose={() => setStatOpen(false)} />}
 
         {c && (
           <div className="jp-tabs">
