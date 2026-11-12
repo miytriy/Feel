@@ -2,7 +2,7 @@ import { ME, OPP } from './perspective.js'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { C, FONT, alpha } from './ui.js'
-import { KEYWORDS, TRIGGER_LABELS, bracket } from './battle/engine.js'
+import { KEYWORDS, TRIGGER_LABELS, bracket, isEnhance, enhanceBody } from './battle/engine.js'
 import { StatIcon } from './icons.jsx'
 
 // 戦闘実況(⌸): 右上の「⌸」から開く、全画面のオーバーレイ。開いている間は、対戦(CPUの行動・再生)を止める。
@@ -160,7 +160,7 @@ function UnitSkills({ u, color }) {
       {sec('能力', color)}
       {u.passiveObjs.length + u.traits.length === 0 && !u.accel ? <div style={{ fontSize: 12, color: C.mute, padding: '2px 8px' }}>能力なし</div> : null}
       {u.passiveObjs.map((p, i) => row(passiveText(p), `p${i}`))}
-      {u.traits.map((t, i) => row(`${tierPrefix(t.condition)}【特性 MP${t.cost}${t.repeatable ? ' 連続使用可' : ''}】${t.name}: ${t.desc ?? ''}${!t.repeatable && used.has(t.name) ? ' (使用済み)' : ''}`, `t${i}`))}
+      {u.traits.map((t, i) => row(isEnhance(t) ? `【${t.name}】${enhanceBody(t)}${!t.repeatable && used.has(t.name) ? ' (使用済み)' : ''}` : `${tierPrefix(t.condition)}【特性 MP${t.cost}${t.repeatable ? ' 連続使用可' : ''}】${t.name}: ${t.desc ?? ''}${!t.repeatable && used.has(t.name) ? ' (使用済み)' : ''}`, `t${i}`))}
       {u.accel && row(`【アクセラレート_${u.accel.speed}】${u.accel.name}(MP${u.accel.cost ?? 0}): ${u.accel.desc ?? ''}`, 'ac')}
     </div>
   )

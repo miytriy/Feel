@@ -56,6 +56,9 @@ export const KEYWORDS = {
   earthSign: { label: '土の印', desc: '自分の場の土の印の数は合算される。土の印は土の秘術によって消費される。これは能力で破壊できず、相手の能力で選ばれない' },
 }
 // 能力名を【】でかこむ。『ファンファーレ【コンボ_3】』のように中に【】があるときは、【ファンファーレ】【コンボ_3】と分けて並べる
+// エンハンスは『【エンハンス_N】MPNを消費すると、』が説明の頭に入っている。表示ではタイトル【エンハンス_N】+中身だけにする
+export const isEnhance = (t) => t?.id === 'enhance'
+export const enhanceBody = (t) => (t.desc || '').replace(/^【エンハンス_?\d*】/, '').replace(/^MP\d+を消費すると、?/, '')
 export const bracket = (name) => { const m = /^(.+?)【(.+)】$/.exec(name); return m ? `【${m[1]}】【${m[2]}】` : `【${name}】` }
 
 export const TRIGGER_LABELS = {

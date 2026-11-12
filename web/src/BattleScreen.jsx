@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { addEvents, buildMatch, newStats } from './career.js'
-import { createBattle, applyAction, addGhosts, getActiveUnit, legalActions, getUnit, gaugeOf, calcDamage, KEYWORDS, TRIGGER_LABELS, bracket } from './battle/engine.js'
+import { createBattle, applyAction, addGhosts, getActiveUnit, legalActions, getUnit, gaugeOf, calcDamage, KEYWORDS, TRIGGER_LABELS, bracket, isEnhance, enhanceBody } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS, SPELL_LEVEL } from './battle/ai.js'
 import { DEFAULT_PLAYER_IDS, buildCpuTeam, buildCpuSpells, loadCpuCharSetting, saveCpuCharSetting, isTestChar, loadComboMode, saveComboMode } from './battle/teams.js'
 import { enhanceDef } from './enhance.js'
@@ -720,7 +720,7 @@ function abilityTable(unit, { full }) {
     add(tier ? rowOf(tier) : rowOf(`${p.name ?? ''}${label}`), text)
   }
   for (const t of unit.traits) {
-    const text = `${tierPrefix(t.condition)}【特性 MP${t.cost}${t.repeatable ? ' 連続使用可' : ''}】${t.name}: ${t.desc ?? ''}`
+    const text = isEnhance(t) ? `【${t.name}】${enhanceBody(t)}` : `${tierPrefix(t.condition)}【特性 MP${t.cost}${t.repeatable ? ' 連続使用可' : ''}】${t.name}: ${t.desc ?? ''}`
     if (amulet) { crystal.act.push(text); continue }
     const tier = t.condition?.liberation ? '解放奥義' : t.condition?.ultimate ? '奥義' : t.id === 'enhance' ? 'エンハンス' : 'アクティブ'
     add(rowOf(tier), text)

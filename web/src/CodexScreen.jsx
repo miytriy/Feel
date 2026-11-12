@@ -4,7 +4,7 @@ import { ScreenHeader } from './chrome.jsx'
 import { StatIcon } from './icons.jsx'
 import { ALL_CHARACTERS, charById } from './battle/characters/index.js'
 import { ALL_SPELLS, spellById } from './battle/spells/index.js'
-import { KEYWORDS, TRIGGER_LABELS, RELICS, bracket } from './battle/engine.js'
+import { KEYWORDS, TRIGGER_LABELS, RELICS, bracket, isEnhance, enhanceBody } from './battle/engine.js'
 import { CLASSES } from './battle/characters/validate.js'
 
 // 資料集: キャラクター/スペルをタブで分け、さらにクラスで絞り込み、名前や効果の文字で検索できる。
@@ -177,7 +177,7 @@ export function CharDetail({ def, onOpen }) {
       {(def.traits || []).length > 0 && (
         <Section title="特性">
           {def.traits.map((t) => (
-            <AbilityRow key={t.id} head={t.name} tag={`MP${t.cost}`} desc={`${t.desc || ''}${t.target ? `(対象: ${TARGET_LABELS[t.target] || t.target})` : ''}${t.repeatable ? ' ※1ターンに複数回使える' : ''}`} />
+            <AbilityRow key={t.id} head={isEnhance(t) ? `【${t.name}】` : t.name} tag={isEnhance(t) ? null : `MP${t.cost}`} desc={isEnhance(t) ? enhanceBody(t) : `${t.desc || ''}${t.target ? `(対象: ${TARGET_LABELS[t.target] || t.target})` : ''}${t.repeatable ? ' ※1ターンに複数回使える' : ''}`} />
           ))}
         </Section>
       )}
