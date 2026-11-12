@@ -1129,9 +1129,12 @@ function runEffects(state, source, effects, ctx = {}) {
           if (e.settle) resolveDeaths(state, ctx.opts) // settle: 破壊の処理(ラストワード・倒された記録)を、次の効果より先に済ませる
           break
         case 'reenter': // 入場し直す: 入場直後の状態に戻る(次の自分のターン開始時にファンファーレがもう一度働き、そのターンはスキル攻撃ができない)
-          t.hasActed = false
-          t.comboCount = 0
-          state.log.push(`${t.name}は入場し直した`)
+          { // 再出場: ステータス・HP・行動値・バフ・状態(進化など)がすべて初期値に戻る(いる場所・チーム・uid・クラス特性はそのまま)
+            const { ct } = t
+            Object.assign(t, makeUnit(t.charDef, t.team, 0, t.field, t.uid), { ct })
+            recalc(state)
+          }
+          state.log.push(`${t.name}は再出場した`)
           break
         case 'advance': // 行動順アップ: いまの行動値(curAV)を、基準の行動値(baseAV)の pct% ぶん減らす(0未満にはならない)。
           // 減らすのはその1回だけ。そのキャラが行動すると行動値は基準に戻る(curAV = baseAV)ので、アップはそのターンにしか効かない
