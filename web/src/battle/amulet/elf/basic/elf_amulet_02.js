@@ -8,7 +8,7 @@ export default {
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '『フェアリー』1体を召喚する。', effects: [{ type: 'summon', count: 1, unit: fairy }] },
     {
-      name: '妖精の庭', trigger: 'allyEnter', enterType: '妖精',
+      name: '常時', trigger: 'allyEnter', enterType: '妖精',
       desc: '【カウントダウン_2】自分の妖精・フォロワーが場に出たとき、相手の場のフォロワーからランダム1体に100の物理ダメージ。',
       effects: [{ type: 'damage', stat: 'atk', mult: 0, add: 100, dmgType: 'physical', target: 'enemyRandom' }],
     },
