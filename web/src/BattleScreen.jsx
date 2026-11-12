@@ -16,7 +16,7 @@ import { ME, OPP, setMe, winnerView } from './perspective.js'
 import { VanishFx, VANISH_BASE_MS } from './VanishFx.jsx'
 // 強化のエフェクトで、文字ではなくアイコンで見せるステータス
 const BUFF_ICON = new Set(['hp', 'atk', 'def', 'spd', 'mag', 'critRate', 'critDmg', 'dmgResist'])
-const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', margin: '0 2px 0 0' }} />
+const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1.25em', verticalAlign: '-0.22em', margin: '0 3px 0 0' }} />
 
 // 色: 自分=青、相手=赤紫、行動中=琥珀
 const C = { ...BASE, hp: '#3ddc97', hpMid: '#ffd24a', hpLow: '#ff5a5a' } // 色は ui.js の共通の色 + HPバー
@@ -844,11 +844,11 @@ function InfoCard({ testid, unit, accent, children, big = false, style }) {
   const kind = [unit.class, ...String(unit.type || '').split('/')].filter(Boolean).join('/')
   const mag = unit.skill?.stat === 'mag' || unit.mag > 0
   return (
-    <div data-testid={testid} style={{ borderRadius: 10, overflow: 'hidden', background: C.card, border: `2px solid ${edge}`, boxShadow: `0 0 0 1px ${alpha(edge, 35)}, 0 4px 14px ${alpha('#000000', 28)}`, fontSize: big ? 13 : 12, lineHeight: 1.55, ...style }}>
+    <div data-testid={testid} style={{ borderRadius: 10, overflow: 'hidden', background: C.card, border: `2px solid ${edge}`, boxShadow: `0 0 0 1px ${alpha(edge, 35)}, 0 4px 14px ${alpha('#000000', 28)}`, fontSize: big ? 15 : 14, lineHeight: 1.55, ...style }}>
       <div style={{ padding: big ? '8px 12px 6px' : '6px 10px 5px', background: `linear-gradient(90deg, ${alpha(edge, 30)}, ${alpha(edge, 6)})` }}>
-        <div style={{ fontWeight: 800, fontSize: big ? 16 : 14, overflowWrap: 'anywhere' }}><SI k="spd" />{Math.round(unit.spd)}/{unit.name}{unit.evolved ? '(進化済)' : ''}{unit.field === 'summon' ? '(召喚物)' : ''}</div>
+        <div style={{ fontWeight: 800, fontSize: big ? 19 : 17, overflowWrap: 'anywhere' }}><SI k="spd" />{Math.round(unit.spd)}/{unit.name}{unit.evolved ? '(進化済)' : ''}{unit.field === 'summon' ? '(召喚物)' : ''}</div>
         {!unit.isAmulet && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 12px', alignItems: 'baseline', color: C.mute, fontSize: big ? 12 : 11, fontWeight: 600 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 14px', alignItems: 'center', color: C.ink, fontSize: big ? 16 : 15, fontWeight: 700 }}>
             {import.meta.env.DEV && unit.unitType && <span title="ユニットタイプ(開発用。本番では出さない)" style={{ opacity: 0.6 }}>[{unit.unitType}{unit.token ? '・トークン' : ''}]</span>}
             {kind && <span>{kind}</span>}
             <span><SI k="hp" />{hp}</span>

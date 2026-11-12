@@ -138,20 +138,20 @@ export function CharDetail({ def, onOpen }) {
   return (
     <>
       <Section title="ステータス">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px 16px', fontSize: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px 18px', fontSize: 18 }}>
           {STAT_ROWS.map(([k, label]) => {
             const v = def.stats[k]
             if (v == null && DEFAULTS[k] == null && k !== 'mag' && k !== 'dmgResist') return null
             if (v == null && k === 'mag' && def.skill?.stat === 'mag') return (
-              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px dotted ${C.line}` }}>
-                <span style={{ color: C.mute, display: 'flex', alignItems: 'center', gap: 6 }}><StatIcon stat={k} style={{ fontSize: 16, color: C.ink }} />{label}</span><b>0</b>
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2px 0', borderBottom: `1px dotted ${C.line}` }}>
+                <span style={{ color: C.mute, display: 'flex', alignItems: 'center', gap: 8 }}><StatIcon stat={k} style={{ fontSize: 26, color: C.ink }} />{label}</span><b>0</b>
               </div>
             )
             if (v == null && ['mag', 'dmgResist'].includes(k)) return null
             const shown = v ?? DEFAULTS[k]
             return (
-              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `1px dotted ${C.line}` }}>
-                <span style={{ color: C.mute, display: 'flex', alignItems: 'center', gap: 6 }}><StatIcon stat={k} style={{ fontSize: 16, color: C.ink }} />{label}</span>
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2px 0', borderBottom: `1px dotted ${C.line}` }}>
+                <span style={{ color: C.mute, display: 'flex', alignItems: 'center', gap: 8 }}><StatIcon stat={k} style={{ fontSize: 26, color: C.ink }} />{label}</span>
                 <b>{shown}{k === 'critRate' || k === 'critDmg' ? '%' : ''}</b>
               </div>
             )
