@@ -2,7 +2,7 @@ import { ME, OPP } from './perspective.js'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { C, FONT, alpha } from './ui.js'
-import { KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
+import { KEYWORDS, TRIGGER_LABELS, bracket } from './battle/engine.js'
 import { StatIcon } from './icons.jsx'
 
 // 戦闘実況(⌸): 右上の「⌸」から開く、全画面のオーバーレイ。開いている間は、対戦(CPUの行動・再生)を止める。
@@ -56,6 +56,7 @@ const TYPE_LABEL = { physical: '物理', magic: '魔法', true: '確定' }
 const tierPrefix = (cond) => (cond?.liberation ? '【解放奥義】' : cond?.ultimate ? '【奥義】' : '')
 const passiveText = (p) => {
   const label = (TRIGGER_LABELS[p.trigger] ?? p.trigger) + (p.min != null && p.trigger !== 'combo' ? `_${p.min}` : '')
+  if (p.name && /^.+?【.+】$/.test(p.name)) return `${tierPrefix(p.condition)}${bracket(p.name)}${p.desc ?? ''}` // 『ファンファーレ【コンボ_3】』は、【ファンファーレ】【コンボ_3】と分けて出す
   const name = p.name && p.name !== label ? `${p.name}: ` : ''
   return `${tierPrefix(p.condition)}【${label}】${name}${p.desc ?? ''}`
 }

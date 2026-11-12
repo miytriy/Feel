@@ -55,6 +55,9 @@ export const KEYWORDS = {
   barrier: { label: 'バリア', desc: '攻撃を一回0ダメージにして壊れる' },
   earthSign: { label: '土の印', desc: '自分の場の土の印の数は合算される。土の印は土の秘術によって消費される。これは能力で破壊できず、相手の能力で選ばれない' },
 }
+// 能力名を【】でかこむ。『ファンファーレ【コンボ_3】』のように中に【】があるときは、【ファンファーレ】【コンボ_3】と分けて並べる
+export const bracket = (name) => { const m = /^(.+?)【(.+)】$/.exec(name); return m ? `【${m[1]}】【${m[2]}】` : `【${name}】` }
+
 export const TRIGGER_LABELS = {
   fanfare: 'ファンファーレ', constant: '常時', active: 'アクティブ', lastWord: 'ラストワード',
   onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時', onEvolved: '進化したとき', turnEnd: 'ターン終了時', onLeave: '場を離れる場合', onEnter: '場に出たとき', enemyTurnEnd: '相手のターン終了時',
@@ -1144,7 +1147,7 @@ function fire(state, trigger, unit, ctx = {}, from = 0) {
     if (p.enterType && !hasType(ctx.other, p.enterType)) continue
     if (p.enterName && ctx.other.name !== p.enterName) continue // 指定の名前のキャラ(トークンなど)が出たときだけ
     if (p.deathKeyword && !(ctx.other && hasKw(ctx.other, p.deathKeyword))) continue // 指定のキーワード(守護など)を持つキャラが倒れたときだけ(allyDeath用)
-    state.log.push(`${unit.name}の【${p.name || TRIGGER_LABELS[trigger]}】`)
+    state.log.push(`${unit.name}の${bracket(p.name || TRIGGER_LABELS[trigger])}`)
     noteAbility(state, TRIGGER_LABELS[trigger] ?? trigger, unit.name, p.name && p.name !== TRIGGER_LABELS[trigger] ? p.name : '', p.desc, unit.team, p.logCombo && comboOf(state, unit) >= p.logCombo.combo ? p.logCombo.log : p.log)
     runEffects(state, unit, p.effects, { ...ctx, trigger, nextPassive: i + 1 })
     if (state.pending) return // 選ぶのを待つ。続きは、選ばれたあとに行う
@@ -1652,7 +1655,7 @@ function countCombos(state, actor, opts) {
     const count = comboOf(state, u)
     for (const p of combos) {
       if (p.min !== count || !checkCond(state, u, p.condition)) continue
-      state.log.push(`${u.name}の【${p.name || 'コンボ'}】(${count}コンボ)`)
+      state.log.push(`${u.name}の${bracket(p.name || 'コンボ')}(${count}コンボ)`)
       runEffects(state, u, p.effects, { opts })
     }
   }

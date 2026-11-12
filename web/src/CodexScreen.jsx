@@ -4,7 +4,7 @@ import { ScreenHeader } from './chrome.jsx'
 import { StatIcon } from './icons.jsx'
 import { ALL_CHARACTERS, charById } from './battle/characters/index.js'
 import { ALL_SPELLS, spellById } from './battle/spells/index.js'
-import { KEYWORDS, TRIGGER_LABELS, RELICS } from './battle/engine.js'
+import { KEYWORDS, TRIGGER_LABELS, RELICS, bracket } from './battle/engine.js'
 import { CLASSES } from './battle/characters/validate.js'
 
 // 資料集: キャラクター/スペルをタブで分け、さらにクラスで絞り込み、名前や効果の文字で検索できる。
@@ -169,7 +169,7 @@ export function CharDetail({ def, onOpen }) {
       {(def.passives || []).length > 0 && (
         <Section title="パッシブ">
           {def.passives.map((p, i) => (
-            <AbilityRow key={i} head={`【${passiveLabel(p)}】`} desc={passiveDesc(p)} />
+            <AbilityRow key={i} head={bracket(passiveLabel(p))} desc={passiveDesc(p)} />
           ))}
         </Section>
       )}

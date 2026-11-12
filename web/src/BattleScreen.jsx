@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { addEvents, buildMatch, newStats } from './career.js'
-import { createBattle, applyAction, addGhosts, getActiveUnit, legalActions, getUnit, gaugeOf, calcDamage, KEYWORDS, TRIGGER_LABELS } from './battle/engine.js'
+import { createBattle, applyAction, addGhosts, getActiveUnit, legalActions, getUnit, gaugeOf, calcDamage, KEYWORDS, TRIGGER_LABELS, bracket } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS, SPELL_LEVEL } from './battle/ai.js'
 import { DEFAULT_PLAYER_IDS, buildCpuTeam, buildCpuSpells, loadCpuCharSetting, saveCpuCharSetting, isTestChar, loadComboMode, saveComboMode } from './battle/teams.js'
 import { enhanceDef } from './enhance.js'
@@ -659,6 +659,7 @@ const tierPrefix = (cond) => (cond?.liberation ? '【解放奥義】' : cond?.ul
 
 function passiveLine(p) {
   const label = (TRIGGER_LABELS[p.trigger] ?? p.trigger) + (p.min != null && p.trigger !== 'combo' ? `_${p.min}` : '')
+  if (p.name && /^.+?【.+】$/.test(p.name)) return `${tierPrefix(p.condition)}${bracket(p.name)}${p.desc ?? ''}` // 『ファンファーレ【コンボ_3】』は、【ファンファーレ】【コンボ_3】と分けて出す
   const name = p.name && p.name !== label ? `${p.name}: ` : ''
   return `${tierPrefix(p.condition)}【${label}】${name}${p.desc ?? ''}`
 }
@@ -1065,7 +1066,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     else if (e.type === 'summon') line = { team: e.team, text: `${e.name}が登場` }
     else if (e.type === 'buff') line = { team: tm(e.target), text: `${nm(e.target)}の${e.text}` }
     else if (e.type === 'keyword') line = { team: tm(e.target), text: `${nm(e.target)}は【${e.label}】を得た` }
-    else if (e.type === 'ability') line = { team: e.team, text: `【${e.kind}】${e.owner}${e.name ? ` ― ${e.name}` : ''}${e.desc ? `：${e.desc}` : ''}` }
+    else if (e.type === 'ability') line = { team: e.team, text: `${/^.+?【.+】$/.test(e.name || '') ? bracket(e.name) : `【${e.kind}】`}${e.owner}${e.name && !/^.+?【.+】$/.test(e.name) ? ` ― ${e.name}` : ''}${e.desc ? `：${e.desc}` : ''}` }
     return line
     }
     const lines = []
