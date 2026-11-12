@@ -1425,6 +1425,11 @@ function endTurn(state, actor) {
     fire(state, 'turnEnd', actor, {})
     resolveDeaths(state)
   }
+  for (const u of [...state.units]) { // 【味方のターン終了時】: 味方のキャラのターンが終わるとき、場の味方(キャラ・召喚物・アミュレット)の能力が働く
+    if (!u.alive || u.team !== actor.team) continue
+    fire(state, 'allyTurnEnd', u, { other: actor })
+  }
+  resolveDeaths(state)
   for (const u of [...state.units]) { // 【相手のターン終了時】: 相手のキャラのターンが終わるときに、場のキャラ・召喚物の能力が働く
     if (!u.alive || u.team === actor.team) continue
     fire(state, 'enemyTurnEnd', u, {})
