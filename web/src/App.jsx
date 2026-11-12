@@ -440,6 +440,8 @@ export default function App() {
           allChars={ALL_CHARACTERS}
           defaultIds={DEFAULT_PLAYER_IDS}
           allSpells={ALL_SPELLS.filter((sp) => !sp.token)}
+          parties={partyApi ? partyApi.parties : null} // 事前に準備したパーティーを、相手のチームにも使える(ここでは保存も、使用中パーティーの切り替えもしない)
+          partyIdxInit={partyApi ? partyApi.activeIdx : null}
           onStart={(chars, spells) => {
             setCpuRun({ id: Date.now(), level: 1, team: testMine.team, spells: testMine.spells, test: { team: chars.filter(Boolean), spells: spells || [] } })
             setScreen('loading')
