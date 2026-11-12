@@ -25,6 +25,7 @@
   { "id": "elf_15", "name": "アドベンチャーエルフ・メイ", "class": "エルフ", "rarity": "silver", "rotation": "basic" },
   { "id": "elf_16", "name": "フェアリーテイマー", "class": "エルフ", "rarity": "bronze", "rotation": "basic" },
   { "id": "elf_17", "name": "ストレイビーストマン", "class": "エルフ", "rarity": "bronze", "rotation": "basic" },
+  { "id": "elf_18", "name": "温厚なるトレント", "class": "エルフ", "rarity": "bronze", "rotation": "basic" },
   { "id": "elf_amulet_01", "name": "燐光の岩", "class": "エルフ", "rarity": "silver", "rotation": "1" },
   { "id": "royal_01", "name": "統率のルミナスナイト", "class": "ロイヤル", "rarity": "silver", "rotation": "1" },
   { "id": "royal_02", "name": "異端の侍", "class": "ロイヤル", "rarity": "bronze", "rotation": "1" },
