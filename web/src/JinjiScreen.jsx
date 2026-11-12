@@ -196,12 +196,12 @@ const CSS = `
 .jp-bar.tap { cursor: pointer; } .jp-stats.tap { cursor: pointer; } .jp-bar.tap:hover { background: rgba(0,0,0,0.68); }
 .jp-stats b u, .jp-mini b u { text-decoration: none; font-size: 0.55em; color: #1a73d9; margin-left: 4px; font-family: ${FONT}; }
 .jp-sd { position: absolute; inset: 0; z-index: 70; display: grid; place-items: center; background: rgba(0,0,0,0.55); animation: jp-tile-in 0.15s linear; }
-.jp-sd-box { width: min(680px, 92%); max-height: 90%; overflow-y: auto; padding: 22px 28px 20px; background: #1d1d21; color: #fff; box-shadow: 0 10px 40px rgba(0,0,0,0.5); font-size: 28px; }
-.jp-sd-h { display: flex; align-items: center; font-size: 32px; font-weight: 700; padding-bottom: 8px; } .jp-sd-h button { margin-left: auto; min-height: 0; width: 48px; height: 48px; padding: 0; font-size: 30px; border: 0; background: transparent; color: #fff; cursor: pointer; }
-.jp-sd-t { margin: 14px 0 4px; padding: 6px 12px; background: #3a3a42; font-size: 24px; font-weight: 700; letter-spacing: 0.06em; }
-.jp-sd-row { display: flex; align-items: baseline; padding: 8px 12px; border-bottom: 1px solid #34343a; } .jp-sd-row span { color: #d6d6dc; }
-.jp-sd-row b { margin-left: auto; font-family: ${DISPLAY}; font-size: 34px; } .jp-sd-row em { font-style: normal; color: #6cb6ff; margin-left: 12px; font-size: 30px; }
-.jp-sd-n { margin-top: 12px; font-size: 19px; color: #9a9aa2; }
+.jp-sd-box { width: min(940px, 96%); max-height: 94%; overflow-y: auto; padding: 28px 36px 26px; background: #1d1d21; color: #fff; box-shadow: 0 10px 40px rgba(0,0,0,0.5); font-size: 38px; }
+.jp-sd-h { display: flex; align-items: center; font-size: 44px; font-weight: 700; padding-bottom: 8px; } .jp-sd-h button { margin-left: auto; min-height: 0; width: 48px; height: 48px; padding: 0; font-size: 30px; border: 0; background: transparent; color: #fff; cursor: pointer; }
+.jp-sd-t { margin: 14px 0 4px; padding: 8px 14px; background: #3a3a42; font-size: 32px; font-weight: 700; letter-spacing: 0.06em; }
+.jp-sd-row { display: flex; align-items: center; padding: 12px 14px; border-bottom: 1px solid #34343a; } .jp-sd-row span { color: #d6d6dc; display: flex; align-items: center; gap: 14px; } .jp-sd-ic { width: 1.3em; height: 1.3em; flex: none; display: grid; place-items: center; color: #fff; font-size: 1.3em; }
+.jp-sd-row b { margin-left: auto; font-family: ${DISPLAY}; font-size: 46px; } .jp-sd-row em { font-style: normal; color: #6cb6ff; margin-left: 14px; font-size: 40px; }
+.jp-sd-n { margin-top: 14px; font-size: 26px; color: #9a9aa2; }
 /* 遺物(部位つき) */
 .jp-rl-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 6px 0 10px; }
 .jp-rl-tab { min-height: 0; padding: 10px 8px; border: 2px solid #3a3a40; border-radius: 10px; background: #2b2b2f; color: #cfcfd4; cursor: pointer; font-size: 22px; font-weight: 700; line-height: 1.2; transition: transform .15s ease-out; }
@@ -355,12 +355,13 @@ function statBreakdown(c, pieces, enhLv) {
   for (const k of Object.keys(base)) out[k] = { base: base[k], extra: Math.round((g[k] - base[k]) * 10) / 10 }
   return out
 }
+const ICON_KEYS = ['hp', 'atk', 'def', 'spd', 'mag', 'critRate', 'critDmg']
 const SD_BASIC = [['spd', '速度', ''], ['atk', '攻撃力', ''], ['hp', '体力', ''], ['def', '防御力', ''], ['mag', '魔力', '']]
 const SD_ADV = [['critRate', 'クリティカルレート', '%'], ['critDmg', 'クリティカルダメージ', '%'], ['healUp', '治癒量', '%'], ['effHit', '効果効率', '%'], ['dmgResist', '耐性値', ''], ['physUp', '物理ダメージ', '%'], ['magUp', '魔法ダメージ', '%']]
 function StatDetail({ c, sb, onClose }) {
   const row = ([k, label, u]) => {
     const v = sb[k]
-    return <div className="jp-sd-row" key={k} data-testid={`sd-${k}`}><span>{label}</span><b>{v.base}{u}{v.extra ? <em>{v.extra > 0 ? '+' : ''}{v.extra}{u}</em> : null}</b></div>
+    return <div className="jp-sd-row" key={k} data-testid={`sd-${k}`}><span><i className="jp-sd-ic">{ICON_KEYS.includes(k) && <StatIcon stat={k} />}</i>{label}</span><b>{v.base}{u}{v.extra ? <em>{v.extra > 0 ? '+' : ''}{v.extra}{u}</em> : null}</b></div>
   }
   return (
     <div className="jp-sd" data-testid="stat-detail" onClick={onClose}>
