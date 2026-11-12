@@ -5,7 +5,7 @@ import { CLASS_ORDER } from './battle/characters/validate.js'
 import { KEYWORDS, TRIGGER_LABELS, RELICS } from './battle/engine.js'
 import { useRelicInv, equippedOf, ownerMap, equipRelic, forgeRelic, deleteRelic } from './relicInv.js'
 import { RELIC_PARTS, PART_IDS, RELIC_RARITIES, relicLines, relicTotals, statText } from './battle/relicRules.js'
-import { getGateToken } from './api.js'
+import { unlockLevel } from './unlock.js'
 import { RARITY, fold, collectRelated } from './CodexScreen.jsx'
 import { Emblem, hash } from './emblem.jsx'
 import { artOf, useArtStatus } from './charArt.jsx'
@@ -373,13 +373,13 @@ function RelicPane({ c }) {
       <div className="jp-sec">持っている{RELIC_PARTS[part].name}({list.length}個 / 全部で{inv.relics.length}/{inv.max}個)</div>
       {list.length === 0 && <div className="jp-row"><p>この部位の遺物は、持っていません。</p></div>}
       {list.map((r) => <RelicCard key={r.id} r={r} on={cur?.id === r.id} who={owners[r.id] && owners[r.id] !== c.id ? nameOf(owners[r.id]) : null} onClick={() => run(() => equipRelic(c.id, part, r.id))} onDelete={() => run(() => deleteRelic(r.id))} />)}
-      {getGateToken() ? (
+      {unlockLevel() >= 1 ? ( // マスターパスワードを解除している人だけ(サーバー側でも、マスターパスワードの通行証を確認する)
         <>
           <div className="jp-sec">遺物を作る(検証用)</div>
           <div className="jp-rl-forge" data-testid="relic-forge">
             <select value={stars} onChange={(e) => { setStars(Number(e.target.value)); setLevel(Math.min(level, RELIC_RARITIES[e.target.value].maxLevel)) }}>{[2, 3, 4, 5].map((n) => <option key={n} value={n}>★{n}</option>)}</select>
             <label>Lv<input type="number" min="0" max={RELIC_RARITIES[stars].maxLevel} value={level} onChange={(e) => setLevel(Math.max(0, Math.min(RELIC_RARITIES[stars].maxLevel, Number(e.target.value) || 0)))} style={{ width: 70 }} /></label>
-            <button type="button" className="jp-rp" data-testid="relic-forge-go" disabled={busy} onClick={() => run(() => forgeRelic({ part, stars, level }))}>{RELIC_PARTS[part].name}を作る</button>
+            <button type="button" className="jp-rp" data-testid="relic-forge-go" disabled={busy} onClick={() => run(() => forgeRelic({ part, stars, level }, async () => window.prompt('サーバーのマスターパスワードを入れてください(入口のパスワードと同じ)') || ''))}>{RELIC_PARTS[part].name}を作る</button>
           </div>
         </>
       ) : null}

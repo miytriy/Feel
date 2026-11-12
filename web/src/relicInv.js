@@ -16,7 +16,7 @@ export async function loadRelics() {
   } catch (e) { set({ loaded: false, error: e.message || '遺物を読み込めませんでした' }) }
 }
 export const clearRelics = () => set({ relics: [], equip: {}, loaded: false, error: '' })
-export async function forgeRelic(opts) { const r = await forgeRelicApi(opts); set({ relics: [...state.relics, r.relic] }); return r.relic }
+export async function forgeRelic(opts, askPassword) { const r = await forgeRelicApi(opts, askPassword); set({ relics: [...state.relics, r.relic] }); return r.relic }
 export async function equipRelic(charId, part, relicId) { const r = await equipRelicApi(charId, part, relicId); set({ equip: r.equip }) }
 export async function deleteRelic(relicId) { const r = await deleteRelicApi(relicId); set({ relics: r.relics, equip: r.equip }) }
 
