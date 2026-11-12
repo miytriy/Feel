@@ -2,12 +2,12 @@ import knight from './tokens/royal_token_01.js' // 召喚する「ナイト」
 
 export default {
   id: 'royal_03', name: '勇猛のルミナスランサー', class: 'ロイヤル', rarity: 'silver', type: 'ルミナス',
-  stats: { hp: 291, atk: 121, def: 170, spd: 90 },
+  stats: { hp: 291, atk: 121, def: 121, spd: 93 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     {
       name: '常時', trigger: 'allyEnter', enterType: '兵士',
-      desc: '自分の「兵士タイプ」のフォロワーが場に出たとき、それは【突進】を持つ。',
+      desc: '自分の兵士・フォロワーが場に出たとき、それは【突進】を持つ。',
       log: 'それは【突進】を持つ。',
       effects: [{ type: 'gainKeyword', keyword: 'rush', target: 'entered' }],
     },
