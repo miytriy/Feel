@@ -20,6 +20,7 @@ import NewsScreen from './NewsScreen.jsx'
 import HomeScreen, { ACCOUNT_SCREENS, canOpen } from './HomeScreen.jsx'
 import { unlockLevel, tryUnlock, relock } from './unlock.js'
 import { createSandbox } from './sandbox.js'
+import { loadRelics, clearRelics } from './relicInv.js'
 import GuideScreen from './GuideScreen.jsx'
 import CpuBattleScreen from './CpuBattleScreen.jsx'
 import PvpScreen from './PvpScreen.jsx'
@@ -182,7 +183,9 @@ export default function App() {
     fetchGifts()
       .then((r) => setGifts(r.gifts))
       .catch(() => {}) // プレゼント一覧が取れなくても、他の機能は使える
+    loadRelics() // 遺物の所持・装備(取れなくても、他の機能は使える)
   }, [user, gateOpen])
+  useEffect(() => { if (!user) clearRelics() }, [user])
 
   // 起動の準備ができたら、ロード画面を閉じる(ログイン中は、持ち物の読み込みまで待つ。失敗したときも、先に進む)
   const bootReady = !authLoading && gate !== 'checking' && !(gate === 'open' && user && !me && !error)

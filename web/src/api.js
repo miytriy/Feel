@@ -76,3 +76,9 @@ export const enableAllChars = async (password) => {
   try { localStorage.setItem(ALLCHARS_KEY, r.token) } catch { /* 保存できなくても、そのままでは使えない */ }
   return true
 }
+
+// ---- 部位つき遺物(所持・装備はサーバーに保存) ----
+export const fetchRelics = () => request('/api/relics') // { relics, equip, max }
+export const forgeRelicApi = (opts) => request('/api/relics/forge', { method: 'POST', body: JSON.stringify(opts) }) // 検証用(マスターパスワードの通行証が要る)
+export const equipRelicApi = (charId, part, relicId) => request('/api/relics/equip', { method: 'POST', body: JSON.stringify({ charId, part, relicId }) })
+export const deleteRelicApi = (relicId) => request('/api/relics/delete', { method: 'POST', body: JSON.stringify({ relicId }) })
