@@ -1,3 +1,4 @@
+import { applyRelics } from './relicRules.js'
 import ghostToken from './characters/nightmare/tokens/nightmare_token_02.js' // テスト戦の「ゴースト無限湧き」用
 import EARTH_SHARD from './amulet/witch/1/witch_amulet_01.js' // 土の印がないときに召喚される「大地の魔片」
 // Feel Battle - バトルの処理(段階4: アーマー・墓場・召喚物・アミュレット・遺物 を追加。段階3までの進化・EP・信仰値・カウントダウン・クレスト・連携・奥義・アクセラレートを含む)
@@ -119,6 +120,7 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
   const base = {
     atk: s.atk, mag: s.mag ?? 0, def: s.def, spd: s.spd,
     critRate: s.critRate ?? 5, critDmg: s.critDmg ?? 50, dmgResist: s.dmgResist ?? 0, dmgUp: 0,
+    physUp: 0, magUp: 0, healUp: 0, effHit: 0, // 遺物(部位つき)のメイン・サブステータス。効果効率は、いまのバトルに効果の命中判定がないので、数字だけ持つ
   }
   // 遺物のセット効果(def.relic に遺物の名前を書く)を、元のステータスに反映する
   const relic = def.relic ? RELICS[def.relic] : null
@@ -128,6 +130,12 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
     const next = Math.round(cur * (1 + (m.pct || 0) / 100) + (m.flat || 0))
     if (m.stat === 'hp') s.hp = next
     else base[m.stat] = next
+  }
+  // 部位つきの遺物(def.relicPieces: relicRules.js の遺物の配列)のメイン・サブステータスを反映する
+  if (def.relicPieces?.length) {
+    const r = applyRelics({ ...base, hp: s.hp }, def.relicPieces)
+    s.hp = r.hp
+    Object.assign(base, { atk: r.atk, def: r.def, spd: r.spd, dmgResist: r.dmgResist, critRate: r.critRate, critDmg: r.critDmg, physUp: r.physUp, magUp: r.magUp, healUp: r.healUp, effHit: r.effHit })
   }
   const passives = def.passives || []
   const rawKw = passives.filter((p) => typeof p === 'string')
@@ -425,7 +433,7 @@ export function calcDamage(attacker, defender, skill, opts = {}) {
   if (attacker.ct === 'ロイヤル' && opts.bySkill) ctMul *= 1.2 // ロイヤル: 自分の場すべてのスキルダメージ+20%
   if (attacker.ct === 'ナイトメア' && hasTypeName(attacker, '死者')) ctMul *= 1.29 // ナイトメア: 「死者」のダメージ+29%
   if (defender.ct === 'ニュートラル' && skill.type === 'physical') ctMul *= 0.85 // ニュートラル: 物理耐性+15%
-  const upCoef = 1 + Math.max(-90, attacker.dmgUp || 0) / 100 // 与ダメージ(効果で増減)
+  const upCoef = (1 + Math.max(-90, attacker.dmgUp || 0) / 100) * (1 + (skill.type === 'physical' ? attacker.physUp || 0 : skill.type === 'magic' ? attacker.magUp || 0 : 0) / 100) // 与ダメージ(効果で増減)× 物理/魔法ダメージ%(遺物)
   const raw = base * critMul * defCoef * resCoef * ctMul * upCoef
   return { damage: opts.expected ? raw : Math.max(1, Math.floor(raw)), isCrit }
 }
@@ -1028,12 +1036,14 @@ function runEffects(state, source, effects, ctx = {}) {
           if (e.destroyIfSummon && t.alive && t.field === 'summon' && !hasKw(t, 'earthSign')) { t.hp = 0; t.alive = false; state.log.push(`${t.name}は破壊された`) } // ターゲットが召喚物だったときは、それを破壊する
           break
         }
-        case 'heal':
-          if (e.pctMax != null) heal(state, t, (t.maxHp * e.pctMax) / 100) // 回復される本人の最大HPの○%
-          else if (e.pctPerSummon != null) heal(state, t, (t.maxHp * e.pctPerSummon * summonsOf(state, source).length) / 100) // 回復する本人の最大HPの(pctPerSummon×召喚物の数)%
-          else if (e.split && e.flat != null) heal(state, t, e.flat / targets.length) // 回復量を、対象の人数で等分に割り振る(全体で合計 flat)
-          else heal(state, t, (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + graveBonus(state, source, e))
+        case 'heal': {
+          const hb = (st, tt, n) => heal(st, tt, n * (1 + (source.healUp || 0) / 100)) // 治癒量%(遺物)
+          if (e.pctMax != null) hb(state, t, (t.maxHp * e.pctMax) / 100) // 回復される本人の最大HPの○%
+          else if (e.pctPerSummon != null) hb(state, t, (t.maxHp * e.pctPerSummon * summonsOf(state, source).length) / 100) // 回復する本人の最大HPの(pctPerSummon×召喚物の数)%
+          else if (e.split && e.flat != null) hb(state, t, e.flat / targets.length) // 回復量を、対象の人数で等分に割り振る(全体で合計 flat)
+          else hb(state, t, (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + graveBonus(state, source, e))
           break
+        }
         case 'buff':
           const bf = { stat: e.stat, pct: (e.pct || 0) + graveBonus(state, source, e), flat: (e.flat || 0) + (e.perCombo || 0) * comboOf(state, source) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0), turns: e.turns ?? null, ...(e.turnsBy === 'source' ? { owner: source.uid } : {}) } // perCombo: コンボ1つにつき、flat がその分だけ増える
           t.buffs.push(bf)
