@@ -1086,6 +1086,11 @@ function runEffects(state, source, effects, ctx = {}) {
           state.log.push(`スペル【${e.spell.name}】が${n}回使えるようになった`)
           break
         }
+        case 'setBaseSpd': // 基礎速度を value に変える(バフ・デバフは、その上にかかる)
+          if (t.isAmulet) break
+          t.base.spd = e.value
+          state.log.push(`${t.name}の基礎速度は${e.value}に変化した`)
+          break
         case 'gainDoubleSkill': // 【アクティブ】1ターンに2回スキルを発動できる(2回目はMPを消費)
           t.doubleSkill = { mpCost: e.mpCost ?? 1 }
           state.log.push(`${t.name}は1ターンに2回スキルを発動できるようになった(2回目はMP${t.doubleSkill.mpCost})`)
