@@ -686,7 +686,7 @@ function SideLog({ items, big = false, onGone }) {
 const tierPrefix = (cond) => (cond?.liberation ? '【解放奥義】' : cond?.ultimate ? '【奥義】' : '')
 
 function passiveLine(p) {
-  const label = (TRIGGER_LABELS[p.trigger] ?? p.trigger) + (p.min != null && p.trigger !== 'combo' ? `_${p.min}` : '')
+  const label = (p.tag ?? TRIGGER_LABELS[p.trigger] ?? p.trigger) + (p.min != null && p.trigger !== 'combo' ? `_${p.min}` : '')
   if (p.name && /^.+?【.+】$/.test(p.name)) return `${tierPrefix(p.condition)}${bracket(p.name)}${p.desc ?? ''}` // 『ファンファーレ【コンボ_3】』は、【ファンファーレ】【コンボ_3】と分けて出す
   const name = p.name && p.name !== label ? `${p.name}: ` : ''
   return `${tierPrefix(p.condition)}【${label}】${name}${p.desc ?? ''}`
@@ -744,7 +744,7 @@ function abilityTable(unit, { full }) {
     if (hasFaith(p)) { faithLines.push(text); continue }
     if (amulet) { crystal.lines.push(text); continue }
     const tier = p.condition?.liberation ? '解放奥義' : p.condition?.ultimate ? '奥義' : null
-    const label = TRIGGER_LABELS[p.trigger] ?? p.trigger
+    const label = p.tag ?? TRIGGER_LABELS[p.trigger] ?? p.trigger
     add(tier ? rowOf(tier) : rowOf(`${p.name ?? ''}${label}`), text)
   }
   for (const t of unit.traits) {

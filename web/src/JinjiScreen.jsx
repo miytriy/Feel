@@ -41,7 +41,7 @@ const passiveDesc = (p) => {
   if (m) return `${m[1]}ターンごとに【潜伏】が戻る。${KEYWORDS.stealth.desc}`
   return KEYWORDS[p]?.desc || ''
 }
-const triggerLabel = (p) => (typeof p === 'object' && p.trigger ? TRIGGER_LABELS[p.trigger] || p.trigger : 'キーワード')
+const triggerLabel = (p) => (typeof p === 'object' && p.trigger ? p.tag || TRIGGER_LABELS[p.trigger] || p.trigger : 'キーワード')
 
 // クラスごとの色(クラス名から決まる。ニュートラルは灰色)
 const CLASS_COLOR = { 'エルフ': '#439159', 'ロイヤル': '#797b1b', 'ニュートラル': '#858585', 'ウィッチ': '#535fa3', 'ネメシス': '#5bcce3', 'ビショップ': '#b0a98d', 'ナイトメア': '#8d1e41', 'ドラゴン': '#a05a12', 'クロノス': '#c9a227' } // クラスの絵の色

@@ -49,7 +49,7 @@ const passiveDesc = (p) => {
   if (m) return `${m[1]}ターンごとに【潜伏】が戻る。${KEYWORDS.stealth.desc}`
   return KEYWORDS[p]?.desc || ''
 }
-const triggerLabel = (p) => (typeof p === 'object' && p.trigger ? TRIGGER_LABELS[p.trigger] || p.trigger : '')
+const triggerLabel = (p) => (typeof p === 'object' && p.trigger ? p.tag || TRIGGER_LABELS[p.trigger] || p.trigger : '')
 
 // 効果の中から、召喚するキャラ・有効化するスペルを集める(「関連」として詳細に出す)
 export function collectRelated(def) {
