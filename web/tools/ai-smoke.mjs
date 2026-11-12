@@ -17,7 +17,7 @@ for (const c of pool) {
   let s, n = 0, why = null
   const log = []
   try {
-    s = engine.createBattle(A, B, { comboMode: 'reset', pool: { A: pool, B: pool }, spells: { A: [], B: [] } })
+    s = engine.createBattle(A, B, { pool: { A: pool, B: pool }, spells: { A: [], B: [] } })
     while (!s.winner && n++ < 600) {
       const act = ai.chooseAction(s, 5)
       if (!act) { why = '行動を選べない'; break }

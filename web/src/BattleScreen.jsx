@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { addEvents, buildMatch, newStats } from './career.js'
 import { createBattle, applyAction, addGhosts, getActiveUnit, legalActions, getUnit, gaugeOf, calcDamage, KEYWORDS, TRIGGER_LABELS, bracket, isEnhance, enhanceBody } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS, SPELL_LEVEL } from './battle/ai.js'
-import { DEFAULT_PLAYER_IDS, buildCpuTeam, buildCpuSpells, loadCpuCharSetting, saveCpuCharSetting, isTestChar, loadComboMode, saveComboMode } from './battle/teams.js'
+import { DEFAULT_PLAYER_IDS, buildCpuTeam, buildCpuSpells, loadCpuCharSetting, saveCpuCharSetting, isTestChar } from './battle/teams.js'
 import { enhanceDef } from './enhance.js'
 import { ALL_CHARACTERS, charById } from './battle/characters/index.js'
 import { ALL_SPELLS } from './battle/spells/index.js'
@@ -960,7 +960,6 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   const [introFirst, setIntroFirst] = useState(false) // 対戦の始まりの、最初のステージ説明
   const [leaveAsk, setLeaveAsk] = useState(false) // 退出の確認を出している
   const [resultShown, setResultShown] = useState(true) // 勝敗の表示を出してよいか(「盤面を見る」で、一度しまえる)
-  const [comboMode, setComboMode] = useState(() => loadComboMode()) // 開発者設定: コンボのシステム(old = 従来 / reset = β: コンボリセット)
   const [cpuCharsSetting, setCpuChars] = useState(() => loadCpuCharSetting()) // 開発者設定: CPUが使うキャラ(test / real)
   const cpuChars = flow ? 'real' : cpuCharsSetting // 通常戦(案内所 → CPU戦 から来たとき)は、いつも本実装キャラ。開発者設定は、単体のテスト画面だけ
   const [state, setState] = useState(online ? online.init : null)
@@ -1168,7 +1167,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     setSideLog([])
     const cpuTeam = testInit ? testInit.team : buildCpuTeam(ALL_CHARACTERS, cpuChars, Math.random, level, ALL_SPELLS) // Lv.5以上は、シナジーのある編成。テスト戦は、自分で選んだ相手のチーム
     const cpuSpells = testInit ? testInit.spells : level >= SPELL_LEVEL ? buildCpuSpells(ALL_SPELLS, cpuTeam, Math.random, level) : [] // Lv.5以上のCPUは、編成に合う強いスペルを持つ
-    const first = createBattle(team.map((d) => enhanceDef(withRelic(d))), cpuTeam, { comboMode, pool: ownedPool(cpuChars), spells: { A: spellSet, B: cpuSpells } })
+    const first = createBattle(team.map((d) => enhanceDef(withRelic(d))), cpuTeam, { pool: ownedPool(cpuChars), spells: { A: spellSet, B: cpuSpells } })
     statsRef.current = newStats()
     const firstActor = first.units.find((u) => u.uid === first.active)
     if (firstActor) statsRef.current.turns[firstActor.team]++ // 最初のターンも数える
@@ -1335,21 +1334,6 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
                 {label}
               </button>
             ))}
-            <div style={{ margin: '8px 0 4px' }}>コンボのシステム</div>
-            {[['old', '従来'], ['reset', 'β(コンボリセット)']].map(([v, label]) => (
-              <button
-                key={v}
-                onClick={() => { setComboMode(v); saveComboMode(v) }}
-                style={{ ...buttonStyle(comboMode === v, false), marginRight: 6 }}
-              >
-                {label}
-              </button>
-            ))}
-            <div style={{ marginTop: 4, color: C.mute, fontSize: 11 }}>
-              {comboMode === 'reset'
-                ? 'β: 【コンボ_◯】を持つキャラが味方にいると、アクションバーに「コンボリセット」が並び(行動値=150×人数)、そこでコンボ数が0に戻ります。'
-                : '従来: コンボ持ち自身のターンが終わると、コンボ数が0に戻ります。'}
-            </div>
           </div>
         </details>
         <p style={{ fontSize: 11, color: C.mute, margin: '0 0 12px' }}>

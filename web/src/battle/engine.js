@@ -215,7 +215,7 @@ function boostFieldUnits(state, team, n) {
 }
 
 // バトルを作る(teamA = プレイヤー側, teamB = 相手側。最大5体ずつ)
-// opts.comboMode: 'old' = 従来(コンボ持ち自身のターンが終わると数え直す) / 'reset' = β(味方のアクションバーに「コンボリセット」が並ぶ)
+// コンボ: プレイヤー(チーム)に蓄積し、味方のアクションバーに並ぶ「コンボリセット」のターンで0に戻る
 export function createBattle(teamADefs, teamBDefs, opts = {}) {
   // キャラは最大5体(アミュレットは別に数える。最大2つ)
   const mainCount = (defs) => defs.filter((d) => !d.amulet).length
@@ -242,7 +242,7 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
     faith: { A: 0, B: 0 }, boost: { A: 0, B: 0 }, earth: { A: 0, B: 0 }, crests: { A: [], B: [] }, graveyard: { A: 0, B: 0 },
     link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 }, summonSeq: Math.max(startSummons.A, startSummons.B), pending: null,
     active: null, activeKind: null, winner: null, log: ['バトル開始!'],
-    comboMode: opts.comboMode === 'reset' ? 'reset' : 'old', comboReset: { A: null, B: null }, comboCount: { A: 0, B: 0 },
+    comboReset: { A: null, B: null }, comboCount: { A: 0, B: 0 },
     pool: { A: opts.pool?.A || [], B: opts.pool?.B || [] }, // 所持キャラクター(「所持キャラから召喚する」能力の候補)
     // スペル(プレイヤー能力): opts.spells = { A: [スペル定義...], B: [...] }(同じスペルを何回入れてもよい。最大 MAX_SPELL_SLOTS 回分)
     // 自分のキャラのターン中に、枠1つにつき1回、MPを払って使える
@@ -280,7 +280,7 @@ export const gaugeOf = (state, team) => state.round + state.traitCount[team]
 // 条件: graveyard(墓場の下限) faith(信仰値の下限) hpBelow/hpAbove(HP%) evolved(進化済みか) crests(クレストの数の下限)
 //       link(連携の下限) gauge(奥義ゲージの下限) ultimate(奥義: ゲージ10以上) liberation(解放奥義: ゲージ15以上)
 // コンボ数: 従来はキャラごと(自分のターンが終わると0) / βはチーム共有(コンボリセットのターンで0)
-const comboOf = (state, unit) => (state.comboMode === 'reset' ? state.comboCount[unit.team] : unit.comboCount)
+const comboOf = (state, unit) => state.comboCount[unit.team] // コンボは、ユニットではなくプレイヤー(チーム)に蓄積する
 
 function checkCond(state, unit, c) {
   if (!c) return true
@@ -334,7 +334,7 @@ function syncCrestSlots(state) {
 
 function syncComboReset(state) {
   for (const team of ['A', 'B']) {
-    const n = state.comboMode === 'reset' ? comboHolders(state, team).length : 0
+    const n = comboHolders(state, team).length
     const cr = state.comboReset[team]
     if (!n) { state.comboReset[team] = null; continue }
     const base = COMBO_RESET_K * n * (state.classTrait?.[team] === 'エルフ' ? 1.2 : 1) // エルフ(クラス特性): コンボリセットの初期行動値+20%
@@ -1093,8 +1093,7 @@ function runEffects(state, source, effects, ctx = {}) {
           break
         case 'gainCombo': { // 自分の【コンボ】を+amount する(βは味方チーム共有のカウント、従来は本人のカウント)
           const n = e.amount ?? 1
-          if (state.comboMode === 'reset') state.comboCount[source.team] += n
-          else source.comboCount += n
+          state.comboCount[source.team] += n
           state.log.push(`${source.name}の【コンボ】が${n}増えた(いま${comboOf(state, source)})`)
           break
         }
@@ -1430,7 +1429,6 @@ function endTurn(state, actor) {
   resolveDeaths(state)
   actor.curAV = actor.baseAV
   actor.acts = (actor.acts || 0) + 1
-  if (state.comboMode !== 'reset') actor.comboCount = 0 // 従来: コンボは、自分のターンが終わった後から数え直す(βでは、コンボリセットのターンで数え直す)
   tickBuffs(state, actor)
   state.turns += 1
   state.active = null
@@ -1660,13 +1658,11 @@ function countLink(state, actor, opts) {
 // 味方の特性が使われたとき、コンボを持つ味方のカウントを1つ進める
 // (コンボ持ちのターンが終わってから、次にそのキャラのターンが来るまでの間に使われた特性を数える)
 function countCombos(state, actor, opts) {
-  const shared = state.comboMode === 'reset'
-  if (shared) state.comboCount[actor.team] += 1 // β: コンボカウントはチーム共有(特性を使ったのが誰でも数える)
+  state.comboCount[actor.team] += 1 // コンボカウントはプレイヤー(チーム)に蓄積する(特性を使ったのが誰でも数える)
   for (const u of state.units) {
-    if (!u.alive || u.team !== actor.team || (!shared && u.uid === actor.uid)) continue
+    if (!u.alive || u.team !== actor.team) continue
     const combos = u.passiveObjs.filter((p) => p.trigger === 'combo')
     if (!hasComboAbility(u)) continue
-    if (!shared) u.comboCount += 1
     const count = comboOf(state, u)
     for (const p of combos) {
       if (p.min !== count || !checkCond(state, u, p.condition)) continue

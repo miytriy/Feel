@@ -14,7 +14,7 @@ let seed = +(process.env.SEED || 1)
 const rnd = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296 }
 const pick5 = () => { const a = [...pool]; const out = []; while (out.length < 5) out.push(a.splice(Math.floor(rnd() * a.length), 1)[0]); return out }
 function play(defsA, defsB, aiA, lvA, aiB, lvB) {
-  let s = engine.createBattle(defsA, defsB, { comboMode: 'reset', pool: { A: pool, B: pool }, spells: { A: [], B: [] } })
+  let s = engine.createBattle(defsA, defsB, { pool: { A: pool, B: pool }, spells: { A: [], B: [] } })
   let n = 0
   while (!s.winner && n++ < 600) {
     const u = engine.getActiveUnit(s)
