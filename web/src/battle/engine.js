@@ -1091,6 +1091,13 @@ function runEffects(state, source, effects, ctx = {}) {
           t.base.spd = e.value
           state.log.push(`${t.name}の基礎速度は${e.value}に変化した`)
           break
+        case 'gainCombo': { // 自分の【コンボ】を+amount する(βは味方チーム共有のカウント、従来は本人のカウント)
+          const n = e.amount ?? 1
+          if (state.comboMode === 'reset') state.comboCount[source.team] += n
+          else source.comboCount += n
+          state.log.push(`${source.name}の【コンボ】が${n}増えた(いま${comboOf(state, source)})`)
+          break
+        }
         case 'gainDoubleSkill': // 【アクティブ】1ターンに2回スキルを発動できる(2回目はMPを消費)
           t.doubleSkill = { mpCost: e.mpCost ?? 1 }
           state.log.push(`${t.name}は1ターンに2回スキルを発動できるようになった(2回目はMP${t.doubleSkill.mpCost})`)
