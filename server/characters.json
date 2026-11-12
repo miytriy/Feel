@@ -28,6 +28,7 @@
   { "id": "elf_18", "name": "温厚なるトレント", "class": "エルフ", "rarity": "bronze", "rotation": "basic" },
   { "id": "elf_19", "name": "ソニックアーチャー・セルウェン", "class": "エルフ", "rarity": "silver", "rotation": "basic" },
   { "id": "elf_amulet_01", "name": "燐光の岩", "class": "エルフ", "rarity": "silver", "rotation": "1" },
+  { "id": "elf_amulet_02", "name": "繚乱の庭", "class": "エルフ", "rarity": "bronze", "rotation": "basic" },
   { "id": "royal_01", "name": "統率のルミナスナイト", "class": "ロイヤル", "rarity": "silver", "rotation": "1" },
   { "id": "royal_02", "name": "異端の侍", "class": "ロイヤル", "rarity": "bronze", "rotation": "1" },
   { "id": "royal_03", "name": "勇猛のルミナスランサー", "class": "ロイヤル", "rarity": "silver", "rotation": "1" },
