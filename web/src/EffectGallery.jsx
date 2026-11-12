@@ -23,6 +23,7 @@ const LIST = [
   ['ダメージ(魔法)', '青い数字。', 900, (p) => ({ unit: { ...baseUnit, hp: p ? 70 : 100 }, fx: p ? dmg('30', 'magic') : null })],
   ['ダメージ(確定)', '虹色の数字。', 900, (p) => ({ unit: { ...baseUnit, hp: p ? 70 : 100 }, fx: p ? dmg('30', 'true') : null })],
   ['クリティカル', '数字の後ろに「!!」が付く。', 900, (p) => ({ unit: { ...baseUnit, hp: p ? 40 : 100 }, fx: p ? dmg('60!!', 'physical', true) : null })],
+  ['名前のスクロール', '名前が枠に入り切らないときは、2行にせず、電光掲示板のように左へ流れ続ける。', 3000, () => ({ unit: { ...baseUnit, name: 'アドベンチャーエルフ・メイのとても長い名前' }, fx: null })],
   ['回復', 'HPが戻る。', 800, (p) => ({ unit: { ...baseUnit, hp: 100 }, fx: p ? { kind: 'heal', text: '+30' } : null })],
   ['強化', '攻撃力などが上がる。', 900, (p) => ({ unit: baseUnit, fx: p ? { kind: 'buff', text: '攻撃力+30↑', buffs: [{ stat: 'atk', label: '攻撃力', val: '+30' }] } : null })],
   ['能力付与', '【守護】などの能力を得る。', 900, (p) => ({ unit: baseUnit, fx: p ? { kind: 'keyword', text: '【守護】獲得' } : null })],

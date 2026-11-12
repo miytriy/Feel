@@ -289,6 +289,35 @@ const EVO_IMG = (n) => `url(${import.meta.env?.BASE_URL || '/'}fx/evolve/${n}.we
 const EVO_L = { position: 'absolute', inset: 0, backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', willChange: 'transform, opacity' }
 const EVO_RB = [[0, 0.9], [0.13, 0.7]]
 const EVO_SPARK = Array.from({ length: 16 }, (_, n) => { const a = n * 2.39996; const rr = 30 + (n % 5) * 9; return { x: 50 + Math.cos(a) * rr * 0.8, y: 50 + Math.sin(a) * rr * 0.9, s: 2 + (n % 3) * 1.5, dx: Math.round(Math.cos(a) * 14), dy: -10 - (n % 4) * 6, d: 0.74 + (n % 6) * 0.06, dur: 0.5 + (n % 4) * 0.1 } })
+// 名前が枠に入り切らないときは、2行にせず、駅の電光掲示板のように左へ流れ続ける(transform だけで動かす)
+const MARQUEE_GAP = 28 // 1周して戻ってくるまでの空き(px)
+const MARQUEE_PX_PER_S = 34 // 流れる速さ(px/秒)
+function NameMarquee({ text, style }) {
+  const box = useRef(null)
+  const one = useRef(null)
+  const [dist, setDist] = useState(0)
+  useLayoutEffect(() => {
+    const measure = () => {
+      const b = box.current, t = one.current
+      if (!b || !t) return
+      setDist(t.offsetWidth > b.clientWidth + 1 ? t.offsetWidth + MARQUEE_GAP : 0)
+    }
+    measure()
+    if (typeof ResizeObserver === 'undefined') return undefined
+    const ro = new ResizeObserver(measure)
+    ro.observe(box.current)
+    return () => ro.disconnect()
+  }, [text])
+  return (
+    <div ref={box} style={{ overflow: 'hidden', whiteSpace: 'nowrap', ...style }}>
+      <div style={dist ? { display: 'inline-block', '--mq': `${dist}px`, animation: `feel-marq ${(dist / MARQUEE_PX_PER_S).toFixed(2)}s linear infinite`, willChange: 'transform' } : { display: 'inline-block' }}>
+        <span ref={one} style={{ display: 'inline-block' }}>{text}</span>
+        {dist ? <span aria-hidden="true" style={{ display: 'inline-block', paddingLeft: MARQUEE_GAP }}>{text}</span> : null}
+      </div>
+    </div>
+  )
+}
+
 export function UnitCard({ unit, active, selected, selectable, inspected, onClick, big = false, fx = null, hl = false, tick = 0, loss = 0, role = null }) {
   // 破壊: HPの数字とバーが、同じ速さで0へ減っていく。消滅: HPは減らないので、消える直前の値のまま(0にしない)
   const lastHp = useRef(unit.hp)
@@ -501,7 +530,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         </span>
         )
       )}
-      <div style={{ height: big ? 36 : 26, overflow: 'hidden', fontWeight: big ? 700 : 400, ...(vanishing ? { animation: 'feel-d-fade2 0.03s ease-in 0.04s forwards', willChange: 'opacity' } : {}) }}>{unit.name}</div> {/* 消滅: 名前も、青い光の円が広がりきる0.07秒までに消す */}
+      <NameMarquee text={unit.name} style={{ height: big ? 36 : 26, fontWeight: big ? 700 : 400, ...(vanishing ? { animation: 'feel-d-fade2 0.03s ease-in 0.04s forwards', willChange: 'opacity' } : {}) }} /> {/* 消滅: 名前も、青い光の円が広がりきる0.07秒までに消す */}
       {!unit.isAmulet && (
         <div style={{ background: '#1b3a43', height: big ? 9 : 6, borderRadius: 3, marginTop: 3, position: 'relative' }}>
           <div style={{ width: '100%', height: '100%', borderRadius: 3, background: hpColor, transformOrigin: '0 50%', transform: `scaleX(${ratio})`, transition: 'transform 0.3s' }} />
