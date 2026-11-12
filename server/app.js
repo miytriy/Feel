@@ -7,6 +7,8 @@ import { normalizeOwned, applyPulls, enhanceOnce } from './signature.js'
 import { sanitizeMatch, addMatch } from './career.js'
 import { checkPassword, checkToken, gateToken, makeFailLimiter } from './gate.js'
 import { CONFIG } from './config.js'
+import { forgeRelic, normalizeEquip, RELIC_INV_MAX } from './relics.js'
+import { PART_IDS } from '../web/src/battle/relicRules.js'
 import { emptyRank } from '../web/src/battle/rank.js'
 import {
   dayKey, loginBonusStatus, claimLoginBonus, isValidBattleLevel, judgeBattleReward,
@@ -138,6 +140,90 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
         return newUserData()
       })
       res.json(publicMe(data))
+    } catch (e) {
+      handleError(res, e)
+    }
+  })
+
+
+  // ---------- 部位つき遺物(所持・装備)。保存は users/{uid} の relics / relicEquip ----------
+  app.get('/api/relics', requireAuth, async (req, res) => {
+    try {
+      const snap = await userRefOf(req.user.uid).get()
+      const d = snap.exists ? snap.data() : {}
+      res.json({ relics: d.relics || [], equip: d.relicEquip || {}, max: RELIC_INV_MAX })
+    } catch (e) {
+      handleError(res, e)
+    }
+  })
+
+  // 検証用: 遺物を作る(マスターパスワードの通行証が要る。サーバーにマスターパスワードが設定されていないときは使えない)
+  app.post('/api/relics/forge', requireAuth, async (req, res) => {
+    try {
+      if (!gateOn || !gatePassed(req)) throw new HttpError(403, '遺物を作るには、マスターパスワードが必要です')
+      const b = req.body || {}
+      const f = forgeRelic({ part: b.part, stars: b.stars, main: b.main, level: b.level }, Math.random, randomId())
+      if (f.error) throw new HttpError(400, f.error)
+      const ref = userRefOf(req.user.uid)
+      await db.runTransaction(async (t) => {
+        const snap = await t.get(ref)
+        if (!snap.exists) throw new HttpError(404, 'アカウントがありません')
+        const relics = snap.data().relics || []
+        if (relics.length >= RELIC_INV_MAX) throw new HttpError(400, `遺物は${RELIC_INV_MAX}個までです`)
+        t.set(ref, { relics: [...relics, f.relic], updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+      })
+      res.json({ relic: f.relic })
+    } catch (e) {
+      handleError(res, e)
+    }
+  })
+
+  // 装備する / 外す: { charId, part, relicId | null }。その遺物をほかのキャラが持っていたら、そちらから外れる
+  app.post('/api/relics/equip', requireAuth, async (req, res) => {
+    try {
+      const { charId, part, relicId } = req.body || {}
+      if (typeof charId !== 'string' || !charId || charId.length > 60) throw new HttpError(400, 'キャラが正しくありません')
+      if (!PART_IDS.includes(part)) throw new HttpError(400, '部位が正しくありません')
+      const ref = userRefOf(req.user.uid)
+      const out = await db.runTransaction(async (t) => {
+        const snap = await t.get(ref)
+        if (!snap.exists) throw new HttpError(404, 'アカウントがありません')
+        const d = snap.data()
+        const relics = d.relics || []
+        const equip = JSON.parse(JSON.stringify(d.relicEquip || {}))
+        if (relicId == null) { if (equip[charId]) delete equip[charId][part] }
+        else {
+          const r = relics.find((x) => x.id === relicId)
+          if (!r) throw new HttpError(400, '持っていない遺物です')
+          if (r.part !== part) throw new HttpError(400, '部位が違う遺物です')
+          for (const slots of Object.values(equip)) if (slots[part] === relicId) delete slots[part]
+          ;(equip[charId] ||= {})[part] = relicId
+        }
+        const next = normalizeEquip(equip, relics)
+        t.set(ref, { relicEquip: next, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+        return next
+      })
+      res.json({ equip: out })
+    } catch (e) {
+      handleError(res, e)
+    }
+  })
+
+  // 遺物を捨てる(装備していたら、外れる)
+  app.post('/api/relics/delete', requireAuth, async (req, res) => {
+    try {
+      const { relicId } = req.body || {}
+      const ref = userRefOf(req.user.uid)
+      const out = await db.runTransaction(async (t) => {
+        const snap = await t.get(ref)
+        if (!snap.exists) throw new HttpError(404, 'アカウントがありません')
+        const d = snap.data()
+        const relics = (d.relics || []).filter((x) => x.id !== relicId)
+        const equip = normalizeEquip(d.relicEquip || {}, relics)
+        t.set(ref, { relics, relicEquip: equip, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+        return { relics, equip }
+      })
+      res.json(out)
     } catch (e) {
       handleError(res, e)
     }

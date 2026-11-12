@@ -132,7 +132,7 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
           if (ranked && guest) return fail('ランクマッチには、ログインが必要です')
           const data = guest ? {} : await userData(uid)
           const own = requireOwned && !allCharsOk(m, ranked) // 持っているキャラだけ(匿名プレイヤーは、持ちキャラなし)。マスターパスワードの機能がオンのカジュアルだけ、全キャラ
-          const built = buildTeam(reg, m.team, { owned: own ? (data.owned || {}) : null, enh: data.enh || {} })
+          const built = buildTeam(reg, m.team, { owned: own ? (data.owned || {}) : null, enh: data.enh || {}, relicData: data })
           if (built.error) return fail(ownErr(built.error, guest))
           built.owned = own ? (data.owned || {}) : null
           const bp = ({ ...emptyRank(), ...(data.rank || {}) }).bp
@@ -145,7 +145,7 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
           if (roomOfUid.has(uid)) return fail('すでに対戦ルームにいます')
           const data = guest ? {} : await userData(uid)
           const own = requireOwned && !allCharsOk(m, false)
-          const built = buildTeam(reg, m.team, { owned: own ? (data.owned || {}) : null, enh: data.enh || {} })
+          const built = buildTeam(reg, m.team, { owned: own ? (data.owned || {}) : null, enh: data.enh || {}, relicData: data })
           if (built.error) return fail(ownErr(built.error, guest))
           built.owned = own ? (data.owned || {}) : null
           let room

@@ -2,6 +2,8 @@
 // 画面からは「行動」だけが届き、サーバーが「その人の番か」「選べる行動か」を確かめてから進める。
 // 通信(WebSocket)とは切り離してあり、send(side, message) を渡せば、そのままテストできる。
 
+import { piecesOf } from '../relics.js'
+
 export const CONFIG = {
   TURN_MS: 45000,        // 1ターン(同じ人の連続した行動のまとまり)の持ち時間。超えたら自動で行動する
   GRACE_MS: 60000,       // 切断してから、この時間のうちに戻らなければ負け
@@ -14,7 +16,7 @@ export const makeCode = (rng = Math.random) => Array.from({ length: 6 }, () => C
 
 // 画面から届いた編成 { ids: [...], spells: [...] } を、サーバー側で検査して、バトル用の定義にする。
 // owned: そのユーザーの所持 { キャラid: 数 }(null なら所持は確かめない) / enh: 強化レベル { キャラid: Lv }
-export function buildTeam(reg, team, { owned = null, enh = {}, format = reg.rotations.DEFAULT_FORMAT } = {}) {
+export function buildTeam(reg, team, { owned = null, enh = {}, format = reg.rotations.DEFAULT_FORMAT, relicData = null } = {}) {
   const ids = Array.isArray(team?.ids) ? team.ids : null
   const spellIds = Array.isArray(team?.spells) ? team.spells : []
   if (!ids || !ids.length || ids.length > 7 || ids.some((x) => typeof x !== 'string')) return { error: '編成が正しくありません' }
@@ -49,7 +51,9 @@ export function buildTeam(reg, team, { owned = null, enh = {}, format = reg.rota
   }
   const sv = reg.formation.validateSpellSet(spells, chars)
   if (!sv.ok) return { error: sv.reason }
-  return { defs: chars.map((d) => reg.enhance.enhanceDef(withRelic(d), enh[d.id] || 0)), spells, chars }
+  // 部位つき遺物: 画面から届いた中身は使わず、サーバーに保存してある、そのユーザーの装備だけを反映する
+  const withPieces = (d) => { const p = relicData ? piecesOf(relicData, d.id) : []; return p.length ? { ...d, relicPieces: p } : d }
+  return { defs: chars.map((d) => reg.enhance.enhanceDef(withPieces(withRelic(d)), enh[d.id] || 0)), spells, chars }
 }
 
 export class Room {
