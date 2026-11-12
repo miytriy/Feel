@@ -29,8 +29,8 @@ export const RELIC_PARTS = {
   hand: { name: '手部', mains: ['atk'], fixed: true },
   body: { name: '胴体', mains: ['hp', 'hpPct', 'atk', 'atkPct', 'def', 'defPct', 'critRate', 'critDmg', 'heal', 'effHit'], only: ['critRate', 'critDmg', 'heal', 'effHit'] },
   legs: { name: '脚部', mains: ['hp', 'hpPct', 'atk', 'atkPct', 'def', 'defPct', 'spd'], only: ['spd'] },
-  sphere: { name: '次元界球', mains: ['hp', 'hpPct', 'atk', 'atkPct', 'def', 'defPct', 'physDmg', 'magDmg'], only: ['physDmg', 'magDmg'] },
-  rope: { name: '連結縄', mains: ['hp', 'hpPct', 'atk', 'atkPct', 'def', 'defPct', 'critRate', 'critDmg', 'resist'], only: ['critRate', 'critDmg', 'resist'] },
+  sphere: { name: 'コア', mains: ['hp', 'hpPct', 'atk', 'atkPct', 'def', 'defPct', 'physDmg', 'magDmg'], only: ['physDmg', 'magDmg'] },
+  rope: { name: 'リンク', mains: ['hp', 'hpPct', 'atk', 'atkPct', 'def', 'defPct', 'critRate', 'critDmg', 'resist'], only: ['critRate', 'critDmg', 'resist'] },
 }
 export const PART_IDS = Object.keys(RELIC_PARTS)
 
