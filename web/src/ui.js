@@ -115,7 +115,7 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-ev2-chain { 0% { opacity: 0; transform: scale(0.8) rotate(-30deg); } 22% { opacity: 1; } 100% { opacity: 0; transform: scale(1.12) rotate(30deg); } }
     @keyframes feel-ev2-chain2 { 0% { opacity: 0; transform: scale(0.9) rotate(30deg); } 22% { opacity: 0.8; } 100% { opacity: 0; transform: scale(1.2) rotate(-30deg); } }
     @keyframes feel-ev2-spark { 0% { opacity: 0; transform: translate(0, 0) scale(0.5); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); } }
-    @keyframes feel-marq { from { transform: translateX(0); } to { transform: translateX(calc(-1 * var(--mq))); } }
+    @keyframes feel-marq { 0%, 20% { transform: translateX(0); } 75%, 99.9% { transform: translateX(calc(-1 * var(--mq))); } 100% { transform: translateX(0); } } /* 少し止まる → 末尾まで流れる → 止まる → 先頭へ戻る */
     @media (prefers-reduced-motion: reduce) { [style*="feel-marq"] { animation: none !important; } }
     @keyframes feel-d-haze { 0% { opacity: 0; transform: scale(0.5); } 15% { opacity: 0.9; transform: scale(0.9); } 100% { opacity: 0; transform: scale(1.5); } }
     @keyframes feel-d-gold { 0%, 8% { opacity: 0; transform: translate(0, 0) scale(0.4); } 22% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); } }
