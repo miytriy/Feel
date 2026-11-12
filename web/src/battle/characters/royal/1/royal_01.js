@@ -7,9 +7,9 @@ export default {
   passives: [
     {
       name: '常時', trigger: 'allyEnter', enterType: '兵士',
-      desc: '自分の「兵士タイプ」フォロワーが、場に出たとき、これは攻撃力+50する。',
-      log: 'これは攻撃力+50する。',
-      effects: [{ type: 'buff', stat: 'atk', flat: 50, target: 'self' }],
+      desc: '自分の兵士・フォロワーが場に出たとき、自分のターン終了まで、これは+100/+0する。',
+      log: 'これは+100/+0する。',
+      effects: [{ type: 'buff', stat: 'atk', flat: 100, turns: 1, turnsBy: 'source', target: 'self' }],
     },
     { name: '進化時', trigger: 'onEvolve', desc: '『ナイト』1体を召喚する。', log: '『ナイト』1体を召喚する。', effects: [{ type: 'summon', count: 1, unit: knight }] },
   ],
