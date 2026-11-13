@@ -2,7 +2,7 @@ import fairy from '../../../characters/elf/1/tokens/elf_token_01.js' // 召喚�
 
 // アミュレット: 編成に入れると、バトル開始時からアミュレット置き場にいる(スキル攻撃はできない)
 export default {
-  id: 'elf_amulet_02', name: '繚乱の庭', class: 'エルフ', rarity: 'bronze', amulet: true, countdown: 2,
+  id: 'elf_amulet_03', name: '繚乱の庭', class: 'エルフ', rarity: 'bronze', amulet: true, countdown: 2,
   stats: { hp: 1, atk: 0, def: 0, spd: 90 }, // アミュレットには体力の概念がない(数字は使われません)
   skill: { name: '-', stat: 'atk', type: 'physical', mult: 0 },
   passives: [
