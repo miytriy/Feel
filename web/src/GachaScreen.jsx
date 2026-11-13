@@ -254,7 +254,7 @@ const revealAt = (items) => {
 
 export default function GachaScreen({ me, busy, error, results, cost, pityCount, onPull, onCloseResults, onExit }) {
   const [dialog, setDialog] = useState(null) // 'rates' / null
-  const [banner, setBanner] = useState('normal') // 'normal'(通常ガチャ) / 'pickup'(ピックアップガチャ)
+  const [banner, setBanner] = useState('normal') // 'normal'(通常ガチャ) / 'pickup'(ピックアップガチャ) / 'reprint'(復刻ピックアップガチャ)
   const [leaving, setLeaving] = useState(false)
   const [confirm, setConfirm] = useState(0) // 確認ダイアログ(回数。0=出していない)
   const [phase, setPhase] = useState(null) // null / 'wait'(通信中) / 'strips'(帯の演出) / 'list'(報酬一覧)
@@ -319,13 +319,15 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
 
   const gems = me ? me.gems : 0
   const bn = me && me.banners ? me.banners : null
-  const isPickup = banner === 'pickup'
-  const pickupOk = !!(bn && bn.pickup && bn.pickup.available)
-  const bName = isPickup ? 'ピックアップガチャ' : '通常ガチャ'
-  const bRot = bn ? (isPickup ? bn.pickup.rotationName : bn.normal.rotationName) : null
-  const have = me ? (isPickup ? me.pickupPity || 0 : me.pityCount || 0) : 0
+  const isReprint = banner === 'reprint'
+  const isPickup = banner === 'pickup' || isReprint // ピックアップ系(天井が、バナーごとに別)
+  const bInfo = bn ? bn[banner] : null
+  const pickupOk = !!(bInfo && bInfo.available)
+  const bName = isReprint ? '復刻ピックアップガチャ' : isPickup ? 'ピックアップガチャ' : '通常ガチャ'
+  const bRot = bInfo ? bInfo.rotationName : null
+  const have = me ? (isReprint ? me.reprintPity || 0 : isPickup ? me.pickupPity || 0 : me.pityCount || 0) : 0
   const endText = (() => {
-    if (!isPickup || !bn || !bn.pickup.endsAt) return ''
+    if (isReprint || !isPickup || !bn || !bn.pickup.endsAt) return ''
     const ms = new Date(bn.pickup.endsAt).getTime() - Date.now()
     if (!(ms > 0)) return ''
     const d = Math.floor(ms / 86400000); const h = Math.floor((ms % 86400000) / 3600000)
@@ -347,18 +349,18 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
       <div className="gc-main">
         <div className="gc-info">
           <div className="gc-tabs" role="tablist">
-            {[['normal', '通常'], ['pickup', 'ピックアップ']].map(([k, label]) => (
+            {[['normal', '通常'], ['pickup', 'ピックアップ'], ['reprint', '復刻']].map(([k, label]) => (
               <button key={k} type="button" role="tab" aria-selected={banner === k} data-testid={`gc-tab-${k}`} className={banner === k ? 'on' : ''} disabled={!!phase} onClick={() => setBanner(k)}>{label}</button>
             ))}
           </div>
-          <span className="gc-tag">{isPickup ? '期間限定' : '常設'}</span>
+          <span className="gc-tag">{isReprint ? '復刻・常設' : isPickup ? '期間限定' : '常設'}</span>
           <h2 className="gc-name">{bName}</h2>
-          {bRot && <div className="gc-rot">{isPickup ? 'ピックアップ' : '排出'}：{bRot}{endText && <small>{endText}</small>}</div>}
+          {bRot && <div className="gc-rot">{isReprint ? '復刻ピックアップ' : isPickup ? 'ピックアップ' : '排出'}：{bRot}{endText && <small>{endText}</small>}</div>}
           {isPickup && me && !pickupOk && <div className="gc-rot" style={{ color: C.warn }}>このピックアップは準備中です</div>}
           <ul className="gc-lines">
             <li>1回で <em>8体</em> のキャラクターが出ます</li>
             <li>8体のうち1体は、<em>シルバー以上</em> 確定</li>
-            <li><em>{pityCount}回</em> 以内に、<em>レジェンド</em> 確定(天井){isPickup && <small style={{ display: 'block', color: C.mute, lineHeight: 1.4 }}>(ピックアップの天井は、ローテーションが変わると0に戻ります)</small>}</li>
+            <li><em>{pityCount}回</em> 以内に、<em>レジェンド</em> 確定(天井){isPickup && <small style={{ display: 'block', color: C.mute, lineHeight: 1.4 }}>{isReprint ? '(復刻の天井は、通常・ピックアップとは別に数えます)' : '(ピックアップの天井は、ローテーションが変わると0に戻ります)'}</small>}</li>
           </ul>
           <div className="gc-bar" aria-label="天井まで">
             <small><span>天井まで</span><span>あと {left} 回</span></small>

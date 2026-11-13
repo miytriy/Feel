@@ -11,6 +11,9 @@ const monthIndex = (now) => { const d = jst(now); return (d.getUTCFullYear() - P
 // 次の切り替え(来月1日 日本時間0時)の時刻
 export const nextSwitch = (now) => { const d = jst(now); return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1) - JST_MS) }
 
+// 復刻ピックアップ: 過去のピックアップを、いつでも引ける常設のバナーとして出す。対象のローテーション(キー)をここに書く
+export const REPRINT_KEY = '1' // 伝説の幕開け
+
 const numericKeys = Object.keys(ROTATION_NAMES).filter((k) => /^\d+$/.test(k)).map(Number).sort((a, b) => a - b)
 
 // いまのピックアップのローテーション(キー)。始まる前は null
@@ -30,12 +33,14 @@ export function bannersInfo(now = new Date()) {
       id: 'pickup', name: 'ピックアップガチャ', rotation: key, rotationName: key ? ROTATION_NAMES[key] : null,
       available: !!key && hasPool(key), endsAt: nextSwitch(now).toISOString(),
     },
+    reprint: { id: 'reprint', name: '復刻ピックアップガチャ', rotation: REPRINT_KEY, rotationName: ROTATION_NAMES[REPRINT_KEY], available: hasPool(REPRINT_KEY) },
   }
 }
 
-// banner('normal'|'pickup') から、引くローテーションを決める。引けなければ null
+// banner('normal'|'pickup'|'reprint') から、引くローテーションを決める。引けなければ null
 export function rotationForBanner(banner, now = new Date()) {
   if (banner === 'normal') return hasPool('basic') ? 'basic' : null
+  if (banner === 'reprint') return hasPool(REPRINT_KEY) ? REPRINT_KEY : null
   if (banner === 'pickup') { const k = currentPickupKey(now); return k && hasPool(k) ? k : null }
   return null
 }

@@ -82,17 +82,20 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
   }
 
   // ピックアップの天井カウント(ローテーションが変わったら0から)
-  const pickupPityNow = (data) => {
-    const key = bannersInfo(new Date(now())).pickup.rotation
-    return data.pickupPity && data.pickupPity.rotation === key ? data.pickupPity.count : 0
+  const PITY_FIELD = { pickup: 'pickupPity', reprint: 'reprintPity' } // バナーごとの、天井カウントの保存先
+  const bannerPityNow = (data, banner) => {
+    const key = bannersInfo(new Date(now()))[banner].rotation
+    const p = data[PITY_FIELD[banner]]
+    return p && p.rotation === key ? p.count : 0
   }
+  const pickupPityNow = (data) => bannerPityNow(data, 'pickup')
   const publicMe = (data) => {
     const t = now()
     const lb = loginBonusStatus(data.loginBonus, t)
     const today = dayKey(t)
     const daily = data.battleDaily && data.battleDaily.day === today ? data.battleDaily.count : 0
     return {
-      gems: data.gems, pityCount: data.pityCount, pickupPity: pickupPityNow(data), banners: bannersInfo(new Date(now())), owned: data.owned, sig: data.sig || {}, enh: data.enh || {}, keys: data.keys || null,
+      gems: data.gems, pityCount: data.pityCount, pickupPity: pickupPityNow(data), reprintPity: bannerPityNow(data, 'reprint'), banners: bannersInfo(new Date(now())), owned: data.owned, sig: data.sig || {}, enh: data.enh || {}, keys: data.keys || null,
       loginBonus: { canClaim: lb.canClaim, streak: lb.streak, nextAmount: lb.nextAmount, cycle: CONFIG.LOGIN_BONUS },
       battle: { todayCount: daily, dailyLimit: CONFIG.BATTLE_REWARD_DAILY_LIMIT, rewards: CONFIG.BATTLE_REWARD },
     }
@@ -234,7 +237,7 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
     try {
       const times = Number(req.body?.times)
       if (times !== 1 && times !== 10) throw new HttpError(400, '回数が正しくありません')
-      const banner = req.body?.banner === 'pickup' ? 'pickup' : 'normal'
+      const banner = ['pickup', 'reprint'].includes(req.body?.banner) ? req.body.banner : 'normal'
       const rotation = rotationForBanner(banner, new Date(now()))
       if (!rotation) throw new HttpError(400, 'このガチャはいま引けません(準備中です)')
       const uid = req.user.uid
@@ -246,12 +249,12 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
         const data = snap.exists ? snap.data() : newUserData()
         const cost = CONFIG.COST_PER_PULL * times
         if (data.gems < cost) throw new HttpError(400, '通貨が足りません')
-        const startCount = banner === 'pickup' ? pickupPityNow(data) : data.pityCount || 0
+        const startCount = banner === 'normal' ? data.pityCount || 0 : bannerPityNow(data, banner)
         const { pulls, newCount } = drawGacha(times, startCount, rotation)
         const n = normalizeOwned(data)
         const { owned, sig, gained } = applyPulls(n, pulls)
         const gems = data.gems - cost
-        t.set(userRef, { gems, ...(banner === 'pickup' ? { pickupPity: { rotation, count: newCount } } : { pityCount: newCount }), owned, sig, enh: n.enh, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+        t.set(userRef, { gems, ...(banner === 'normal' ? { pityCount: newCount } : { [PITY_FIELD[banner]]: { rotation, count: newCount } }), owned, sig, enh: n.enh, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
         t.set(logRef, {
           uid, times, cost, banner, rotation,
           pulls: pulls.map((p) => ({ pity: p.pity, ids: p.characters.map((c) => c.id) })),
