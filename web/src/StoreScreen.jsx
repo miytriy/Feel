@@ -113,6 +113,26 @@ const CSS = `
   .sp-act { margin-top: 12px; } .sp-buy { min-width: 0; width: 100%; box-sizing: border-box; }
   .sp-in { font-size: 22px; }
 }
+/* 動き(transform と opacity だけ: EFFECTS.md) */
+@keyframes sp-pop { from { opacity: 0; transform: scale(0.92) translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes sp-bump { 0% { transform: scale(1.4); } 100% { transform: scale(1); } }
+@keyframes sp-sweep { 0% { transform: translateX(-140%) skewX(-18deg); opacity: 0; } 12% { opacity: 0.7; } 40% { transform: translateX(260%) skewX(-18deg); opacity: 0; } 100% { transform: translateX(260%) skewX(-18deg); opacity: 0; } }
+.sp-pane > * { animation: sp-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; will-change: transform, opacity; }
+.sp-pane > *:nth-child(2) { animation-delay: 0.05s; } .sp-pane > *:nth-child(3) { animation-delay: 0.1s; } .sp-pane > *:nth-child(4) { animation-delay: 0.15s; } .sp-pane > *:nth-child(5) { animation-delay: 0.2s; }
+.sp-card { position: relative; overflow: hidden; transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); animation: sp-rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(0.12s + var(--i, 0) * 0.09s); }
+.sp-card:hover { transform: translateY(-5px); }
+.sp-card.pass::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 38%; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,244,170,0.85), rgba(255,255,255,0)); pointer-events: none; animation: sp-sweep 4.2s ease-in-out 0.8s infinite; will-change: transform, opacity; }
+.sp-st { position: relative; transition: transform 0.15s; }
+.sp-st:hover { transform: translateY(-2px); } .sp-st:active { transform: scale(0.95); }
+.sp-st.on { animation: sp-pop 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+.sp-step button { transition: transform 0.12s; } .sp-step button:active:not(:disabled) { transform: scale(0.88); }
+.sp-step output.pulse { animation: sp-bump 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.sp-sr .v > span { display: inline-block; animation: sp-bump 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: left center; }
+.sp-buy:active:not(:disabled) { transform: translateX(-4px) scale(0.98); }
+.sp-dim { animation: sp-fade 0.2s ease-out; }
+.sp-dlg { animation: sp-pop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.15) backwards; }
+.sp-dlg .bt button { transition: transform 0.12s; } .sp-dlg .bt button:hover { transform: translateY(-2px); } .sp-dlg .bt button:active { transform: scale(0.95); }
+
 /* 石購入: 小さなタブ + 券のカード + 盟晶 */
 .sp-sub-tabs { display: flex; gap: 8px; margin: 14px 0 22px; flex-wrap: wrap; }
 .sp-st { min-height: 0; padding: 8px 22px; border: 2px solid #1b1b1f; background: transparent; color: #1b1b1f; font-family: ${FONT}; font-weight: 800; font-size: 15px; cursor: pointer; }
@@ -130,7 +150,9 @@ const CSS = `
 .sp-step button:focus-visible { outline: 3px solid #d9b800; }
 .sp-step output { min-width: 56px; text-align: center; font-family: ${DISPLAY}; font-weight: 700; font-size: 26px; }
 .sp-step small { color: #55555c; font-size: 13px; }
-.sp-num { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 2px solid #1b1b1f; background: #fff; font-family: ${DISPLAY}; font-weight: 700; font-size: 22px; margin-bottom: 14px; }
+.sp-num { width: 100%; box-sizing: border-box; min-height: 0; padding: 10px 12px; border: 2px solid #1b1b1f; border-radius: 0; background: #fff; color: #1b1b1f; -webkit-text-fill-color: #1b1b1f; caret-color: #1b1b1f; font-family: ${DISPLAY}; font-weight: 700; font-size: 24px; margin-bottom: 14px; outline: none; }
+.sp-num::placeholder { color: #9a9aa2; -webkit-text-fill-color: #9a9aa2; font-weight: 400; font-size: 18px; }
+.sp-num:focus { border-color: #d9b800; box-shadow: 0 0 0 3px rgba(255,230,0,0.45); }
 .sp-two { display: flex; gap: 12px; flex-wrap: wrap; }
 .sp-two .sp-buy { min-width: 0; flex: 1 1 220px; }
 .sp-dim { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(0,0,0,0.55); }
@@ -143,14 +165,14 @@ const CSS = `
 .sp-dlg .bt button { min-height: 0; padding: 10px 24px; border: 0; font-weight: 800; font-size: 15px; cursor: pointer; background: #d6d6da; color: #1b1b1f; }
 .sp-dlg .bt button.ok { background: #1b1b1f; color: #fff; }
 .sp-dlg .bt button:focus-visible { outline: 3px solid #d9b800; }
-@media (prefers-reduced-motion: reduce) { .sp, .sp-side, .sp-msg, .sp-day { animation: none !important; } .sp-buy, .sp-x { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .sp, .sp-side, .sp-msg, .sp-day, .sp-pane > *, .sp-card, .sp-card::after, .sp-st, .sp-dim, .sp-dlg, .sp-step output, .sp-sr .v > span { animation: none !important; } .sp-buy, .sp-x, .sp-card, .sp-st, .sp-step button, .sp-dlg .bt button { transition: none; } }
 `
 
 function Row({ label, value, unit, hi }) {
   return (
     <div className={`sp-sr${hi ? ' hi' : ''}`}>
       <div className="lb">{label}</div>
-      <div className="v">{value}{unit && <small>{unit}</small>}</div>
+      <div className="v"><span key={String(value)}>{value}</span>{unit && <small>{unit}</small>}</div>
     </div>
   )
 }
@@ -227,13 +249,13 @@ export default function StoreScreen({ me, busy, notice, error, tab, onTab, stone
             {TICKETS.map((t) => {
               const n = counts[t.kind], total = cost * n, have = (me.tickets && me.tickets[t.kind]) || 0
               return (
-                <div className="sp-card" key={t.kind} data-testid={`tk-${t.kind}`}>
+                <div className="sp-card" key={t.kind} style={{ '--i': t.kind === 'normal' ? 0 : 1 }} data-testid={`tk-${t.kind}`}>
                   <h3>{t.name}</h3>
                   <div className="own">所持<b>{have}</b>枚</div>
                   <p className="nt">{t.note}</p>
                   <div className="sp-step">
                     <button type="button" aria-label="1枚減らす" disabled={n <= 1} onClick={() => setCounts({ ...counts, [t.kind]: n - 1 })}>−</button>
-                    <output>{n}</output>
+                    <output key={n} className="pulse">{n}</output>
                     <button type="button" aria-label="1枚増やす" disabled={n >= 99} onClick={() => setCounts({ ...counts, [t.kind]: n + 1 })}>＋</button>
                     <small>枚 = 交易石 {total}</small>
                   </div>
@@ -310,7 +332,7 @@ export default function StoreScreen({ me, busy, notice, error, tab, onTab, stone
       <div className="sp-eb">MONTHLY PASS</div>
       <h2 className="sp-h">月パス</h2>
       <p className="sp-sub">月パスの間は、ログインボーナスを受け取るたびに、交易石が {pass.dailyGems} 個 追加でもらえます。</p>
-      <div className="sp-card" data-testid="pass-card">
+      <div className="sp-card pass" data-testid="pass-card">
         <h3>月パス({pass.days}日間)</h3>
         <div className="own">{pass.active ? <>有効期限 <b>{pass.expiresDay}</b>まで(あと <b>{pass.daysLeft}</b>日)</> : '月パスは、まだありません'}</div>
         <p className="nt">
@@ -373,7 +395,7 @@ export default function StoreScreen({ me, busy, notice, error, tab, onTab, stone
         </div>
         <div>
           {msg}
-          {!me ? <div className="sp-load">読み込み中…</div> : tab === 'bonus' ? bonus : tab === 'stones' ? stones : tab === 'pass' ? passTab : codeTab}
+          {!me ? <div className="sp-load">読み込み中…</div> : <div className="sp-pane" key={`${tab}-${stoneTab}`}>{tab === 'bonus' ? bonus : tab === 'stones' ? stones : tab === 'pass' ? passTab : codeTab}</div>}
         </div>
       </div>
       {dialog}
