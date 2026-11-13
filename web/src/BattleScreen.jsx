@@ -319,7 +319,7 @@ function NameFit({ text, style }) {
   )
 }
 
-export function UnitCard({ unit, active, selected, selectable, inspected, onClick, big = false, fx = null, hl = false, tick = 0, loss = 0, role = null }) {
+export function UnitCard({ unit, active, selected, selectable, inspected, onClick, onFocusCard, big = false, fx = null, hl = false, tick = 0, loss = 0, role = null }) {
   // 破壊: HPの数字とバーが、同じ速さで0へ減っていく。消滅: HPは減らないので、消える直前の値のまま(0にしない)
   const lastHp = useRef(unit.hp)
   if (unit.alive) lastHp.current = unit.hp
@@ -343,6 +343,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
       role="button"
       aria-label={unit.name}
       onClick={onClick}
+      onFocus={onFocusCard}
       style={{
         minWidth: 0, boxSizing: 'border-box', padding: big ? 10 : 4, ...(big ? { minHeight: 112 } : { height: 106, overflow: 'visible' }), // 戦闘画面が動かないように、スマホ幅のカードは高さを固定 borderRadius: big ? 10 : 8, fontSize: big ? 13 : 10, lineHeight: 1.3,
         background: C.card,
@@ -1327,6 +1328,13 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     if (accelActs.every((a) => a.target == null)) return act(accelActs[0])
     if (selected) act({ type: 'accelerate', trait: actor.accel.id, target: selected })
   }
+  // キーボードでカーソルを合わせたカードは、自動で選ぶ(確定は押さない: 対象を選ぶ場面では、Enterで決める)
+  const handleFocus = (u) => {
+    if (!u.alive || choosing || !document.documentElement.classList.contains('feel-kb')) return
+    if (selected === u.uid && inspect === u.uid) return
+    setSelected(u.uid)
+    setInspect(u.uid)
+  }
   const handleCard = (u) => {
     if (playerTurn && choosing && selectableSet.includes(u.uid)) {
       act({ type: 'choose', target: u.uid }) // 選んだらすぐに効果が働く
@@ -1532,6 +1540,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
       selectable={playerTurn && selectableSet.includes(u.uid)}
       inspected={u.uid === inspect}
       onClick={() => handleCard(u)}
+      onFocusCard={() => handleFocus(u)}
       big={desktop}
     />
   )
