@@ -25,7 +25,6 @@ const CSS = `
 @keyframes gc-right { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: none; } }
 /* 背景の黄色い帯・マーク: 元の傾きや位置、透明度(--o / --mo)を保ったまま動かす(保たないと、動きの最中だけ、まっすぐ・まぶしくなって、終わると切り替わる) */
 @keyframes gc-band { from { opacity: 0; transform: translateX(60px) skewX(-24deg); } to { opacity: var(--o, 0.5); transform: skewX(-24deg); } }
-@keyframes gc-mark { from { opacity: 0; transform: translateY(-50%) scale(0.8); } to { opacity: var(--mo, 0.9); transform: translateY(-50%); } }
 @keyframes gc-pop { from { opacity: 0; transform: scale(0.8) translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes gc-glow { 0%, 100% { box-shadow: 0 0 10px rgba(232,121,249,0.35); } 50% { box-shadow: 0 0 22px rgba(232,121,249,0.8); } }
 @keyframes gc-spin { to { transform: rotate(360deg); } }
@@ -38,7 +37,6 @@ const CSS = `
 .gc-bg i:nth-child(2) { right: 26%; top: -10%; width: 2.2vw; height: 130%; opacity: 0.5; --o: 0.5; animation: gc-band 0.9s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .gc-bg i:nth-child(3) { right: 3%; top: -10%; width: 14vw; height: 130%; opacity: 0.07; --o: 0.07; animation: gc-band 0.9s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .gc-bg b { position: absolute; right: 4%; top: 18%; font-family: ${DISPLAY}; font-weight: 700; font-size: clamp(90px, 17vw, 280px); line-height: 0.9; letter-spacing: 0.04em; color: rgba(255,255,255,0.05); writing-mode: horizontal-tb; white-space: nowrap; animation: gc-fade 1s ease-out backwards; }
-.gc-bg svg { position: absolute; right: 8%; top: 50%; width: min(44vw, 460px); transform: translateY(-50%); opacity: 0.9; --mo: 0.9; animation: gc-mark 0.8s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 /* 上の行と中身だけを、背景より手前に出す。確認(.gk)・演出(.gs)・報酬一覧(.gl)・排出率(.gc-back)は、自分の指定(position: fixed)のまま */
 .gc > .gc-top, .gc > .gc-main { position: relative; z-index: 1; }
 
@@ -99,7 +97,6 @@ const CSS = `
 @media (max-width: 899px) {
   .gc-top { padding: 10px 12px 4px; padding-top: calc(10px + env(safe-area-inset-top)); }
   .gc-main { padding: 10px 14px calc(14px + env(safe-area-inset-bottom)); }
-  .gc-bg svg { right: -6%; top: 40%; width: 74vw; opacity: 0.35; --mo: 0.35; }
   .gc-bg b { top: 30%; }
   .gc-bottom { flex-direction: column-reverse; align-items: stretch; }
   .gc-btns { width: 100%; }
@@ -182,16 +179,6 @@ const CSS = `
 `
 
 // 背景の絵: 菱形を組み合わせた、ガチャのマーク
-const Mark = () => (
-  <svg viewBox="0 0 200 200" aria-hidden="true">
-    <g fill="none" stroke={C.player} strokeWidth="1.2" opacity="0.5"><circle cx="100" cy="100" r="92" /><circle cx="100" cy="100" r="70" strokeDasharray="3 6" /></g>
-    <path d="M100 14l56 56-56 56-56-56z" fill={C.player} opacity="0.85" />
-    <path d="M100 42l30 30-30 30-30-30z" fill="#0a0a0c" />
-    <path d="M100 104l42 42-42 42-42-42z" fill="none" stroke="#f2f2f3" strokeWidth="2" opacity="0.8" />
-    <rect x="30" y="92" width="16" height="16" fill="#f2f2f3" transform="rotate(45 38 100)" opacity="0.8" />
-    <rect x="154" y="92" width="16" height="16" fill="#f2f2f3" transform="rotate(45 162 100)" opacity="0.8" />
-  </svg>
-)
 
 const IconBox = (p) => (
   <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true" {...p}><path d="M3 4h18l1 5H2zM3 10h18v10H3zm6 2v2h6v-2z" fillRule="evenodd" /></svg>
@@ -343,7 +330,7 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
   return (
     <div className={`gc theme-dark${leaving ? ' leaving' : ''}`} data-testid="gacha">
       <style>{CSS}</style>
-      <div className="gc-bg" aria-hidden="true"><i /><i /><i /><b>SCOUT</b><Mark /></div>
+      <div className="gc-bg" aria-hidden="true"><i /><i /><i /><b>SCOUT</b></div>
       <div className="gc-top">
         <div className="gc-title">//<b>ガチャ</b></div>
         <div className="gc-gems"><IconGem />{me ? me.gems : '-'}</div>
