@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { C, FONT, DISPLAY, useRemembered } from './ui.js'
+import { useHotkey } from './keys.js'
 import { ROTATIONS } from './battle/rotations.js'
 import { ALL_CHARACTERS } from './battle/characters/index.js'
 import { ALL_SPELLS } from './battle/spells/index.js'
@@ -345,6 +346,24 @@ export default function WikiScreen({ onExit }) {
     </div>
   )
 
+  // キーボード: 詳細では左右の矢印だけ(上下は使わない)。左右で、直接前後のページへ
+  useHotkey('nav.left', () => { if (!selected) return false; step(-1) })
+  useHotkey('nav.right', () => { if (!selected) return false; step(1) })
+  useHotkey('nav.up', () => (selected ? true : false))
+  useHotkey('nav.down', () => (selected ? true : false))
+  // 詳細から一覧へ戻ったら、最後に開いていたページのところに戻る(一覧の先頭には戻らない)
+  const lastId = useRef(null)
+  useEffect(() => {
+    if (selected) { lastId.current = selected.id; return undefined }
+    if (!lastId.current) return undefined
+    const id = lastId.current
+    const t = setTimeout(() => {
+      const el = document.querySelector(`[data-testid="wk-card-${id}"]`)
+      if (el) { el.scrollIntoView({ block: 'center' }); el.focus({ preventScroll: true }) }
+    }, 60)
+    return () => clearTimeout(t)
+  }, [selected])
+
   // ---- ホーム: 項目のタイル ----
   if (isRoot) {
     return (
@@ -408,7 +427,7 @@ export default function WikiScreen({ onExit }) {
     if (ring.length < 2 || ringAt < 0) return
     const to = ring[(ringAt + dir + ring.length) % ring.length]
     setBack(false)
-    setNav((n) => ({ ...n, section: to.sec, itemId: to.d.id }))
+    setNav((n) => ({ ...n, section: to.sec, sub: n.sub === 'all' ? 'all' : secOf(to.sec).subOf(to.d), itemId: to.d.id })) // 戻ったとき、いま開いていたページの一覧に戻れるように、分類もそろえる
   }
   const pager = selected && ring.length > 1 && (
     <>

@@ -10,6 +10,7 @@ import { unlockLevel } from './unlock.js'
 import { RARITY, fold, collectRelated } from './CodexScreen.jsx'
 import { Emblem, hash } from './emblem.jsx'
 import { artOf, useArtStatus } from './charArt.jsx'
+import { useHotkey } from './keys.js'
 import { IconClose, IconAgents, StatIcon } from './icons.jsx'
 import { classElf, classRoyal, classNeutral, classWitch, classNemesis, classBishop, classNightmare, classDragon } from './classIcons.js'
 
@@ -500,16 +501,47 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
   }
   useEffect(() => {
     const h = (e) => {
+      if (e.defaultPrevented) return // キー設定(keys.js)が処理したキーは、ここでは扱わない
       if (statOpen) { if (e.key === 'Escape') setStatOpen(false); return }
       if (gridOpen) { if (e.key === 'Escape') closeGrid(); return }
       if (searchOpen && e.target && e.target.tagName === 'INPUT') { if (e.key === 'Escape') setSearchOpen(false); return }
-      if (e.key === 'Escape') close()
-      else if (e.key === 'ArrowDown') { e.preventDefault(); step(1) }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); step(-1) }
     }
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
   }) // eslint-disable-line react-hooks/exhaustive-deps
+  // キーボード: 2つの層。キャラクターの列(上下・左右でキャラを変える)→ Enter →「一覧」のタブ(上下で項目を変える)。Esc で1つ前の層(キャラクターの列)へ戻る
+  const kbFree = () => !statOpen && !gridOpen && !leaving && !opening && !(searchOpen && document.activeElement && document.activeElement.tagName === 'INPUT')
+  const inTabs = () => !!(document.activeElement && document.activeElement.closest && document.activeElement.closest('.jp-tabs'))
+  const inChars = () => { const a = document.activeElement; return !a || a === document.body || !!(a.closest && a.closest('.jp-list')) }
+  const focusChar = (id) => setTimeout(() => { const el = listRef.current && listRef.current.querySelector(`[data-id="${id}"]`); if (el) { el.focus({ preventScroll: true }); el.scrollIntoView({ block: 'nearest', inline: 'nearest' }) } }, 0)
+  const clampStep = (d) => {
+    if (!sel || !list.length) return
+    const i = list.findIndex((x) => x.id === sel.id)
+    const n = list[Math.max(0, Math.min(list.length - 1, i + d))]
+    if (n && n.id !== sel.id) pick(n.id)
+    focusChar(n ? n.id : sel.id)
+  }
+  const tabMove = (d) => {
+    const i = TABS.findIndex((t) => t.k === tab)
+    const n = TABS[Math.max(0, Math.min(TABS.length - 1, i + d))]
+    if (n && n.k !== tab) goTab(n.k)
+    setTimeout(() => { const el = document.querySelector(`[data-testid="jp-tab-${n.k}"]`); if (el) el.focus({ preventScroll: true }) }, 0)
+  }
+  useHotkey('nav.up', () => (!kbFree() || !c ? false : inTabs() ? (tabMove(-1), true) : inChars() ? (clampStep(-1), true) : false))
+  useHotkey('nav.down', () => (!kbFree() || !c ? false : inTabs() ? (tabMove(1), true) : inChars() ? (clampStep(1), true) : false))
+  useHotkey('nav.left', () => (!kbFree() || !c ? false : inTabs() ? true : inChars() ? (clampStep(-1), true) : false))
+  useHotkey('nav.right', () => (!kbFree() || !c ? false : inTabs() ? true : inChars() ? (clampStep(1), true) : false))
+  useHotkey('nav.confirm', () => {
+    if (!kbFree() || !c) return false
+    if (inTabs()) return false // タブにカーソルがあるときは、ふつうに押す
+    if (!inChars()) return false
+    const el = document.querySelector(`[data-testid="jp-tab-${tab}"]`)
+    if (el) el.focus({ preventScroll: true })
+    return true
+  })
+  const backLayer = () => { if (!kbFree() || !c || !inTabs()) return false; focusChar(c.id); return true }
+  useHotkey('nav.close', backLayer)
+  useHotkey('nav.back', backLayer)
   const closeGrid = () => { setGridOut(true); later(() => { setGridOpen(false); setGridOut(false) }, 200) }
 
   // 選んだキャラが見えるように、列を動かす
