@@ -36,7 +36,6 @@ const CSS = `
 .gc-bg i:nth-child(1) { right: 12%; top: -10%; width: 7vw; height: 130%; opacity: 0.16; --o: 0.16; animation: gc-band 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .gc-bg i:nth-child(2) { right: 26%; top: -10%; width: 2.2vw; height: 130%; opacity: 0.5; --o: 0.5; animation: gc-band 0.9s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .gc-bg i:nth-child(3) { right: 3%; top: -10%; width: 14vw; height: 130%; opacity: 0.07; --o: 0.07; animation: gc-band 0.9s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
-.gc-bg b { position: absolute; right: 4%; top: 18%; font-family: ${DISPLAY}; font-weight: 700; font-size: clamp(90px, 17vw, 280px); line-height: 0.9; letter-spacing: 0.04em; color: rgba(255,255,255,0.05); writing-mode: horizontal-tb; white-space: nowrap; animation: gc-fade 1s ease-out backwards; }
 /* 上の行と中身だけを、背景より手前に出す。確認(.gk)・演出(.gs)・報酬一覧(.gl)・排出率(.gc-back)は、自分の指定(position: fixed)のまま */
 .gc > .gc-top, .gc > .gc-main { position: relative; z-index: 1; }
 
@@ -97,7 +96,6 @@ const CSS = `
 @media (max-width: 899px) {
   .gc-top { padding: 10px 12px 4px; padding-top: calc(10px + env(safe-area-inset-top)); }
   .gc-main { padding: 10px 14px calc(14px + env(safe-area-inset-bottom)); }
-  .gc-bg b { top: 30%; }
   .gc-bottom { flex-direction: column-reverse; align-items: stretch; }
   .gc-btns { width: 100%; }
   .gc-pull { flex: 1; min-width: 0; height: 56px; font-size: 13px; padding-left: 10px; gap: 6px; }
@@ -330,7 +328,7 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
   return (
     <div className={`gc theme-dark${leaving ? ' leaving' : ''}`} data-testid="gacha">
       <style>{CSS}</style>
-      <div className="gc-bg" aria-hidden="true"><i /><i /><i /><b>SCOUT</b></div>
+      <div className="gc-bg" aria-hidden="true"><i /><i /><i /></div>
       <div className="gc-top">
         <div className="gc-title">//<b>ガチャ</b></div>
         <div className="gc-gems"><IconGem />{me ? me.gems : '-'}</div>
