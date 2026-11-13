@@ -4,7 +4,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth } from './firebase.js'
 import { openLogin } from './LoginDialog.jsx'
 import {
-  gateStatus, gateEnter, gateCheck, gateMe, getGateToken, setGateToken, fetchMe, enhanceChar, saveKeys, fetchCareer, recordMatch, clearCareer, drawGacha, claimLoginBonus, startBattleTicket, finishBattle, fetchGifts, claimGift, redeemCode, markMailRead, setMailStar, deleteMail, purgeReadMail,
+  gateStatus, gateEnter, gateCheck, gateMe, getGateToken, setGateToken, fetchMe, enhanceChar, saveKeys, exchangeTicket, exchangeCrystal, buyPass, fetchCareer, recordMatch, clearCareer, drawGacha, claimLoginBonus, startBattleTicket, finishBattle, fetchGifts, claimGift, redeemCode, markMailRead, setMailStar, deleteMail, purgeReadMail,
 } from './api.js'
 import BattleScreen from './BattleScreen.jsx'
 import CareerScreen from './CareerScreen.jsx'
@@ -113,7 +113,7 @@ export default function App() {
   const [unlockLv, setUnlockLv] = useState(unlockLevel) // 設定でマスターパスワードを打つと、ログインが必要な機能を、ログインなしで使える(1=人事・編成・足跡 / 2=最高権限: ガチャ・メールも体験用)
   // 最高権限(レベル2)でログインしていないときだけ、ガチャとメールを、この端末の中だけの仮のデータで動かす(ページを読み込み直すと、最初から)
   const sandbox = useMemo(() => (!user && unlockLv >= 2 ? createSandbox({ characters: ALL_CHARACTERS, cost: COST }) : null), [!user && unlockLv >= 2]) // eslint-disable-line react-hooks/exhaustive-deps
-  const api = sandbox || { fetchMe, enhanceChar, fetchGifts, drawGacha, claimGift, markMailRead, setMailStar, deleteMail, purgeReadMail, claimLoginBonus, redeemCode }
+  const api = sandbox || { fetchMe, enhanceChar, fetchGifts, drawGacha, claimGift, markMailRead, setMailStar, deleteMail, purgeReadMail, claimLoginBonus, redeemCode, exchangeTicket, exchangeCrystal, buyPass }
   const [parties, setParties] = useState(null) // パーティー(最大5つ。ログイン中だけ)
   const [activeIdx, setActiveIdx] = useState(null) // 最後に選んだパーティーの番号
   const desktop = useIsDesktop() // 画面の幅が広い(PC)ときは、画面全体を使うレイアウトにする
