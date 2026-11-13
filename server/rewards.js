@@ -35,7 +35,7 @@ export function loginBonusStatus(lb, nowMs, cfg = CONFIG) {
   return {
     canClaim: !claimedToday,
     streak: claimedToday ? cur.streak || 1 : cur.streak && cur.lastDay === prevDayKey(today) ? cur.streak : 0,
-    // 次に受け取れるジェム(今日まだなら今日の分、受け取り済みなら明日の分)
+    // 次に受け取れる交易石(今日まだなら今日の分、受け取り済みなら明日の分)
     nextAmount: table[(nextStreak - 1) % table.length],
     today,
     nextStreak,

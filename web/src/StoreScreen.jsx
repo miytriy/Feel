@@ -1,12 +1,21 @@
 // Feel - 購買部: ログインボーナスと合言葉(あとで、買い物の機能を足す)
 // 見た目は、エンドフィールドの購買部をお手本に: 黒い上の帯 + 角丸のタブ + 明るい舞台 + 左の一覧 + 黄色の大きなボタン
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { C, FONT, DISPLAY } from './ui.js'
 import { IconGem, IconStore, IconClose } from './icons.jsx'
 
 const TABS = [
   { key: 'bonus', label: 'ログインボーナス', Icon: IconGem },
   { key: 'code', label: '合言葉', Icon: IconStore },
+  { key: 'stones', label: '石購入', Icon: IconGem },
+]
+const STONE_TABS = [
+  { key: 'ticket', label: '交易石購入' },
+  { key: 'crystal', label: '盟晶購入' },
+]
+const TICKETS = [
+  { kind: 'normal', name: '通常採用券', note: '通常ガチャで、1枚で1回引けます。' },
+  { kind: 'limited', name: '限定採用券', note: '限定ガチャ(ピックアップ・復刻)で、1枚で1回引けます。' },
 ]
 
 const CSS = `
@@ -23,7 +32,7 @@ const CSS = `
 .sp-bg i:nth-child(2) { right: 26%; width: 18px; background: ${C.player}; opacity: 0.75; }
 .sp-bg i:nth-child(3) { right: 7%; width: 12px; background: #1b1b1f; opacity: 0.1; }
 
-/* 黒い上の帯: // 購買部 ・ 持っているジェム ・ 丸い × / その下に、角丸のタブ */
+/* 黒い上の帯: // 購買部 ・ 持っている交易石 ・ 丸い × / その下に、角丸のタブ */
 .sp-bar { position: sticky; top: 0; z-index: 6; background: #0b0b0d; color: #fff; padding-top: env(safe-area-inset-top); }
 .sp-row { display: flex; align-items: center; gap: 12px; padding: 10px 28px 4px; }
 .sp-title { font-family: ${DISPLAY}; font-weight: 600; font-size: 16px; letter-spacing: 0.12em; color: #d6d6dc; }
@@ -103,6 +112,36 @@ const CSS = `
   .sp-act { margin-top: 12px; } .sp-buy { min-width: 0; width: 100%; box-sizing: border-box; }
   .sp-in { font-size: 22px; }
 }
+/* 石購入: 小さなタブ + 券のカード + 盟晶 */
+.sp-sub-tabs { display: flex; gap: 8px; margin: 14px 0 22px; flex-wrap: wrap; }
+.sp-st { min-height: 0; padding: 8px 22px; border: 2px solid #1b1b1f; background: transparent; color: #1b1b1f; font-family: ${FONT}; font-weight: 800; font-size: 15px; cursor: pointer; }
+.sp-st.on { background: #1b1b1f; color: #fff; }
+.sp-st:hover, .sp-st:focus-visible { border-color: #d9b800; outline: none; }
+.sp-tk { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.sp-card { padding: 20px 22px; background: linear-gradient(#fbfbfb, #e4e4e8); box-shadow: 0 10px 20px rgba(0,0,0,0.12); }
+.sp-card h3 { margin: 0; font-size: 22px; font-weight: 800; }
+.sp-card .own { margin-top: 4px; font-size: 14px; color: #55555c; }
+.sp-card .own b { font-family: ${DISPLAY}; font-size: 26px; color: #1b1b1f; margin: 0 4px; }
+.sp-card .nt { margin: 10px 0 14px; font-size: 13px; color: #55555c; line-height: 1.6; }
+.sp-step { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.sp-step button { width: 40px; height: 40px; min-height: 0; padding: 0; border: 0; background: #1b1b1f; color: #fff; font-size: 22px; font-weight: 800; cursor: pointer; }
+.sp-step button:disabled { opacity: 0.35; cursor: default; }
+.sp-step button:focus-visible { outline: 3px solid #d9b800; }
+.sp-step output { min-width: 56px; text-align: center; font-family: ${DISPLAY}; font-weight: 700; font-size: 26px; }
+.sp-step small { color: #55555c; font-size: 13px; }
+.sp-num { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 2px solid #1b1b1f; background: #fff; font-family: ${DISPLAY}; font-weight: 700; font-size: 22px; margin-bottom: 14px; }
+.sp-two { display: flex; gap: 12px; flex-wrap: wrap; }
+.sp-two .sp-buy { min-width: 0; flex: 1 1 220px; }
+.sp-dim { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(0,0,0,0.55); }
+.sp-dlg { width: min(460px, 92vw); padding: 24px 26px; background: #fff; color: #1b1b1f; box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
+.sp-dlg h3 { margin: 0 0 10px; font-size: 20px; font-weight: 800; }
+.sp-dlg p { margin: 0 0 8px; font-size: 15px; line-height: 1.7; }
+.sp-dlg .warn { padding: 10px 12px; background: #fff3cf; border-left: 5px solid #d9b800; font-size: 14px; font-weight: 700; }
+.sp-dlg .bl { margin: 12px 0 0; font-size: 14px; color: #44444a; }
+.sp-dlg .bt { display: flex; gap: 12px; justify-content: flex-end; margin-top: 18px; }
+.sp-dlg .bt button { min-height: 0; padding: 10px 24px; border: 0; font-weight: 800; font-size: 15px; cursor: pointer; background: #d6d6da; color: #1b1b1f; }
+.sp-dlg .bt button.ok { background: #1b1b1f; color: #fff; }
+.sp-dlg .bt button:focus-visible { outline: 3px solid #d9b800; }
 @media (prefers-reduced-motion: reduce) { .sp, .sp-side, .sp-msg, .sp-day { animation: none !important; } .sp-buy, .sp-x { transition: none; } }
 `
 
@@ -115,8 +154,11 @@ function Row({ label, value, unit, hi }) {
   )
 }
 
-export default function StoreScreen({ me, busy, notice, error, tab, onTab, code, onCode, onClaimBonus, onRedeem, pityCount = 40, onExit }) {
+export default function StoreScreen({ me, busy, notice, error, tab, onTab, stoneTab = 'ticket', onStoneTab = () => {}, code, onCode, onClaimBonus, onRedeem, onTicket, onCrystal, pityCount = 40, onExit }) {
   const nowRef = useRef(null)
+  const [counts, setCounts] = useState({ normal: 1, limited: 1 }) // 券を買う枚数
+  const [amount, setAmount] = useState('') // 盟晶の数
+  const [dlg, setDlg] = useState(null) // 確認のダイアログ
   const lb = me && me.loginBonus
   const cycle = (lb && lb.cycle) || []
   const len = cycle.length || 7
@@ -132,7 +174,7 @@ export default function StoreScreen({ me, busy, notice, error, tab, onTab, code,
     <>
       <div className="sp-eb">LOGIN BONUS</div>
       <h2 className="sp-h">ログインボーナス</h2>
-      <p className="sp-sub">毎日1回、ジェムがもらえます。連続でログインすると、7日目に特別な量になります。</p>
+      <p className="sp-sub">毎日1回、交易石がもらえます。連続でログインすると、7日目に特別な量になります。</p>
       <div className="sp-days" role="list">
         {cycle.map((amount, i) => {
           const done = lb.canClaim ? i < todayIdx : i <= todayIdx
@@ -150,7 +192,7 @@ export default function StoreScreen({ me, busy, notice, error, tab, onTab, code,
       </div>
       <div className="sp-act">
         <div className="nt">
-          {lb.canClaim ? `今日の分: +${lb.nextAmount} ジェム` : `今日は受け取り済みです(連続${lb.streak}日)。明日は +${lb.nextAmount} ジェム`}
+          {lb.canClaim ? `今日の分: +${lb.nextAmount} 交易石` : `今日は受け取り済みです(連続${lb.streak}日)。明日は +${lb.nextAmount} 交易石`}
         </div>
         <button type="button" className="sp-buy" disabled={busy || !lb.canClaim} onClick={onClaimBonus}>
           <span>{lb.canClaim ? '受け取る' : '受け取り済み'}{lb.canClaim && <small>+{lb.nextAmount}</small>}</span>
@@ -160,11 +202,104 @@ export default function StoreScreen({ me, busy, notice, error, tab, onTab, code,
     </>
   )
 
+  const cost = (me && me.ticketCost) || 5000
+  const gems = me ? me.gems : 0
+  const crystals = me ? me.crystals || 0 : 0
+  const amt = Math.max(0, Math.floor(Number(amount) || 0))
+  const ok = (fn) => () => { setDlg(null); fn() }
+
+  const stones = me && (
+    <>
+      <div className="sp-eb">STONE SHOP</div>
+      <h2 className="sp-h">石購入</h2>
+      <div className="sp-sub-tabs" role="tablist" aria-label="石購入">
+        {STONE_TABS.map((t) => (
+          <button key={t.key} type="button" role="tab" aria-selected={stoneTab === t.key} className={`sp-st${stoneTab === t.key ? ' on' : ''}`} data-testid={`st-${t.key}`} onClick={() => onStoneTab(t.key)}>{t.label}</button>
+        ))}
+      </div>
+      {stoneTab === 'ticket' ? (
+        <>
+          <p className="sp-sub" style={{ marginTop: 0 }}>交易石を使って、採用券を買えます。どちらも1枚 {cost} 交易石です。</p>
+          <div className="sp-tk">
+            {TICKETS.map((t) => {
+              const n = counts[t.kind], total = cost * n, have = (me.tickets && me.tickets[t.kind]) || 0
+              return (
+                <div className="sp-card" key={t.kind} data-testid={`tk-${t.kind}`}>
+                  <h3>{t.name}</h3>
+                  <div className="own">所持<b>{have}</b>枚</div>
+                  <p className="nt">{t.note}</p>
+                  <div className="sp-step">
+                    <button type="button" aria-label="1枚減らす" disabled={n <= 1} onClick={() => setCounts({ ...counts, [t.kind]: n - 1 })}>−</button>
+                    <output>{n}</output>
+                    <button type="button" aria-label="1枚増やす" disabled={n >= 99} onClick={() => setCounts({ ...counts, [t.kind]: n + 1 })}>＋</button>
+                    <small>枚 = 交易石 {total}</small>
+                  </div>
+                  <button type="button" className="sp-buy" style={{ minWidth: 0, width: '100%', boxSizing: 'border-box' }} data-testid={`tk-buy-${t.kind}`} disabled={busy || gems < total} onClick={() => setDlg({ type: 'ticket', t, n, total })}>
+                    <span>{gems < total ? '交易石が足りません' : '交換する'}<small>{total}</small></span><span className="ar" aria-hidden="true">→</span>
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="sp-sub" style={{ marginTop: 0 }}>交易石と盟晶を、1対1で交換できます。</p>
+          <div className="sp-card" data-testid="crystal-card">
+            <h3>盟晶</h3>
+            <div className="own">所持<b>{crystals}</b>個 ・ 交易石<b>{gems}</b>個</div>
+            <p className="nt">盟晶では、ガチャを直接引けません。ガチャに使うには、交易石に変換(1対1)します。</p>
+            <input className="sp-num" type="number" inputMode="numeric" min="1" value={amount} placeholder="交換する数" aria-label="交換する数" data-testid="crystal-amount" onChange={(e) => setAmount(e.target.value)} />
+            <div className="sp-two">
+              <button type="button" className="sp-buy" data-testid="crystal-buy" disabled={busy || amt < 1 || gems < amt} onClick={() => setDlg({ type: 'crystal', mode: 'buy', n: amt })}>
+                <span>盟晶を買う<small>交易石 → 盟晶</small></span><span className="ar" aria-hidden="true">→</span>
+              </button>
+              <button type="button" className="sp-buy" data-testid="crystal-back" disabled={busy || amt < 1 || crystals < amt} onClick={() => setDlg({ type: 'crystal', mode: 'back', n: amt })}>
+                <span>交易石に変換<small>盟晶 → 交易石</small></span><span className="ar" aria-hidden="true">→</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  )
+
+  const dialog = dlg && (
+    <div className="sp-dim" onClick={() => setDlg(null)}>
+      <div className="sp-dlg" role="dialog" aria-label="交換の確認" data-testid="store-dialog" onClick={(e) => e.stopPropagation()}>
+        {dlg.type === 'ticket' ? (
+          <>
+            <h3>{dlg.t.name} を買いますか?</h3>
+            <p>交易石 {dlg.total} を消費して、{dlg.t.name} を {dlg.n} 枚 手に入れます。</p>
+            <div className="bl">交易石 {gems} → {gems - dlg.total}</div>
+            <div className="bt"><button type="button" aria-label="閉じる" onClick={() => setDlg(null)}>キャンセル</button><button type="button" className="ok" data-testid="store-ok" onClick={ok(() => { onTicket(dlg.t.kind, dlg.n); setCounts({ ...counts, [dlg.t.kind]: 1 }) })}>確定</button></div>
+          </>
+        ) : dlg.mode === 'buy' ? (
+          <>
+            <h3>盟晶を買いますか?</h3>
+            <p>交易石 {dlg.n} を消費して、盟晶 {dlg.n} 個に交換します。</p>
+            <p className="warn">盟晶では、ガチャを直接引けません。ガチャに使うときは、盟晶を交易石に変換(1対1)する必要があります。</p>
+            <div className="bl">交易石 {gems} → {gems - dlg.n} ・ 盟晶 {crystals} → {crystals + dlg.n}</div>
+            <div className="bt"><button type="button" aria-label="閉じる" onClick={() => setDlg(null)}>キャンセル</button><button type="button" className="ok" data-testid="store-ok" onClick={ok(() => { onCrystal('buy', dlg.n); setAmount('') })}>確定</button></div>
+          </>
+        ) : (
+          <>
+            <h3>交易石に変換しますか?</h3>
+            <p>盟晶 {dlg.n} 個を、交易石 {dlg.n} 個に変換します。</p>
+            <p className="warn">変換した交易石は、ガチャや採用券に使えます。</p>
+            <div className="bl">盟晶 {crystals} → {crystals - dlg.n} ・ 交易石 {gems} → {gems + dlg.n}</div>
+            <div className="bt"><button type="button" aria-label="閉じる" onClick={() => setDlg(null)}>キャンセル</button><button type="button" className="ok" data-testid="store-ok" onClick={ok(() => { onCrystal('back', dlg.n); setAmount('') })}>確定</button></div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+
   const codeTab = (
     <>
       <div className="sp-eb">CODE</div>
       <h2 className="sp-h">合言葉</h2>
-      <p className="sp-sub">合言葉を入れると、ジェムなどを受け取れます。</p>
+      <p className="sp-sub">合言葉を入れると、交易石などを受け取れます。</p>
       <div className="sp-code">
         <label htmlFor="sp-code">合言葉を入力</label>
         <input id="sp-code" className="sp-in" value={code} maxLength={40} placeholder="ここに入力" autoComplete="off" onChange={(e) => onCode(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !busy && code.trim()) onRedeem() }} />
@@ -184,7 +319,7 @@ export default function StoreScreen({ me, busy, notice, error, tab, onTab, code,
       <div className="sp-bar">
         <div className="sp-row">
           <div className="sp-title"><b>//</b>購買部</div>
-          {me && <div className="sp-chip" aria-label="ジェム"><IconGem />{me.gems}</div>}
+          {me && <div className="sp-chip" aria-label="交易石"><IconGem />{me.gems}</div>}
           <button type="button" className="sp-x" onClick={onExit} aria-label="閉じる"><IconClose /></button>
         </div>
         <div className="sp-tabs" role="tablist">
@@ -195,16 +330,20 @@ export default function StoreScreen({ me, busy, notice, error, tab, onTab, code,
       </div>
       <div className="sp-body">
         <div className="sp-side">
-          <Row hi label="ジェム" value={me ? me.gems : '-'} />
+          <Row hi label="交易石" value={me ? me.gems : '-'} />
+          <Row label="通常採用券" value={me && me.tickets ? me.tickets.normal : '-'} unit="枚" />
+          <Row label="限定採用券" value={me && me.tickets ? me.tickets.limited : '-'} unit="枚" />
+          <Row label="盟晶" value={me ? me.crystals || 0 : '-'} unit="個" />
           <Row label="連続ログイン" value={lb ? lb.streak : '-'} unit="日" />
           <Row label="今日の対戦報酬" value={me && me.battle ? `${me.battle.todayCount}/${me.battle.dailyLimit}` : '-'} unit="回" />
           <Row label="ガチャの天井まで" value={me ? Math.max(0, pityCount - (me.pityCount || 0)) : '-'} unit="回" />
         </div>
         <div>
           {msg}
-          {!me ? <div className="sp-load">読み込み中…</div> : tab === 'bonus' ? bonus : codeTab}
+          {!me ? <div className="sp-load">読み込み中…</div> : tab === 'bonus' ? bonus : tab === 'stones' ? stones : codeTab}
         </div>
       </div>
+      {dialog}
     </div>
   )
 }

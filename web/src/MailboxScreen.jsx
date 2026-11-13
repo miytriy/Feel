@@ -3,7 +3,7 @@ import { C, FONT, DISPLAY } from './ui.js'
 import { IconClose, IconGem, IconMail } from './icons.jsx'
 
 // メールボックス(プレゼント)。参考: エンドフィールドのメールボックス
-//   左に、メールの一覧(選んでいるものは白) → 右に、本文と添付(ジェム)と、受け取りボタン → 下に、一括受取
+//   左に、メールの一覧(選んでいるものは白) → 右に、本文と添付(交易石)と、受け取りボタン → 下に、一括受取
 //   開くと、左の一覧は左から・右の本文は右から入る。閉じるときは、その場でフェードアウト。
 // gifts: [{ id, title, gems, message, claimed, read, star }]  /  onClaim(gift): 1通を受け取る  /  onClaimAll(): 全部受け取る
 // onRead(gift): 既読にする  /  onStar(gift): ★の切り替え  /  onDelete(gift): 1通を消す(受け取り済みのみ)  /  onPurge(): 既読削除(受け取り済み・既読・★なしを消す)
@@ -135,7 +135,7 @@ export default function MailboxScreen({ gifts, busy, notice, error, onClaim, onC
             {gifts.map((g, i) => (
               <button key={g.id} type="button" className={`ml-item${cur && cur.id === g.id ? ' on' : ''}${g.claimed ? ' done' : ''}`} style={{ '--i': i }} onClick={() => setSel(g.id)}>
                 <i className="ml-dot" style={g.read ? { visibility: 'hidden' } : undefined} />
-                <span className="ml-it"><b>{g.title}</b><small><IconGem />{g.gems} ジェム{g.claimed ? ' ・ 受取済' : ''}</small></span>
+                <span className="ml-it"><b>{g.title}</b><small><IconGem />{g.gems} 交易石{g.claimed ? ' ・ 受取済' : ''}</small></span>
                 {g.star && <IconStar on style={{ flex: 'none', color: g.id === (cur && cur.id) ? '#c9a800' : C.player }} />}
                 <span
                   className="ml-tick"
@@ -183,7 +183,7 @@ export default function MailboxScreen({ gifts, busy, notice, error, onClaim, onC
             <div className="ml-mbody">
               <b>・メールボックス・</b>
               運営からのプレゼントや、お知らせを受け取る場所です。<br />
-              メールを開くと既読になります。ジェムが付いているメールは、右下の受け取りボタン(または一覧の右のチェック)で受け取れます。「一括受取」では、まだ受け取っていないものを全部受け取ります。
+              メールを開くと既読になります。交易石が付いているメールは、右下の受け取りボタン(または一覧の右のチェック)で受け取れます。「一括受取」では、まだ受け取っていないものを全部受け取ります。
               <br /><br />
               <b>・期限・</b>
               期限があるプレゼントは、期限を過ぎると受け取れなくなります。早めに受け取ってください。
@@ -192,7 +192,7 @@ export default function MailboxScreen({ gifts, busy, notice, error, onClaim, onC
               ★をつけたメールは、「既読削除」で消えません。残しておきたいメールにつけてください。
               <br /><br />
               <b>・削除・</b>
-              「メール削除」は、開いているメールを1通消します。「既読削除」は、受け取り済みで既読のメールをまとめて消します。ジェムを受け取っていないメールと、★のついたメールは消えません。消したメールは元に戻せません。
+              「メール削除」は、開いているメールを1通消します。「既読削除」は、受け取り済みで既読のメールをまとめて消します。交易石を受け取っていないメールと、★のついたメールは消えません。消したメールは元に戻せません。
             </div>
           </div>
         </div>

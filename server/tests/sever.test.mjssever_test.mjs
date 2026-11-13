@@ -190,6 +190,32 @@ test('API: ガチャは今までどおり動く(通貨が減り、足りなけ�
   assert.equal((await api('POST', '/api/gacha', 'g1', { times: 3 })).status, 400)
 })
 
+test('API: 採用券(交易石5000個で1枚・足りなければ失敗)と、ガチャでの券の消費(先に券、足りない分は交易石)', async () => {
+  fake.put('users/tk1', { gems: 12000, pityCount: 0, owned: {}, sig: {}, enh: {} })
+  assert.equal((await api('POST', '/api/exchange-ticket', 'tk1', { kind: 'normal', count: 3 })).status, 400) // 15000 必要
+  assert.equal((await api('POST', '/api/exchange-ticket', 'tk1', { kind: 'bad', count: 1 })).status, 400)
+  const a = await api('POST', '/api/exchange-ticket', 'tk1', { kind: 'normal', count: 1 })
+  assert.equal(a.status, 200); assert.equal(a.body.gems, 7000); assert.equal(a.body.tickets.normal, 1)
+  const b = await api('POST', '/api/exchange-ticket', 'tk1', { kind: 'limited', count: 1 })
+  assert.equal(b.body.gems, 2000); assert.equal(b.body.tickets.limited, 1)
+  assert.deepEqual((await api('GET', '/api/me', 'tk1')).body.tickets, { normal: 1, limited: 1 })
+  const g = await api('POST', '/api/gacha', 'tk1', { times: 1, banner: 'normal' }) // 通常券1枚で、交易石は減らない
+  assert.equal(g.status, 200); assert.equal(g.body.gems, 2000); assert.equal(g.body.tickets.normal, 0)
+  const h = await api('POST', '/api/gacha', 'tk1', { times: 1, banner: 'normal' }) // 券が無ければ、交易石500
+  assert.equal(h.body.gems, 1500); assert.equal(h.body.tickets.limited, 1) // 限定券は、通常ガチャでは減らない
+})
+test('API: 盟晶は、交易石と1対1で交換できる(足りなければ失敗・元にも戻せる)', async () => {
+  fake.put('users/cr1', { gems: 1000, pityCount: 0, owned: {}, sig: {}, enh: {} })
+  assert.equal((await api('POST', '/api/crystal', 'cr1', { mode: 'buy', amount: 1001 })).status, 400)
+  assert.equal((await api('POST', '/api/crystal', 'cr1', { mode: 'back', amount: 1 })).status, 400)
+  assert.equal((await api('POST', '/api/crystal', 'cr1', { mode: 'buy', amount: 0.5 })).status, 400)
+  const a = await api('POST', '/api/crystal', 'cr1', { mode: 'buy', amount: 400 })
+  assert.equal(a.status, 200); assert.equal(a.body.gems, 600); assert.equal(a.body.crystals, 400)
+  const b = await api('POST', '/api/crystal', 'cr1', { mode: 'back', amount: 150 })
+  assert.equal(b.body.gems, 750); assert.equal(b.body.crystals, 250)
+  assert.equal((await api('POST', '/api/crystal', null, { mode: 'buy', amount: 1 })).status, 401)
+})
+
 test('API: キャリア(記録の保存・取得・整形・上限・二重登録・削除・本人だけ)', async () => {
   const mk = (id, extra = {}) => ({ id, t: clock, result: 'win', level: 2, rounds: 5, names: { A: ['a'], B: ['b'] }, perRound: [{ round: 1, A: 100, B: 50 }, { round: 2, A: 30, B: 0 }], totals: { A: 99999, B: 99999 }, heal: { A: 0, B: 0 }, units: [{ name: 'a', team: 'A', dealt: 130 }], log: ['x'], ...extra })
   assert.equal((await api('GET', '/api/career', null)).status, 401)

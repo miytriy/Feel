@@ -69,10 +69,11 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
   const requireAuth = makeAuth(false)
   const authOnly = makeAuth(true)
 
-  const newUserData = () => ({ gems: CONFIG.INITIAL_GEMS, pityCount: 0, owned: {}, sig: {}, enh: {} })
+  const newUserData = () => ({ gems: CONFIG.INITIAL_GEMS, pityCount: 0, owned: {}, sig: {}, enh: {}, tickets: { normal: 0, limited: 0 }, crystals: 0 })
+  const ticketsOf = (data) => ({ normal: Number(data.tickets?.normal) || 0, limited: Number(data.tickets?.limited) || 0 }) // 採用券(通常=通常ガチャ、限定=ピックアップ・復刻ガチャ)
   const userRefOf = (uid) => db.collection('users').doc(uid)
 
-  // ジェムを増やす(必ず、トランザクションの中で呼ぶ)。増減の記録(gem_logs)も同時に残す
+  // 交易石を増やす(必ず、トランザクションの中で呼ぶ)。増減の記録(gem_logs)も同時に残す
   function grantGems(t, uid, data, amount, reason, ref) {
     const gems = (data.gems || 0) + amount
     t.set(db.collection('gem_logs').doc(), {
@@ -95,7 +96,7 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
     const today = dayKey(t)
     const daily = data.battleDaily && data.battleDaily.day === today ? data.battleDaily.count : 0
     return {
-      gems: data.gems, pityCount: data.pityCount, pickupPity: pickupPityNow(data), reprintPity: bannerPityNow(data, 'reprint'), banners: bannersInfo(new Date(now())), owned: data.owned, sig: data.sig || {}, enh: data.enh || {}, keys: data.keys || null,
+      gems: data.gems, tickets: ticketsOf(data), crystals: Number(data.crystals) || 0, ticketCost: CONFIG.TICKET_COST, pityCount: data.pityCount, pickupPity: pickupPityNow(data), reprintPity: bannerPityNow(data, 'reprint'), banners: bannersInfo(new Date(now())), owned: data.owned, sig: data.sig || {}, enh: data.enh || {}, keys: data.keys || null,
       loginBonus: { canClaim: lb.canClaim, streak: lb.streak, nextAmount: lb.nextAmount, cycle: CONFIG.LOGIN_BONUS },
       battle: { todayCount: daily, dailyLimit: CONFIG.BATTLE_REWARD_DAILY_LIMIT, rewards: CONFIG.BATTLE_REWARD },
     }
@@ -247,20 +248,25 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
       const result = await db.runTransaction(async (t) => {
         const snap = await t.get(userRef)
         const data = snap.exists ? snap.data() : newUserData()
-        const cost = CONFIG.COST_PER_PULL * times
-        if (data.gems < cost) throw new HttpError(400, '通貨が足りません')
+        // 採用券(1枚で1回)を先に使い、足りない分は交易石で払う
+        const kind = banner === 'normal' ? 'normal' : 'limited'
+        const tk = ticketsOf(data)
+        const useTickets = Math.min(tk[kind], times)
+        const cost = CONFIG.COST_PER_PULL * (times - useTickets)
+        if ((data.gems || 0) < cost) throw new HttpError(400, '交易石が足りません')
         const startCount = banner === 'normal' ? data.pityCount || 0 : bannerPityNow(data, banner)
         const { pulls, newCount } = drawGacha(times, startCount, rotation)
         const n = normalizeOwned(data)
         const { owned, sig, gained } = applyPulls(n, pulls)
         const gems = data.gems - cost
-        t.set(userRef, { gems, ...(banner === 'normal' ? { pityCount: newCount } : { [PITY_FIELD[banner]]: { rotation, count: newCount } }), owned, sig, enh: n.enh, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+        if (cost > 0) t.set(db.collection('gem_logs').doc(), { uid, amount: -cost, reason: 'gacha', ref: banner, balanceAfter: gems, createdAt: FieldValue.serverTimestamp() })
+        t.set(userRef, { gems, tickets: { ...tk, [kind]: tk[kind] - useTickets }, ...(banner === 'normal' ? { pityCount: newCount } : { [PITY_FIELD[banner]]: { rotation, count: newCount } }), owned, sig, enh: n.enh, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
         t.set(logRef, {
-          uid, times, cost, banner, rotation,
+          uid, times, cost, ticketsUsed: useTickets, banner, rotation,
           pulls: pulls.map((p) => ({ pity: p.pity, ids: p.characters.map((c) => c.id) })),
           createdAt: FieldValue.serverTimestamp(),
         })
-        return { pulls: pulls.map((p, i) => ({ ...p, gained: gained[i] })), gems, pityCount: newCount, banner }
+        return { pulls: pulls.map((p, i) => ({ ...p, gained: gained[i] })), gems, tickets: { ...tk, [kind]: tk[kind] - useTickets }, pityCount: newCount, banner }
       })
       res.json(result)
     } catch (e) {
@@ -306,6 +312,64 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
   })
 
   // ---------- ログインボーナス ----------
+  // 交易石で採用券を買う(通常・限定とも、1枚 TICKET_COST 個)
+  app.post('/api/exchange-ticket', requireAuth, async (req, res) => {
+    try {
+      const kind = req.body?.kind
+      const count = Number(req.body?.count)
+      if (kind !== 'normal' && kind !== 'limited') throw new HttpError(400, '券の種類が正しくありません')
+      if (!Number.isInteger(count) || count < 1 || count > 100) throw new HttpError(400, '枚数が正しくありません')
+      const uid = req.user.uid
+      const userRef = userRefOf(uid)
+      const out = await db.runTransaction(async (t) => {
+        const snap = await t.get(userRef)
+        const data = snap.exists ? snap.data() : newUserData()
+        const cost = CONFIG.TICKET_COST * count
+        if ((data.gems || 0) < cost) throw new HttpError(400, '交易石が足りません')
+        const gems = grantGems(t, uid, data, -cost, 'ticket', kind)
+        const tickets = ticketsOf(data)
+        tickets[kind] += count
+        t.set(userRef, { ...(snap.exists ? {} : newUserData()), gems, tickets, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+        return { gems, tickets, kind, count }
+      })
+      res.json(out)
+    } catch (e) {
+      handleError(res, e)
+    }
+  })
+
+  // 盟晶と交易石を、1対1で交換する(mode: buy=交易石→盟晶 / back=盟晶→交易石)
+  app.post('/api/crystal', requireAuth, async (req, res) => {
+    try {
+      const mode = req.body?.mode
+      const amount = Number(req.body?.amount)
+      if (mode !== 'buy' && mode !== 'back') throw new HttpError(400, '交換の種類が正しくありません')
+      if (!Number.isInteger(amount) || amount < 1 || amount > 10000000) throw new HttpError(400, '数が正しくありません')
+      const uid = req.user.uid
+      const userRef = userRefOf(uid)
+      const out = await db.runTransaction(async (t) => {
+        const snap = await t.get(userRef)
+        const data = snap.exists ? snap.data() : newUserData()
+        let crystals = Number(data.crystals) || 0
+        let gems
+        if (mode === 'buy') {
+          if ((data.gems || 0) < amount) throw new HttpError(400, '交易石が足りません')
+          gems = grantGems(t, uid, data, -amount, 'crystal_buy', null)
+          crystals += amount
+        } else {
+          if (crystals < amount) throw new HttpError(400, '盟晶が足りません')
+          gems = grantGems(t, uid, data, amount, 'crystal_back', null)
+          crystals -= amount
+        }
+        t.set(userRef, { ...(snap.exists ? {} : newUserData()), gems, crystals, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+        return { gems, crystals, mode, amount }
+      })
+      res.json(out)
+    } catch (e) {
+      handleError(res, e)
+    }
+  })
+
   app.post('/api/login-bonus/claim', requireAuth, async (req, res) => {
     try {
       const uid = req.user.uid

@@ -26,7 +26,7 @@ export const TOP_ITEMS = [
 ]
 const ALL = [...HOME_ITEMS, ...TOP_ITEMS]
 export const ACCOUNT_SCREENS = ALL.filter((i) => i.account).map((i) => i.key)
-// ジェム・ガチャ・メールのように、サーバーにあるデータを使う項目は、解放しても、ログインが必要なまま
+// 交易石・ガチャ・メールのように、サーバーにあるデータを使う項目は、解放しても、ログインが必要なまま
 export const SERVER_SCREENS = ['gacha', 'store', 'mail']
 // 最高権限(レベル2)で、体験用に開ける、サーバーの項目(石もキャラも、この端末の中だけの仮のもの)
 export const SANDBOX_SCREENS = ['gacha', 'mail']

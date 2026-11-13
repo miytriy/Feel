@@ -41,7 +41,7 @@ import GateScreen from './GateScreen.jsx'
 import { useIsDesktop, useRemembered, C, FONT } from './ui.js'
 
 const PITY_COUNT = 40
-const COST = 500 // ガチャ1回のジェム(server/config.js の COST_PER_PULL と同じにする)
+const COST = 500 // ガチャ1回の交易石(server/config.js の COST_PER_PULL と同じにする)
 
 const RARITY = {
   legend: { label: 'レジェンド', color: '#a21caf' },
@@ -67,8 +67,8 @@ const CPU_LEVEL_LIST = CPU_LEVELS.map((l) => ({
   title: l.name, // 「Lv.1」など
   area: 'CPU戦 ・ 通常戦',
   desc: l.description,
-  rule: '相手のキャラクターをすべて倒すと、勝ちです。勝つと、ジェムがもらえます(ログイン中のみ・1日5回まで)。CPUのクラスは、毎回ランダムです。',
-  rewards: [{ label: 'ジェム', amount: BATTLE_REWARD[l.level], type: 'gem' }],
+  rule: '相手のキャラクターをすべて倒すと、勝ちです。勝つと、交易石がもらえます(ログイン中のみ・1日5回まで)。CPUのクラスは、毎回ランダムです。',
+  rewards: [{ label: '交易石', amount: BATTLE_REWARD[l.level], type: 'gem' }],
 }))
 
 export default function App() {
@@ -83,7 +83,8 @@ export default function App() {
   const [notice, setNotice] = useState('') // 受け取りに成功したときの表示
   const [gifts, setGifts] = useState([])
   const [code, setCode] = useState('')
-  const [storeTab, setStoreTab] = useState('bonus') // 購買部のタブ
+  const [storeTab, setStoreTab] = useRemembered('store.tab', 'bonus') // 購買部のタブ(出入りしても、最後に選んだものに戻る)
+  const [stoneTab, setStoneTab] = useRemembered('store.stoneTab', 'ticket') // 石購入の中のタブ
   const [settings, setSettings] = useState(loadSettings) // 設定(この端末に保存)
   useEffect(() => { installKeys() }, [])
   // キーの割り当ては、ログイン中はアカウントに保存する(別の端末でも同じになる)。ゲストは、この端末だけ
@@ -255,7 +256,7 @@ export default function App() {
     try {
       const r = await fn()
       setNotice(okText(r))
-      if (r && r.amount > 0) got = [{ name: 'ジェム', count: r.amount }] // 受け取ったものは「報酬一覧」で見せる
+      if (r && r.amount > 0) got = [{ name: '交易石', count: r.amount }] // 受け取ったものは「報酬一覧」で見せる
       setMe(await api.fetchMe())
       setGifts((await api.fetchGifts()).gifts)
     } catch (e) {
@@ -265,15 +266,30 @@ export default function App() {
     }
     if (got) showRewards(got)
   }
-  const handleLoginBonus = () => runClaim(api.claimLoginBonus, (r) => `ログインボーナス +${r.amount} ジェム(連続${r.streak}日目)`)
-  const handleGift = (g) => runClaim(() => api.claimGift(g.id), (r) => `「${g.title}」を受け取りました +${r.amount} ジェム`)
+  // 石購入(券・盟晶): 終わったら、持ち物を読み直す
+  const runStone = async (fn, okText) => {
+    setBusy(true); setError(''); setNotice('')
+    try {
+      const r = await fn()
+      setNotice(okText(r))
+      setMe(await api.fetchMe())
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  const handleTicket = (kind, count) => runStone(() => api.exchangeTicket(kind, count), (r) => `${kind === 'normal' ? '通常採用券' : '限定採用券'} ×${r.count} を手に入れました`)
+  const handleCrystal = (mode, amount) => runStone(() => api.exchangeCrystal(mode, amount), (r) => (mode === 'buy' ? `盟晶 ×${r.amount} に交換しました` : `交易石 ×${r.amount} に変換しました`))
+  const handleLoginBonus = () => runClaim(api.claimLoginBonus, (r) => `ログインボーナス +${r.amount} 交易石(連続${r.streak}日目)`)
+  const handleGift = (g) => runClaim(() => api.claimGift(g.id), (r) => `「${g.title}」を受け取りました +${r.amount} 交易石`)
   const handleGiftAll = () => {
     const list = gifts.filter((g) => !g.claimed)
     return runClaim(async () => {
       let amount = 0
       for (const g of list) amount += (await api.claimGift(g.id)).amount || 0
       return { amount, n: list.length }
-    }, (r) => `${r.n}通を受け取りました +${r.amount} ジェム`)
+    }, (r) => `${r.n}通を受け取りました +${r.amount} 交易石`)
   }
   // メールの既読・★・削除(画面はすぐ変え、サーバーに書く。失敗したら、一覧を読み直す)
   const syncMail = async (fn) => {
@@ -296,11 +312,11 @@ export default function App() {
   }
   const handleCode = async () => {
     if (!code.trim()) return
-    await runClaim(() => redeemCode(code), (r) => `合言葉を受け取りました +${r.amount} ジェム`)
+    await runClaim(() => redeemCode(code), (r) => `合言葉を受け取りました +${r.amount} 交易石`)
     setCode('')
   }
 
-  // 対戦の報酬(ログイン中だけ)。終わったらジェムの表示も更新する
+  // 対戦の報酬(ログイン中だけ)。終わったら交易石の表示も更新する
   const rewardApi = user
     ? {
         start: startBattleTicket,
@@ -569,7 +585,7 @@ export default function App() {
       ) : (
         gifts.map((g) => (
           <div key={g.id} style={{ margin: '8px 0', fontSize: 14 }}>
-            {g.title} +{g.gems}ジェム{' '}
+            {g.title} +{g.gems}交易石{' '}
             <button disabled={busy} onClick={() => handleGift(g)} style={{ ...btn(false, busy), padding: '6px 12px', fontSize: 14 }}>受け取る</button>
             {g.message && <div style={{ fontSize: 12, color: C.mute }}>{g.message}</div>}
           </div>
@@ -641,6 +657,10 @@ export default function App() {
           error={error}
           tab={storeTab}
           onTab={setStoreTab}
+          stoneTab={stoneTab}
+          onStoneTab={setStoneTab}
+          onTicket={handleTicket}
+          onCrystal={handleCrystal}
           code={code}
           onCode={setCode}
           onClaimBonus={handleLoginBonus}

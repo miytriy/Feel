@@ -78,7 +78,7 @@ export default function GuideScreen({ gems = null, onCpu, onRandom = null, onRul
       key: 'cpu', label: 'CPU戦', Icon: IconPlay,
       cats: [{
         key: 'normal', label: '通常戦', Icon: IconPlay,
-        entries: [{ key: 'cpu', title: 'CPU戦', sub: 'Lv.1〜4', desc: 'CPUの強さを選んで対戦します。勝つと、ジェムがもらえます(ログイン中のみ・1日5回まで)。', rewards: [{ label: '10〜40' }], go: onCpu }],
+        entries: [{ key: 'cpu', title: 'CPU戦', sub: 'Lv.1〜4', desc: 'CPUの強さを選んで対戦します。勝つと、交易石がもらえます(ログイン中のみ・1日5回まで)。', rewards: [{ label: '10〜40' }], go: onCpu }],
       }],
     },
     onRandom

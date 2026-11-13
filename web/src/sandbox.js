@@ -1,5 +1,5 @@
 // Feel - 体験用のガチャ・メールボックス(最高権限)
-// ログインなしで、ガチャとメールボックスを試せる。ジェムもキャラも、このページを開いている間だけ(この端末の中だけ)の、仮のもの。
+// ログインなしで、ガチャとメールボックスを試せる。交易石もキャラも、このページを開いている間だけ(この端末の中だけ)の、仮のもの。
 // サーバーにもアカウントにも、いっさい書かない。ページを読み込み直すと、最初からになる。
 // api.js の fetchMe / fetchGifts / drawGacha ... と同じ形で答えるので、画面は、本物とおなじように動く。
 
@@ -34,6 +34,8 @@ export function createSandbox({ characters, cost = 500, grant = SANDBOX_GEMS }) 
   const pick = (rarity) => byRarity[rarity][rnd(byRarity[rarity].length)]
 
   let gems = 0
+  const tickets = { normal: 0, limited: 0 }
+  let crystals = 0
   let pityCount = 0
   let pickupPity = 0
   let reprintPity = 0
@@ -42,7 +44,7 @@ export function createSandbox({ characters, cost = 500, grant = SANDBOX_GEMS }) 
   const enh = {}
   let mail = [{
     id: 'sandbox-gift', title: '最高権限のプレゼント',
-    message: 'この端末の中だけで使える、仮のジェムです。ページを読み込み直すと消えます。アカウントには入りません。',
+    message: 'この端末の中だけで使える、仮の交易石です。ページを読み込み直すと消えます。アカウントには入りません。',
     expiresAt: null, read: false, star: false, gems: grant, claimed: false,
   }]
   const done = (v = {}) => Promise.resolve(v)
@@ -51,13 +53,15 @@ export function createSandbox({ characters, cost = 500, grant = SANDBOX_GEMS }) 
 
   return {
     sandbox: true,
-    fetchMe: () => done({ gems, pityCount, pickupPity, reprintPity, banners: banners(), owned: { ...owned }, sig: { ...sig }, enh: { ...enh }, loginBonus: { canClaim: false, streak: 0 } }),
+    fetchMe: () => done({ gems, tickets: { ...tickets }, crystals, ticketCost: 5000, pityCount, pickupPity, reprintPity, banners: banners(), owned: { ...owned }, sig: { ...sig }, enh: { ...enh }, loginBonus: { canClaim: false, streak: 0 } }),
     fetchGifts: () => done({ gifts: mail.map((g) => ({ ...g })) }),
     drawGacha: (times, banner = 'normal') => {
       byRarity = POOLS[banner] || POOLS.normal
       if (times !== 1 && times !== 10) return fail('回数が正しくありません')
-      const total = cost * times
-      if (gems < total) return fail('通貨が足りません')
+      const kind = banner === 'normal' ? 'normal' : 'limited'
+      const useT = Math.min(tickets[kind], times)
+      const total = cost * (times - useT)
+      if (gems < total) return fail('交易石が足りません')
       let count = banner === 'pickup' ? pickupPity : banner === 'reprint' ? reprintPity : pityCount
       let pityUsed = false
       const pulls = []
@@ -70,12 +74,24 @@ export function createSandbox({ characters, cost = 500, grant = SANDBOX_GEMS }) 
         if (isPity) chars.push(pick(byRarity.legend ? 'legend' : pickRarity(GUARANTEED_RATES)))
         pulls.push({ pity: isPity, characters: chars })
       }
-      gems -= total
+      gems -= total; tickets[kind] -= useT
       if (banner === 'pickup') pickupPity = pityUsed ? 0 : count
       else if (banner === 'reprint') reprintPity = pityUsed ? 0 : count
       else pityCount = pityUsed ? 0 : count
       for (const p of pulls) for (const c of p.characters) { if (owned[c.id]) sig[c.id] = (sig[c.id] || 0) + 1; else owned[c.id] = 1 }
       return done({ pulls, gems, pityCount })
+    },
+    exchangeTicket: (kind, count) => {
+      if ((kind !== 'normal' && kind !== 'limited') || !Number.isInteger(count) || count < 1) return fail('枚数が正しくありません')
+      if (gems < 5000 * count) return fail('交易石が足りません')
+      gems -= 5000 * count; tickets[kind] += count
+      return done({ gems, tickets: { ...tickets }, kind, count })
+    },
+    exchangeCrystal: (mode, amount) => {
+      if (!Number.isInteger(amount) || amount < 1) return fail('数が正しくありません')
+      if (mode === 'buy') { if (gems < amount) return fail('交易石が足りません'); gems -= amount; crystals += amount }
+      else { if (crystals < amount) return fail('盟晶が足りません'); crystals -= amount; gems += amount }
+      return done({ gems, crystals, mode, amount })
     },
     enhanceChar: (id) => {
       if (!owned[id] || (sig[id] || 0) < 100) return fail('強化できません')

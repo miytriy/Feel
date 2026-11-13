@@ -6,8 +6,8 @@ import { IconGem } from './icons.jsx'
 // アイテムを受け取ったときの「報酬一覧」。参考: エンドフィールドの報酬一覧
 //   流れ(動画と同じ): ぼかした背景 → まん中に「報酬一覧」の記号と文字が、横の線といっしょに出る → 少し待って、上へ移る
 //   → まん中に、受け取ったものが1つずつ浮かんで並び(まわりに円)、下に丸いチェックが出る → 押すと閉じる
-// 使い方(どの画面からでも):  showRewards([{ name: 'ジェム', count: 300 }], 閉じたあとにやること(省略可))
-//   name: 名前 / count: 個数(数字、または '×2' のような文字) / art: 絵(省略するとジェム) / isNew: true で NEW 表示 / rarity: 'legend' | 'gold' | 'silver' | 'bronze'(枠の色。省略可)
+// 使い方(どの画面からでも):  showRewards([{ name: '交易石', count: 300 }], 閉じたあとにやること(省略可))
+//   name: 名前 / count: 個数(数字、または '×2' のような文字) / art: 絵(省略すると交易石) / isNew: true で NEW 表示 / rarity: 'legend' | 'gold' | 'silver' | 'bronze'(枠の色。省略可)
 
 const CSS = `
 .rw { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; align-items: center; color: #fff; font-family: ${FONT};

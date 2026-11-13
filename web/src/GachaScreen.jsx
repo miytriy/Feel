@@ -323,8 +323,13 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
     return d > 0 ? `あと${d}日${h}時間で切り替わり` : `あと${h}時間で切り替わり`
   })()
   const left = Math.max(0, pityCount - have)
-  const can1 = !busy && !!me && gems >= cost && !phase && (!isPickup || pickupOk)
-  const can10 = !busy && !!me && gems >= cost * 10 && !phase && (!isPickup || pickupOk)
+  // 採用券(通常=通常ガチャ / 限定=ピックアップ・復刻ガチャ)は、1枚で1回。先に券を使い、足りない分を交易石で払う
+  const kind = isPickup ? 'limited' : 'normal'
+  const kindName = isPickup ? '限定採用券' : '通常採用券'
+  const tk = me && me.tickets ? me.tickets[kind] || 0 : 0
+  const needOf = (n) => { const t = Math.min(tk, n); return { t, g: (n - t) * cost } }
+  const can1 = !busy && !!me && gems >= needOf(1).g && !phase && (!isPickup || pickupOk)
+  const can10 = !busy && !!me && gems >= needOf(10).g && !phase && (!isPickup || pickupOk)
 
   return (
     <div className={`gc theme-dark${leaving ? ' leaving' : ''}`} data-testid="gacha">
@@ -332,7 +337,7 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
       <div className="gc-bg" aria-hidden="true"><i /><i /><i /></div>
       <div className="gc-top">
         <div className="gc-title">//<b>ガチャ</b></div>
-        <div className="gc-gems"><IconGem />{me ? me.gems : '-'}</div>
+        <div className="gc-gems" aria-label={`交易石 ${me ? me.gems : '-'} ・ ${kindName} ${tk}枚`}><IconGem />{me ? me.gems : '-'}<span style={{ marginLeft: 14, fontSize: 14, fontWeight: 600 }} data-testid="gc-tickets">{kindName} {tk}枚</span></div>
         <button type="button" className="gc-close" onClick={close} aria-label="閉じる"><IconClose /></button>
       </div>
       <div className="gc-main">
@@ -356,8 +361,8 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
             <div><i style={{ width: `${Math.min(100, (have / pityCount) * 100)}%` }} /></div>
           </div>
         </div>
-        {(error || (me && gems < cost && !busy && !phase)) && (
-          <div className="gc-msg" style={{ color: error ? C.bad : C.warn }}>{error || 'ジェムが足りません'}</div>
+        {(error || (me && gems < needOf(1).g && !busy && !phase)) && (
+          <div className="gc-msg" style={{ color: error ? C.bad : C.warn }}>{error || '交易石が足りません'}</div>
         )}
         <div className="gc-bottom">
           <div className="gc-side">
@@ -366,10 +371,10 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
           </div>
           <div className="gc-btns">
             <button type="button" className="gc-pull" data-testid="pull-1" disabled={!can1} onClick={() => setConfirm(1)}>
-              <span><span className="n">1</span> 回ガチャ</span><span className="cost"><IconGem />{cost}</span>
+              <span><span className="n">1</span> 回ガチャ</span><span className="cost">{needOf(1).t > 0 ? `券×${needOf(1).t}` : <><IconGem />{needOf(1).g}</>}</span>
             </button>
             <button type="button" className="gc-pull hot" data-testid="pull-10" disabled={!can10} onClick={() => setConfirm(10)}>
-              <span><span className="n">10</span> 回ガチャ</span><span className="cost"><IconGem />{cost * 10}</span>
+              <span><span className="n">10</span> 回ガチャ</span><span className="cost">{needOf(10).t > 0 ? <>券×{needOf(10).t}{needOf(10).g > 0 && <> + <IconGem />{needOf(10).g}</>}</> : <><IconGem />{needOf(10).g}</>}</span>
             </button>
           </div>
         </div>
@@ -390,7 +395,7 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
               ・1回のガチャで、8体が出ます。<br />
               ・8体のうち最後の1体は、シルバー以上が確定です(レジェンド 1.5% / ゴールド 6% / シルバー 92.5%)。<br />
               ・{pityCount}回目までにレジェンドが出ていないときは、{pityCount}回目で、レジェンドが1体追加されます(天井)。10回ガチャの途中で天井になっても、その回は1回だけです。<br />
-              ・1回 {cost} ジェム、10回で {cost * 10} ジェムです。
+              ・1回 {cost} 交易石、10回で {cost * 10} 交易石です。{kindName}(1枚で1回)があれば、先にそれを使います。足りない分は交易石で払います。
             </div>
           </div>
         </div>
@@ -420,8 +425,8 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
       {confirm > 0 && (
         <div className="gk" onClick={() => setConfirm(0)}>
           <div className="gk-band" role="dialog" aria-label="ガチャの確認" onClick={(e) => e.stopPropagation()}>
-            <div className="gk-msg">「{bName}」 ジェム×{cost * confirm} を消費して、{confirm}回ガチャをしますか?</div>
-            <div className="gk-cost"><span><IconGem /></span><small>所持 <b>{gems}</b> → 残り <b>{Math.max(0, gems - cost * confirm)}</b></small></div>
+            <div className="gk-msg">「{bName}」 {[needOf(confirm).t > 0 && `${kindName}×${needOf(confirm).t}`, needOf(confirm).g > 0 && `交易石×${needOf(confirm).g}`].filter(Boolean).join(' と ')} を消費して、{confirm}回ガチャをしますか?</div>
+            <div className="gk-cost"><span><IconGem /></span><small>{needOf(confirm).t > 0 && <>{kindName} <b>{tk}</b> → <b>{tk - needOf(confirm).t}</b>枚 ・ </>}交易石 所持 <b>{gems}</b> → 残り <b>{Math.max(0, gems - needOf(confirm).g)}</b></small></div>
             <div className="gk-btns">
               <button type="button" className="gk-btn" onClick={() => setConfirm(0)}>キャンセル<IconClose /></button>
               <button type="button" className="gk-btn ok" data-testid="pull-ok" onClick={() => start(confirm)}>確定<IconCheck /></button>

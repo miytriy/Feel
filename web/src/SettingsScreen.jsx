@@ -128,7 +128,7 @@ export default function SettingsScreen({ user, settings, onChange, onLogin, onLo
         ...(unlockLevel >= 1 ? [{ type: 'action', label: '解放の状態', button: 'もとに戻す', dark: true, onClick: onRelock, hint: unlockLevel >= 2 ? '最高権限: 人事・編成・足跡・ガチャ・メール' : '解放中: 人事・編成・足跡' }] : []),
       ],
       note: unlockLevel >= 2
-        ? 'ガチャとメールのジェム・キャラは、この端末の中だけの体験用です(アカウントには入りません)。ページを読み込み直すと消えます。購買部は、ログインが必要なままです。'
+        ? 'ガチャとメールの交易石・キャラは、この端末の中だけの体験用です(アカウントには入りません)。ページを読み込み直すと消えます。購買部は、ログインが必要なままです。'
         : unlockLevel === 1 ? 'ガチャ・購買部・メールは、サーバーにあるデータを使うため、ログインが必要なままです。' : null,
     },
     {

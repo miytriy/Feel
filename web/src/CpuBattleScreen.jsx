@@ -14,11 +14,11 @@ import { IconClose, IconGem, StatIcon } from './icons.jsx'
 //     recommended?,             // 推奨(数字なら「LV.85」の形で出る。文字ならそのまま)
 //     desc?, rule?,             // 説明 / 「ステージ説明」(CPUの特徴など)
 //     enemies?: [{ id, name, class?, hp? }],
-//     rewards?: [{ id?, label, amount?, type?('gem' でジェムの印), first?(初回報酬) }],
-//     cost?,                    // 挑戦に必要なジェム(なければ、消費なし)
+//     rewards?: [{ id?, label, amount?, type?('gem' で交易石の印), first?(初回報酬) }],
+//     cost?,                    // 挑戦に必要な交易石(なければ、消費なし)
 //     cleared?, locked?,        // クリア済み / まだ挑戦できない
 //   }]
-//   title: 画面の名前(既定 'CPU戦')   gems: 所持ジェム(あれば、右上に出して、足りるかを判定)
+//   title: 画面の名前(既定 'CPU戦')   gems: 所持交易石(あれば、右上に出して、足りるかを判定)
 //   levelIdInit: 最初に選ぶレベルの id(なければ、挑戦できる先頭の未クリア)
 //   onChallenge(level) / onSelect(level)(任意) / onExit
 
@@ -211,7 +211,7 @@ export default function CpuBattleScreen({ levels = [], title = 'CPU戦', gems = 
   const cost = level && level.cost != null ? level.cost : null
   const lack = cost != null && gems != null && gems < cost
   const can = !!level && !level.locked && !lack
-  const note = !level ? '' : level.locked ? '前のレベルをクリアすると、挑戦できます' : lack ? 'ジェムが足りません' : ''
+  const note = !level ? '' : level.locked ? '前のレベルをクリアすると、挑戦できます' : lack ? '交易石が足りません' : ''
 
   const choose = (l) => {
     if (l.locked) return

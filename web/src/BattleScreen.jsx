@@ -1194,7 +1194,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     setRewardMsg('報酬を確認しています…')
     rewardApi
       .finish(id, state.winner === ME ? 'win' : 'lose')
-      .then((r) => setRewardMsg(r.reward > 0 ? `報酬 +${r.reward} ジェム` : r.reason || '報酬はありません'))
+      .then((r) => setRewardMsg(r.reward > 0 ? `報酬 +${r.reward} 交易石` : r.reason || '報酬はありません'))
       .catch((e) => setRewardMsg(`報酬を受け取れませんでした: ${e.message}`))
   }, [state, rewardApi, ticketId])
 
@@ -1409,7 +1409,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
           </div>
         </details>
         <p style={{ fontSize: 11, color: C.mute, margin: '0 0 12px' }}>
-          {testInit ? 'テスト戦(検証用): 報酬・戦績は記録されません。' : rewardApi ? '勝利すると報酬(ジェム)がもらえます。' : 'ログインして対戦すると、勝利で報酬がもらえます。'}
+          {testInit ? 'テスト戦(検証用): 報酬・戦績は記録されません。' : rewardApi ? '勝利すると報酬(交易石)がもらえます。' : 'ログインして対戦すると、勝利で報酬がもらえます。'}
         </p>
         <button onClick={startBattle} style={buttonStyle(true, false)}>バトル開始</button>{' '}
         <button onClick={() => setTeam(null)} style={buttonStyle(false, false)}>編成を変える</button>{' '}
