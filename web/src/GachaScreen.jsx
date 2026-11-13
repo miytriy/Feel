@@ -3,6 +3,7 @@ import { C, FONT, DISPLAY } from './ui.js'
 import { RARITY } from './CodexScreen.jsx'
 import { IconClose, IconGem } from './icons.jsx'
 import { showRewards } from './RewardScreen.jsx'
+import { ALL_CHARACTERS } from './battle/characters/index.js'
 
 const IconCheck = (p) => (
   <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
@@ -86,6 +87,7 @@ const CSS = `
 .gc-mhead button { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 50%; background: #2a2a2e; color: #fff; font-size: 18px; display: grid; place-items: center; cursor: pointer; padding: 0; min-height: 0; }
 .gc-mbody { padding: 18px 24px 22px; overflow-y: auto; font-size: 13.5px; line-height: 1.9; color: #3a3a3e; }
 .gc-mbody b { color: #111; }
+.gc-ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 14px; } .gc-ul span { padding: 5px 10px; background: #e6e6ea; color: #2a2a2e; font-size: 14px; font-weight: 600; } .gc-ul small { margin-left: 6px; color: #66666d; font-size: 11px; font-weight: 400; }
 .gc-rates { width: 100%; border-collapse: collapse; margin: 6px 0 14px; }
 .gc-rates td { padding: 7px 4px; border-bottom: 1px solid #d3d3d8; }
 .gc-rates td:last-child { text-align: right; font-family: ${DISPLAY}; font-weight: 700; }
@@ -325,6 +327,7 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
   const pickupOk = !!(bInfo && bInfo.available)
   const bName = isReprint ? '復刻ピックアップガチャ' : isPickup ? 'ピックアップガチャ' : '通常ガチャ'
   const bRot = bInfo ? bInfo.rotationName : null
+  const poolUnits = useMemo(() => ALL_CHARACTERS.filter((c) => c.rotation === bRot && !String(c.id).startsWith('test_') && RATES.some(([k]) => k === c.rarity)), [bRot]) // 今のバナーの排出ユニット(表示用。抽選はサーバーがやる)
   const have = me ? (isReprint ? me.reprintPity || 0 : isPickup ? me.pickupPity || 0 : me.pityCount || 0) : 0
   const endText = (() => {
     if (isReprint || !isPickup || !bn || !bn.pickup.endsAt) return ''
@@ -373,6 +376,7 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
         <div className="gc-bottom">
           <div className="gc-side">
             <button type="button" className="gc-sub" onClick={() => setDialog('rates')}>排出率・詳細</button>
+            <button type="button" className="gc-sub" data-testid="gc-units" onClick={() => setDialog('units')}>排出ユニット</button>
           </div>
           <div className="gc-btns">
             <button type="button" className="gc-pull" data-testid="pull-1" disabled={!can1} onClick={() => setConfirm(1)}>
@@ -401,6 +405,26 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
               ・8体のうち最後の1体は、シルバー以上が確定です(レジェンド 1.5% / ゴールド 6% / シルバー 92.5%)。<br />
               ・{pityCount}回目までにレジェンドが出ていないときは、{pityCount}回目で、レジェンドが1体追加されます(天井)。10回ガチャの途中で天井になっても、その回は1回だけです。<br />
               ・1回 {cost} ジェム、10回で {cost * 10} ジェムです。
+            </div>
+          </div>
+        </div>
+      )}
+
+      {dialog === 'units' && (
+        <div className="gc-back" onClick={() => setDialog(null)}>
+          <div className="gc-modal" role="dialog" aria-label="排出ユニット" onClick={(e) => e.stopPropagation()}>
+            <div className="gc-mhead">排出ユニット{bRot ? `(${bRot})` : ''}<button type="button" onClick={() => setDialog(null)} aria-label="閉じる"><IconClose /></button></div>
+            <div className="gc-mbody" data-testid="gc-units-list">
+              {RATES.map(([k]) => {
+                const list = poolUnits.filter((c) => c.rarity === k)
+                return list.length === 0 ? null : (
+                  <div key={k}>
+                    <b><i className="gc-dot" style={{ background: RARITY[k].color }} />{RARITY[k].label}({list.length}体)</b>
+                    <div className="gc-ul">{list.map((c) => <span key={c.id}>{c.name}<small>{c.amulet ? 'アミュレット' : c.class}</small></span>)}</div>
+                  </div>
+                )
+              })}
+              {poolUnits.length === 0 && <div>排出ユニットが見つかりません。</div>}
             </div>
           </div>
         </div>
