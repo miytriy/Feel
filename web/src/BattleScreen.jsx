@@ -15,6 +15,7 @@ import { withRelicPieces } from './relicInv.js'
 import { ME, OPP, setMe, winnerView } from './perspective.js'
 import { VanishFx, VANISH_BASE_MS } from './VanishFx.jsx'
 import { useHotkey } from './keys.js'
+import { loadSettings } from './settings.js'
 // 強化のエフェクトで、文字ではなくアイコンで見せるステータス
 const BUFF_ICON = new Set(['hp', 'atk', 'def', 'spd', 'mag', 'critRate', 'critDmg', 'dmgResist'])
 const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', margin: '0 2px 0 0' }} />
@@ -336,6 +337,11 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
       data-field={unit.field}
       data-alive={unit.alive ? 'true' : 'false'}
       data-selectable={selectable ? 'true' : 'false'}
+      data-field-card={unit.alive ? '1' : undefined}
+      data-selected={selected ? '1' : undefined}
+      tabIndex={unit.alive ? 0 : undefined}
+      role="button"
+      aria-label={unit.name}
       onClick={onClick}
       style={{
         minWidth: 0, boxSizing: 'border-box', padding: big ? 10 : 4, ...(big ? { minHeight: 112 } : { height: 106, overflow: 'visible' }), // 戦闘画面が動かないように、スマホ幅のカードは高さを固定 borderRadius: big ? 10 : 8, fontSize: big ? 13 : 10, lineHeight: 1.3,
@@ -1053,9 +1059,41 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   const [logOpen, setLogOpen] = useState(false) // 戦闘実況のオーバーレイを開いている
   // キーボード: バトルログ(Tab)・ターン終了(Space)・攻撃(A)。ボタンが出ていて押せるときだけ働く(キーは、設定の「コンフィグ」で変えられる)
   const pressBtn = (testid) => { const b = document.querySelector(`[data-testid="${testid}"]`); if (!b || b.disabled) return false; b.click(); return true }
+  // スマホ: 操作パネルで盤面が隠れるときは、盤面を自動で縮めて、全部見えるようにする(設定でオン・オフ。縮めるのは、最大で6割まで)
+  const fitOn = useRef(loadSettings().fitField !== false).current
+  const headRef = useRef(null), panelRef = useRef(null), boardRef = useRef(null)
+  const [fit, setFit] = useState(1)
+  useEffect(() => {
+    if (!fitOn) return undefined
+    const calc = () => {
+      const h = headRef.current, p = panelRef.current, b = boardRef.current
+      if (!h || !p || !b) return
+      const natural = b.offsetHeight
+      const avail = window.innerHeight - h.offsetHeight - p.offsetHeight - 20
+      const s = natural > 0 ? Math.max(0.6, Math.min(1, avail / natural)) : 1
+      setFit((cur) => (Math.abs(cur - s) > 0.015 ? s : cur))
+    }
+    calc()
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(calc) : null
+    ;[headRef.current, panelRef.current, boardRef.current].forEach((el) => el && ro && ro.observe(el))
+    window.addEventListener('resize', calc)
+    return () => { ro && ro.disconnect(); window.removeEventListener('resize', calc) }
+  }, [fitOn, !!state])
   useHotkey('battle.log', () => { if (!state) return false; setLogOpen((v) => !v) })
   useHotkey('battle.endTurn', () => pressBtn('end-turn'))
   useHotkey('battle.attack', () => pressBtn('attack-go'))
+  useHotkey('battle.auto', () => pressBtn('hud-auto'))
+  useHotkey('battle.field', () => { // カーソルをフィールドに移す(選んでいるカードがあればそこ、なければ相手の先頭)
+    const cards = [...document.querySelectorAll('[data-field-card]')]
+    const el = cards.find((c) => c.dataset.selected === '1') || cards[0]
+    if (!el) return false
+    el.focus(); el.scrollIntoView({ block: 'nearest' })
+  })
+  ;[1, 2, 3, 4].forEach((n) => useHotkey(`battle.trait${n}`, () => { // 特性を、上から順に使う
+    const b = [...document.querySelectorAll('[data-trait-btn]')][n - 1]
+    if (!b || b.disabled) return false
+    b.click()
+  }))
 
   // CPUの番になったら少し待ってから行動する(特性を使ったあとも番が続くので、何度か動く)
   useEffect(() => {
@@ -1623,6 +1661,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
                   return (
                     <div key={t.id} style={{ marginBottom: 4 }}>
                       <button
+                        data-trait-btn="1"
                         onClick={() => handleTrait(t)}
                         disabled={!usable}
                         style={{ ...buttonStyle(mode === t.id, !usable), padding: '6px 10px', fontSize: 13 }}
@@ -1748,7 +1787,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     <div style={{ ...wrap, display: 'flex', flexDirection: 'column', minHeight: '100dvh' }} onClick={dismissInfo}>{/* 内容が短くても、操作パネルを画面の下に付ける(下に黒い余白が出ないように) */}
       {selInfo}
       <SideLog items={sideLog} onGone={dropSideLog} />
-      <div style={{ position: 'sticky', top: 0, zIndex: 9, background: C.paper, margin: '-12px -12px 0', padding: '8px 12px 2px', borderBottom: `1px solid ${C.line}` }}>
+      <div ref={headRef} style={{ position: 'sticky', top: 0, zIndex: 9, background: C.paper, margin: '-12px -12px 0', padding: '8px 12px 2px', borderBottom: `1px solid ${C.line}` }}>
         {hud}
         {overlays}
         <ActionBar state={view} avFx={avFx} />
@@ -1757,15 +1796,19 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
       {speedBar}
       {errBox}
 
+      <div style={fitOn && fit < 1 && boardRef.current ? { height: Math.ceil(boardRef.current.offsetHeight * fit), flex: 'none' } : { flex: 'none' }}>
+        <div ref={boardRef} style={fitOn && fit < 1 ? { transform: `scale(${fit})`, transformOrigin: 'top left', width: `${100 / fit}%` } : undefined}>
       <Row extra={<TeamStatus state={view} team={OPP()} inline />} title="相手" color={C.enemy}>{enemies.map(card)}</Row>
       <Row tight title="相手の召喚物" color={C.enemy}>{summonCards(enemySummons)}</Row>
 
       <Row tight title="自分の召喚物" color={C.player}>{summonCards(playerSummons)}</Row>
       <Row extra={<TeamStatus state={view} team={ME} inline />} title="自分" color={C.player}>{players.map(card)}</Row>
       {spellsBlock && <div style={{ marginTop: 8 }}>{spellsBlock}</div>}
+        </div>
+      </div>
 
       <div style={{ flex: 1, minHeight: 10 }} />
-      <div data-keep="1" className="no-sb" style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '0 -12px', padding: '6px 12px calc(6px + env(safe-area-inset-bottom))', height: 'min(168px, 30vh)', boxSizing: 'border-box', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
+      <div ref={panelRef} data-keep="1" className="no-sb" style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '0 -12px', padding: '6px 12px calc(6px + env(safe-area-inset-bottom))', height: 'min(168px, 30vh)', boxSizing: 'border-box', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
         {panelInner}
       </div>
     </div>

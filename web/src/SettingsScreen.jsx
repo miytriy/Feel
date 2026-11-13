@@ -111,6 +111,7 @@ export default function SettingsScreen({ user, settings, onChange, onLogin, onLo
       key: 'battle', label: '対戦', Icon: IconSliders, head: '対戦',
       rows: [
         { type: 'choice', label: 'CPUの行動の待ち時間', options: SPEEDS.map((s) => ({ key: s.key, label: s.label })), value: settings.speed, onPick: (k) => onChange({ ...settings, speed: k }) },
+        { type: 'choice', label: '操作パネルで盤面が隠れるとき、自動で縮める(スマホ)', options: [{ key: 'on', label: 'オン' }, { key: 'off', label: 'オフ' }], value: settings.fitField === false ? 'off' : 'on', onPick: (k) => onChange({ ...settings, fitField: k === 'on' }) },
         { type: 'allchars', label: 'カジュアルで全キャラを使う(マスターパスワード)' },
       ],
       note: 'この端末のブラウザに保存されます。',

@@ -5,12 +5,12 @@ export const SPEEDS = [
   { key: 'normal', label: 'ふつう', ms: 700 },
   { key: 'slow', label: 'ゆっくり', ms: 1200 },
 ]
-const DEFAULTS = { speed: 'normal' }
+const DEFAULTS = { speed: 'normal', fitField: true } // fitField: 操作パネルで盤面が隠れるとき、盤面を自動で縮める(スマホ)
 
 export function loadSettings(storage = globalThis.localStorage) {
   try {
     const s = JSON.parse(storage.getItem(KEY) || 'null')
-    return { speed: SPEEDS.some((x) => x.key === s?.speed) ? s.speed : DEFAULTS.speed }
+    return { speed: SPEEDS.some((x) => x.key === s?.speed) ? s.speed : DEFAULTS.speed, fitField: typeof s?.fitField === 'boolean' ? s.fitField : DEFAULTS.fitField }
   } catch {
     return { ...DEFAULTS }
   }

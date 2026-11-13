@@ -21,6 +21,9 @@ export const ACTIONS = [
   { id: 'battle.log', group: '戦闘', label: 'バトルログ', keys: ['Tab'] },
   { id: 'battle.endTurn', group: '戦闘', label: 'ターン終了', keys: ['Space'] },
   { id: 'battle.attack', group: '戦闘', label: '攻撃する(選択中の対象)', keys: ['a'] },
+  { id: 'battle.auto', group: '戦闘', label: 'オート', keys: ['z'] },
+  { id: 'battle.field', group: '戦闘', label: 'カーソルをフィールドに移す', keys: ['w'] },
+  ...[1, 2, 3, 4].map((n) => ({ id: `battle.trait${n}`, group: '戦闘', label: `特性${n}(上から${n}番目)`, keys: [String(n)] })),
   ...[1, 2, 3, 4, 5, 6].map((n) => ({ id: `wiki.${n}`, group: 'Wiki', label: `${n}番目の項目`, keys: [String(n)] })),
 ]
 const BY_ID = Object.fromEntries(ACTIONS.map((a) => [a.id, a]))
