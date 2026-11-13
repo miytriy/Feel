@@ -53,7 +53,7 @@ export function createSandbox({ characters, cost = 500, grant = SANDBOX_GEMS }) 
 
   return {
     sandbox: true,
-    fetchMe: () => done({ gems, tickets: { ...tickets }, crystals, ticketCost: 5000, pityCount, pickupPity, reprintPity, banners: banners(), owned: { ...owned }, sig: { ...sig }, enh: { ...enh }, loginBonus: { canClaim: false, streak: 0 } }),
+    fetchMe: () => done({ gems, tickets: { ...tickets }, crystals, ticketCost: 500, pityCount, pickupPity, reprintPity, banners: banners(), owned: { ...owned }, sig: { ...sig }, enh: { ...enh }, loginBonus: { canClaim: false, streak: 0 } }),
     fetchGifts: () => done({ gifts: mail.map((g) => ({ ...g })) }),
     drawGacha: (times, banner = 'normal') => {
       byRarity = POOLS[banner] || POOLS.normal
@@ -83,8 +83,8 @@ export function createSandbox({ characters, cost = 500, grant = SANDBOX_GEMS }) 
     },
     exchangeTicket: (kind, count) => {
       if ((kind !== 'normal' && kind !== 'limited') || !Number.isInteger(count) || count < 1) return fail('枚数が正しくありません')
-      if (gems < 5000 * count) return fail('交易石が足りません')
-      gems -= 5000 * count; tickets[kind] += count
+      if (gems < 500 * count) return fail('交易石が足りません')
+      gems -= 500 * count; tickets[kind] += count
       return done({ gems, tickets: { ...tickets }, kind, count })
     },
     exchangeCrystal: (mode, amount) => {

@@ -202,7 +202,7 @@ export default function StoreScreen({ me, busy, notice, error, tab, onTab, stone
     </>
   )
 
-  const cost = (me && me.ticketCost) || 5000
+  const cost = (me && me.ticketCost) || 500
   const gems = me ? me.gems : 0
   const crystals = me ? me.crystals || 0 : 0
   const amt = Math.max(0, Math.floor(Number(amount) || 0))

@@ -190,19 +190,19 @@ test('API: ガチャは今までどおり動く(通貨が減り、足りなけ�
   assert.equal((await api('POST', '/api/gacha', 'g1', { times: 3 })).status, 400)
 })
 
-test('API: 採用券(交易石5000個で1枚・足りなければ失敗)と、ガチャでの券の消費(先に券、足りない分は交易石)', async () => {
-  fake.put('users/tk1', { gems: 12000, pityCount: 0, owned: {}, sig: {}, enh: {} })
-  assert.equal((await api('POST', '/api/exchange-ticket', 'tk1', { kind: 'normal', count: 3 })).status, 400) // 15000 必要
+test('API: 採用券(交易石500個で1枚・足りなければ失敗)と、ガチャでの券の消費(先に券、足りない分は交易石)', async () => {
+  fake.put('users/tk1', { gems: 1700, pityCount: 0, owned: {}, sig: {}, enh: {} })
+  assert.equal((await api('POST', '/api/exchange-ticket', 'tk1', { kind: 'normal', count: 4 })).status, 400) // 2000 必要
   assert.equal((await api('POST', '/api/exchange-ticket', 'tk1', { kind: 'bad', count: 1 })).status, 400)
   const a = await api('POST', '/api/exchange-ticket', 'tk1', { kind: 'normal', count: 1 })
-  assert.equal(a.status, 200); assert.equal(a.body.gems, 7000); assert.equal(a.body.tickets.normal, 1)
+  assert.equal(a.status, 200); assert.equal(a.body.gems, 1200); assert.equal(a.body.tickets.normal, 1)
   const b = await api('POST', '/api/exchange-ticket', 'tk1', { kind: 'limited', count: 1 })
-  assert.equal(b.body.gems, 2000); assert.equal(b.body.tickets.limited, 1)
+  assert.equal(b.body.gems, 700); assert.equal(b.body.tickets.limited, 1)
   assert.deepEqual((await api('GET', '/api/me', 'tk1')).body.tickets, { normal: 1, limited: 1 })
   const g = await api('POST', '/api/gacha', 'tk1', { times: 1, banner: 'normal' }) // 通常券1枚で、交易石は減らない
-  assert.equal(g.status, 200); assert.equal(g.body.gems, 2000); assert.equal(g.body.tickets.normal, 0)
+  assert.equal(g.status, 200); assert.equal(g.body.gems, 700); assert.equal(g.body.tickets.normal, 0)
   const h = await api('POST', '/api/gacha', 'tk1', { times: 1, banner: 'normal' }) // 券が無ければ、交易石500
-  assert.equal(h.body.gems, 1500); assert.equal(h.body.tickets.limited, 1) // 限定券は、通常ガチャでは減らない
+  assert.equal(h.body.gems, 200); assert.equal(h.body.tickets.limited, 1) // 限定券は、通常ガチャでは減らない
 })
 test('API: 盟晶は、交易石と1対1で交換できる(足りなければ失敗・元にも戻せる)', async () => {
   fake.put('users/cr1', { gems: 1000, pityCount: 0, owned: {}, sig: {}, enh: {} })
