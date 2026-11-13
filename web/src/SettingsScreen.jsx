@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { C, FONT, DISPLAY, useRemembered } from './ui.js'
 import { SPEEDS } from './settings.js'
 import { IconClose, IconAgents, IconRules } from './icons.jsx'
+import { KeyConfig } from './KeysUI.jsx'
 
 // 設定画面。参考: エンドフィールドの設定
 //   左に、分類のアイコンの縦列(選ぶと黄色の四角になる) → 右に、黒い行が並ぶ(左に名前、右に操作)
@@ -13,6 +14,12 @@ import { IconClose, IconAgents, IconRules } from './icons.jsx'
 const IconSliders = (p) => (
   <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" {...p}>
     <path d="M3 7h10M17 7h4M3 17h4M11 17h10" /><circle cx="15" cy="7" r="2.2" /><circle cx="9" cy="17" r="2.2" />
+  </svg>
+)
+
+const IconKeyboard = (p) => (
+  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <rect x="2.5" y="6" width="19" height="12" rx="2" /><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10" />
   </svg>
 )
 
@@ -124,6 +131,11 @@ export default function SettingsScreen({ user, settings, onChange, onLogin, onLo
         : unlockLevel === 1 ? 'ガチャ・購買部・メールは、サーバーにあるデータを使うため、ログインが必要なままです。' : null,
     },
     {
+      key: 'keys', label: 'コンフィグ', Icon: IconKeyboard, head: 'コンフィグ(キーボード)', custom: true,
+      rows: [],
+      note: user ? 'キーの割り当ては、アカウントに保存されます(別の端末でも同じになります)。' : 'ログインしていないので、この端末のブラウザだけに保存されます。ログインすると、アカウントに保存されます。',
+    },
+    {
       key: 'rules', label: 'ルール', Icon: IconRules, head: 'ルール',
       rows: [
         { type: 'action', label: 'ルール説明', button: '移動', arrow: true, onClick: onOpenRules },
@@ -151,6 +163,7 @@ export default function SettingsScreen({ user, settings, onChange, onLogin, onLo
         <div className="st-body">
           <div className="st-page" key={page.key}>
             <div className="st-head">{page.head}</div>
+            {page.custom && <KeyConfig />}
             {page.rows.map((r, i) => (
               <div className="st-row" key={r.label} style={{ '--i': i }}>
                 <span className="st-label">{r.label}</span>

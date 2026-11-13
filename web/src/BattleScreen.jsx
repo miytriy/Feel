@@ -14,6 +14,7 @@ import { StatIcon } from './icons.jsx'
 import { withRelicPieces } from './relicInv.js'
 import { ME, OPP, setMe, winnerView } from './perspective.js'
 import { VanishFx, VANISH_BASE_MS } from './VanishFx.jsx'
+import { useHotkey } from './keys.js'
 // 強化のエフェクトで、文字ではなくアイコンで見せるステータス
 const BUFF_ICON = new Set(['hp', 'atk', 'def', 'spd', 'mag', 'critRate', 'critDmg', 'dmgResist'])
 const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', margin: '0 2px 0 0' }} />
@@ -1050,6 +1051,11 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   useSummonSlide() // 召喚物が消えたとき、隣のカードが一瞬で詰まらず、すっと滑って詰まる
   const [hist, setHist] = useState(emptyHistory) // バトルログの「発動」「破壊」の履歴
   const [logOpen, setLogOpen] = useState(false) // 戦闘実況のオーバーレイを開いている
+  // キーボード: バトルログ(Tab)・ターン終了(Space)・攻撃(A)。ボタンが出ていて押せるときだけ働く(キーは、設定の「コンフィグ」で変えられる)
+  const pressBtn = (testid) => { const b = document.querySelector(`[data-testid="${testid}"]`); if (!b || b.disabled) return false; b.click(); return true }
+  useHotkey('battle.log', () => { if (!state) return false; setLogOpen((v) => !v) })
+  useHotkey('battle.endTurn', () => pressBtn('end-turn'))
+  useHotkey('battle.attack', () => pressBtn('attack-go'))
 
   // CPUの番になったら少し待ってから行動する(特性を使ったあとも番が続くので、何度か動く)
   useEffect(() => {
@@ -1657,7 +1663,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
 
             <div style={desktop ? undefined : { position: 'sticky', bottom: -10, background: C.card, padding: '6px 0 2px', marginTop: 4 }}>
             {(mode || skillTargets.length > 0) && (
-              <button onClick={handleConfirm} disabled={!selected || !selectableSet.includes(selected)} style={buttonStyle(true, !selected || !selectableSet.includes(selected))}>
+              <button data-testid="attack-go" onClick={handleConfirm} disabled={!selected || !selectableSet.includes(selected)} style={buttonStyle(true, !selected || !selectableSet.includes(selected))}>
                 {mode ? `${modeTrait?.name}を使う` : '攻撃する'}
               </button>
             )}{' '}

@@ -92,7 +92,7 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
     const today = dayKey(t)
     const daily = data.battleDaily && data.battleDaily.day === today ? data.battleDaily.count : 0
     return {
-      gems: data.gems, pityCount: data.pityCount, pickupPity: pickupPityNow(data), banners: bannersInfo(new Date(now())), owned: data.owned, sig: data.sig || {}, enh: data.enh || {},
+      gems: data.gems, pityCount: data.pityCount, pickupPity: pickupPityNow(data), banners: bannersInfo(new Date(now())), owned: data.owned, sig: data.sig || {}, enh: data.enh || {}, keys: data.keys || null,
       loginBonus: { canClaim: lb.canClaim, streak: lb.streak, nextAmount: lb.nextAmount, cycle: CONFIG.LOGIN_BONUS },
       battle: { todayCount: daily, dailyLimit: CONFIG.BATTLE_REWARD_DAILY_LIMIT, rewards: CONFIG.BATTLE_REWARD },
     }
@@ -266,6 +266,23 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
   })
 
   // 署名でキャラクターを強化する(署名100個で1回・全ステータス+10)
+  // キーボード操作の割り当て(設定の「コンフィグ」)。アカウントに保存する。形: { 操作id: [キー, ...] }
+  app.post('/api/keys', requireAuth, async (req, res) => {
+    try {
+      const src = req.body?.keys
+      if (!src || typeof src !== 'object' || Array.isArray(src)) throw new HttpError(400, 'キー設定の形がちがいます')
+      const keys = {}
+      for (const [id, ks] of Object.entries(src).slice(0, 60)) {
+        if (!/^[a-zA-Z0-9.]{1,40}$/.test(id) || !Array.isArray(ks)) continue
+        keys[id] = ks.filter((k) => typeof k === 'string' && k.length > 0 && k.length <= 24).slice(0, 3)
+      }
+      await userRefOf(req.user.uid).set({ keys, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+      res.json({ keys })
+    } catch (e) {
+      handleError(res, e)
+    }
+  })
+
   app.post('/api/enhance', requireAuth, async (req, res) => {
     try {
       const id = String(req.body?.id || '')

@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import RulesScreen from './RulesScreen.jsx'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth } from './firebase.js'
 import { openLogin } from './LoginDialog.jsx'
 import {
-  gateStatus, gateEnter, gateCheck, gateMe, getGateToken, setGateToken, fetchMe, enhanceChar, fetchCareer, recordMatch, clearCareer, drawGacha, claimLoginBonus, startBattleTicket, finishBattle, fetchGifts, claimGift, redeemCode, markMailRead, setMailStar, deleteMail, purgeReadMail,
+  gateStatus, gateEnter, gateCheck, gateMe, getGateToken, setGateToken, fetchMe, enhanceChar, saveKeys, fetchCareer, recordMatch, clearCareer, drawGacha, claimLoginBonus, startBattleTicket, finishBattle, fetchGifts, claimGift, redeemCode, markMailRead, setMailStar, deleteMail, purgeReadMail,
 } from './api.js'
 import BattleScreen from './BattleScreen.jsx'
 import CareerScreen from './CareerScreen.jsx'
@@ -20,6 +20,7 @@ import NewsScreen from './NewsScreen.jsx'
 import HomeScreen, { ACCOUNT_SCREENS, canOpen } from './HomeScreen.jsx'
 import { unlockLevel, tryUnlock, relock } from './unlock.js'
 import { createSandbox } from './sandbox.js'
+import { installKeys, applyRemoteKeys, setKeysSaver, customKeys } from './keys.js'
 import { loadRelics, clearRelics } from './relicInv.js'
 import GuideScreen from './GuideScreen.jsx'
 import CpuBattleScreen from './CpuBattleScreen.jsx'
@@ -84,6 +85,21 @@ export default function App() {
   const [code, setCode] = useState('')
   const [storeTab, setStoreTab] = useState('bonus') // 購買部のタブ
   const [settings, setSettings] = useState(loadSettings) // 設定(この端末に保存)
+  useEffect(() => { installKeys() }, [])
+  // キーの割り当ては、ログイン中はアカウントに保存する(別の端末でも同じになる)。ゲストは、この端末だけ
+  const keysUid = useRef(null)
+  useEffect(() => {
+    if (!user || !me || keysUid.current === user.uid) return
+    keysUid.current = user.uid
+    if (me.keys) applyRemoteKeys(me.keys) // アカウントにあれば、それを使う
+    else if (Object.keys(customKeys()).length) saveKeys(customKeys()).catch(() => {}) // 初めて: この端末の割り当てを、アカウントに上げる
+  }, [user, me])
+  useEffect(() => {
+    if (!user) { setKeysSaver(null); return undefined }
+    let t = null
+    setKeysSaver((keys) => { clearTimeout(t); t = setTimeout(() => saveKeys({ ...keys }).catch(() => {}), 600) })
+    return () => { clearTimeout(t); setKeysSaver(null) }
+  }, [user])
   const [rulesBack, setRulesBack] = useState('play') // ルールを閉じたときに戻る画面
   // PLAY → 案内所(play) → CPU戦のレベル(cpu) → チーム(team) → 読み込み(loading) → 対戦(battle)
   const [cpuLevel, setCpuLevel] = useState(2) // 選んだCPUのレベル

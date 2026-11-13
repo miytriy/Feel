@@ -44,6 +44,7 @@ export const fetchMe = () => request('/api/me')
 export const drawGacha = (times, banner = 'normal') =>
   request('/api/gacha', { method: 'POST', body: JSON.stringify({ times, banner }) })
 
+export const saveKeys = (keys) => request('/api/keys', { method: 'POST', body: JSON.stringify({ keys }) })
 export const enhanceChar = (id) => request('/api/enhance', { method: 'POST', body: JSON.stringify({ id }) })
 
 // ---- 通貨の配布 ----
