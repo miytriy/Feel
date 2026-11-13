@@ -116,12 +116,12 @@ const CSS = `
 /* 動き(transform と opacity だけ: EFFECTS.md) */
 @keyframes sp-pop { from { opacity: 0; transform: scale(0.92) translateY(12px); } to { opacity: 1; transform: none; } }
 @keyframes sp-bump { 0% { transform: scale(1.4); } 100% { transform: scale(1); } }
-@keyframes sp-sweep { 0% { transform: translateX(-140%) skewX(-18deg); opacity: 0; } 12% { opacity: 0.7; } 40% { transform: translateX(260%) skewX(-18deg); opacity: 0; } 100% { transform: translateX(260%) skewX(-18deg); opacity: 0; } }
-.sp-pane > * { animation: sp-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; will-change: transform, opacity; }
+@keyframes sp-sweep { 0% { translate: -140% 0; opacity: 0; } 10% { opacity: 0.7; } 38% { translate: 300% 0; opacity: 0; } 100% { translate: 300% 0; opacity: 0; } }
+.sp-pane > * { animation: sp-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .sp-pane > *:nth-child(2) { animation-delay: 0.05s; } .sp-pane > *:nth-child(3) { animation-delay: 0.1s; } .sp-pane > *:nth-child(4) { animation-delay: 0.15s; } .sp-pane > *:nth-child(5) { animation-delay: 0.2s; }
 .sp-card { position: relative; overflow: hidden; transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); animation: sp-rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(0.12s + var(--i, 0) * 0.09s); }
 .sp-card:hover { transform: translateY(-5px); }
-.sp-card.pass::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 38%; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,244,170,0.85), rgba(255,255,255,0)); pointer-events: none; animation: sp-sweep 4.2s ease-in-out 0.8s infinite; will-change: transform, opacity; }
+.sp-card.pass::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 38%; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,244,170,0.85), rgba(255,255,255,0)); pointer-events: none; transform: skewX(-18deg); animation: sp-sweep 4.6s ease-in-out 1.6s infinite; }
 .sp-st { position: relative; transition: transform 0.15s; }
 .sp-st:hover { transform: translateY(-2px); } .sp-st:active { transform: scale(0.95); }
 .sp-st.on { animation: sp-pop 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
@@ -132,6 +132,29 @@ const CSS = `
 .sp-dim { animation: sp-fade 0.2s ease-out; }
 .sp-dlg { animation: sp-pop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.15) backwards; }
 .sp-dlg .bt button { transition: transform 0.12s; } .sp-dlg .bt button:hover { transform: translateY(-2px); } .sp-dlg .bt button:active { transform: scale(0.95); }
+
+/* 購買部ぜんたいの動き */
+@keyframes sp-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes sp-slide { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+@keyframes sp-nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
+@keyframes sp-drift { from { translate: 0 0; } to { translate: 0 -18px; } }
+@keyframes sp-pulse { 0%, 100% { transform: translateY(-8px) scale(1); } 50% { transform: translateY(-12px) scale(1.035); } }
+@keyframes sp-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes sp-tabin { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+.sp-bg i { animation: sp-drift 6s ease-in-out infinite alternate; } .sp-bg i:nth-child(2) { animation-duration: 4.4s; } .sp-bg i:nth-child(3) { animation-duration: 7.5s; }
+.sp-tab { animation: sp-tabin 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; transition: transform 0.15s; }
+.sp-tab:nth-child(2) { animation-delay: 0.06s; } .sp-tab:nth-child(3) { animation-delay: 0.12s; } .sp-tab:nth-child(4) { animation-delay: 0.18s; }
+.sp-tab:hover { transform: translateY(-2px); } .sp-tab:active { transform: scale(0.95); }
+.sp-tab.on svg { animation: sp-bump 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.sp-chip svg { animation: sp-float 2.6s ease-in-out infinite; }
+.sp-eb { animation: sp-slide 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.sp-h::after { transform-origin: left center; animation: sp-draw 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s backwards; }
+.sp-day { animation: sp-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(var(--i, 0) * 0.06s); }
+.sp-day.now { animation: sp-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.45s backwards, sp-pulse 1.8s ease-in-out 1s infinite; }
+.sp-buy:not(:disabled) .ar { animation: sp-nudge 1.4s ease-in-out infinite; }
+.sp-buy:disabled .ar { animation: none; }
+.sp-card h3, .sp-card .own { transition: transform 0.22s; }
+.sp-msg { animation: sp-rise 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 
 /* 石購入: 小さなタブ + 券のカード + 盟晶 */
 .sp-sub-tabs { display: flex; gap: 8px; margin: 14px 0 22px; flex-wrap: wrap; }
@@ -165,7 +188,7 @@ const CSS = `
 .sp-dlg .bt button { min-height: 0; padding: 10px 24px; border: 0; font-weight: 800; font-size: 15px; cursor: pointer; background: #d6d6da; color: #1b1b1f; }
 .sp-dlg .bt button.ok { background: #1b1b1f; color: #fff; }
 .sp-dlg .bt button:focus-visible { outline: 3px solid #d9b800; }
-@media (prefers-reduced-motion: reduce) { .sp, .sp-side, .sp-msg, .sp-day, .sp-pane > *, .sp-card, .sp-card::after, .sp-st, .sp-dim, .sp-dlg, .sp-step output, .sp-sr .v > span { animation: none !important; } .sp-buy, .sp-x, .sp-card, .sp-st, .sp-step button, .sp-dlg .bt button { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .sp, .sp-side, .sp-msg, .sp-day, .sp-pane > *, .sp-card, .sp-bg i, .sp-tab, .sp-tab svg, .sp-chip svg, .sp-eb, .sp-h::after, .sp-buy .ar, .sp-card::after, .sp-st, .sp-dim, .sp-dlg, .sp-step output, .sp-sr .v > span { animation: none !important; } .sp-buy, .sp-x, .sp-card, .sp-st, .sp-step button, .sp-dlg .bt button { transition: none; } }
 `
 
 function Row({ label, value, unit, hi }) {
