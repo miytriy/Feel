@@ -312,7 +312,7 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
   const pickupOk = !!(bInfo && bInfo.available)
   const bName = isReprint ? '復刻ピックアップガチャ' : isPickup ? 'ピックアップガチャ' : '通常ガチャ'
   const bRot = bInfo ? bInfo.rotationName : null
-  const poolUnits = useMemo(() => ALL_CHARACTERS.filter((c) => c.rotation === bRot && !String(c.id).startsWith('test_') && RATES.some(([k]) => k === c.rarity)), [bRot]) // 今のバナーの排出ユニット(表示用。抽選はサーバーがやる)
+  const poolUnits = useMemo(() => ALL_CHARACTERS.filter((c) => c.rotation === bRot && !c.token && !String(c.id).startsWith('test_') && RATES.some(([k]) => k === c.rarity)), [bRot]) // 今のバナーの排出ユニット(表示用。抽選はサーバーがやる)
   const have = me ? (isReprint ? me.reprintPity || 0 : isPickup ? me.pickupPity || 0 : me.pityCount || 0) : 0
   const endText = (() => {
     if (isReprint || !isPickup || !bn || !bn.pickup.endsAt) return ''
