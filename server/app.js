@@ -96,7 +96,7 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
     const today = dayKey(t)
     const daily = data.battleDaily && data.battleDaily.day === today ? data.battleDaily.count : 0
     return {
-      gems: data.gems, tickets: ticketsOf(data), crystals: Number(data.crystals) || 0, ticketCost: CONFIG.TICKET_COST, pityCount: data.pityCount, pickupPity: pickupPityNow(data), reprintPity: bannerPityNow(data, 'reprint'), banners: bannersInfo(new Date(now())), owned: data.owned, sig: data.sig || {}, enh: data.enh || {}, keys: data.keys || null,
+      gems: data.gems, tickets: ticketsOf(data), crystals: Number(data.crystals) || 0, ticketCost: CONFIG.TICKET_COST, crystalFree: !!CONFIG.CRYSTAL_FREE, pityCount: data.pityCount, pickupPity: pickupPityNow(data), reprintPity: bannerPityNow(data, 'reprint'), banners: bannersInfo(new Date(now())), owned: data.owned, sig: data.sig || {}, enh: data.enh || {}, keys: data.keys || null,
       loginBonus: { canClaim: lb.canClaim, streak: lb.streak, nextAmount: lb.nextAmount, cycle: CONFIG.LOGIN_BONUS },
       battle: { todayCount: daily, dailyLimit: CONFIG.BATTLE_REWARD_DAILY_LIMIT, rewards: CONFIG.BATTLE_REWARD },
     }
@@ -353,8 +353,11 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
         let crystals = Number(data.crystals) || 0
         let gems
         if (mode === 'buy') {
-          if ((data.gems || 0) < amount) throw new HttpError(400, '交易石が足りません')
-          gems = grantGems(t, uid, data, -amount, 'crystal_buy', null)
+          if (CONFIG.CRYSTAL_FREE) gems = data.gems || 0 // 無料の間は、交易石を使わない
+          else {
+            if ((data.gems || 0) < amount) throw new HttpError(400, '交易石が足りません')
+            gems = grantGems(t, uid, data, -amount, 'crystal_buy', null)
+          }
           crystals += amount
         } else {
           if (crystals < amount) throw new HttpError(400, '盟晶が足りません')

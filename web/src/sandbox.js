@@ -53,7 +53,7 @@ export function createSandbox({ characters, cost = 500, grant = SANDBOX_GEMS }) 
 
   return {
     sandbox: true,
-    fetchMe: () => done({ gems, tickets: { ...tickets }, crystals, ticketCost: 500, pityCount, pickupPity, reprintPity, banners: banners(), owned: { ...owned }, sig: { ...sig }, enh: { ...enh }, loginBonus: { canClaim: false, streak: 0 } }),
+    fetchMe: () => done({ gems, tickets: { ...tickets }, crystals, ticketCost: 500, crystalFree: true, pityCount, pickupPity, reprintPity, banners: banners(), owned: { ...owned }, sig: { ...sig }, enh: { ...enh }, loginBonus: { canClaim: false, streak: 0 } }),
     fetchGifts: () => done({ gifts: mail.map((g) => ({ ...g })) }),
     drawGacha: (times, banner = 'normal') => {
       byRarity = POOLS[banner] || POOLS.normal
@@ -89,7 +89,7 @@ export function createSandbox({ characters, cost = 500, grant = SANDBOX_GEMS }) 
     },
     exchangeCrystal: (mode, amount) => {
       if (!Number.isInteger(amount) || amount < 1) return fail('数が正しくありません')
-      if (mode === 'buy') { if (gems < amount) return fail('交易石が足りません'); gems -= amount; crystals += amount }
+      if (mode === 'buy') { crystals += amount } // 無料の間は、交易石を使わない
       else { if (crystals < amount) return fail('盟晶が足りません'); crystals -= amount; gems += amount }
       return done({ gems, crystals, mode, amount })
     },

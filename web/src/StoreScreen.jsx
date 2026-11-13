@@ -205,6 +205,7 @@ export default function StoreScreen({ me, busy, notice, error, tab, onTab, stone
   const cost = (me && me.ticketCost) || 500
   const gems = me ? me.gems : 0
   const crystals = me ? me.crystals || 0 : 0
+  const free = !!(me && me.crystalFree) // 盟晶は、いまは無料(お金も交易石も使わない)
   const amt = Math.max(0, Math.floor(Number(amount) || 0))
   const ok = (fn) => () => { setDlg(null); fn() }
 
@@ -244,15 +245,15 @@ export default function StoreScreen({ me, busy, notice, error, tab, onTab, stone
         </>
       ) : (
         <>
-          <p className="sp-sub" style={{ marginTop: 0 }}>交易石と盟晶を、1対1で交換できます。</p>
+          <p className="sp-sub" style={{ marginTop: 0 }}>{free ? '盟晶は、いま無料で手に入ります。' : '交易石と盟晶を、1対1で交換できます。'}</p>
           <div className="sp-card" data-testid="crystal-card">
             <h3>盟晶</h3>
             <div className="own">所持<b>{crystals}</b>個 ・ 交易石<b>{gems}</b>個</div>
             <p className="nt">盟晶では、ガチャを直接引けません。ガチャに使うには、交易石に変換(1対1)します。</p>
             <input className="sp-num" type="number" inputMode="numeric" min="1" value={amount} placeholder="交換する数" aria-label="交換する数" data-testid="crystal-amount" onChange={(e) => setAmount(e.target.value)} />
             <div className="sp-two">
-              <button type="button" className="sp-buy" data-testid="crystal-buy" disabled={busy || amt < 1 || gems < amt} onClick={() => setDlg({ type: 'crystal', mode: 'buy', n: amt })}>
-                <span>盟晶を買う<small>交易石 → 盟晶</small></span><span className="ar" aria-hidden="true">→</span>
+              <button type="button" className="sp-buy" data-testid="crystal-buy" disabled={busy || amt < 1 || (!free && gems < amt)} onClick={() => setDlg({ type: 'crystal', mode: 'buy', n: amt })}>
+                <span>{free ? '盟晶を無料でもらう' : '盟晶を買う'}<small>{free ? '' : '交易石 → 盟晶'}</small></span><span className="ar" aria-hidden="true">→</span>
               </button>
               <button type="button" className="sp-buy" data-testid="crystal-back" disabled={busy || amt < 1 || crystals < amt} onClick={() => setDlg({ type: 'crystal', mode: 'back', n: amt })}>
                 <span>交易石に変換<small>盟晶 → 交易石</small></span><span className="ar" aria-hidden="true">→</span>
@@ -276,10 +277,10 @@ export default function StoreScreen({ me, busy, notice, error, tab, onTab, stone
           </>
         ) : dlg.mode === 'buy' ? (
           <>
-            <h3>盟晶を買いますか?</h3>
-            <p>交易石 {dlg.n} を消費して、盟晶 {dlg.n} 個に交換します。</p>
+            <h3>{free ? '盟晶を受け取りますか?' : '盟晶を買いますか?'}</h3>
+            <p>{free ? `盟晶 ${dlg.n} 個を、無料で受け取ります(交易石は減りません)。` : `交易石 ${dlg.n} を消費して、盟晶 ${dlg.n} 個に交換します。`}</p>
             <p className="warn">盟晶では、ガチャを直接引けません。ガチャに使うときは、盟晶を交易石に変換(1対1)する必要があります。</p>
-            <div className="bl">交易石 {gems} → {gems - dlg.n} ・ 盟晶 {crystals} → {crystals + dlg.n}</div>
+            <div className="bl">{!free && <>交易石 {gems} → {gems - dlg.n} ・ </>}盟晶 {crystals} → {crystals + dlg.n}</div>
             <div className="bt"><button type="button" aria-label="閉じる" onClick={() => setDlg(null)}>キャンセル</button><button type="button" className="ok" data-testid="store-ok" onClick={ok(() => { onCrystal('buy', dlg.n); setAmount('') })}>確定</button></div>
           </>
         ) : (

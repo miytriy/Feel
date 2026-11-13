@@ -204,15 +204,16 @@ test('API: 採用券(交易石500個で1枚・足りなければ失敗)と、ガ
   const h = await api('POST', '/api/gacha', 'tk1', { times: 1, banner: 'normal' }) // 券が無ければ、交易石500
   assert.equal(h.body.gems, 200); assert.equal(h.body.tickets.limited, 1) // 限定券は、通常ガチャでは減らない
 })
-test('API: 盟晶は、交易石と1対1で交換できる(足りなければ失敗・元にも戻せる)', async () => {
+test('API: 盟晶は、無料の間は交易石を使わずにもらえる。交易石への変換は1対1(足りなければ失敗)', async () => {
   fake.put('users/cr1', { gems: 1000, pityCount: 0, owned: {}, sig: {}, enh: {} })
-  assert.equal((await api('POST', '/api/crystal', 'cr1', { mode: 'buy', amount: 1001 })).status, 400)
-  assert.equal((await api('POST', '/api/crystal', 'cr1', { mode: 'back', amount: 1 })).status, 400)
+  assert.equal((await api('GET', '/api/me', 'cr1')).body.crystalFree, true)
+  assert.equal((await api('POST', '/api/crystal', 'cr1', { mode: 'back', amount: 1 })).status, 400) // 盟晶が無い
   assert.equal((await api('POST', '/api/crystal', 'cr1', { mode: 'buy', amount: 0.5 })).status, 400)
   const a = await api('POST', '/api/crystal', 'cr1', { mode: 'buy', amount: 400 })
-  assert.equal(a.status, 200); assert.equal(a.body.gems, 600); assert.equal(a.body.crystals, 400)
+  assert.equal(a.status, 200); assert.equal(a.body.gems, 1000); assert.equal(a.body.crystals, 400) // 交易石は減らない
   const b = await api('POST', '/api/crystal', 'cr1', { mode: 'back', amount: 150 })
-  assert.equal(b.body.gems, 750); assert.equal(b.body.crystals, 250)
+  assert.equal(b.body.gems, 1150); assert.equal(b.body.crystals, 250)
+  assert.equal((await api('POST', '/api/crystal', 'cr1', { mode: 'back', amount: 251 })).status, 400)
   assert.equal((await api('POST', '/api/crystal', null, { mode: 'buy', amount: 1 })).status, 401)
 })
 
