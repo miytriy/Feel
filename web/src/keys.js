@@ -165,15 +165,39 @@ function step(delta) {
   const t = tabs[(i + delta + tabs.length) % tabs.length]
   t.click(); t.focus({ preventScroll: true }); return true
 }
+// ---- 層(Enterで1つ奥へ、Esc・Backspaceで1つ手前へ)。人事の動きを、すべての画面の基準にする ----
+// Enter で奥の層(画面・ダイアログ)が開いたら、押した項目を覚えておく。戻る・閉じるで手前の層に戻ったら、その項目にカーソルを戻す
+const layers = [] // { key }
+const keyOf = (el) => el.getAttribute('data-testid') ? `[data-testid="${el.getAttribute('data-testid')}"]` : el.getAttribute('aria-label') ? `[aria-label="${el.getAttribute('aria-label')}"]` : null
+const closerCount = () => [...document.querySelectorAll(CLOSERS)].filter(visible).length
+function enterLayer(el) {
+  const key = keyOf(el)
+  if (!key) return
+  const before = closerCount(), sig = document.body.innerText.length
+  setTimeout(() => {
+    const changed = !document.contains(el) || !visible(el) || closerCount() > before || Math.abs(document.body.innerText.length - sig) > 40
+    if (changed) { layers.push({ key }); if (layers.length > 24) layers.shift() }
+  }, 260)
+}
+function leaveLayer() {
+  const l = layers.pop()
+  if (!l) return
+  let tries = 0
+  const t = setInterval(() => { // 画面が切り替わる間は、少し待ってから戻す
+    const el = document.querySelector(l.key)
+    if (el && visible(el)) { el.focus({ preventScroll: true }); el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); clearInterval(t) }
+    else if (++tries > 20) clearInterval(t)
+  }, 80)
+}
 const BUILTIN = {
   'nav.up': () => moveFocus('up'), 'nav.down': () => moveFocus('down'), 'nav.left': () => moveFocus('left'), 'nav.right': () => moveFocus('right'),
   'nav.confirm': () => {
     const a = document.activeElement
-    if (a && a !== document.body && visible(a)) { a.click(); return true }
+    if (a && a !== document.body && visible(a)) { enterLayer(a); a.click(); return true }
     return moveFocus('down')
   },
-  'nav.back': () => clickLast(CLOSERS),
-  'nav.close': () => clickLast('[data-testid="gs-skip"]') || clickLast(CLOSERS),
+  'nav.back': () => { const ok = clickLast(CLOSERS); if (ok) leaveLayer(); return ok },
+  'nav.close': () => { if (clickLast('[data-testid="gs-skip"]')) return true; const ok = clickLast(CLOSERS); if (ok) leaveLayer(); return ok },
   'nav.tabPrev': () => step(-1), 'nav.tabNext': () => step(1),
   ...Object.fromEntries([1, 2, 3, 4, 5, 6].map((n) => [`wiki.${n}`, () => { const t = [...document.querySelectorAll('.wk-tile')].filter(visible)[n - 1]; if (!t) return false; t.click(); return true }])),
 }
