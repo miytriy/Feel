@@ -152,7 +152,7 @@ const CSS = `
 .wk-tile:hover svg, .wk-tile:focus-visible svg { transform: translateY(-6px); }
 .wk-tile:hover svg [fill="${G}"], .wk-tile:focus-visible svg [fill="${G}"] { fill: #2a2a2e; }
 .wk-tile:hover .wk-name2, .wk-tile:focus-visible .wk-name2 { color: #111; }
-.wk-tile:hover .wk-name2::after, .wk-tile:focus-visible .wk-name2::after { content: ''; display: block; height: 3px; margin-top: 4px; background: ${C.player}; }
+.wk-tile:hover .wk-name2::after, .wk-tile:focus-visible .wk-name2::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 3px; margin-top: 4px; background: ${C.player}; } /* 下線は、場所を取らない(取ると、全体が中央寄せなので、ほかの項目まで動いてしまう) */
 .wk-tile:focus-visible { outline: none; }
 .wk-tile.soon { cursor: default; opacity: 0.55; }
 .wk-tile.soon:hover svg { transform: none; }
