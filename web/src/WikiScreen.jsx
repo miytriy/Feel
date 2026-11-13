@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { C, FONT, DISPLAY } from './ui.js'
+import { C, FONT, DISPLAY, useRemembered } from './ui.js'
+import { ROTATIONS } from './battle/rotations.js'
 import { ALL_CHARACTERS } from './battle/characters/index.js'
 import { ALL_SPELLS } from './battle/spells/index.js'
 import { RELICS } from './battle/engine.js'
@@ -252,6 +253,7 @@ export default function WikiScreen({ onExit }) {
   const [nav, setNav] = useState({ section: null, sub: 'all', itemId: null })
   const [query, setQuery] = useState('')
   const [rarity, setRarity] = useState('all')
+  const [pickup, setPickup] = useRemembered('wiki.pickup', 'all') // ピックアップ(ローテーションの名前)で絞る。画面を出入りしても、最後に選んだものを残す
 
   // 検索用の文字は最初に1回だけ作る
   const index = useMemo(
@@ -266,7 +268,7 @@ export default function WikiScreen({ onExit }) {
   const isRoot = !sec && !searching && !selected
 
   // 一覧: 場所(項目)・レアリティ・検索の言葉で絞る。分類(左)の件数は、分類で絞る前の数
-  const base = index.filter((x) => (!sec || x.sec === sec.key) && (rarity === 'all' || x.d.rarity === rarity) && terms.every((w) => x.t.includes(w)))
+  const base = index.filter((x) => (!sec || x.sec === sec.key) && (rarity === 'all' || x.d.rarity === rarity) && (pickup === 'all' || x.d.rotation === pickup) && terms.every((w) => x.t.includes(w)))
   const subOf = (x) => secOf(x.sec).subOf(x.d)
   const counts = {}
   for (const x of base) counts[subOf(x)] = (counts[subOf(x)] || 0) + 1
@@ -417,13 +419,22 @@ export default function WikiScreen({ onExit }) {
 
   const showSide = !!sec && sec.subs.length > 0 && !selected // 項目の中だけ、左に分類を出す(全体の検索結果では出さない)
   const subs = sec ? sec.subs : []
+  const pickupNames = [ROTATIONS.basic, ...Object.entries(ROTATIONS).filter(([k]) => k !== 'basic').map(([, n]) => n)].filter((n) => index.some((x) => x.d.rotation === n && (!sec || x.sec === sec.key))) // 載っているものがあるピックアップだけ(ベーシック → 第1弾 … の順)
   const filters = (!sec || sec.rarity) && (
+    <>
+    <div className="wk-filters" data-testid="wk-pickup">
+      <button type="button" className={`wk-fchip${pickup === 'all' ? ' on' : ''}`} onClick={() => { setBack(false); setPickup('all') }}>全ピックアップ</button>
+      {pickupNames.map((n) => (
+        <button key={n} type="button" className={`wk-fchip${pickup === n ? ' on' : ''}`} onClick={() => { setBack(false); setPickup(n) }}>{n}</button>
+      ))}
+    </div>
     <div className="wk-filters">
       <button type="button" className={`wk-fchip${rarity === 'all' ? ' on' : ''}`} onClick={() => { setBack(false); setRarity('all') }}>全レアリティ</button>
       {Object.entries(RARITY).sort((a, b) => a[1].order - b[1].order).map(([k, r]) => (
         <button key={k} type="button" className={`wk-fchip${rarity === k ? ' on' : ''}`} onClick={() => { setBack(false); setRarity(k) }}>{r.label}</button>
       ))}
     </div>
+    </>
   )
 
   return (
@@ -449,7 +460,7 @@ export default function WikiScreen({ onExit }) {
               {filters}
               {shown.length === 0
                 ? <div className="wk-empty">見つかりませんでした。検索の言葉や、分類・レアリティの絞り込みを変えてみてください。</div>
-                : <div className="wk-grid" key={`${nav.section}|${nav.sub}|${rarity}`}>{shown.map((x, i) => <Card key={x.sec + x.d.id} i={i} sec={x.sec} d={x.d} showTag={!sec} onOpen={open} />)}</div>}
+                : <div className="wk-grid" key={`${nav.section}|${nav.sub}|${rarity}|${pickup}`}>{shown.map((x, i) => <Card key={x.sec + x.d.id} i={i} sec={x.sec} d={x.d} showTag={!sec} onOpen={open} />)}</div>}
             </>
           )}
         </div>
