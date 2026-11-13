@@ -200,7 +200,7 @@ const CSS = `
 .jp-sd-box { width: min(940px, 96%); max-height: 94%; overflow-y: auto; padding: 28px 36px 26px; background: #1d1d21; color: #fff; box-shadow: 0 10px 40px rgba(0,0,0,0.5); font-size: 38px; }
 .jp-sd-h { display: flex; align-items: center; font-size: 44px; font-weight: 700; padding-bottom: 8px; } .jp-sd-h button { margin-left: auto; min-height: 0; width: 48px; height: 48px; padding: 0; font-size: 30px; border: 0; background: transparent; color: #fff; cursor: pointer; }
 .jp-sd-t { margin: 14px 0 4px; padding: 8px 14px; background: #3a3a42; font-size: 32px; font-weight: 700; letter-spacing: 0.06em; }
-.jp-sd-row { display: flex; align-items: center; padding: 12px 14px; border-bottom: 1px solid #34343a; } .jp-sd-row span { color: #d6d6dc; display: flex; align-items: center; gap: 14px; } .jp-sd-ic { width: 1.3em; height: 1.3em; flex: none; display: grid; place-items: center; color: #fff; font-size: 1.3em; }
+.jp-sd-row { cursor: pointer; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; padding: 12px 14px; border-bottom: 1px solid #34343a; } .jp-sd-row span { color: #d6d6dc; display: flex; align-items: center; gap: 14px; } .jp-sd-ic { width: 1.3em; height: 1.3em; flex: none; display: grid; place-items: center; color: #fff; font-size: 1.3em; }
 .jp-sd-row b { margin-left: auto; font-family: ${DISPLAY}; font-size: 46px; } .jp-sd-row em { font-style: normal; color: #6cb6ff; margin-left: 14px; font-size: 40px; }
 .jp-sd-n { margin-top: 14px; font-size: 26px; color: #9a9aa2; }
 /* 遺物(部位つき) */
@@ -360,9 +360,11 @@ const ICON_KEYS = ['hp', 'atk', 'def', 'spd', 'mag', 'critRate', 'critDmg']
 const SD_BASIC = [['spd', '速度', ''], ['atk', '攻撃力', ''], ['hp', '体力', ''], ['def', '防御力', ''], ['mag', '魔力', '']]
 const SD_ADV = [['critRate', 'クリティカルレート', '%'], ['critDmg', 'クリティカルダメージ', '%'], ['healUp', '治癒量', '%'], ['effHit', '効果効率', '%'], ['dmgResist', '耐性値', ''], ['physUp', '物理ダメージ', '%'], ['magUp', '魔法ダメージ', '%']]
 function StatDetail({ c, sb, onClose }) {
+  const [sum, setSum] = useState(false) // タップで、青い「+」の数字が、基礎+強化の合算値に切り替わる(もう一度タップで元に戻る)
   const row = ([k, label, u]) => {
     const v = sb[k]
-    return <div className="jp-sd-row" key={k} data-testid={`sd-${k}`}><span><i className="jp-sd-ic">{ICON_KEYS.includes(k) && <StatIcon stat={k} />}</i>{label}</span><b>{v.base}{u}{v.extra ? <em>{v.extra > 0 ? '+' : ''}{v.extra}{u}</em> : null}</b></div>
+    const total = Math.round((v.base + v.extra) * 10) / 10
+    return <div className="jp-sd-row" key={k} data-testid={`sd-${k}`} role="button" tabIndex={0} aria-pressed={sum} onClick={() => setSum((x) => !x)}><span><i className="jp-sd-ic">{ICON_KEYS.includes(k) && <StatIcon stat={k} />}</i>{label}</span><b>{v.base}{u}{v.extra ? <em key={String(sum)}>{sum ? `= ${total}` : `${v.extra > 0 ? '+' : ''}${v.extra}`}{u}</em> : null}</b></div>
   }
   return (
     <div className="jp-sd" data-testid="stat-detail" onClick={onClose}>
@@ -372,7 +374,7 @@ function StatDetail({ c, sb, onClose }) {
         {SD_BASIC.filter(([k]) => k !== 'mag' || sb.mag.base || sb.mag.extra).map(row)}
         <div className="jp-sd-t">上級ステータス</div>
         {SD_ADV.map(row)}
-        <div className="jp-sd-n">左が基礎値、右の青い数字が、強化・遺物などで足されている分です。</div>
+        <div className="jp-sd-n">左が基礎値、右の青い数字が、強化・遺物などで足されている分です。タップすると、青い数字が合算した値になります(もう一度タップで元に戻ります)。</div>
       </div>
     </div>
   )
