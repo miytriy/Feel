@@ -7,6 +7,28 @@ const HOUR = 3600 * 1000
 export const dayKey = (ms, cfg = CONFIG) =>
   new Date(ms + (cfg.TZ_OFFSET_HOURS - cfg.RESET_HOUR) * HOUR).toISOString().slice(0, 10)
 
+export const addDays = (key, n) => {
+  const d = new Date(`${key}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+
+// ---------- 月パス ----------
+// pass = { expiresDay }(最後に使える日)。買った日が1日目で、PASS_DAYS 日間
+export function passStatus(pass, nowMs, cfg = CONFIG) {
+  const today = dayKey(nowMs, cfg)
+  const exp = pass && pass.expiresDay
+  const active = !!exp && exp >= today
+  const daysLeft = active ? Math.round((Date.parse(`${exp}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000) + 1 : 0
+  return { active, expiresDay: exp || null, daysLeft, today }
+}
+// 買う: 期間の途中で買ったら、いまの期限の翌日から、さらに PASS_DAYS 日ぶん伸びる
+export function buyPass(pass, nowMs, cfg = CONFIG) {
+  const st = passStatus(pass, nowMs, cfg)
+  const start = st.active ? addDays(st.expiresDay, 1) : st.today
+  return { expiresDay: addDays(start, cfg.PASS_DAYS - 1) }
+}
+
 export const prevDayKey = (key) => {
   const d = new Date(`${key}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() - 1)
@@ -47,6 +69,8 @@ export function claimLoginBonus(lb, nowMs, cfg = CONFIG) {
   if (!st.canClaim) return { ok: false, error: '今日のログインボーナスは受け取り済みです' }
   return { ok: true, amount: st.nextAmount, state: { lastDay: st.today, streak: st.nextStreak } }
 }
+// 月パス中のログインボーナスに足される交易石。受け取らなかった日の分は、あとから受け取れない(ためられない)
+export const passBonusOf = (pass, nowMs, cfg = CONFIG) => (passStatus(pass, nowMs, cfg).active ? cfg.PASS_DAILY_GEMS : 0)
 
 // ---------- 対戦の報酬 ----------
 export const isValidBattleLevel = (level, cfg = CONFIG) => Object.prototype.hasOwnProperty.call(cfg.BATTLE_REWARD, level)

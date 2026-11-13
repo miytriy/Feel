@@ -279,9 +279,10 @@ export default function App() {
       setBusy(false)
     }
   }
+  const handlePass = () => runStone(() => api.buyPass(), () => '月パスを買いました')
   const handleTicket = (kind, count) => runStone(() => api.exchangeTicket(kind, count), (r) => `${kind === 'normal' ? '通常採用券' : '限定採用券'} ×${r.count} を手に入れました`)
   const handleCrystal = (mode, amount) => runStone(() => api.exchangeCrystal(mode, amount), (r) => (mode === 'buy' ? `盟晶 ×${r.amount} に交換しました` : `交易石 ×${r.amount} に変換しました`))
-  const handleLoginBonus = () => runClaim(api.claimLoginBonus, (r) => `ログインボーナス +${r.amount} 交易石(連続${r.streak}日目)`)
+  const handleLoginBonus = () => runClaim(api.claimLoginBonus, (r) => `ログインボーナス +${r.amount} 交易石${r.passBonus ? `(月パス +${r.passBonus} を含む)` : ''}(連続${r.streak}日目)`)
   const handleGift = (g) => runClaim(() => api.claimGift(g.id), (r) => `「${g.title}」を受け取りました +${r.amount} 交易石`)
   const handleGiftAll = () => {
     const list = gifts.filter((g) => !g.claimed)
@@ -660,6 +661,7 @@ export default function App() {
           stoneTab={stoneTab}
           onStoneTab={setStoneTab}
           onTicket={handleTicket}
+          onPass={handlePass}
           onCrystal={handleCrystal}
           code={code}
           onCode={setCode}

@@ -217,6 +217,31 @@ test('API: 盟晶は、無料の間は交易石を使わずにもらえる。交
   assert.equal((await api('POST', '/api/crystal', null, { mode: 'buy', amount: 1 })).status, 401)
 })
 
+test('API: 月パス(盟晶1000で30日・買った日が1日目・ログボに+210・重ね買いで延長・期限切れで終わる)', async () => {
+  fake.put('users/ps1', { gems: 0, crystals: 2500, pityCount: 0, owned: {}, sig: {}, enh: {} })
+  const day1 = clock
+  const me0 = (await api('GET', '/api/me', 'ps1')).body
+  assert.equal(me0.pass.active, false); assert.equal(me0.loginBonus.passBonus, 0)
+  const l0 = await api('POST', '/api/login-bonus/claim', 'ps1') // パスなし
+  assert.equal(l0.body.passBonus, 0)
+  const b = await api('POST', '/api/pass/buy', 'ps1')
+  assert.equal(b.status, 200); assert.equal(b.body.crystals, 1500); assert.equal(b.body.pass.active, true); assert.equal(b.body.pass.daysLeft, 30)
+  clock += 24 * 3600 * 1000 // 翌日: ログボ(+210)
+  assert.equal((await api('GET', '/api/me', 'ps1')).body.loginBonus.passBonus, 210)
+  const l1 = await api('POST', '/api/login-bonus/claim', 'ps1')
+  assert.equal(l1.body.passBonus, 210); assert.equal(l1.body.amount, l1.body.base + 210)
+  assert.equal((await api('POST', '/api/login-bonus/claim', 'ps1')).status, 400) // 同じ日の2回目は不可
+  clock += 3 * 24 * 3600 * 1000 // 数日受け取らなかった分は、たまらない
+  const l2 = await api('POST', '/api/login-bonus/claim', 'ps1')
+  assert.equal(l2.body.passBonus, 210); assert.equal(l2.body.base + 210, l2.body.amount)
+  const b2 = await api('POST', '/api/pass/buy', 'ps1') // 重ね買い
+  assert.equal(b2.body.crystals, 500); assert.equal(b2.body.pass.daysLeft, 30 - 4 + 30)
+  assert.equal((await api('POST', '/api/pass/buy', 'ps1')).status, 400) // 盟晶が足りない
+  clock = day1 + 70 * 24 * 3600 * 1000 // 期限のあと
+  assert.equal((await api('GET', '/api/me', 'ps1')).body.pass.active, false)
+  assert.equal((await api('POST', '/api/login-bonus/claim', 'ps1')).body.passBonus, 0)
+})
+
 test('API: キャリア(記録の保存・取得・整形・上限・二重登録・削除・本人だけ)', async () => {
   const mk = (id, extra = {}) => ({ id, t: clock, result: 'win', level: 2, rounds: 5, names: { A: ['a'], B: ['b'] }, perRound: [{ round: 1, A: 100, B: 50 }, { round: 2, A: 30, B: 0 }], totals: { A: 99999, B: 99999 }, heal: { A: 0, B: 0 }, units: [{ name: 'a', team: 'A', dealt: 130 }], log: ['x'], ...extra })
   assert.equal((await api('GET', '/api/career', null)).status, 401)

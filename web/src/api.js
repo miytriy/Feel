@@ -46,6 +46,7 @@ export const drawGacha = (times, banner = 'normal') =>
 
 export const exchangeTicket = (kind, count) => request('/api/exchange-ticket', { method: 'POST', body: JSON.stringify({ kind, count }) })
 export const exchangeCrystal = (mode, amount) => request('/api/crystal', { method: 'POST', body: JSON.stringify({ mode, amount }) })
+export const buyPass = () => request('/api/pass/buy', { method: 'POST', body: JSON.stringify({}) })
 export const saveKeys = (keys) => request('/api/keys', { method: 'POST', body: JSON.stringify({ keys }) })
 export const enhanceChar = (id) => request('/api/enhance', { method: 'POST', body: JSON.stringify({ id }) })
 

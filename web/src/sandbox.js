@@ -81,6 +81,7 @@ export function createSandbox({ characters, cost = 500, grant = SANDBOX_GEMS }) 
       for (const p of pulls) for (const c of p.characters) { if (owned[c.id]) sig[c.id] = (sig[c.id] || 0) + 1; else owned[c.id] = 1 }
       return done({ pulls, gems, pityCount })
     },
+    buyPass: () => fail('ゲストでは、月パスは使えません'),
     exchangeTicket: (kind, count) => {
       if ((kind !== 'normal' && kind !== 'limited') || !Number.isInteger(count) || count < 1) return fail('枚数が正しくありません')
       if (gems < 500 * count) return fail('交易石が足りません')

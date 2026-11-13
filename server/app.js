@@ -11,7 +11,7 @@ import { forgeRelic, normalizeEquip, RELIC_INV_MAX } from './relics.js'
 import { PART_IDS } from '../web/src/battle/relicRules.js'
 import { emptyRank } from '../web/src/battle/rank.js'
 import {
-  dayKey, loginBonusStatus, claimLoginBonus, isValidBattleLevel, judgeBattleReward,
+  dayKey, loginBonusStatus, claimLoginBonus, passStatus, buyPass, passBonusOf, isValidBattleLevel, judgeBattleReward,
   checkGift, normalizeCode, isValidCodeFormat, checkCode, toMillis,
 } from './rewards.js'
 
@@ -96,8 +96,8 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
     const today = dayKey(t)
     const daily = data.battleDaily && data.battleDaily.day === today ? data.battleDaily.count : 0
     return {
-      gems: data.gems, tickets: ticketsOf(data), crystals: Number(data.crystals) || 0, ticketCost: CONFIG.TICKET_COST, crystalFree: !!CONFIG.CRYSTAL_FREE, pityCount: data.pityCount, pickupPity: pickupPityNow(data), reprintPity: bannerPityNow(data, 'reprint'), banners: bannersInfo(new Date(now())), owned: data.owned, sig: data.sig || {}, enh: data.enh || {}, keys: data.keys || null,
-      loginBonus: { canClaim: lb.canClaim, streak: lb.streak, nextAmount: lb.nextAmount, cycle: CONFIG.LOGIN_BONUS },
+      gems: data.gems, tickets: ticketsOf(data), crystals: Number(data.crystals) || 0, ticketCost: CONFIG.TICKET_COST, crystalFree: !!CONFIG.CRYSTAL_FREE, pass: { ...passStatus(data.pass, t), cost: CONFIG.PASS_CRYSTALS, days: CONFIG.PASS_DAYS, dailyGems: CONFIG.PASS_DAILY_GEMS }, pityCount: data.pityCount, pickupPity: pickupPityNow(data), reprintPity: bannerPityNow(data, 'reprint'), banners: bannersInfo(new Date(now())), owned: data.owned, sig: data.sig || {}, enh: data.enh || {}, keys: data.keys || null,
+      loginBonus: { canClaim: lb.canClaim, streak: lb.streak, nextAmount: lb.nextAmount, passBonus: lb.canClaim ? passBonusOf(data.pass, t) : 0, cycle: CONFIG.LOGIN_BONUS },
       battle: { todayCount: daily, dailyLimit: CONFIG.BATTLE_REWARD_DAILY_LIMIT, rewards: CONFIG.BATTLE_REWARD },
     }
   }
@@ -373,6 +373,26 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
     }
   })
 
+  // 月パスを、盟晶で買う
+  app.post('/api/pass/buy', requireAuth, async (req, res) => {
+    try {
+      const uid = req.user.uid
+      const userRef = userRefOf(uid)
+      const out = await db.runTransaction(async (t) => {
+        const snap = await t.get(userRef)
+        const data = snap.exists ? snap.data() : newUserData()
+        const crystals = Number(data.crystals) || 0
+        if (crystals < CONFIG.PASS_CRYSTALS) throw new HttpError(400, '盟晶が足りません')
+        const pass = buyPass(data.pass, now())
+        t.set(userRef, { ...(snap.exists ? {} : newUserData()), crystals: crystals - CONFIG.PASS_CRYSTALS, pass, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+        return { crystals: crystals - CONFIG.PASS_CRYSTALS, pass: passStatus(pass, now()) }
+      })
+      res.json(out)
+    } catch (e) {
+      handleError(res, e)
+    }
+  })
+
   app.post('/api/login-bonus/claim', requireAuth, async (req, res) => {
     try {
       const uid = req.user.uid
@@ -382,9 +402,10 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
         const data = snap.exists ? snap.data() : newUserData()
         const r = claimLoginBonus(data.loginBonus, now())
         if (!r.ok) throw new HttpError(400, r.error)
-        const gems = grantGems(t, uid, data, r.amount, 'login_bonus', r.state.lastDay)
+        const passBonus = passBonusOf(data.pass, now())
+        const gems = grantGems(t, uid, data, r.amount + passBonus, 'login_bonus', r.state.lastDay)
         t.set(userRef, { ...(snap.exists ? {} : newUserData()), gems, loginBonus: r.state, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
-        return { amount: r.amount, streak: r.state.streak, gems }
+        return { amount: r.amount + passBonus, base: r.amount, passBonus, streak: r.state.streak, gems }
       })
       res.json(out)
     } catch (e) {

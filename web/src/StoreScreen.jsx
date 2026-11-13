@@ -8,6 +8,7 @@ const TABS = [
   { key: 'bonus', label: 'ログインボーナス', Icon: IconGem },
   { key: 'code', label: '合言葉', Icon: IconStore },
   { key: 'stones', label: '石購入', Icon: IconGem },
+  { key: 'pass', label: '月パス', Icon: IconStore },
 ]
 const STONE_TABS = [
   { key: 'ticket', label: '交易石購入' },
@@ -154,7 +155,7 @@ function Row({ label, value, unit, hi }) {
   )
 }
 
-export default function StoreScreen({ me, busy, notice, error, tab, onTab, stoneTab = 'ticket', onStoneTab = () => {}, code, onCode, onClaimBonus, onRedeem, onTicket, onCrystal, pityCount = 40, onExit }) {
+export default function StoreScreen({ me, busy, notice, error, tab, onTab, stoneTab = 'ticket', onStoneTab = () => {}, code, onCode, onClaimBonus, onRedeem, onTicket, onCrystal, onPass, pityCount = 40, onExit }) {
   const nowRef = useRef(null)
   const [counts, setCounts] = useState({ normal: 1, limited: 1 }) // 券を買う枚数
   const [amount, setAmount] = useState('') // 盟晶の数
@@ -192,7 +193,7 @@ export default function StoreScreen({ me, busy, notice, error, tab, onTab, stone
       </div>
       <div className="sp-act">
         <div className="nt">
-          {lb.canClaim ? `今日の分: +${lb.nextAmount} 交易石` : `今日は受け取り済みです(連続${lb.streak}日)。明日は +${lb.nextAmount} 交易石`}
+          {lb.canClaim ? `今日の分: +${lb.nextAmount} 交易石${lb.passBonus ? ` + 月パス ${lb.passBonus}` : ''}` : `今日は受け取り済みです(連続${lb.streak}日)。明日は +${lb.nextAmount} 交易石`}
         </div>
         <button type="button" className="sp-buy" disabled={busy || !lb.canClaim} onClick={onClaimBonus}>
           <span>{lb.canClaim ? '受け取る' : '受け取り済み'}{lb.canClaim && <small>+{lb.nextAmount}</small>}</span>
@@ -205,6 +206,7 @@ export default function StoreScreen({ me, busy, notice, error, tab, onTab, stone
   const cost = (me && me.ticketCost) || 500
   const gems = me ? me.gems : 0
   const crystals = me ? me.crystals || 0 : 0
+  const pass = me && me.pass // 月パス
   const free = !!(me && me.crystalFree) // 盟晶は、いまは無料(お金も交易石も使わない)
   const amt = Math.max(0, Math.floor(Number(amount) || 0))
   const ok = (fn) => () => { setDlg(null); fn() }
@@ -268,7 +270,14 @@ export default function StoreScreen({ me, busy, notice, error, tab, onTab, stone
   const dialog = dlg && (
     <div className="sp-dim" onClick={() => setDlg(null)}>
       <div className="sp-dlg" role="dialog" aria-label="交換の確認" data-testid="store-dialog" onClick={(e) => e.stopPropagation()}>
-        {dlg.type === 'ticket' ? (
+        {dlg.type === 'pass' ? (
+          <>
+            <h3>月パスを買いますか?</h3>
+            <p>盟晶 {pass.cost} 個を消費して、月パス({pass.days}日間)を{pass.active ? '買い足します' : '買います'}。</p>
+            <div className="bl">盟晶 {crystals} → {crystals - pass.cost}</div>
+            <div className="bt"><button type="button" aria-label="閉じる" onClick={() => setDlg(null)}>キャンセル</button><button type="button" className="ok" data-testid="store-ok" onClick={ok(() => onPass())}>確定</button></div>
+          </>
+        ) : dlg.type === 'ticket' ? (
           <>
             <h3>{dlg.t.name} を買いますか?</h3>
             <p>交易石 {dlg.total} を消費して、{dlg.t.name} を {dlg.n} 枚 手に入れます。</p>
@@ -294,6 +303,29 @@ export default function StoreScreen({ me, busy, notice, error, tab, onTab, stone
         )}
       </div>
     </div>
+  )
+
+  const passTab = pass && (
+    <>
+      <div className="sp-eb">MONTHLY PASS</div>
+      <h2 className="sp-h">月パス</h2>
+      <p className="sp-sub">月パスの間は、ログインボーナスを受け取るたびに、交易石が {pass.dailyGems} 個 追加でもらえます。</p>
+      <div className="sp-card" data-testid="pass-card">
+        <h3>月パス({pass.days}日間)</h3>
+        <div className="own">{pass.active ? <>有効期限 <b>{pass.expiresDay}</b>まで(あと <b>{pass.daysLeft}</b>日)</> : '月パスは、まだありません'}</div>
+        <p className="nt">
+          ・買った日から {pass.days} 日間(買った日を1日目と数えます)。<br />
+          ・ログインボーナスを受け取ったときだけ、+{pass.dailyGems} 交易石がもらえます。<br />
+          ・受け取らなかった日の分は、あとから受け取れません(ためられません)。<br />
+          ・期間の途中で買い足すと、いまの期限の翌日から、さらに {pass.days} 日ぶん伸びます。
+        </p>
+        <div className="own" style={{ marginBottom: 14 }}>盟晶 所持<b>{crystals}</b>個 / 必要<b>{pass.cost}</b>個</div>
+        <button type="button" className="sp-buy" style={{ minWidth: 0, width: '100%', boxSizing: 'border-box' }} data-testid="pass-buy" disabled={busy || crystals < pass.cost} onClick={() => setDlg({ type: 'pass' })}>
+          <span>{crystals < pass.cost ? '盟晶が足りません' : pass.active ? '買い足す' : '買う'}<small>盟晶 {pass.cost}</small></span><span className="ar" aria-hidden="true">→</span>
+        </button>
+        {crystals < pass.cost && <p className="nt" style={{ marginTop: 10 }}>盟晶は「石購入」の「盟晶購入」で手に入ります。</p>}
+      </div>
+    </>
   )
 
   const codeTab = (
@@ -341,7 +373,7 @@ export default function StoreScreen({ me, busy, notice, error, tab, onTab, stone
         </div>
         <div>
           {msg}
-          {!me ? <div className="sp-load">読み込み中…</div> : tab === 'bonus' ? bonus : tab === 'stones' ? stones : codeTab}
+          {!me ? <div className="sp-load">読み込み中…</div> : tab === 'bonus' ? bonus : tab === 'stones' ? stones : tab === 'pass' ? passTab : codeTab}
         </div>
       </div>
       {dialog}
