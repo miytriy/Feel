@@ -270,7 +270,7 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
     setConfirm(0)
     setPhase('wait')
     setPi(0); setFast(false); setDone(false)
-    onPull(times, banner)
+    onPull(times, banner, needOf(times).c)
   }
   useEffect(() => {
     if (phase !== 'wait') return
@@ -327,7 +327,9 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
   const kind = isPickup ? 'limited' : 'normal'
   const kindName = isPickup ? '限定採用券' : '通常採用券'
   const tk = me && me.tickets ? me.tickets[kind] || 0 : 0
-  const needOf = (n) => { const t = Math.min(tk, n); return { t, g: (n - t) * cost } }
+  // 交易石では直接引けない。券が足りない分(c枚)は、交易石(tc 1枚あたり)を券に変換してから引く
+  const tc = (me && me.ticketCost) || cost
+  const needOf = (n) => { const t = Math.min(tk, n); const c = n - t; return { t, c, g: c * tc } }
   const can1 = !busy && !!me && gems >= needOf(1).g && !phase && (!isPickup || pickupOk)
   const can10 = !busy && !!me && gems >= needOf(10).g && !phase && (!isPickup || pickupOk)
 
@@ -362,7 +364,7 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
           </div>
         </div>
         {(error || (me && gems < needOf(1).g && !busy && !phase)) && (
-          <div className="gc-msg" style={{ color: error ? C.bad : C.warn }}>{error || '交易石が足りません'}</div>
+          <div className="gc-msg" style={{ color: error ? C.bad : C.warn }}>{error || `${kindName}も、変換に必要な交易石も足りません`}</div>
         )}
         <div className="gc-bottom">
           <div className="gc-side">
@@ -371,10 +373,10 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
           </div>
           <div className="gc-btns">
             <button type="button" className="gc-pull" data-testid="pull-1" disabled={!can1} onClick={() => setConfirm(1)}>
-              <span><span className="n">1</span> 回ガチャ</span><span className="cost">{needOf(1).t > 0 ? `券×${needOf(1).t}` : <><IconGem />{needOf(1).g}</>}</span>
+              <span><span className="n">1</span> 回ガチャ</span><span className="cost">券×1{needOf(1).c > 0 && <small style={{ opacity: 0.7 }}>(不足)</small>}</span>
             </button>
             <button type="button" className="gc-pull hot" data-testid="pull-10" disabled={!can10} onClick={() => setConfirm(10)}>
-              <span><span className="n">10</span> 回ガチャ</span><span className="cost">{needOf(10).t > 0 ? <>券×{needOf(10).t}{needOf(10).g > 0 && <> + <IconGem />{needOf(10).g}</>}</> : <><IconGem />{needOf(10).g}</>}</span>
+              <span><span className="n">10</span> 回ガチャ</span><span className="cost">券×10{needOf(10).c > 0 && <small style={{ opacity: 0.7 }}>(不足{needOf(10).c})</small>}</span>
             </button>
           </div>
         </div>
@@ -395,7 +397,7 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
               ・1回のガチャで、8体が出ます。<br />
               ・8体のうち最後の1体は、シルバー以上が確定です(レジェンド 1.5% / ゴールド 6% / シルバー 92.5%)。<br />
               ・{pityCount}回目までにレジェンドが出ていないときは、{pityCount}回目で、レジェンドが1体追加されます(天井)。10回ガチャの途中で天井になっても、その回は1回だけです。<br />
-              ・1回 {cost} 交易石、10回で {cost * 10} 交易石です。{kindName}(1枚で1回)があれば、先にそれを使います。足りない分は交易石で払います。
+              ・ガチャは{kindName}(1枚で1回、10枚で10回)で引きます。交易石では直接引けません。券が足りないときは、交易石 {tc} 個 = 券1枚 で変換してから引けます。
             </div>
           </div>
         </div>
@@ -425,11 +427,13 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
       {confirm > 0 && (
         <div className="gk" onClick={() => setConfirm(0)}>
           <div className="gk-band" role="dialog" aria-label="ガチャの確認" onClick={(e) => e.stopPropagation()}>
-            <div className="gk-msg">「{bName}」 {[needOf(confirm).t > 0 && `${kindName}×${needOf(confirm).t}`, needOf(confirm).g > 0 && `交易石×${needOf(confirm).g}`].filter(Boolean).join(' と ')} を消費して、{confirm}回ガチャをしますか?</div>
-            <div className="gk-cost"><span><IconGem /></span><small>{needOf(confirm).t > 0 && <>{kindName} <b>{tk}</b> → <b>{tk - needOf(confirm).t}</b>枚 ・ </>}交易石 所持 <b>{gems}</b> → 残り <b>{Math.max(0, gems - needOf(confirm).g)}</b></small></div>
+            <div className="gk-msg">{needOf(confirm).c > 0
+              ? <>{kindName}が {needOf(confirm).c} 枚足りません。交易石 ×{needOf(confirm).g} を {kindName} ×{needOf(confirm).c} に変換して、「{bName}」を {confirm}回 引きますか?</>
+              : <>「{bName}」 {kindName}×{confirm} を消費して、{confirm}回ガチャをしますか?</>}</div>
+            <div className="gk-cost"><span><IconGem /></span><small>{needOf(confirm).c > 0 && <>交易石 <b>{gems}</b> → <b>{Math.max(0, gems - needOf(confirm).g)}</b> ・ </>}{kindName} <b>{tk}</b> → <b>{tk + needOf(confirm).c - confirm}</b>枚</small></div>
             <div className="gk-btns">
               <button type="button" className="gk-btn" onClick={() => setConfirm(0)}>キャンセル<IconClose /></button>
-              <button type="button" className="gk-btn ok" data-testid="pull-ok" onClick={() => start(confirm)}>確定<IconCheck /></button>
+              <button type="button" className="gk-btn ok" data-testid="pull-ok" onClick={() => start(confirm)}>{needOf(confirm).c > 0 ? '変換して引く' : '確定'}<IconCheck /></button>
             </div>
           </div>
         </div>

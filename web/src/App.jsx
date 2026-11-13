@@ -233,10 +233,11 @@ export default function App() {
     await signOut(auth)
   }
 
-  const handleGacha = async (times, banner) => {
+  const handleGacha = async (times, banner, convert = 0) => {
     setBusy(true)
     setError('')
     try {
+      if (convert > 0) await api.exchangeTicket(banner === 'normal' ? 'normal' : 'limited', convert) // 足りない券は、交易石から変換する
       const data = await api.drawGacha(times, banner)
       setResults(data.pulls)
       setMe(await api.fetchMe())

@@ -248,12 +248,12 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
       const result = await db.runTransaction(async (t) => {
         const snap = await t.get(userRef)
         const data = snap.exists ? snap.data() : newUserData()
-        // 採用券(1枚で1回)を先に使い、足りない分は交易石で払う
+        // ガチャは採用券(1枚で1回)でだけ引ける。交易石では直接引けない
         const kind = banner === 'normal' ? 'normal' : 'limited'
         const tk = ticketsOf(data)
-        const useTickets = Math.min(tk[kind], times)
-        const cost = CONFIG.COST_PER_PULL * (times - useTickets)
-        if ((data.gems || 0) < cost) throw new HttpError(400, '交易石が足りません')
+        if (tk[kind] < times) throw new HttpError(400, `${kind === 'normal' ? '通常' : '限定'}採用券が足りません`)
+        const useTickets = times
+        const cost = 0
         const startCount = banner === 'normal' ? data.pityCount || 0 : bannerPityNow(data, banner)
         const { pulls, newCount } = drawGacha(times, startCount, rotation)
         const n = normalizeOwned(data)

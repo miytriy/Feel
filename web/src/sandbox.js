@@ -59,9 +59,9 @@ export function createSandbox({ characters, cost = 500, grant = SANDBOX_GEMS }) 
       byRarity = POOLS[banner] || POOLS.normal
       if (times !== 1 && times !== 10) return fail('回数が正しくありません')
       const kind = banner === 'normal' ? 'normal' : 'limited'
-      const useT = Math.min(tickets[kind], times)
-      const total = cost * (times - useT)
-      if (gems < total) return fail('交易石が足りません')
+      const useT = times
+      const total = 0
+      if (tickets[kind] < times) return fail(`${kind === 'normal' ? '通常' : '限定'}採用券が足りません`)
       let count = banner === 'pickup' ? pickupPity : banner === 'reprint' ? reprintPity : pityCount
       let pityUsed = false
       const pulls = []

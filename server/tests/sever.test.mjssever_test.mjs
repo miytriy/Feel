@@ -182,11 +182,13 @@ test('API: 合言葉(受け取り・1人1回・回数制限・期限・間違い
   clock += 24 * 3600 * 1000
   assert.equal((await api('POST', '/api/codes/redeem', 'c4', { code: 'RIGHT' })).status, 200) // 翌日は使える
 })
-test('API: ガチャは今までどおり動く(通貨が減り、足りなければエラー)', async () => {
+test('API: ガチャは採用券でだけ引ける(交易石では引けない)', async () => {
   await api('GET', '/api/me', 'g1')
+  assert.equal((await api('POST', '/api/gacha', 'g1', { times: 10 })).status, 400) // 券なし
+  assert.equal((await api('POST', '/api/exchange-ticket', 'g1', { kind: 'normal', count: 10 })).status, 200)
   const r = await api('POST', '/api/gacha', 'g1', { times: 10 })
   assert.equal(r.status, 200)
-  assert.equal(r.body.gems, CONFIG.INITIAL_GEMS - CONFIG.COST_PER_PULL * 10)
+  assert.equal(r.body.gems, CONFIG.INITIAL_GEMS - CONFIG.TICKET_COST * 10)
   assert.equal((await api('POST', '/api/gacha', 'g1', { times: 3 })).status, 400)
 })
 
@@ -201,8 +203,9 @@ test('API: 採用券(交易石500個で1枚・足りなければ失敗)と、ガ
   assert.deepEqual((await api('GET', '/api/me', 'tk1')).body.tickets, { normal: 1, limited: 1 })
   const g = await api('POST', '/api/gacha', 'tk1', { times: 1, banner: 'normal' }) // 通常券1枚で、交易石は減らない
   assert.equal(g.status, 200); assert.equal(g.body.gems, 700); assert.equal(g.body.tickets.normal, 0)
-  const h = await api('POST', '/api/gacha', 'tk1', { times: 1, banner: 'normal' }) // 券が無ければ、交易石500
-  assert.equal(h.body.gems, 200); assert.equal(h.body.tickets.limited, 1) // 限定券は、通常ガチャでは減らない
+  const h = await api('POST', '/api/gacha', 'tk1', { times: 1, banner: 'normal' }) // 券が無ければ、交易石があっても引けない
+  assert.equal(h.status, 400)
+  assert.equal((await api('GET', '/api/me', 'tk1')).body.tickets.limited, 1) // 限定券は、通常ガチャでは減らない
 })
 test('API: 盟晶は、無料の間は交易石を使わずにもらえる。交易石への変換は1対1(足りなければ失敗)', async () => {
   fake.put('users/cr1', { gems: 1000, pityCount: 0, owned: {}, sig: {}, enh: {} })
