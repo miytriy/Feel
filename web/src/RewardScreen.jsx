@@ -34,7 +34,8 @@ const CSS = `
 .rw-tile .art { position: absolute; inset: 0; }
 .rw-tile .art svg { position: absolute; inset: 14% 14% 18% 14%; width: 72%; height: 68%; mix-blend-mode: multiply; opacity: 0.92; }
 .rw-tile .new { position: absolute; left: 4px; top: 4px; padding: 0 5px; background: var(--c-badge, #e11d48); color: #fff; font-family: ${DISPLAY}; font-weight: 700; font-size: 10px; letter-spacing: 0.08em; }
-.rw-tile::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--rc); filter: brightness(0.8); }
+.rw-tile::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--rbg, var(--rc)); filter: brightness(0.8); }
+.rw-item[style*="--rbg"] .rw-tile { background: linear-gradient(180deg, rgba(42,42,47,0) 30%, rgba(42,42,47,0.78) 100%), var(--rbg); }
 .rw-tile .ct { position: absolute; right: 3px; bottom: 7px; padding: 0 5px; background: rgba(0,0,0,0.75); color: #fff; font-family: ${DISPLAY}; font-weight: 700; font-size: 13px; }
 .rw-name { margin-top: 6px; font-size: 12px; line-height: 1.35; color: #e6e6ea; }
 .rw-foot { position: relative; margin-top: auto; z-index: 1; padding: 6px 0 calc(24px + env(safe-area-inset-bottom)); }
@@ -76,7 +77,7 @@ export function RewardScreen({ items, onClose }) {
       <div className="rw-body">
         <div className="rw-grid">
           {items.map((it, i) => (
-            <div className="rw-item" key={i} style={{ '--i': i, '--rc': it.color || RARITY_COLOR[it.rarity] || GOLD }}>
+            <div className="rw-item" key={i} style={{ '--i': i, '--rc': it.color || RARITY_COLOR[it.rarity] || GOLD, ...(it.bg ? { '--rbg': it.bg } : null) }}>
               <div className="rw-tile">
                 {it.art ? <span className="art">{it.art}</span> : <IconGem />}
                 {it.isNew && <span className="new">NEW</span>}

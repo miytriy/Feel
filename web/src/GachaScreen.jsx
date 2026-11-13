@@ -142,7 +142,8 @@ const CSS = `
 .gs-strip .art { position: absolute; left: 0; right: 0; top: 0; bottom: 46%; background: linear-gradient(165deg, color-mix(in srgb, var(--rc) 55%, #fff) 0%, var(--rc) 38%, #17171d 100%); animation: gs-reveal 0.6s ease-out backwards; animation-delay: calc(var(--rv) * 1ms); }
 .gs-strip .art svg { position: absolute; left: 50%; top: 12%; width: 76%; transform: translateX(-50%); opacity: 0.92; mix-blend-mode: multiply; }
 .gs-strip .art .nm { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-size: clamp(12px, 1.9vw, 22px); font-weight: 700; line-height: 1.3; color: #111; padding: 0 3px; text-shadow: 0 0 6px rgba(255,255,255,0.6); writing-mode: vertical-rl; margin: 0 auto; max-height: 62%; overflow: hidden; }
-.gs-strip .rl { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; background: var(--rc); }
+.gs-strip .rl { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; background: var(--rbg, var(--rc)); }
+.gs-strip.legend .art { background: linear-gradient(180deg, rgba(23,23,29,0) 30%, rgba(23,23,29,0.78) 100%), var(--rbg); }
 .gs-strip .new { position: absolute; right: 4px; top: 6px; z-index: 2; padding: 1px 5px; background: var(--c-badge); color: #fff; font-family: ${DISPLAY}; font-weight: 700; font-size: 10px; letter-spacing: 0.08em; animation: gs-reveal 0.4s ease-out backwards; animation-delay: calc(var(--rv) * 1ms); }
 .gs-flash { position: absolute; inset: 0; z-index: 3; pointer-events: none; mix-blend-mode: screen; background: radial-gradient(ellipse at 50% 55%, var(--rc) 0%, transparent 62%); animation: gs-flash 1s ease-out backwards; animation-delay: calc(var(--rv) * 1ms); }
 .gs-floor { position: absolute; left: 0; right: 0; bottom: 0; height: 16vh; background: linear-gradient(0deg, rgba(150,110,255,0.4) 0%, transparent 100%); z-index: 3; pointer-events: none; }
@@ -299,7 +300,7 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
   useEffect(() => {
     if (phase !== 'list' || !show) return
     showRewards(
-      show.list.map((c) => ({ name: c.name, count: c.count > 1 ? '×' + c.count : '', color: RARITY[c.rarity].color, isNew: c.isNew, art: <Emblem seed={c.id} /> })),
+      show.list.map((c) => ({ name: c.name, count: c.count > 1 ? '×' + c.count : '', color: RARITY[c.rarity].color, bg: c.rarity === 'legend' ? RARITY.legend.bg : undefined, isNew: c.isNew, art: <Emblem seed={c.id} /> })),
       () => { setPhase(null); onCloseResults() },
     )
   }, [phase]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -441,7 +442,7 @@ export default function GachaScreen({ me, busy, error, results, cost, pityCount,
           </div>
           <div className="gs-row" key={pi}>
             {pull.items.map((c, i) => (
-              <div key={i} className={`gs-strip ${c.rarity}`} style={{ '--rc': RARITY[c.rarity].color, '--i': i, '--rv': at[i], '--fa': c.rarity === 'legend' ? 0.7 : 0.4 }}>
+              <div key={i} className={`gs-strip ${c.rarity}`} style={{ '--rc': RARITY[c.rarity].color, '--rbg': RARITY[c.rarity].bg, '--i': i, '--rv': at[i], '--fa': c.rarity === 'legend' ? 0.7 : 0.4 }}>
                 <div className="bg" />
                 <Silhouette seed={c.id + i} />
                 <div className="art">
