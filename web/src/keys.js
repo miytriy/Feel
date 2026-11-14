@@ -125,7 +125,7 @@ const visible = (el) => {
   const top = document.elementFromPoint(cx, cy)
   return !!top && (top === el || el.contains(top) || top.contains(el))
 }
-const candidates = () => [...document.querySelectorAll(FOCUSABLE)].filter(visible)
+const candidates = () => [...document.querySelectorAll(FOCUSABLE)].filter((el) => el.getAttribute('data-alive') !== 'false' && visible(el)) // 戦闘不能のユニット(data-alive=false)は、選べない札なので飛ばす
 const rect = (el) => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, r } }
 
 export function moveFocus(dir) {
@@ -139,7 +139,7 @@ export function moveFocus(dir) {
     pool[0].focus({ preventScroll: false }); return true
   }
   const c = rect(cur)
-  let best = null, bestScore = Infinity
+  const scored = []
   for (const el of list) {
     if (el === cur) continue
     const p = rect(el)
@@ -147,12 +147,14 @@ export function moveFocus(dir) {
     const main = dir === 'left' ? -dx : dir === 'right' ? dx : dir === 'up' ? -dy : dy
     if (main < 2) continue
     const side = dir === 'left' || dir === 'right' ? Math.abs(dy) : Math.abs(dx)
-    const score = main + side * 2.2
-    if (score < bestScore) { bestScore = score; best = el }
+    scored.push({ el, score: main + side * 2.2 })
   }
-  if (!best) return true // これ以上先がなければ、その場にとどまる
-  best.focus(); best.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-  return true
+  scored.sort((a, b) => a.score - b.score)
+  for (const { el } of scored) { // 近い順に試す。フォーカスできないもの(戦闘不能の札など)は飛ばして、その先へ
+    el.focus()
+    if (document.activeElement === el) { el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); break }
+  }
+  return true // これ以上先がなければ、その場にとどまる
 }
 const lastVisible = (sel) => { const l = [...document.querySelectorAll(sel)].filter(visible); return l[l.length - 1] || null }
 const clickLast = (sel) => { const el = lastVisible(sel); if (el) { el.click(); return true } return false }
