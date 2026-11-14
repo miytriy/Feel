@@ -95,7 +95,14 @@ export function ActionBar({ state, big = false, avFx = null }) {
     const cur = {}
     items.forEach((it, i) => { cur[keys[i]] = it })
     const before = prevItems.current
-    const gone = Object.keys(before).filter((k) => !cur[k] && prevPos.current[k] != null && before[k].unit && prevPos.current[k] < window.innerWidth)
+    // 行動を終えたユニットは、同じ枠が「次の1回」に替わる。消えて出直すのではなく、元の位置から新しい位置へ動かす
+    const baseOf = (it) => `${it.unit.uid}${it.accel ? 'a' : ''}`
+    const goneAll = Object.keys(before).filter((k) => !cur[k] && prevPos.current[k] != null && before[k].unit)
+    const movedFrom = {}
+    for (const k of goneAll) movedFrom[baseOf(before[k])] = prevPos.current[k]
+    const moved = new Set(Object.keys(cur).filter((k) => cur[k].unit && prevPos.current[k] == null && movedFrom[baseOf(cur[k])] != null))
+    const movedBases = new Set([...moved].map((k) => baseOf(cur[k])))
+    const gone = goneAll.filter((k) => !movedBases.has(baseOf(before[k])) && prevPos.current[k] < window.innerWidth)
     prevItems.current = cur
     if (gone.length) {
       const gs = gone.map((k) => ({ key: k, it: before[k], left: prevPos.current[k] }))
@@ -107,7 +114,7 @@ export function ActionBar({ state, big = false, avFx = null }) {
       if (!n) continue
       const left = n.offsetLeft
       next[k] = left
-      const old = prevPos.current[k]
+      const old = prevPos.current[k] ?? (moved.has(k) ? movedFrom[baseOf(cur[k])] : undefined)
       if (!n.animate) continue
       if (old == null) {
         if (Object.keys(prevPos.current).length) n.animate([{ opacity: 0, transform: 'translateY(-22px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 400, easing: 'ease-out' })
