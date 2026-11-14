@@ -9,10 +9,10 @@ const summonFairies = [
 
 export default {
   id: 'elf_05', name: 'コンタクトフェアリー', class: 'エルフ', rarity: 'bronze',
-  stats: { hp: 131, atk: 122, def: 90, spd: 80 },
+  stats: { hp: 131, atk: 122, def: 90, spd: 81 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
-    { name: 'ファンファーレ', trigger: 'fanfare', desc: '「フェアリー」1体を召喚する。MPを追加で1消費すると、「フェアリー」1体を追加召喚する。', effects: summonFairies },
-    { name: '進化時', trigger: 'onEvolve', desc: '【ファンファーレ】と同じ能力が働く。', effects: summonFairies },
+    { name: 'ファンファーレ', trigger: 'fanfare', desc: '『フェアリー』1体を召喚する。MPを1消費すると、『フェアリー』1体を追加召喚する。', log: '『フェアリー』1体を召喚する。MPを1消費すると、『フェアリー』1体を追加召喚する。', effects: summonFairies },
+    { name: '進化時', trigger: 'onEvolve', desc: '【ファンファーレ】と同じ能力が働く。', log: '【ファンファーレ】と同じ能力が働く。', effects: summonFairies },
   ],
 }
