@@ -81,7 +81,7 @@ export function MatchedOverlay({ me = 'あなた', opp = '相手', ranked = fals
   )
 }
 
-export default function PvpScreen({ team, spells, onExit, onBackTeam, myName = 'あなた' }) {
+export default function PvpScreen({ settingsView = null, team, spells, onExit, onBackTeam, myName = 'あなた' }) {
   const desktop = useIsDesktop()
   const clientRef = useRef(null)
   const [phase, setPhase] = useState('menu') // menu | creating | joining | waiting | battle
@@ -120,7 +120,7 @@ export default function PvpScreen({ team, spells, onExit, onBackTeam, myName = '
   if (phase === 'battle' && online) {
     return (
       <>
-        <BattleScreen online={online} onExit={onExit} />
+        <BattleScreen settingsView={settingsView} online={online} onExit={onExit} />
         {matched && (
           <MatchedOverlay me={myName} opp={online.opp} ranked={online.ranked} oppBp={online.oppBp} />
         )}

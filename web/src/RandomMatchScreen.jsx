@@ -266,7 +266,7 @@ function useCountUp(target, ms = 900) {
 const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
 // team: 使うチーム(キャラ定義) / spells: スペル / onChangeTeam: 「確認」→チームを選び直す / onRoom: 部屋コードで対戦 / loggedIn: ログイン中か
-export default function RandomMatchScreen({ team, spells, onChangeTeam, onRoom, loggedIn = true, onExit, myName = 'あなた' }) {
+export default function RandomMatchScreen({ settingsView = null, team, spells, onChangeTeam, onRoom, loggedIn = true, onExit, myName = 'あなた' }) {
   const desktop = useIsDesktop()
   const clientRef = useRef(null)
   const [modeSel, setMode] = useRemembered('random.mode', 'rank')
@@ -314,7 +314,7 @@ export default function RandomMatchScreen({ team, spells, onChangeTeam, onRoom, 
   if (phase === 'battle' && online) {
     return (
       <>
-        <BattleScreen online={online} onExit={leaveBattle} />
+        <BattleScreen settingsView={settingsView} online={online} onExit={leaveBattle} />
         {matched && <MatchedOverlay me={loggedIn ? myName : '匿名プレイヤー'} opp={online.opp} ranked={online.ranked} oppBp={online.oppBp} />}
       </>
     )

@@ -7,7 +7,8 @@ import { enhanceDef } from './enhance.js'
 import { ALL_CHARACTERS, charById } from './battle/characters/index.js'
 import { ALL_SPELLS } from './battle/spells/index.js'
 import FormationScreen from './FormationScreen.jsx'
-import { BattleHud, StageIntro, ExitConfirm, ResultBanner } from './BattleHud.jsx'
+import { createPortal } from 'react-dom'
+import { BattleHud, StageIntro, ExitConfirm, ResultBanner, BattleMenu } from './BattleHud.jsx'
 import { CommentaryOverlay, collectHistory, addHistory, emptyHistory } from './BattleLog.jsx'
 import { useIsDesktop, C as BASE, alpha, DISPLAY, useRemembered } from './ui.js'
 import { StatIcon } from './icons.jsx'
@@ -625,6 +626,17 @@ function RecentFeed({ feed, big }) {
   )
 }
 
+// 選んで働く能力の情報パネル(画面の左・小さめ)。ユニット名と、その能力の文。タップの邪魔にならない
+export function AbilityNote({ unit, title, text, big = false }) {
+  const col = TEAM_COLOR[unit.team]
+  return (
+    <div data-testid="ability-note" aria-live="polite" style={{ position: 'fixed', zIndex: 12, pointerEvents: 'none', left: big ? 16 : 6, ...(big ? { bottom: 200 } : { top: 160 }), width: big ? 340 : 'min(260px, 62vw)', maxHeight: big ? '42vh' : '34vh', overflow: 'hidden', borderRadius: 8, background: `color-mix(in srgb, ${col} 9%, ${C.card})`, border: `2px solid ${col}`, boxShadow: `0 0 0 1px ${alpha(col, 35)}, 0 6px 18px ${alpha('#000000', 40)}`, fontSize: big ? 14 : 12, lineHeight: 1.6, animation: 'feel-note-in 0.22s ease-out backwards' }}>
+      <div style={{ padding: big ? '6px 12px' : '5px 10px', fontWeight: 800, background: `linear-gradient(90deg, ${alpha(col, 34)}, ${alpha(col, 8)})`, overflowWrap: 'anywhere' }}>{title || unit.name}</div>
+      <div style={{ padding: big ? '8px 12px 10px' : '6px 10px 8px', overflowWrap: 'anywhere' }}>{text}</div>
+    </div>
+  )
+}
+
 // 選択したユニットの性能メモを、画面の左上か右上に出す。選んだユニットが左半分にいれば右上、右半分にいれば左上(邪魔にならない側)
 function SelInfoPanel({ uid, big = false, children }) {
   const [side, setSide] = useState('right')
@@ -983,7 +995,7 @@ export const VANISH_SLOW = 1 // 消滅エフェクトの長さの倍率。1 = 0.
 const EVENT_MS = { turn: 700, ability: 300, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
-export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: rewardApiProp = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null, online = null, testInit = null }) {
+export default function BattleScreen({ settingsView = null, onExit, cpuDelay = 700, rewardApi: rewardApiProp = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null, online = null, testInit = null }) {
   // online(対人戦): { client, side, opp, init(サーバーが決めた最初の状態), left, turnMs }。サーバーが審判で、行動はサーバーに送り、返ってきた状態を再生する
   if (online) setMe(online.side); else setMe('A')
   const rewardApi = testInit ? null : rewardApiProp // テスト戦(検証用): 報酬も戦績も、記録しない
@@ -1003,6 +1015,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   const [intro, setIntro] = useState(false) // ステージ説明を出している(出している間は、CPUは動かない)
   const [introFirst, setIntroFirst] = useState(false) // 対戦の始まりの、最初のステージ説明
   const [leaveAsk, setLeaveAsk] = useState(false) // 退出の確認を出している
+  const [menuOpen, setMenuOpen] = useState(false) // バトルメニュー(Esc・ポーズ)を出している
+  const [settingsOpen, setSettingsOpen] = useState(false) // バトルメニューから開いた設定
   const [resultShown, setResultShown] = useState(true) // 勝敗の表示を出してよいか(「盤面を見る」で、一度しまえる)
   const [cpuCharsSetting, setCpuChars] = useState(() => loadCpuCharSetting()) // 開発者設定: CPUが使うキャラ(test / real)
   const cpuChars = flow ? 'real' : cpuCharsSetting // 通常戦(案内所 → CPU戦 から来たとき)は、いつも本実装キャラ。開発者設定は、単体のテスト画面だけ
@@ -1097,6 +1111,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
     window.addEventListener('resize', calc)
     return () => { ro && ro.disconnect(); window.removeEventListener('resize', calc) }
   }, [fitOn, desktop, state])
+  useHotkey('battle.menu', () => { if (!state || leaveAsk) return false; setMenuOpen(true); return true }) // Esc: バトルメニュー(開いている間の Esc は「バトルへ戻る」が受ける)
   useHotkey('battle.log', () => { if (!state) return false; setLogOpen((v) => !v) })
   useHotkey('battle.endTurn', () => pressBtn('end-turn'))
   useHotkey('battle.attack', () => pressBtn('attack-go'))
@@ -1116,7 +1131,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   // CPUの番になったら少し待ってから行動する(特性を使ったあとも番が続くので、何度か動く)
   useEffect(() => {
     if (online) return
-    if (!state || state.winner || play || intro || leaveAsk || logOpen) return // 戦闘実況を開いている間も止める。再生が終わってから・ステージ説明などを閉じてから動く
+    if (!state || state.winner || play || intro || leaveAsk || logOpen || menuOpen) return // バトルメニューを開いている間も止める。戦闘実況を開いている間も止める。再生が終わってから・ステージ説明などを閉じてから動く
     const current = getActiveUnit(state)
     if (!current || (current.team !== 'B' && !auto)) return // オート(∞)のときは、自分の番も進める
     const timer = setTimeout(() => {
@@ -1139,7 +1154,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
       }
     }, cpuDelay)
     return () => clearTimeout(timer)
-  }, [state, level, cpuDelay, play, intro, leaveAsk, logOpen, auto])
+  }, [state, level, cpuDelay, play, intro, leaveAsk, logOpen, menuOpen, auto])
 
   // 再生に合わせて、「いま起きたこと」の履歴に1行ずつ足す
   useEffect(() => {
@@ -1748,6 +1763,27 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   const speedBar = null // スキップボタンは廃止(再生の速さは設定で決める)
   const nameOf = (uid) => state.units.find((u) => u.uid === uid)?.name ?? ''
   const nowText = !ev ? '' : ev.type === 'damage' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}に${ev.amount}ダメージ${ev.crit ? '(クリティカル!)' : ''}` : ev.type === 'block' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}のバリアが防いだ(0ダメージ)` : ev.type === 'turn' ? `${ev.team === 'B' ? '相手' : 'あなた'}のターン: ${ev.name}` : ''
+  // 選んで働く能力(対象を選ぶファンファーレ・特性など)の、小さな情報パネル: 名前と、能力の文
+  const abilNote = (() => {
+    if (!state || state.winner || playing || cpuTurn) return null
+    if (choosing && state.pending) {
+      const pd = state.pending
+      const src = getUnit(state, pd.uid)
+      if (!src) return null
+      if (pd.spell) return { unit: src, title: pd.spellName || 'スペル', text: pd.prompt || '対象を選んでください' }
+      const p = pd.nextPassive != null ? src.passiveObjs?.[pd.nextPassive - 1] : null
+      if (p) return { unit: src, text: passiveLine(p) }
+      const e0 = JSON.stringify(pd.effects?.[0] ?? null)
+      const t = (src.traits || []).find((x) => JSON.stringify(x.effects || []).includes(e0))
+      if (t) return { unit: src, text: isEnhance(t) ? `【${t.name}】${enhanceBody(t)}` : `【特性 MP${t.cost}】${t.name}: ${t.desc ?? ''}` }
+      return { unit: src, text: pd.prompt || '対象を選んでください' }
+    }
+    if (mode && actor && !isAccel) {
+      const t = (actor.traits || []).find((x) => x.id === mode)
+      if (t) return { unit: actor, text: isEnhance(t) ? `【${t.name}】${enhanceBody(t)}` : `【特性 MP${t.cost}${t.repeatable ? ' 連続使用可' : ''}】${t.name}: ${t.desc ?? ''}` }
+    }
+    return null
+  })()
   const hud = <BattleHud view={view} level={level} levelInfo={levelInfo} desktop={desktop} onLeave={() => setLeaveAsk(true)} onIntro={online ? null : () => { setIntroFirst(false); setIntro(true) }} onCommentary={() => setLogOpen(true)} auto={auto} onAuto={online ? null : () => setAuto((v) => !v)} stage={online ? (online.ranked ? 'ランクマッチ' : 'カジュアルマッチ') : null} sub={online ? `vs ${online.opp || '相手'}${leftSec != null ? ` ・ 残り ${leftSec}秒` : ''}` : null} />
   const leave = () => { setLeaveAsk(false); if (online) { if (state && !state.winner) online.client.surrender(); online.client.leave(); onExit(); return } if (flow) onExit(); else setState(null) }
   const backTeam = () => { if (flow && onBackTeam) onBackTeam(); else setTeam(null) }
@@ -1771,6 +1807,19 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
       {testInit && !online && <button type="button" data-testid="ghost-mode" onClick={() => setGhostMode(GHOST_NEXT[ghostMode] || 'none')} style={{ position: 'fixed', top: 3, right: 4, zIndex: 9500, background: ghostMode === 'none' ? 'rgba(0,0,0,0.75)' : 'rgba(120,70,200,0.9)', color: '#fff', border: '1px solid rgba(255,255,255,0.35)', padding: '1px 6px', borderRadius: 6, fontSize: 9, lineHeight: 1.3, opacity: 0.85, cursor: 'pointer' }}>ゴースト:{GHOST_LABEL[ghostMode] || 'なし'}</button>}
       {testInit && probe && <div data-testid="fx-probe" style={{ position: 'fixed', top: 6, left: '50%', transform: 'translateX(-50%)', zIndex: 9500, background: 'rgba(0,0,0,0.8)', color: '#9ff', padding: '3px 10px', borderRadius: 6, fontSize: 12, pointerEvents: 'none' }}>{probe}</div>}
       {logOpen && <CommentaryOverlay units={view.units} active={view.active} round={view.round} log={view.log} ab={hist.ab} dead={hist.dead} events={hist.ev} onClose={() => setLogOpen(false)} />}
+      {menuOpen && !settingsOpen && (
+        <BattleMenu
+          online={!!online}
+          mode={online ? (online.ranked ? 'ランクマッチ' : 'カジュアルマッチ') : `CPU戦 Lv.${level ?? ''}`}
+          me={{ name: '自分', units: players.map((u) => u.name) }}
+          foe={{ name: online ? (online.opp || '相手') : (levelInfo?.name && !/^Lv\.\d+$/.test(levelInfo.name) ? levelInfo.name : `CPU Lv.${level ?? ''}`), units: enemies.map((u) => u.name) }}
+          onResume={() => setMenuOpen(false)}
+          onRetire={() => { setMenuOpen(false); setLeaveAsk(true) }}
+          onSettings={settingsView ? () => setSettingsOpen(true) : null}
+        />
+      )}
+      {settingsOpen && settingsView && createPortal(<div style={{ position: 'fixed', inset: 0, zIndex: 3100 }}>{settingsView(() => setSettingsOpen(false))}</div>, document.body)}
+      {abilNote && <AbilityNote unit={abilNote.unit} title={abilNote.title} text={abilNote.text} big={desktop} />}
       {leaveAsk && <ExitConfirm onCancel={() => setLeaveAsk(false)} onExit={leave} online={!!online} />}
       {state.winner && !playing && resultShown && !intro && <ResultBanner winner={state.winner} message={online ? onlineResultMsg : rewardMsg} buttons={resultButtons} onDismiss={() => setResultShown(false)} />}
     </>

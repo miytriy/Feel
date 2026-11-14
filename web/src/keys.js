@@ -18,6 +18,7 @@ export const ACTIONS = [
   { id: 'nav.tabPrev', group: '共通', label: '前のタブ', keys: ['[', 'PageUp'] },
   { id: 'nav.tabNext', group: '共通', label: '次のタブ', keys: [']', 'PageDown'] },
   { id: 'ui.help', group: '共通', label: 'キー操作の一覧を出す', keys: ['?'] },
+  { id: 'battle.menu', group: '戦闘', label: 'バトルメニュー(ポーズ)', keys: ['Escape'] },
   { id: 'battle.log', group: '戦闘', label: 'バトルログ', keys: ['Tab'] },
   { id: 'battle.endTurn', group: '戦闘', label: 'ターン終了', keys: ['Space'] },
   { id: 'battle.attack', group: '戦闘', label: '攻撃する(選択中の対象)', keys: ['a'] },

@@ -69,6 +69,25 @@ const CSS = `
   .bh-stage b { font-size: 14px; padding: 3px 8px; } .bh-stage span { font-size: 11px; padding: 3px 8px; }
 }
 
+/* バトルメニュー(Esc): 中央にメニュー、下に両チームの顔ぶれ(VS) */
+@keyframes pm-in { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+.pm { position: fixed; inset: 0; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 16px; background: rgba(6,6,9,0.82); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: bh-fade 0.2s ease-out backwards; font-family: ${FONT}; color: #f1f1f2; overflow: auto; }
+.pm-in { width: min(420px, 100%); animation: pm-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.pm-title { text-align: center; padding: 14px 0; font-family: ${DISPLAY}; font-weight: 700; font-size: 24px; letter-spacing: 0.14em; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12) 20%, rgba(255,255,255,0.12) 80%, transparent); border-top: 2px solid rgba(255,255,255,0.35); border-bottom: 1px solid rgba(255,255,255,0.18); }
+.pm-btns { display: flex; flex-direction: column; gap: 14px; padding: 26px 40px; }
+.pm-btn { height: 54px; min-height: 0; border: 2px solid rgba(255,255,255,0.55); background: rgba(255,255,255,0.09); color: #fff; font-family: ${DISPLAY}; font-size: 20px; font-weight: 700; letter-spacing: 0.1em; cursor: pointer; clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%); transition: transform 0.15s, background 0.15s, color 0.15s; will-change: transform; }
+.pm-btn:hover, .pm-btn:focus-visible { background: ${C.player}; color: #141414; border-color: ${C.player}; outline: none; transform: translateY(-2px); }
+.pm-btn.danger { background: rgba(255,90,54,0.28); border-color: ${C.enemy}; }
+.pm-btn.danger:hover, .pm-btn.danger:focus-visible { background: ${C.enemy}; color: #fff; border-color: ${C.enemy}; }
+.pm-mode { text-align: center; padding: 10px 0; font-size: 15px; letter-spacing: 0.12em; color: #cfcfd5; background: rgba(255,255,255,0.07); border-top: 1px solid rgba(255,255,255,0.18); border-bottom: 1px solid rgba(255,255,255,0.18); }
+.pm-vs { width: min(760px, 100%); margin-top: 26px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: stretch; gap: 14px; animation: pm-in 0.34s 0.05s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.pm-side { padding: 12px 16px; border-top: 3px solid var(--tc); background: linear-gradient(180deg, color-mix(in srgb, var(--tc) 22%, #101014), #101014); min-width: 0; }
+.pm-side.r { text-align: right; }
+.pm-side b { display: block; font-family: ${DISPLAY}; font-size: 20px; letter-spacing: 0.04em; overflow-wrap: anywhere; }
+.pm-side small { display: block; margin-top: 4px; font-size: 12px; line-height: 1.6; color: #b9b9c1; overflow-wrap: anywhere; }
+.pm-vsmark { align-self: center; font-family: ${DISPLAY}; font-style: italic; font-weight: 700; font-size: 44px; color: ${C.player}; text-shadow: 0 0 18px rgba(255,230,0,0.45); }
+@media (max-width: 899px) { .pm-btns { padding: 20px 18px; } .pm-vs { grid-template-columns: 1fr 1fr; } .pm-vsmark { display: none; } .pm-title { font-size: 20px; } }
+
 .bm { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; padding: 16px; background: rgba(0,0,0,0.58); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: bh-fade 0.2s ease-out backwards; }
 .bm-win { width: min(860px, 100%); max-height: 86vh; display: flex; flex-direction: column; background: #f1f1f2; color: #1c1c1f; box-shadow: 0 16px 50px rgba(0,0,0,0.6); animation: bh-pop 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .bm-win.sm { width: min(460px, 100%); }
@@ -158,6 +177,39 @@ export function ExitConfirm({ onCancel, onExit, online = false }) {
           <button type="button" className="bm-btn" data-testid="exit-cancel" onClick={onCancel}>キャンセル</button>
           <button type="button" className="bm-btn ok" data-testid="exit-ok" onClick={onExit}>退出</button>
         </div>
+      </div>
+    </div></Top>
+  )
+}
+
+// バトルメニュー(Esc で開く・ポーズ)。リタイア / 設定 / バトルへ戻る と、両チームの顔ぶれ。
+// 「バトルへ戻る」は aria-label="戻る"(Esc・Backspace がこれを押す)
+export function BattleMenu({ mode = '', me = {}, foe = {}, onResume, onRetire, onSettings = null, online = false }) {
+  const resume = useRef(null)
+  useEffect(() => { resume.current?.focus() }, [])
+  const side = (t, c, r) => (
+    <div className={`pm-side${r ? ' r' : ''}`} style={{ '--tc': c }}>
+      <b>{t.name}</b>
+      {t.sub && <small>{t.sub}</small>}
+      <small>{(t.units || []).join(' ・ ')}</small>
+    </div>
+  )
+  return (
+    <Top><div className="pm" data-testid="battle-menu" role="dialog" aria-label="バトルメニュー">
+      <style>{CSS}</style>
+      <div className="pm-in">
+        <div className="pm-title">バトルメニュー</div>
+        <div className="pm-btns">
+          <button type="button" className="pm-btn danger" data-testid="menu-retire" onClick={onRetire}>{online ? '降参' : 'リタイア'}</button>
+          {onSettings && <button type="button" className="pm-btn" data-testid="menu-settings" onClick={onSettings}>設定</button>}
+          <button type="button" className="pm-btn" data-testid="menu-resume" ref={resume} aria-label="戻る" onClick={onResume}>バトルへ戻る</button>
+        </div>
+        {mode && <div className="pm-mode">{mode}</div>}
+      </div>
+      <div className="pm-vs">
+        {side(me, C.player, false)}
+        <div className="pm-vsmark" aria-hidden="true">VS</div>
+        {side(foe, C.enemy, true)}
       </div>
     </div></Top>
   )

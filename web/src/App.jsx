@@ -380,6 +380,22 @@ export default function App() {
     return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onRandom={() => setScreen('random')} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
   }
 
+  // 戦闘中のバトルメニュー(Esc)から開く設定(戦闘画面の上に重ねる。閉じると対戦に戻る)
+  const battleSettings = (onClose) => (
+    <SettingsScreen
+      user={user}
+      settings={settings}
+      onChange={(next) => { setSettings(next); saveSettings(next) }}
+      onLogin={handleLogin}
+      onLogout={handleLogout}
+      unlockLevel={unlockLv}
+      onUnlock={async (pw) => { const lv = await tryUnlock(pw); if (lv) setUnlockLv((v) => Math.max(v, lv)); return lv > 0 }}
+      onRelock={() => { relock(); setUnlockLv(0) }}
+      onOpenRules={null}
+      onExit={onClose}
+    />
+  )
+
   // ランダムマッチ(ランク/カジュアル): 画面 → (使用デッキの確認・変更で)チームを選ぶ → 画面にもどる
   if (current === 'random') {
     const activeP = partyApi && partyApi.parties ? partyApi.parties[partyApi.activeIdx] : null // 編成画面で選んでいるパーティ
@@ -389,6 +405,7 @@ export default function App() {
     return (
       <ErrorBoundary onExit={() => setScreen('play')}>
         <RandomMatchScreen
+          settingsView={battleSettings}
           team={saved.team}
           spells={saved.spells}
           myName={me && me.displayName ? me.displayName : 'あなた'}
@@ -424,7 +441,7 @@ export default function App() {
     if (!pvpRun) return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onRandom={() => setScreen('random')} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
     return (
       <ErrorBoundary onExit={() => setScreen('play')}>
-        <PvpScreen key={pvpRun.id} team={pvpRun.team} spells={pvpRun.spells} onExit={() => setScreen('random')} />
+        <PvpScreen settingsView={battleSettings} key={pvpRun.id} team={pvpRun.team} spells={pvpRun.spells} onExit={() => setScreen('random')} />
       </ErrorBoundary>
     )
   }
@@ -496,6 +513,7 @@ export default function App() {
     return (
       <ErrorBoundary onExit={() => setScreen('cpu')}>
         <BattleScreen
+          settingsView={battleSettings}
           key={cpuRun.id}
           levelInit={cpuRun.level}
           teamInit={cpuRun.team}

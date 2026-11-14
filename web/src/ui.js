@@ -84,6 +84,7 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-d-fadem { 0% { opacity: 0.35; scale: 1.04 1.14; } 100% { opacity: 0.4; scale: 1 1; } }
     @keyframes feel-d-glow { 0% { opacity: 0; } 100% { opacity: 0.45; } }
     @keyframes feel-int-f8 { 0%, 12.4% { opacity: 1; } 12.5%, 100% { opacity: 0; } }
+    @keyframes feel-note-in { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
     @keyframes feel-log-in { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes feel-log-out { from { opacity: 1; } to { opacity: 0; } }
     @keyframes feel-d-frame { 0% { } 100% { background: transparent; border-color: transparent; box-shadow: none; } }
