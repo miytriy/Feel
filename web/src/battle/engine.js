@@ -553,7 +553,7 @@ function resolveTargets(state, source, key, ctx) {
     }
     case 'otherAllyOne': {
       const others = allies.filter((u) => u !== source)
-      if (ctx.chosen) return others.filter((u) => u.uid === ctx.chosen)
+      if (ctx.chosen) return [...others, ...summonsOf(state, source)].filter((u) => u.uid === ctx.chosen && u.uid !== source.uid) // 選ぶ段階で候補が決まっている(召喚物・アミュレットも、選べる能力のときは候補に入っている)
       return others.slice(0, 1) // 選ばれなかった(CPUの読み・テストなど)ときは先頭の1体
     }
     case 'entered': return ctx.other && ctx.other.alive ? [ctx.other] : [] // 「味方が場に出たとき」の、出てきたキャラ
@@ -723,7 +723,7 @@ function candidatesOf(state, source, e) {
   const key = e.target || 'self'
   let list
   const fol = e.followers ? summonsOf(state, source).filter((u) => !u.isAmulet) : [] // フォロワーなら、召喚物も選べる
-  if (key === 'otherAllyOne') list = [...alliesOf(state, source), ...fol].filter((u) => u.uid !== source.uid)
+  if (key === 'otherAllyOne') list = [...alliesOf(state, source), ...(e.units ? summonsOf(state, source) : fol)].filter((u) => u.uid !== source.uid) // units: 「ユニット」(キャラ + 召喚物 + アミュレット)から選ぶ
   else if (key === 'allyOne') list = [...alliesOf(state, source), ...fol]
   else if (key === 'allyFieldOne') list = [...alliesOf(state, source), ...summonsOf(state, source)]
   else if (key === 'allyAmuletOne') list = summonsOf(state, source).filter((u) => u.isAmulet)
