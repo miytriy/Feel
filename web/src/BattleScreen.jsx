@@ -28,23 +28,27 @@ const TEAM_COLOR = { get A() { return ME === 'A' ? C.player : C.enemy }, get B()
 const TYPE_LABEL = { physical: '物理', magic: '魔法', true: '確定' }
 
 // これから行動する順番(アクションバー)。ラウンドの区切りも入れる
+// 並ぶのは各ユニットの「次の1回」だけ。行動を終えたユニットは、行動値が初期値(baseAV)に戻って、そこで初めてバーに差し込まれる
+// (先の先の順番は、速度が変わったり行動順が動いたりして決まらないので、あらかじめ並べない)
 export function buildTimeline(state, count = 12) {
   const items = []
   for (const u of state.units) {
     if (!u.alive) continue
-    for (let k = 0; k < count; k++) items.push({ time: u.curAV + u.baseAV * k, unit: u, k })
-    if (u.accel) for (let k = 0; k < count; k++) items.push({ time: u.accel.curAV + u.accel.baseAV * k, unit: u, accel: true, k })
+    items.push({ time: u.curAV, unit: u, k: 0 })
+    if (u.accel) items.push({ time: u.accel.curAV, unit: u, accel: true, k: 0 })
   }
   for (const team of ['A', 'B']) {
     const cr = state.comboReset?.[team]
-    if (cr) for (let k = 0; k < count; k++) items.push({ time: cr.curAV + cr.baseAV * k, sys: team })
-    // 持ち主のいないクレストのカウントダウン(残りの回数ぶんだけ並ぶ)
+    if (cr) items.push({ time: cr.curAV, sys: team })
+    // 持ち主のいないクレストのカウントダウン(次の1回だけ)
     for (const c of state.crests?.[team] || []) {
-      if (c.slot) for (let k = 0; k < Math.min(count, c.countdown); k++) items.push({ time: c.slot.curAV + c.slot.baseAV * k, crestTeam: team, crest: c, left: c.countdown - k })
+      if (c.slot && c.countdown > 0) items.push({ time: c.slot.curAV, crestTeam: team, crest: c, left: c.countdown })
     }
   }
+  // ラウンドの区切りは、いちばん遠い行動のあとまで(最低でも次の1つ)
+  const last = items.reduce((m, it) => Math.max(m, it.time), 0)
   const toNext = state.round * 100 - state.totalAV
-  for (let k = 0; k < count; k++) items.push({ time: toNext + 100 * k, round: state.round + 1 + k })
+  for (let k = 0; k < count; k++) { const time = toNext + 100 * k; if (k === 0 || time <= last) items.push({ time, round: state.round + 1 + k }) }
   items.sort((a, b) => a.time - b.time || (a.round ? 1 : 0) - (b.round ? 1 : 0) || (b.unit?.spd ?? -1) - (a.unit?.spd ?? -1))
   return items.slice(0, count)
 }
