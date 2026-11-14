@@ -211,7 +211,7 @@ function boostSpells(state, team, n, except = null) {
 // キャラクターが、スペルブーストされた(boost の回数を数え、【スペルブースト時】のパッシブが働く)
 function boostUnit(state, u, n) {
   u.boost = (u.boost || 0) + n
-  state.log.push(`${u.name}はスペルブーストした(${u.boost}回)`)
+  // スペルブーストしたこと自体は、ログに出さない(例外は、指示があったものだけ)
   if (!(u.passiveObjs || []).some((p) => p.trigger === 'onBoost')) return
   for (let k = 0; k < n && !state.pending; k++) fire(state, 'onBoost', u, {})
 }
@@ -872,7 +872,6 @@ function runEffects(state, source, effects, ctx = {}) {
       if (o.kind === 'spell') {
         state.boost[source.team] += n
         const sp = growSpell(state, source.team, o.sp, n)
-        state.log.push(`スペル【${o.sp.name}】がスペルブーストした(X=${o.sp.x})`)
       } else {
         boostUnit(state, o.u, n)
       }
@@ -891,7 +890,6 @@ function runEffects(state, source, effects, ctx = {}) {
       state.boost[source.team] += n
       boostSpells(state, source.team, n, ctx.spell ? state.spells[source.team].find((x) => x.slot === state.castingSlot) || null : null) // 発動中のスペル自身は、ブーストされない
       boostFieldUnits(state, source.team, n)
-      state.log.push(`スペルブースト+${n}(${state.boost[source.team]}回)`)
       continue
     }
     if (e.type === 'earth') { // 土の印: 場の土の印の合計(チーム共通)。マイナスで消費(土の秘術)
