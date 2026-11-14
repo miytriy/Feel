@@ -7,8 +7,7 @@ import { randomBytes } from 'node:crypto'
 import { loadRegistry } from './registry.js'
 import { checkToken } from '../gate.js'
 import { rankOf, applyResult, emptyRank, matchWindow } from '../../web/src/battle/rank.js'
-import { newStats, addEvents } from '../../web/src/career.js'
-import { buildPvpRecord, addMatch } from '../career.js'
+import { saveRecords } from './record.js'
 
 export function attachPvp({ server, auth, db, allowedOrigins = [], config, requireOwned = true, path = '/pvp', masterPassword = '' }) {
   const wss = new WebSocketServer({ server, path, maxPayload: 20 * 1024 })
@@ -52,32 +51,10 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
     for (const [p, res] of [[pA, resA], [pB, resB]]) sendTo(p.uid, { type: 'rank', ...res.rank, delta: res.delta, before: res.before, label: rankOf(res.rank.bp).label })
     return { A: resA, B: resB }
   }
-  // ランダムマッチ(待ち行列で組まれた対戦)の戦績を、2人の「足跡」に残す
-  async function saveRecords(room, winner, reason, settled) {
-    const st = room.state
-    if (!st) return
-    const stats = newStats()
-    const byUid = new Map(st.units.map((u) => [u.uid, u]))
-    addEvents(stats, st.events || [], (uid) => byUid.get(uid))
-    const real = (u) => !u.token && u.field !== 'summon' // 召喚物・トークンは編成に数えない
-    const names = { A: st.units.filter((u) => u.team === 'A' && real(u)).map((u) => u.name), B: st.units.filter((u) => u.team === 'B' && real(u)).map((u) => u.name) }
-    const t = Date.now()
-    for (const side of ['A', 'B']) {
-      const p = room.players[side], o = room.players[side === 'A' ? 'B' : 'A']
-      if (!p || !o || String(p.uid).startsWith('guest-')) continue
-      const r = settled?.[side]
-      const rec = buildPvpRecord({ side, winner, reason, ranked: room.ranked, oppName: o.name, rounds: st.round, names, stats, bp: r ? { before: r.before, after: r.rank.bp, delta: r.delta } : null, t })
-      const ref = db.collection('careers').doc(p.uid)
-      await db.runTransaction(async (tx) => {
-        const snap = await tx.get(ref)
-        tx.set(ref, { pvp: addMatch(snap.exists ? snap.data().pvp : [], rec) }, { merge: true })
-      })
-    }
-  }
   const roomEnd = (room, winner, reason) => {
     const settling = room.ranked ? settleRank(room, winner) : Promise.resolve(null)
     settling.catch((e) => { console.error('[pvp] ランクの保存に失敗', e); return null })
-      .then((settled) => (room.random ? saveRecords(room, winner, reason, settled) : null))
+      .then((settled) => (room.random ? saveRecords(db, room, winner, reason, settled) : null))
       .catch((e) => console.error('[pvp] 戦績の保存に失敗', e))
   }
 

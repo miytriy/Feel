@@ -2,6 +2,7 @@
 // 画面からは「行動」だけが届き、サーバーが「その人の番か」「選べる行動か」を確かめてから進める。
 // 通信(WebSocket)とは切り離してあり、send(side, message) を渡せば、そのままテストできる。
 
+import { newStats, addEvents } from '../../web/src/career.js'
 import { piecesOf } from '../relics.js'
 
 export const CONFIG = {
@@ -63,6 +64,7 @@ export class Room {
     this.players = { A: null, B: null } // { uid, name, team, online, offlineSince }
     this.phase = 'waiting' // waiting → battle → done
     this.state = null
+    this.stats = newStats() // 足跡用: ラウンドごと・キャラごとのダメージなどの集計
     this.seq = 0
     this.deadline = null
     this.timers = {}
@@ -152,6 +154,7 @@ export class Room {
     try { next = engine.applyAction(this.state, same, { rng: this.rng }) } catch (e) { return { error: 'その行動は選べません' } }
     this.state = next
     this.seq += 1
+    try { const byUid = new Map(next.units.map((u) => [u.uid, u])); addEvents(this.stats, next.events || [], (id) => byUid.get(id)) } catch { /* 集計に失敗しても対戦は続ける */ } // events は1回の行動ぶんしか残らないので、ここで足していく(足跡の戦績用)
     if (next.winner) return this.finish(next.winner, 'battle', { auto })
     this.resetDeadline()
     this.broadcast({ type: 'update', auto: !!auto, by: side, ...this.snapshot() })
