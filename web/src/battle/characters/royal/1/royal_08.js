@@ -13,7 +13,7 @@ export default {
   // 【エンハンス_6】: MP6を消費すると働く特性(自分のターンに、ボタンで使う)
   traits: [{
     id: 'enhance', name: 'エンハンス_6', cost: 6, target: 'self',
-    desc: '【エンハンス_6】これは攻撃力+200、体力+200して、【潜伏】をもつ。',
+    desc: '【エンハンス_6】これは+200/+200して、【潜伏】をもつ。',
     log: 'これは+200/+200して、【潜伏】をもつ。',
     effects: [
       { type: 'buff', stat: 'atk', flat: 200, target: 'self' },
