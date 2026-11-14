@@ -27,6 +27,7 @@
   { "id": "elf_17", "name": "ストレイビーストマン", "class": "エルフ", "rarity": "bronze", "rotation": "basic" },
   { "id": "elf_18", "name": "温厚なるトレント", "class": "エルフ", "rarity": "bronze", "rotation": "basic" },
   { "id": "elf_19", "name": "ソニックアーチャー・セルウェン", "class": "エルフ", "rarity": "silver", "rotation": "basic" },
+  { "id": "elf_20", "name": "薫交の天宮・バックウッド", "class": "エルフ", "rarity": "gold", "rotation": "1" },
   { "id": "elf_amulet_01", "name": "燐光の岩", "class": "エルフ", "rarity": "silver", "rotation": "1" },
   { "id": "elf_amulet_02", "name": "聖樹の杖", "class": "エルフ", "rarity": "gold", "rotation": "1" },
   { "id": "elf_amulet_03", "name": "繚乱の庭", "class": "エルフ", "rarity": "bronze", "rotation": "basic" },
