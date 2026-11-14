@@ -715,6 +715,7 @@ function SideLog({ items, big = false, onGone }) {
 const tierPrefix = (cond) => (cond?.liberation ? '【解放奥義】' : cond?.ultimate ? '【奥義】' : '')
 
 function passiveLine(p) {
+  if (p.plain) return p.desc ?? '' // 題名の【】をつけず、説明だけ出す(「これが進化したとき、…」のように、説明の頭に条件が入っているもの)
   const label = (p.tag ?? TRIGGER_LABELS[p.trigger] ?? p.trigger) + (p.min != null && p.trigger !== 'combo' ? `_${p.min}` : '')
   if (p.name && /^.+?【.+】$/.test(p.name)) return `${tierPrefix(p.condition)}${bracket(p.name)}${p.desc ?? ''}` // 『ファンファーレ【コンボ_3】』は、【ファンファーレ】【コンボ_3】と分けて出す
   const name = p.name && p.name !== label ? `${p.name}: ` : ''
