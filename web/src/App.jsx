@@ -538,7 +538,7 @@ export default function App() {
   }
 
   if (current === 'career') {
-    return <ErrorBoundary onExit={() => setScreen('home')}><CareerScreen onExit={() => setScreen('home')} fetchCareer={user ? fetchCareer : () => Promise.resolve({ matches: [] })} clearCareer={user ? clearCareer : () => Promise.resolve()} /></ErrorBoundary>
+    return <ErrorBoundary onExit={() => setScreen('home')}><CareerScreen onExit={() => setScreen('home')} fetchCareer={user ? fetchCareer : () => Promise.resolve({ matches: [], pvp: [] })} clearCareer={user ? clearCareer : () => Promise.resolve()} /></ErrorBoundary>
   }
 
   if (current === 'rules') {

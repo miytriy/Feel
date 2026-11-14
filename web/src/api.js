@@ -57,7 +57,7 @@ export const finishBattle = (ticketId, result) => request('/api/battle/finish', 
 // ---- キャリア(対戦の記録。アカウントに保存される) ----
 export const fetchCareer = () => request('/api/career')
 export const recordMatch = (match) => request('/api/career', { method: 'POST', body: JSON.stringify({ match }) })
-export const clearCareer = () => request('/api/career', { method: 'DELETE' })
+export const clearCareer = (kind) => request(kind === 'pvp' ? '/api/career?kind=pvp' : '/api/career', { method: 'DELETE' })
 export const fetchGifts = () => request('/api/gifts')
 export const markMailRead = (giftId) => request('/api/mail/read', { method: 'POST', body: JSON.stringify({ giftId }) })
 export const setMailStar = (giftId, star) => request('/api/mail/star', { method: 'POST', body: JSON.stringify({ giftId, star }) })

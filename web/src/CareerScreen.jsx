@@ -1,7 +1,8 @@
 // Feel - 足跡(キャリア)画面: 直近の勝率・対戦データ・試合ごとの詳細(1ラウンドごとのダメージ)をふりかえる
 // 見た目は、ほかの画面(ホーム・人事・編成)と同じ: 暗い地に黄色の斜めの帯、斜めに切った板、角ばった数字
 import { useEffect, useState } from 'react'
-import { useIsDesktop, C, FONT, DISPLAY } from './ui.js'
+import { useIsDesktop, useRemembered, C, FONT, DISPLAY } from './ui.js'
+import { useHotkey } from './keys.js'
 import { IconCareer, IconClose, IconBack } from './icons.jsx'
 import { summarize } from './career.js'
 
@@ -40,6 +41,19 @@ const CSS = `
 .ft-title svg { font-size: 46px; color: ${C.player}; }
 .ft-x { margin-left: auto; width: 68px; height: 68px; padding: 0; min-height: 0; border: 0; border-radius: 50%; background: #f2f2f3; color: #1c1c1f; font-size: 36px; display: grid; place-items: center; cursor: pointer; transition: background 0.15s, transform 0.15s; }
 .ft-x:hover, .ft-x:focus-visible { background: ${C.player}; transform: rotate(90deg); outline: none; }
+
+/* タブ(CPU戦 / ランダムマッチ)と、ランダムマッチの絞り込み */
+.ft-tabs { display: flex; gap: 6px; margin: 0 0 22px; animation: ft-fade 0.3s ease-out backwards; }
+.ft-tab { position: relative; display: inline-flex; align-items: baseline; gap: 10px; min-height: 0; padding: 12px 34px 12px 26px; border: 0; cursor: pointer; color: ${C.mute}; background: rgba(255,255,255,0.07);
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 100%, 0 100%); font-family: ${DISPLAY}; font-weight: 700; font-size: 18px; letter-spacing: 0.06em; transition: background 0.15s, color 0.15s; }
+.ft-tab small { font-size: 12px; font-weight: 600; opacity: 0.8; }
+.ft-tab:hover, .ft-tab:focus-visible { background: rgba(255,255,255,0.15); color: ${C.ink}; outline: none; }
+.ft-tab.on { background: ${C.player}; color: #141414; }
+.ft-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: -8px 0 22px; }
+.ft-tag { display: inline-block; margin-right: 8px; padding: 0 8px; font-size: 11px; font-weight: 700; line-height: 18px; letter-spacing: 0.08em; color: #141414; background: #cfcfd4; transform: skewX(-12deg); }
+.ft-tag.rk { background: ${C.player}; }
+.ft-bp { font-family: ${DISPLAY}; font-weight: 700; font-size: 15px; color: ${C.mute}; }
+.ft-bp.up { color: ${C.player}; } .ft-bp.dn { color: #ff5a36; }
 
 /* 上の帯: 勝率(黄色の板) + 数字の板 */
 .ft-sum { display: grid; grid-template-columns: minmax(300px, 400px) minmax(0, 1fr); gap: 26px; align-items: stretch; margin-bottom: 30px; }
@@ -112,6 +126,7 @@ const CSS = `
 .ft-log { margin-top: 12px; max-height: 360px; overflow-y: auto; font-size: 12px; line-height: 1.7; color: ${C.mute}; }
 
 @media (max-width: 899px) {
+  .ft-tab { flex: 1; justify-content: center; padding: 10px 22px 10px 16px; font-size: 16px; }
   .ft-in { padding: 0 14px 40px; }
   .ft-top { padding: 14px 0 14px; padding-top: calc(14px + env(safe-area-inset-top)); }
   .ft-title { font-size: 28px; } .ft-title svg { font-size: 34px; }
@@ -171,6 +186,7 @@ function RoundChart({ rows }) {
 }
 
 function Detail({ m }) {
+  const pvp = m.kind === 'pvp'
   const [showLog, setShowLog] = useState(false)
   const r = RES[m.result]
   const best = m.perRound.reduce((b, x) => (x.A > (b?.A ?? -1) ? x : b), null)
@@ -181,12 +197,13 @@ function Detail({ m }) {
         <div className="mk"><b>{r.mark}</b></div>
         <div>
           <div className="rs">{r.label}</div>
-          <div className="mt">{fmtDate(m.t)} ・ CPU Lv{m.level} {LEVEL[m.level] ?? ''} ・ {m.rounds}ラウンド</div>
+          <div className="mt">{fmtDate(m.t)} ・ {pvp ? `${m.ranked ? 'ランクマッチ' : 'カジュアル'} vs ${m.opp}${m.reason === 'surrender' ? '(投了)' : m.reason === 'disconnect' ? '(切断)' : ''}` : `CPU Lv${m.level} ${LEVEL[m.level] ?? ''}`} ・ {m.rounds}ラウンド</div>
+          {pvp && m.bp && <div className={`ft-bp ${m.bp.delta > 0 ? 'up' : m.bp.delta < 0 ? 'dn' : ''}`}>BP {m.bp.before} → {m.bp.after}({m.bp.delta > 0 ? '+' : ''}{m.bp.delta})</div>}
         </div>
       </div>
       <div className="ft-teams">
         <div style={{ '--tc': C.player }}><b>自分</b>{m.names.A.join('、')}</div>
-        <div style={{ '--tc': C.enemy }}><b>相手</b>{m.names.B.join('、')}</div>
+        <div style={{ '--tc': C.enemy }}><b>{pvp ? m.opp : '相手'}</b>{m.names.B.join('、')}</div>
       </div>
       <div className="ft-tiles">
         <Tile i={0} label="与えたダメージ" value={n0(m.totals.A)} sub={`DPR ${n0(m.totals.A / Math.max(1, m.perRound.length))}${m.turns?.A ? ` ・ DPT ${n0(m.totals.A / m.turns.A)}` : ''}`} />
@@ -210,31 +227,41 @@ function Detail({ m }) {
           </div>
         ))}
       </div>
-      <div className="ft-pn">
+      {m.log?.length > 0 && <div className="ft-pn">
         <button type="button" className={`ft-pill${showLog ? ' on' : ''}`} onClick={() => setShowLog(!showLog)}>対戦ログ {showLog ? '▲' : '▼'}</button>
         {showLog && <div className="ft-log">{m.log.map((l, i) => <div key={i}>{l}</div>)}</div>}
-      </div>
+      </div>}
     </div>
   )
 }
 
 // fetchCareer() → { matches }(アカウントに保存された記録), clearCareer() → 全部消す
+// fetchCareer() → { matches(CPU戦), pvp(ランダムマッチ) }(アカウントに保存された記録), clearCareer(kind) → kind==='pvp' ならランダムマッチ、なければCPU戦を全部消す
+const RK = [['all', 'すべて'], ['ranked', 'ランク'], ['casual', 'カジュアル']]
 export default function CareerScreen({ onExit, fetchCareer, clearCareer }) {
   const desktop = useIsDesktop()
   const [matches, setMatches] = useState([])
+  const [pvp, setPvp] = useState([])
+  const [tab, setTab] = useRemembered('career.tab', 'cpu') // cpu / random(最後に見ていたほうに戻る)
+  const [rk, setRk] = useRemembered('career.rk', 'all')
   const [status, setStatus] = useState('loading') // loading / ok / error
   const [errMsg, setErrMsg] = useState('')
   useEffect(() => {
     let alive = true
     fetchCareer()
-      .then((r) => { if (alive) { setMatches(r.matches || []); setStatus('ok') } })
+      .then((r) => { if (alive) { setMatches(r.matches || []); setPvp(r.pvp || []); setStatus('ok') } })
       .catch((e) => { if (alive) { setErrMsg(e.message); setStatus('error') } })
     return () => { alive = false }
   }, [fetchCareer])
   const [openId, setOpenId] = useState(null)
   const [confirmClear, setConfirmClear] = useState(false)
-  const sm = summarize(matches)
-  const opened = matches.find((m) => m.id === openId) || null
+  const isRandom = tab === 'random'
+  const shown = isRandom ? pvp.filter((m) => rk === 'all' || (rk === 'ranked') === !!m.ranked) : matches
+  const sm = summarize(shown)
+  const opened = shown.find((m) => m.id === openId) || null
+  const switchTab = (k) => { setTab(k); setOpenId(null); setConfirmClear(false) }
+  useHotkey('nav.tabPrev', () => { if (tab === 'cpu') return false; switchTab('cpu'); return true })
+  useHotkey('nav.tabNext', () => { if (tab === 'random') return false; switchTab('random'); return true })
   const pct = (v) => (v == null ? '-' : `${v}%`)
 
   const summary = (
@@ -243,9 +270,9 @@ export default function CareerScreen({ onExit, fetchCareer, clearCareer }) {
         <div className="lb">WIN RATE ・ 通算勝率</div>
         <div className="big">{sm.rate == null ? '--' : sm.rate}<small>%</small></div>
         <div className="sb">{sm.win}勝 {sm.lose}敗 {sm.draw}分(全{sm.total}戦)</div>
-        {matches.length > 0 && (
+        {shown.length > 0 && (
           <div className="ft-form" data-testid="form-strip">
-            {matches.slice(0, 10).reverse().map((m) => <i key={m.id} className={m.result} style={rv(m.result)}><b>{RES[m.result].mark}</b></i>)}
+            {shown.slice(0, 10).reverse().map((m) => <i key={m.id} className={m.result} style={rv(m.result)}><b>{RES[m.result].mark}</b></i>)}
             <span>← 古い ・ 新しい →</span>
           </div>
         )}
@@ -262,32 +289,32 @@ export default function CareerScreen({ onExit, fetchCareer, clearCareer }) {
 
   const list = (
     <div data-testid="match-list">
-      <div className="ft-hd">対戦の記録</div>
+      <div className="ft-hd">{isRandom ? 'ランダムマッチの記録' : '対戦の記録'}</div>
       {status === 'loading' && <div className="ft-empty">読み込み中…</div>}
       {status === 'error' && <div className="ft-err">記録を読み込めませんでした: {errMsg}</div>}
-      {status === 'ok' && matches.length === 0 && <div className="ft-empty">まだ対戦の記録がありません。CPU対戦を終えると、ここに残ります。</div>}
-      {matches.map((m, i) => {
+      {status === 'ok' && shown.length === 0 && <div className="ft-empty">{isRandom ? (pvp.length ? 'この絞り込みに当てはまる対戦はありません。' : 'まだランダムマッチの記録がありません。対人戦の「ランダムマッチ」を終えると、ここに残ります(ルームコードで入る対戦は残りません)。') : 'まだ対戦の記録がありません。CPU対戦を終えると、ここに残ります。'}</div>}
+      {shown.map((m, i) => {
         const tot = Math.max(1, m.totals.A + m.totals.B)
         return (
           <button key={m.id} type="button" className={`ft-row${m.id === openId ? ' on' : ''}`} style={{ ...rv(m.result), '--i': i }} onClick={() => setOpenId(m.id)}>
             <span className="bd">{RES[m.result].mark}</span>
             <span className="tx">
-              <div className="nm">{RES[m.result].label}<small>CPU Lv{m.level} ・ {m.rounds}R</small></div>
-              <div className="dt">{fmtDate(m.t)} ・ 与 {n0(m.totals.A)} / 受 {n0(m.totals.B)}</div>
+              <div className="nm">{RES[m.result].label}<small>{m.kind === 'pvp' ? <><span className={`ft-tag${m.ranked ? ' rk' : ''}`}>{m.ranked ? 'ランク' : 'カジュアル'}</span>vs {m.opp} ・ {m.rounds}R</> : `CPU Lv${m.level} ・ ${m.rounds}R`}</small></div>
+              <div className="dt">{fmtDate(m.t)} ・ 与 {n0(m.totals.A)} / 受 {n0(m.totals.B)}{m.bp && <span className={`ft-bp ${m.bp.delta > 0 ? 'up' : m.bp.delta < 0 ? 'dn' : ''}`}> ・ BP {m.bp.delta > 0 ? '+' : ''}{m.bp.delta}</span>}</div>
               <div className="ft-vs" aria-hidden="true"><i style={{ width: `${(m.totals.A / tot) * 100}%` }} /></div>
             </span>
           </button>
         )
       })}
-      {matches.length > 0 && (
+      {shown.length > 0 && (
         <div style={{ marginTop: 16 }}>
           {confirmClear ? (
-            <span style={{ fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>全部消しますか?
-              <button type="button" className="ft-pill bad" onClick={() => { clearCareer().then(() => { setMatches([]); setOpenId(null) }).catch((e) => setErrMsg(e.message)); setConfirmClear(false) }}>消す</button>
+            <span style={{ fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>{isRandom ? 'ランダムマッチの記録を' : ''}全部消しますか?
+              <button type="button" className="ft-pill bad" onClick={() => { clearCareer(isRandom ? 'pvp' : undefined).then(() => { if (isRandom) setPvp([]); else setMatches([]); setOpenId(null) }).catch((e) => setErrMsg(e.message)); setConfirmClear(false) }}>消す</button>
               <button type="button" className="ft-pill" onClick={() => setConfirmClear(false)}>やめる</button>
             </span>
           ) : (
-            <button type="button" className="ft-pill" style={{ fontSize: 13 }} onClick={() => setConfirmClear(true)}>記録を全部消す</button>
+            <button type="button" className="ft-pill" style={{ fontSize: 13 }} onClick={() => setConfirmClear(true)}>{isRandom ? 'ランダムマッチの記録を全部消す' : '記録を全部消す'}</button>
           )}
           <div className="ft-note">記録はアカウントに、最新20試合まで残ります。</div>
         </div>
@@ -301,8 +328,22 @@ export default function CareerScreen({ onExit, fetchCareer, clearCareer }) {
       <button type="button" className="ft-x" onClick={onExit} aria-label="閉じる"><IconClose /></button>
     </div>
   )
+  const tabs = (
+    <>
+      <div className="ft-tabs" role="tablist" aria-label="記録の種類">
+        <button type="button" role="tab" aria-selected={!isRandom} data-testid="ft-tab-cpu" className={`ft-tab${!isRandom ? ' on' : ''}`} onClick={() => switchTab('cpu')}>CPU戦<small>{matches.length}戦</small></button>
+        <button type="button" role="tab" aria-selected={isRandom} data-testid="ft-tab-random" className={`ft-tab${isRandom ? ' on' : ''}`} onClick={() => switchTab('random')}>ランダムマッチ<small>{pvp.length}戦</small></button>
+      </div>
+      {isRandom && (
+        <div className="ft-chips" role="radiogroup" aria-label="絞り込み">
+          {RK.map(([k, label]) => <button key={k} type="button" role="radio" aria-checked={rk === k} className={`ft-pill${rk === k ? ' on' : ''}`} style={{ fontSize: 13, padding: '6px 16px' }} onClick={() => { setRk(k); setOpenId(null) }}>{label}</button>)}
+        </div>
+      )}
+    </>
+  )
   const body = desktop ? (
     <>
+      {tabs}
       {summary}
       <div className="ft-main">
         {list}
@@ -316,6 +357,7 @@ export default function CareerScreen({ onExit, fetchCareer, clearCareer }) {
     </>
   ) : (
     <>
+      {tabs}
       {summary}
       {list}
     </>

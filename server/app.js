@@ -622,7 +622,8 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
   app.get('/api/career', requireAuth, async (req, res) => {
     try {
       const snap = await careerRefOf(req.user.uid).get()
-      res.json({ matches: (snap.exists && snap.data().matches) || [] })
+      const d = snap.exists ? snap.data() : {}
+      res.json({ matches: d.matches || [], pvp: d.pvp || [] })
     } catch (e) {
       handleError(res, e)
     }
@@ -636,7 +637,7 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
       const matches = await db.runTransaction(async (t) => {
         const snap = await t.get(ref)
         const next = addMatch(snap.exists ? snap.data().matches : [], match)
-        t.set(ref, { matches: next, updatedAt: FieldValue.serverTimestamp() })
+        t.set(ref, { matches: next, updatedAt: FieldValue.serverTimestamp() }, { merge: true }) // pvp(ランダムマッチの戦績)を消さない
         return next
       })
       res.json({ count: matches.length })
@@ -645,11 +646,12 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
     }
   })
 
-  // 自分の記録を全部消す
+  // 自分の記録を全部消す(CPU戦 / ?kind=pvp でランダムマッチ)
   app.delete('/api/career', requireAuth, async (req, res) => {
     try {
       const ref = careerRefOf(req.user.uid)
-      await db.runTransaction(async (t) => { t.set(ref, { matches: [], updatedAt: FieldValue.serverTimestamp() }) })
+      const field = req.query?.kind === 'pvp' ? 'pvp' : 'matches' // ?kind=pvp でランダムマッチ、なければCPU戦だけ消す
+      await db.runTransaction(async (t) => { t.set(ref, { [field]: [], updatedAt: FieldValue.serverTimestamp() }, { merge: true }) })
       res.json({ ok: true })
     } catch (e) {
       handleError(res, e)

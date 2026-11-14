@@ -42,3 +42,24 @@ export function addMatch(existing, match) {
   if (cur.some((x) => x.id === match.id)) return cur
   return [match, ...cur].slice(0, MAX_MATCHES)
 }
+
+// ---- ランダムマッチ(ランク・カジュアル)の戦績: 画面からではなく、対戦サーバーが終了時に作る(本人が書き換えられない) ----
+// 自分から見た形にそろえる: A=自分 / B=相手。log は持たない(容量のため)
+const flip = (t) => (t === 'A' ? 'B' : 'A')
+export function buildPvpRecord({ side, winner, reason, ranked, oppName, rounds, names, stats, bp, t }) {
+  const me = side, you = flip(side)
+  const rd = Object.keys(stats.rounds).map(Number).sort((a, b) => a - b).map((r) => ({ round: r, A: num(stats.rounds[r][me]), B: num(stats.rounds[r][you]) }))
+  const sum = (k) => rd.reduce((n, r) => n + r[k], 0)
+  return {
+    id: `${t}-${me}`, t, kind: 'pvp', ranked: !!ranked,
+    result: winner === me ? 'win' : winner === you ? 'lose' : 'draw',
+    reason: ['battle', 'surrender', 'disconnect'].includes(reason) ? reason : 'battle',
+    opp: str(oppName, 20), rounds: num(rounds, 10000),
+    names: { A: list(names[me], MAX_NAMES).map((x) => str(x, 40)), B: list(names[you], MAX_NAMES).map((x) => str(x, 40)) },
+    perRound: rd.slice(0, MAX_ROUNDS), totals: { A: sum('A'), B: sum('B') },
+    heal: { A: num(stats.heal[me]), B: num(stats.heal[you]) },
+    turns: { A: num(stats.turns[me], 10000), B: num(stats.turns[you], 10000) },
+    units: Object.values(stats.units).map((u) => ({ name: str(u.name, 40), team: u.team === me ? 'A' : 'B', dealt: num(u.dealt) })).sort((a, b) => b.dealt - a.dealt).slice(0, MAX_UNITS),
+    bp: bp ? { before: num(bp.before, 1e6), after: num(bp.after, 1e6), delta: Math.round(Number(bp.delta) || 0) } : null,
+  }
+}

@@ -7,6 +7,8 @@ import { randomBytes } from 'node:crypto'
 import { loadRegistry } from './registry.js'
 import { checkToken } from '../gate.js'
 import { rankOf, applyResult, emptyRank, matchWindow } from '../../web/src/battle/rank.js'
+import { newStats, addEvents } from '../../web/src/career.js'
+import { buildPvpRecord, addMatch } from '../career.js'
 
 export function attachPvp({ server, auth, db, allowedOrigins = [], config, requireOwned = true, path = '/pvp', masterPassword = '' }) {
   const wss = new WebSocketServer({ server, path, maxPayload: 20 * 1024 })
@@ -37,9 +39,9 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
 
   // ランクマッチの結果を、BP に反映して、Firestore に保存し、2人に知らせる
   async function settleRank(room, winner) {
-    if (winner !== 'A' && winner !== 'B') return // 引き分けは、動かさない
+    if (winner !== 'A' && winner !== 'B') return null // 引き分けは、動かさない
     const pA = room.players.A, pB = room.players.B
-    if (!pA || !pB) return
+    if (!pA || !pB) return null
     const refA = db.collection('users').doc(pA.uid), refB = db.collection('users').doc(pB.uid)
     const [sa, sb] = await Promise.all([refA.get(), refB.get()])
     const rA = { ...emptyRank(), ...((sa.data() || {}).rank || {}) }
@@ -48,8 +50,36 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
     const resB = applyResult(rB, rA.bp, winner === 'B')
     await Promise.all([refA.set({ rank: resA.rank }, { merge: true }), refB.set({ rank: resB.rank }, { merge: true })])
     for (const [p, res] of [[pA, resA], [pB, resB]]) sendTo(p.uid, { type: 'rank', ...res.rank, delta: res.delta, before: res.before, label: rankOf(res.rank.bp).label })
+    return { A: resA, B: resB }
   }
-  const roomEnd = (room, winner) => { if (room.ranked) settleRank(room, winner).catch((e) => console.error('[pvp] ランクの保存に失敗', e)) }
+  // ランダムマッチ(待ち行列で組まれた対戦)の戦績を、2人の「足跡」に残す
+  async function saveRecords(room, winner, reason, settled) {
+    const st = room.state
+    if (!st) return
+    const stats = newStats()
+    const byUid = new Map(st.units.map((u) => [u.uid, u]))
+    addEvents(stats, st.events || [], (uid) => byUid.get(uid))
+    const real = (u) => !u.token && u.field !== 'summon' // 召喚物・トークンは編成に数えない
+    const names = { A: st.units.filter((u) => u.team === 'A' && real(u)).map((u) => u.name), B: st.units.filter((u) => u.team === 'B' && real(u)).map((u) => u.name) }
+    const t = Date.now()
+    for (const side of ['A', 'B']) {
+      const p = room.players[side], o = room.players[side === 'A' ? 'B' : 'A']
+      if (!p || !o || String(p.uid).startsWith('guest-')) continue
+      const r = settled?.[side]
+      const rec = buildPvpRecord({ side, winner, reason, ranked: room.ranked, oppName: o.name, rounds: st.round, names, stats, bp: r ? { before: r.before, after: r.rank.bp, delta: r.delta } : null, t })
+      const ref = db.collection('careers').doc(p.uid)
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref)
+        tx.set(ref, { pvp: addMatch(snap.exists ? snap.data().pvp : [], rec) }, { merge: true })
+      })
+    }
+  }
+  const roomEnd = (room, winner, reason) => {
+    const settling = room.ranked ? settleRank(room, winner) : Promise.resolve(null)
+    settling.catch((e) => { console.error('[pvp] ランクの保存に失敗', e); return null })
+      .then((settled) => (room.random ? saveRecords(room, winner, reason, settled) : null))
+      .catch((e) => console.error('[pvp] 戦績の保存に失敗', e))
+  }
 
   // 待ち行列から、近い BP の2人を組み合わせる(待つほど、探す幅が広がる)
   function matchTick() {
@@ -71,6 +101,7 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
       queue.delete(a.uid); queue.delete(best.b.uid)
       let code; do { code = makeCode() } while (rooms.has(code))
       const room = new Room({ code, reg: a.reg, send: null, config, onClose: dropRoom, onEnd: roomEnd, ranked: a.ranked })
+      room.random = true // 待ち行列で組まれた(=ランダムマッチ)。ルームコードで入る対戦は足跡に残さない
       room.send = roomSend(room)
       rooms.set(code, room)
       const first = Math.random() < 0.5 ? [a, best.b] : [best.b, a] // どちらが先に入る(A になる)かは、ランダム
