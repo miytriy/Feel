@@ -104,7 +104,7 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-bb-mote { 0% { opacity: 0; transform: translate(0, 0) scale(0.6); } 25% { opacity: 0.95; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.1); } }
     @keyframes feel-av-up { 0% { opacity: 0; } 15% { opacity: 1; } 70% { opacity: 0.9; } 100% { opacity: 0; } }
     @keyframes feel-av-down { 0% { opacity: 0; } 15% { opacity: 1; } 70% { opacity: 0.9; } 100% { opacity: 0; } }
-    @keyframes feel-bar-out { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(22px); } }
+    @keyframes feel-bar-out { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-22px); } }
     @keyframes feel-av-band { 0% { opacity: 0; transform: scaleX(0.4); } 15% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0; transform: scaleX(1.2); } }
     @keyframes feel-av-chev { 0% { opacity: 0; } 15% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; } }
     @keyframes feel-ev2-rb { 0% { opacity: 0; transform: scale(0.45); } 25% { opacity: var(--o, 0.9); } 100% { opacity: 0; transform: scale(1.5); } }
