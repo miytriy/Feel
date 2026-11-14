@@ -357,6 +357,8 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         border: `2px solid ${selected ? C.active : selectable ? C.ink : active ? TEAM_COLOR[unit.team] : inspected ? C.mute : C.line}`,
         boxShadow: selected ? `0 0 0 3px ${alpha(C.active, 33)}` : active ? `0 0 0 3px ${alpha(TEAM_COLOR[unit.team], 20)}` : 'none',
         cursor: 'pointer', position: 'relative',
+        transition: 'transform 0.18s ease-out', willChange: selectable ? 'transform' : undefined,
+        ...(selectable && !gone ? { transform: 'translateY(-8px)', zIndex: 1 } : {}), // 選べるユニットは、少し上がる(動かすのは transform だけ)
         ...(hl ? { boxShadow: `0 0 0 4px ${C.active}`, transform: 'scale(1.03)', zIndex: 2 } : {}),
         ...(fx && fx.kind === 'evolve' ? { zIndex: 4 } : {}),
         ...(fx && fx.kind === 'damage' ? { animation: `${tick % 2 ? 'feel-shake' : 'feel-shake2'} 0.4s${fx.die === 'destroy' ? ', feel-d-melt 0.18s ease-in forwards, ' + (unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade') + ' 0.27s ease-in 0.24s forwards' : fx.die === 'vanish' ? ', feel-d-frame 0.03s ease-in 0.04s forwards' : ''}` } : fx && fx.die === 'destroy' ? { animation: `feel-d-melt 0.18s ease-in forwards, ${unit.field === 'main' ? 'feel-d-fadem' : 'feel-d-fade'} 0.27s ease-in 0.24s forwards` } : fx && fx.die === 'vanish' ? { animation: 'feel-d-frame 0.03s ease-in 0.04s forwards' } : {}), // 破壊: ドクロが出る前に、ユニットがぼやけて、下へ溶けるように崩れる
@@ -368,6 +370,7 @@ export function UnitCard({ unit, active, selected, selectable, inspected, onClic
         ...(role === 'target' || role === 'guard' ? { boxShadow: `0 0 0 3px ${role === 'guard' ? C.player : C.bad}, 0 0 16px 2px ${alpha(role === 'guard' ? C.player : C.bad, 55)}`, zIndex: 2 } : {}),
       }}
     >
+      {selectable && !gone && <span aria-hidden="true" data-testid="sel-glow" style={{ position: 'absolute', inset: -4, borderRadius: big ? 13 : 11, border: `2px solid ${C.active}`, boxShadow: `0 0 14px 3px ${alpha(C.active, 75)}, inset 0 0 10px 1px ${alpha(C.active, 45)}`, pointerEvents: 'none', zIndex: 3, willChange: 'opacity', animation: 'feel-sel-glow 1.1s ease-in-out infinite' }} />}
       {fx && fx.die === 'destroy' && <span key={`dg-${tick}`} aria-hidden="true" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: '#fff', pointerEvents: 'none', zIndex: 4, opacity: 0, animation: 'feel-d-glow 0.27s ease-in forwards', willChange: 'opacity' }} />}
       {fx && fx.die === 'destroy' && (
         // 破壊の演出: 白熱のフラッシュ → 赤い円(縁は桃色の輪、外側に暗い赤のにじみ。墓場が増えるときは、黒いドクロ入り)→ 透ける白い破片が散り、ドクロが溶け、円が赤いもやになって、火の粉と暗いかけらを散らして消える
