@@ -7,7 +7,7 @@ export default {
   passives: [
     {
       name: '進化時', trigger: 'onEvolve',
-      desc: '『ナイト』2体を召喚する。自分の場の他のフォロワーすべては攻撃力+100、体力+100する。',
+      desc: '『ナイト』2体を召喚する。自分の場の他のフォロワーすべては+100/+100する。',
       log: '『ナイト』2体を召喚する。自分の場の他のフォロワーすべては+100/+100する。',
       effects: [
         { type: 'summon', count: 2, unit: knight },
