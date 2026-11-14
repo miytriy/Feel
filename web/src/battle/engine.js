@@ -1150,7 +1150,7 @@ function runEffects(state, source, effects, ctx = {}) {
           break
         case 'advance': // 行動順アップ: いまの行動値(curAV)を、基準の行動値(baseAV)の pct% ぶん減らす(0未満にはならない)。
           // 減らすのはその1回だけ。そのキャラが行動すると行動値は基準に戻る(curAV = baseAV)ので、アップはそのターンにしか効かない
-          t.curAV = Math.max(0, t.curAV - (t.baseAV * (e.pct ?? 0)) / 100)
+          advanceAV(state, t, (t.baseAV * (e.pct ?? 0)) / 100) // すでに行動値0で待っているユニットは、飛び越えられない
           state.log.push(`${t.name}の行動順が早まった`)
           emit(state, 'av', { target: t.uid, dir: 'up', pct: e.pct ?? 0 }) // アクションバーのエフェクト用
           break
@@ -1367,8 +1367,9 @@ function startRound(state, opts) {
     if (state.round === EP_GRANT_ROUND) state.ep[team] = Math.min(EP_MAX, state.ep[team] + EP_GRANT)
   }
   if (state.round === EP_GRANT_ROUND) state.log.push(`ラウンド${EP_GRANT_ROUND}: 両チームにEP${EP_GRANT}が与えられた(進化できる)`)
+  const waiting0 = new Set(state.units.filter((u) => u.alive && u.curAV < WAIT_AV).map((u) => u.uid)) // ラウンドの頭にすでに待っていた者(疾走の人どうしは、これまでどおり速度で並ぶ)
   for (const u of state.units) {
-    if (u.alive && hasKw(u, 'dash')) { u.curAV = Math.max(0, u.curAV - u.baseAV); emit(state, 'av', { target: u.uid, dir: 'up', pct: 100 }) } // 疾走: 行動順100%アップ
+    if (u.alive && hasKw(u, 'dash')) { advanceAV(state, u, u.baseAV, waiting0); emit(state, 'av', { target: u.uid, dir: 'up', pct: 100 }) } // 疾走: 行動順100%アップ
   }
   for (const team of ['A', 'B']) {
     fireCrests(state, team, 'roundStart', null, opts)
@@ -1469,6 +1470,23 @@ function tickBuffs(state, actor) {
       })
       .filter((b) => (b.turns == null || b.turns > 0) && (!b.owner || ownerAlive(b.owner)))
   }
+}
+
+// 行動順アップ(%アップ・疾走など、すべて共通): 行動値を amount 減らす(0未満にはならない)。
+// ただし、すでに行動値0付近で行動を待っているほかのユニットは飛び越えられない(その直後に並ぶ)。
+// only を渡すと、待っている者をその中のユニットだけに限る
+const WAIT_AV = 1e-4 // これより小さい行動値は「行動を待っている」
+const WAIT_STEP = 1e-6 // 待っている者のすぐ後ろ(同じ行動値だと速度で追い越せてしまうので、わずかに後ろにする)
+export function advanceAV(state, unit, amount, only = null) {
+  if (unit.curAV < WAIT_AV) return // 自分がすでに待っているなら、そのまま
+  let floor = 0
+  const wait = (av) => { if (av < WAIT_AV && av + WAIT_STEP > floor) floor = av + WAIT_STEP }
+  for (const o of state.units) {
+    if (!o.alive || o === unit || o.uid === state.active || (only && !only.has(o.uid))) continue // 今まさに行動している者は、待っているとは数えない
+    wait(o.curAV)
+    if (o.accel) wait(o.accel.curAV)
+  }
+  unit.curAV = Math.max(floor, unit.curAV - amount)
 }
 
 // 行動バー上の全員の行動値を同じだけ進める(本体もアクセラレートも)
