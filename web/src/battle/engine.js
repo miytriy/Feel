@@ -752,7 +752,7 @@ function runEffects(state, source, effects, ctx = {}) {
       if (n % e.everyTurns !== 0) continue
     }
     if (e.earthCost) { // 【土の秘術_N】土の印をN消費して、この効果が働く。足りないときは働かない(対象を選ぶ効果とは組み合わせない: 選んだあとの再開で二重に消費するため)
-      if (state.earth[source.team] < e.earthCost) { state.log.push(`土の印が足りないので、【土の秘術_${e.earthCost}】は働かなかった`); skipGroup = e.repGroup ?? null; continue }
+      if (state.earth[source.team] < e.earthCost) { skipGroup = e.repGroup ?? null; continue } // 足りないときは、何も出さずに働かない
       addEarth(state, source.team, source, -e.earthCost)
       state.log.push(`【土の秘術_${e.earthCost}】土の印を${e.earthCost}消費(${state.earth[source.team]})`)
     }
@@ -1165,6 +1165,9 @@ function runEffects(state, source, effects, ctx = {}) {
   recalc(state)
 }
 
+// 【土の秘術_N】が最初の効果にあるのに、土の印が足りない能力は、発動しない(ログも出さない)
+const earthShort = (state, team, effects) => { const e = effects && effects[0]; return !!(e && e.earthCost && state.earth[team] < e.earthCost) }
+
 // トリガー型パッシブ(ファンファーレ・攻撃時・交戦時・進化時・ラストワード)を発動する
 function fire(state, trigger, unit, ctx = {}, from = 0) {
   if (!unit.alive && trigger !== 'lastWord') return
@@ -1174,6 +1177,7 @@ function fire(state, trigger, unit, ctx = {}, from = 0) {
     if (p.enterType && !hasType(ctx.other, p.enterType)) continue
     if (p.enterFollower && ctx.other.isAmulet) continue // 「フォロワーが場に出たとき」: アミュレットは含まない
     if (p.enterName && ctx.other.name !== p.enterName) continue // 指定の名前のキャラ(トークンなど)が出たときだけ
+    if (earthShort(state, unit.team, p.effects)) continue // 土の印が足りない【土の秘術】の能力は、発動しない(ログなし)
     if (p.deathKeyword && !(ctx.other && hasKw(ctx.other, p.deathKeyword))) continue // 指定のキーワード(守護など)を持つキャラが倒れたときだけ(allyDeath用)
     state.log.push(`${unit.name}の${bracket(p.name || TRIGGER_LABELS[trigger])}`)
     noteAbility(state, p.tag ?? TRIGGER_LABELS[trigger] ?? trigger, unit.name, p.name && p.name !== (p.tag ?? TRIGGER_LABELS[trigger]) ? p.name : '', p.desc, unit.team, p.logCombo && comboOf(state, unit) >= p.logCombo.combo ? p.logCombo.log : p.log)
@@ -1189,7 +1193,7 @@ function fireCrests(state, team, trigger, subject, opts) {
     for (const p of crest.passives) {
       if (p.trigger !== trigger) continue
       const source = trigger === 'allyTurnStart' ? subject : crestSource(state, crest)
-      if (!source || !checkCond(state, source, p.condition)) continue
+      if (!source || !checkCond(state, source, p.condition) || earthShort(state, crest.team, p.effects)) continue
       state.log.push(`クレスト【${crest.name}】が働いた`)
       noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team, p.log)
       runEffects(state, source, p.effects, { opts })
@@ -1403,7 +1407,7 @@ function beginTurn(state, unit, opts) {
   for (const crest of [...state.crests[unit.team]]) { // クレストの【(持ち主の)ターン開始時】: カウントダウンを進める前に働く(カウントダウン_2なら2回働く)
     if (crest.sourceUid !== unit.uid) continue
     for (const p of crest.passives) {
-      if (p.trigger !== 'turnStart' || !checkCond(state, unit, p.condition)) continue
+      if (p.trigger !== 'turnStart' || !checkCond(state, unit, p.condition) || earthShort(state, crest.team, p.effects)) continue
       state.log.push(`クレスト【${crest.name}】が働いた`)
       noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team, p.log)
       runEffects(state, unit, p.effects, { opts })
@@ -1424,7 +1428,7 @@ function endTurn(state, actor) {
     for (const crest of [...state.crests[actor.team]]) {
       if (crest.sourceUid !== actor.uid) continue
       for (const p of crest.passives) {
-        if (p.trigger !== 'turnEnd' || !checkCond(state, actor, p.condition)) continue
+        if (p.trigger !== 'turnEnd' || !checkCond(state, actor, p.condition) || earthShort(state, crest.team, p.effects)) continue
         state.log.push(`クレスト【${crest.name}】が働いた`)
         noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team, p.log)
         runEffects(state, actor, p.effects, {})
