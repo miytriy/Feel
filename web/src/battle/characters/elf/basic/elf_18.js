@@ -4,8 +4,8 @@ export default {
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     {
-      name: 'ファンファーレ【コンボ_3】', trigger: 'fanfare', condition: { combo: 3 },
-      desc: 'これは進化する。',
+      name: 'ファンファーレ', trigger: 'fanfare', condition: { combo: 3 },
+      desc: '【コンボ_3】これは進化する。',
       effects: [{ type: 'evolve' }],
     },
     {

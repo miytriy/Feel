@@ -3,7 +3,7 @@ export default {
   stats: { hp: 353, atk: 107, def: 200, spd: 89 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
-    { name: 'ファンファーレ【コンボ_3】', trigger: 'fanfare', condition: { combo: 3 },
+    { name: 'ファンファーレ', trigger: 'fanfare', condition: { combo: 3 },
       desc: '【コンボ_3】相手の場のフォロワー1体を選ぶ。それは現在体力100になる。',
       log: '相手の場のキャラクター1体を選ぶ。それは現在体力100になる。',
       effects: [{ type: 'loseHp', to: 100, target: 'enemyOne', choose: true }] },
