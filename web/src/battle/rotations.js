@@ -29,13 +29,16 @@ export const FORMATS = {
   unlimited: { name: 'アンリミテッド', rotations: 'all' },
   infinity: { name: 'インフィニティ', rotations: 'all', open: false }, // open:false = まだ遊べない(使用禁止ユニットの指定待ち)
 }
+// 遺物(セット遺物・部位つき遺物)は、ローテーション・アンリミテッドでは使用禁止。インフィニティだけで使える
+export const RELIC_FORMATS = ['infinity']
+export const relicAllowedIn = (format) => RELIC_FORMATS.includes(format)
 export const DEFAULT_FORMAT = 'rotation' // ランダムマッチ(ランク・カジュアル)・ルーム対戦は、いまはローテーションだけ
 // そのローテーション(フォルダ名 'basic' / 1 / 2… でも、名前 'ベーシック' / '伝説の幕開け' でもよい)は、その形式で使えるか。
 // id(または遺物の名前)を渡すと、使用禁止かどうかも見る
 export function rotationAllowed(format, rotation, id) {
   const f = FORMATS[format]
   if (!f) return false
-  if (id != null && (BANNED[format] || []).includes(id)) return false
+  if (id != null && format !== 'infinity' && (BANNED[format] || []).includes(id)) return false // インフィニティだけは、使用禁止のユニット・遺物でも使える(例外)
   if (f.rotations === 'all') return true
   const key = Object.keys(ROTATIONS).find((k) => k === String(rotation) || ROTATIONS[k] === rotation)
   return key != null && f.rotations.includes(key)

@@ -3,8 +3,8 @@ import { useIsDesktop, C, FONT, DISPLAY, useRemembered } from './ui.js'
 import { ALL_CHARACTERS } from './battle/characters/index.js'
 import { CLASS_ORDER } from './battle/characters/validate.js'
 import { KEYWORDS, TRIGGER_LABELS, RELICS } from './battle/engine.js'
-import { useRelicInv, equippedOf, ownerMap, equipRelic, forgeRelic, deleteRelic } from './relicInv.js'
-import { RELIC_PARTS, PART_IDS, RELIC_RARITIES, relicLines, relicTotals, statText, applyRelics, RELICS_ENABLED } from './battle/relicRules.js'
+import { useRelicInv, equippedOf, ownerMap, equipRelic, forgeRelic, deleteRelic, RELICS_USABLE } from './relicInv.js'
+import { RELIC_PARTS, PART_IDS, RELIC_RARITIES, relicLines, relicTotals, statText, applyRelics } from './battle/relicRules.js'
 import { ENHANCE_STEP } from './enhance.js'
 import { unlockLevel } from './unlock.js'
 import { RARITY, fold, collectRelated } from './CodexScreen.jsx'
@@ -350,8 +350,8 @@ function statBreakdown(c, pieces, enhLv) {
   const f = { ...base }
   if (enhLv > 0 && !c.amulet) for (const k of ['hp', 'atk', 'def', 'spd']) f[k] += enhLv * ENHANCE_STEP
   if (enhLv > 0 && !c.amulet && s.mag != null) f.mag += enhLv * ENHANCE_STEP
-  for (const m of (c.relic && RELICS[c.relic] ? RELICS[c.relic].mods : [])) f[m.stat] = Math.round(f[m.stat] * (1 + (m.pct || 0) / 100) + (m.flat || 0))
-  const g = pieces.length ? applyRelics(f, pieces) : f
+  for (const m of (RELICS_USABLE && c.relic && RELICS[c.relic] ? RELICS[c.relic].mods : [])) f[m.stat] = Math.round(f[m.stat] * (1 + (m.pct || 0) / 100) + (m.flat || 0))
+  const g = RELICS_USABLE && pieces.length ? applyRelics(f, pieces) : f
   const out = {}
   for (const k of Object.keys(base)) out[k] = { base: base[k], extra: Math.round((g[k] - base[k]) * 10) / 10 }
   return out
@@ -407,10 +407,10 @@ function RelicPane({ c }) {
   const nameOf = (cid) => ALL_CHARACTERS.find((d) => d.id === cid)?.name
   const run = async (fn) => { if (busy) return; setBusy(true); setMsg(''); try { await fn() } catch (e) { setMsg(e.message || '失敗しました') } finally { setBusy(false) } }
   const totals = relicTotals(mine)
-  if (!RELICS_ENABLED) return <div className="jp-empty" data-testid="relic-disabled">遺物は、いま使用できません。</div>
   if (!inv.loaded) return <div className="jp-empty" data-testid="relic-need-login">{inv.error ? `遺物を読み込めませんでした(${inv.error})` : '遺物を持つには、ログインが必要です。'}</div>
   return (
     <div data-testid="relic-pane">
+      {!RELICS_USABLE && <div className="jp-row" data-testid="relic-banned"><p>遺物は、ローテーション・アンリミテッドでは使用禁止です(ステータスにも反映されません)。インフィニティでは、使用禁止のユニット・遺物も使えます。</p></div>}
       <div className="jp-rl-sum">{Object.keys(totals).length ? Object.entries(totals).map(([k, v]) => <span key={k}>{statText(k, Math.round(v * 10) / 10)}</span>) : <span>遺物なし</span>}</div>
       <div className="jp-rl-tabs">
         {PART_IDS.map((p) => {
@@ -570,7 +570,7 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
   const relInv = useRelicInv() // 遺物を付け替えたら、画面を更新する
   const relicName = c ? c.relic || null : null // キャラ本来のセット遺物(ある場合)
   const relic = relicName ? RELICS[relicName] : null
-  const relicCount = c && RELICS_ENABLED ? equippedOf(c.id, relInv).length : 0
+  const relicCount = c ? equippedOf(c.id, relInv).length : 0
   const [statOpen, setStatOpen] = useState(false)
   const sb = c ? statBreakdown(c, equippedOf(c.id, relInv), (enhMap && enhMap[c.id]) || 0) : null
   const rel = c ? collectRelated(c) : { units: [], spells: [] }
@@ -630,7 +630,7 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
       <div className="big"><small>×</small>{sigN}</div>
       <div className="cap">{c.name}の署名 / SIGNATURE</div>
       <div className="rar"><span>{RARITY[c.rarity]?.label || c.rarity}</span><span className="pp">{'◆'.repeat(PIPS[c.rarity] || 0)}</span></div>
-      <div className="relic"><small>遺物</small><b>{relicCount}/{PART_IDS.length}部位</b>{relic && RELICS_ENABLED ? <div>{relicName}:{relic.desc}</div> : null}</div>
+      <div className="relic"><small>遺物</small><b>{relicCount}/{PART_IDS.length}部位</b>{relic ? <div>{relicName}:{relic.desc}</div> : null}</div>
       <div className="tiles">
         <div><small>パッシブ</small><b>{(c.passives || []).length}</b></div>
         <div><small>特性</small><b>{(c.traits || []).length + (c.accelerate ? 1 : 0)}</b></div>
@@ -664,7 +664,7 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
     pane = (
       <div className={`jp-pane${tabGone ? ' gone' : ''}`}>
         <div className="jp-ph">遺物<em>{relicCount}/{PART_IDS.length}</em></div>
-        {relic && RELICS_ENABLED && <div className="jp-row"><p data-testid="relic-set">このキャラ本来の遺物: {relicName}({relic.desc})</p></div>}
+        {relic && <div className="jp-row"><p data-testid="relic-set">このキャラ本来の遺物: {relicName}({relic.desc})</p></div>}
         <RelicPane c={c} />
         <div className="jp-sec">特性</div>
         {(c.traits || []).length === 0 && <div className="jp-row"><p>特性はありません。</p></div>}

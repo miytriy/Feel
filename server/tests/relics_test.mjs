@@ -58,10 +58,12 @@ await api('POST', '/api/relics/equip', 'u1', { charId: 'royal_17', part: 'head',
 const data = store.get('users/u1')
 const reg = await loadRegistry()
 const ids = ['royal_17', 'royal_03']
-const built = buildTeam(reg, { ids, spells: [], relicPieces: [{ part: 'head', stars: 5, level: 15, main: 'hp', subs: [] }] }, { relicData: data })
+const built = buildTeam(reg, { ids, spells: [], relicPieces: [{ part: 'head', stars: 5, level: 15, main: 'hp', subs: [] }] }, { relicData: data, format: 'infinity' })
 ok(!built.error && built.defs[0].relicPieces?.length === 1 && built.defs[0].relicPieces[0].main === 'hp' && !built.defs[1].relicPieces, '対人戦: 保存した装備が反映され、画面から届いた中身は使わない')
 ok(normalizeEquip({ x: { head: 'none' } }, []).x === undefined, '持っていない遺物の装備は外れる')
 ok(forgeRelic({ part: 'body', stars: 5 }, Math.random, 'z').relic.id === 'z', '胴体の遺物を作れる')
+const bannedBuilt = buildTeam(reg, { ids, spells: [] }, { relicData: data })
+ok(!bannedBuilt.error && !bannedBuilt.defs[0].relicPieces, 'ローテーションでは、装備していても遺物は反映されない(使用禁止)')
 server.close()
 console.log(bad ? `NG ${bad}件` : 'OK: すべて合格')
 process.exit(bad ? 1 : 0)

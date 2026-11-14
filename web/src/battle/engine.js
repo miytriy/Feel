@@ -1,4 +1,4 @@
-import { applyRelics, RELICS_ENABLED } from './relicRules.js'
+import { applyRelics } from './relicRules.js'
 import ghostToken from './characters/nightmare/tokens/nightmare_token_02.js' // テスト戦の「ゴースト無限湧き」用
 import EARTH_SHARD from './amulet/witch/1/witch_amulet_01.js' // 土の印がないときに召喚される「大地の魔片」
 // Feel Battle - バトルの処理(段階4: アーマー・墓場・召喚物・アミュレット・遺物 を追加。段階3までの進化・EP・信仰値・カウントダウン・クレスト・連携・奥義・アクセラレートを含む)
@@ -125,14 +125,14 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
   // 遺物のセット効果(def.relic に遺物の名前を書く)を、元のステータスに反映する
   const relic = def.relic ? RELICS[def.relic] : null
   if (def.relic && !relic) throw new Error(`知らない遺物です: ${def.relic}`)
-  for (const m of relic && RELICS_ENABLED ? relic.mods : []) {
+  for (const m of relic ? relic.mods : []) {
     const cur = m.stat === 'hp' ? s.hp : base[m.stat]
     const next = Math.round(cur * (1 + (m.pct || 0) / 100) + (m.flat || 0))
     if (m.stat === 'hp') s.hp = next
     else base[m.stat] = next
   }
   // 部位つきの遺物(def.relicPieces: relicRules.js の遺物の配列)のメイン・サブステータスを反映する
-  if (RELICS_ENABLED && def.relicPieces?.length) {
+  if (def.relicPieces?.length) {
     const r = applyRelics({ ...base, hp: s.hp }, def.relicPieces)
     s.hp = r.hp
     Object.assign(base, { atk: r.atk, def: r.def, spd: r.spd, dmgResist: r.dmgResist, critRate: r.critRate, critDmg: r.critDmg, physUp: r.physUp, magUp: r.magUp, healUp: r.healUp, effHit: r.effHit })

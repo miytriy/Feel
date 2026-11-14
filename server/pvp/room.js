@@ -27,9 +27,10 @@ export function buildTeam(reg, team, { owned = null, enh = {}, format = reg.rota
   for (const [rid, rname] of Object.entries(relicsIn)) {
     if (!ids.includes(rid)) return { error: '編成にいないキャラの遺物が指定されています' }
     if (typeof rname !== 'string' || (rname !== '' && !Object.prototype.hasOwnProperty.call(reg.engine.RELICS, rname))) return { error: `知らない遺物です(${String(rname).slice(0, 20)})` }
-    if (rname !== '' && !reg.rotations.rotationAllowed(format, reg.engine.RELICS[rname].rotation, rname)) return { error: `遺物「${rname}」は、${reg.rotations.FORMATS[format]?.name ?? format}では使えません` }
+    if (rname !== '' && (!reg.rotations.relicAllowedIn(format) || !reg.rotations.rotationAllowed(format, reg.engine.RELICS[rname].rotation, rname))) return { error: `遺物「${rname}」は、${reg.rotations.FORMATS[format]?.name ?? format}では使えません` }
   }
   const withRelic = (d) => {
+    if (!reg.rotations.relicAllowedIn(format)) { const { relic: _x, ...rest } = d; return rest } // 遺物は、インフィニティ以外では使えない
     if (!Object.prototype.hasOwnProperty.call(relicsIn, d.id)) return d
     const { relic: _old, ...rest } = d
     return relicsIn[d.id] ? { ...rest, relic: relicsIn[d.id] } : rest
@@ -52,7 +53,7 @@ export function buildTeam(reg, team, { owned = null, enh = {}, format = reg.rota
   const sv = reg.formation.validateSpellSet(spells, chars)
   if (!sv.ok) return { error: sv.reason }
   // 部位つき遺物: 画面から届いた中身は使わず、サーバーに保存してある、そのユーザーの装備だけを反映する
-  const withPieces = (d) => { const p = relicData ? piecesOf(relicData, d.id) : []; return p.length ? { ...d, relicPieces: p } : d }
+  const withPieces = (d) => { const p = relicData && reg.rotations.relicAllowedIn(format) ? piecesOf(relicData, d.id) : []; return p.length ? { ...d, relicPieces: p } : d }
   return { defs: chars.map((d) => reg.enhance.enhanceDef(withPieces(withRelic(d)), enh[d.id] || 0)), spells, chars }
 }
 

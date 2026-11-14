@@ -28,16 +28,18 @@ const mkRoom = () => { const log = []; const r = new Room({ code: 'TEST22', reg,
 
 // 人事画面で持たせた遺物が、サーバーのバトル用の定義に反映される(知らない遺物・編成にいないキャラは断る)
 { const ids = mains.slice(0, 3).map((c) => c.id)
-  const a = buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: '鬼の形相', [ids[1]]: '' } })
+  const a = buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: '鬼の形相', [ids[1]]: '' } }, { format: 'infinity' })
   ok(!a.error && a.defs[0].relic === '鬼の形相' && !a.defs[1].relic, '持たせた遺物がバトル用の定義に反映される(空は遺物なし)')
-  ok(buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: 'でたらめ' } }).error, '知らない遺物は断る')
+  ok(buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: 'でたらめ' } }, { format: 'infinity' }).error, '知らない遺物は断る')
   ok(buildTeam(reg, { ids, spells: [], relics: { 'nobody': '鬼の形相' } }).error, '編成にいないキャラの遺物は断る')
   ok(buildTeam(reg, { ids, spells: [], relics: ['鬼の形相'] }).error, '遺物の指定の形が違うものは断る')
-  ok(!buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: '鬼の形相' } }, { format: 'unlimited' }).error, 'アンリミテッドでは遺物を持たせられる')
+  ok(buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: '鬼の形相' } }).error, 'ローテーションでは遺物は使用禁止')
+  ok(buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: '鬼の形相' } }, { format: 'unlimited' }).error, 'アンリミテッドでも遺物は使用禁止')
+  ok(!buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: '鬼の形相' } }, { format: 'infinity' }).error, 'インフィニティでは遺物を持たせられる')
   const saved = reg.engine.RELICS['鬼の形相'].rotation
   reg.engine.RELICS['鬼の形相'].rotation = 'unknown-rot'
   ok(buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: '鬼の形相' } }).error, 'ローテーションに入らない遺物は断る')
-  ok(!buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: '鬼の形相' } }, { format: 'unlimited' }).error, '…でもアンリミテッドなら使える')
+  ok(!buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: '鬼の形相' } }, { format: 'infinity' }).error, '…でもインフィニティなら使える')
   reg.engine.RELICS['鬼の形相'].rotation = saved
   ok(!buildTeam(reg, { ids, spells: [] }).error, '遺物の指定がなくても、今までどおり通る') }
 console.log(failed ? `失敗 ${failed}` : '全部OK'); process.exit(failed ? 1 : 0)
