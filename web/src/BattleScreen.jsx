@@ -810,7 +810,7 @@ function Abilities({ unit, full }) {
   if (!out.length && !boxes.length) return <div style={{ color: C.mute }}>能力なし</div>
   for (const [bi, b] of boxes.entries()) {
     out.push(
-      <div key={`b${bi}`} style={{ marginTop: bi || out.length ? 4 : 0, padding: '5px 9px', borderRadius: 6, background: alpha(C.active, 10), borderLeft: `4px solid ${C.active}` }}>
+      <div key={`b${bi}`} style={{ marginTop: bi || out.length ? 4 : 0, padding: '5px 9px', borderRadius: 6, background: tint(C.active, 12), borderLeft: `4px solid ${C.active}` }}>
         <div style={{ fontWeight: 700 }}>{b.icon === 'crest' ? <CrestMark /> : b.icon === 'faith' ? <FaithMark /> : <SI k="spd" />}{b.title}{b.sub && <span style={{ color: C.mute, fontWeight: 400 }}> {b.sub}</span>}</div>
         {b.parts.map((lines, pi) => (
           <div key={pi}>
@@ -847,13 +847,15 @@ function Abilities({ unit, full }) {
   )
 }
 
+// 不透明な背景: カード色に、チーム色などをうっすら混ぜる(alpha と違い、透けない)
+const tint = (color, pct) => `color-mix(in srgb, ${color} ${pct}%, ${C.card})`
 function InfoCard({ testid, unit, accent, children, big = false, style }) {
   const edge = accent ?? C.active
   const hp = Math.ceil(unit.hp) === unit.maxHp ? `${unit.maxHp}` : `${Math.ceil(unit.hp)}/${unit.maxHp}`
   const kind = [unit.class, ...String(unit.type || '').split('/')].filter(Boolean).join('/')
   const mag = unit.skill?.stat === 'mag' || unit.mag > 0
   return (
-    <div data-testid={testid} style={{ borderRadius: 10, overflow: 'hidden', background: C.card, border: `2px solid ${edge}`, boxShadow: `0 0 0 1px ${alpha(edge, 35)}, 0 4px 14px ${alpha('#000000', 28)}`, fontSize: big ? 13 : 12, lineHeight: 1.55, ...style }}>
+    <div data-testid={testid} style={{ borderRadius: 10, overflow: 'hidden', background: tint(edge, 9), border: `2px solid ${edge}`, boxShadow: `0 0 0 1px ${alpha(edge, 35)}, 0 4px 14px ${alpha('#000000', 28)}`, fontSize: big ? 13 : 12, lineHeight: 1.55, ...style }}>
       <div style={{ padding: big ? '8px 12px 6px' : '6px 10px 5px', background: `linear-gradient(90deg, ${alpha(edge, 30)}, ${alpha(edge, 6)})` }}>
         <div style={{ fontWeight: 800, fontSize: big ? 16 : 14, overflowWrap: 'anywhere' }}><SI k="spd" />{Math.round(unit.spd)}/{unit.name}{unit.evolved ? '(進化済)' : ''}{unit.field === 'summon' ? '(召喚物)' : ''}</div>
         {!unit.isAmulet && (
