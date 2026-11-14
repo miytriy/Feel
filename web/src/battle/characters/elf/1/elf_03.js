@@ -1,11 +1,11 @@
 export default {
   id: 'elf_03', name: 'ベビーカーバンクル', class: 'エルフ', rarity: 'silver',
-  stats: { hp: 226, atk: 231, def: 128, spd: 80 },
+  stats: { hp: 226, atk: 231, def: 128, spd: 86 },
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
-    { name: 'ファンファーレ', trigger: 'fanfare', desc: '自分の場の他単体を選ぶ。それを入場させ直す。', log: '自分の場の他単体を選ぶ。それを「再入場」させる。',
+    { name: 'ファンファーレ', trigger: 'fanfare', desc: '自分の場の他のユニット1体を選ぶ。それを再出場させる。', log: '自分の場の他のユニット1体を選ぶ。それを再出場させる。',
       effects: [{ type: 'reenter', target: 'otherAllyOne', choose: true }] },
-    { name: '進化時', trigger: 'onEvolve', desc: '自分の現在MPを3回復。', log: '自分の現在MPを3回復。',
+    { name: '進化時', trigger: 'onEvolve', desc: '自分のMPを3回復。', log: '自分のMPを3回復。',
       effects: [{ type: 'mp', amount: 3 }] },
   ],
 }
