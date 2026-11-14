@@ -516,7 +516,7 @@ function emit(state, type, data = {}) {
     o.accelAV = u.accel ? u.accel.curAV : null
     units[u.uid] = o
   }
-  state.events.push({ type, ...data, round: state.round, units, totalAV: state.totalAV, comboReset: { A: state.comboReset.A && { ...state.comboReset.A }, B: state.comboReset.B && { ...state.comboReset.B } }, crestSlots: crestSlots(state), logLen: state.log.length, mp: { ...state.mp }, ep: { ...state.ep } })
+  state.events.push({ type, ...data, round: state.round, units, totalAV: state.totalAV, comboReset: { A: state.comboReset.A && { ...state.comboReset.A }, B: state.comboReset.B && { ...state.comboReset.B } }, crestSlots: crestSlots(state), logLen: state.log.length, mp: { ...state.mp }, ep: { ...state.ep }, comboCount: { ...state.comboCount } })
 }
 
 // 直近に発動した能力(画面に説明を出すための記録): kind=種類(ファンファーレ・特性・スペルなど) owner=持ち主の名前 name=能力名 desc=説明

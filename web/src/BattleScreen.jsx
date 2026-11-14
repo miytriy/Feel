@@ -566,6 +566,7 @@ function TeamStatus({ state, team, big = false, inline = false }) {
   const chips = [
     ['MP', `${state.mp[team]}/${state.mpMax[team]}`, true],
     ['EP', state.ep[team], true],
+    ['コンボ', state.comboCount?.[team] ?? 0, true],
     ['信仰', state.faith[team], state.faith[team] > 0],
     ['スペルブースト', state.boost?.[team] ?? 0, (state.boost?.[team] ?? 0) > 0],
     ['土の印', state.earth?.[team] ?? 0, (state.earth?.[team] ?? 0) > 0],
@@ -1463,7 +1464,7 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
       comboReset: ev.comboReset ?? state.comboReset,
       crests: ev.crestSlots ? Object.fromEntries(['A', 'B'].map((t) => [t, (state.crests?.[t] || []).map((c, ci) => ({ ...c, ...(ev.crestSlots[t][ci] || {}) }))])) : state.crests,
       log: state.log.slice(0, ev.logLen),
-      mp: { ...state.mp, ...ev.mp }, ep: { ...state.ep, ...ev.ep },
+      mp: { ...state.mp, ...ev.mp }, ep: { ...state.ep, ...ev.ep }, comboCount: { ...state.comboCount, ...ev.comboCount },
       winner: null, active, lastAbility,
     }
   }
