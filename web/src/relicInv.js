@@ -1,7 +1,7 @@
 // 部位つき遺物: 所持と装備(サーバーに保存してあるものを、この端末に写して使う)
 import { useSyncExternalStore } from 'react'
 import { fetchRelics, forgeRelicApi, equipRelicApi, deleteRelicApi } from './api.js'
-import { PART_IDS } from './battle/relicRules.js'
+import { PART_IDS, RELICS_ENABLED } from './battle/relicRules.js'
 
 let state = { relics: [], equip: {}, max: 300, loaded: false, error: '' }
 const listeners = new Set()
@@ -33,6 +33,7 @@ export function ownerMap(s = state) {
 }
 // バトルに出す自分のキャラ定義へ、装備している遺物を反映する(CPU戦・テスト戦。対人戦はサーバーが、保存してある装備を使う)
 export const withRelicPieces = (def) => {
+  if (!RELICS_ENABLED) return def
   const p = equippedOf(def.id).map(({ id: _id, ...r }) => r)
   return p.length ? { ...def, relicPieces: p } : def
 }

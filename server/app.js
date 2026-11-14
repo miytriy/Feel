@@ -8,7 +8,7 @@ import { sanitizeMatch, addMatch } from './career.js'
 import { checkPassword, checkToken, gateToken, makeFailLimiter } from './gate.js'
 import { CONFIG } from './config.js'
 import { forgeRelic, normalizeEquip, RELIC_INV_MAX } from './relics.js'
-import { PART_IDS } from '../web/src/battle/relicRules.js'
+import { PART_IDS, RELICS_ENABLED } from '../web/src/battle/relicRules.js'
 import { emptyRank } from '../web/src/battle/rank.js'
 import {
   dayKey, loginBonusStatus, claimLoginBonus, passStatus, buyPass, passBonusOf, isValidBattleLevel, judgeBattleReward,
@@ -164,6 +164,7 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
   // 検証用: 遺物を作る(マスターパスワードの通行証が要る。サーバーにマスターパスワードが設定されていないときは使えない)
   app.post('/api/relics/forge', requireAuth, async (req, res) => {
     try {
+      if (!RELICS_ENABLED) throw new HttpError(403, '遺物は、いま使用できません')
       if (!gateOn || !gatePassed(req)) throw new HttpError(403, '遺物を作るには、マスターパスワードが必要です')
       const b = req.body || {}
       const f = forgeRelic({ part: b.part, stars: b.stars, main: b.main, level: b.level }, Math.random, randomId())
@@ -185,6 +186,7 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
   // 装備する / 外す: { charId, part, relicId | null }。その遺物をほかのキャラが持っていたら、そちらから外れる
   app.post('/api/relics/equip', requireAuth, async (req, res) => {
     try {
+      if (!RELICS_ENABLED && req.body?.relicId != null) throw new HttpError(403, '遺物は、いま使用できません') // 外すのだけは、できる
       const { charId, part, relicId } = req.body || {}
       if (typeof charId !== 'string' || !charId || charId.length > 60) throw new HttpError(400, 'キャラが正しくありません')
       if (!PART_IDS.includes(part)) throw new HttpError(400, '部位が正しくありません')
