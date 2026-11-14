@@ -116,6 +116,8 @@ export function pauseKeys(on) { capturing = Math.max(0, capturing + (on ? 1 : -1
 
 // ---- 画面のボタンを探して押す(矢印・決定・戻る・閉じる・タブ) ----
 const FOCUSABLE = 'button:not([disabled]), a[href], [role="button"]:not([aria-disabled="true"]), [role="tab"], [role="radio"], input:not([type="hidden"]):not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+// 選んだユニットの情報パネルなど、上に重ねて出すだけの表示。矢印キーの移動先にはならず、その下にあるボタンを「隠している」とも数えない
+const OVERLAY = '[data-testid="sel-info"], [data-testid="ability-note"]'
 const visible = (el) => {
   const r = el.getBoundingClientRect()
   if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.right < 0 || r.top > innerHeight || r.left > innerWidth) return false
@@ -123,10 +125,10 @@ const visible = (el) => {
   if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) < 0.05) return false
   // 手前に別のもの(ダイアログなど)がかぶっていたら、選べない
   const cx = Math.min(innerWidth - 1, Math.max(0, r.left + r.width / 2)), cy = Math.min(innerHeight - 1, Math.max(0, r.top + r.height / 2))
-  const top = document.elementFromPoint(cx, cy)
+  const top = document.elementsFromPoint(cx, cy).find((x) => !x.closest(OVERLAY)) // 情報パネルは飛ばして、その下を見る
   return !!top && (top === el || el.contains(top) || top.contains(el))
 }
-const candidates = () => [...document.querySelectorAll(FOCUSABLE)].filter((el) => el.getAttribute('data-alive') !== 'false' && visible(el)) // 戦闘不能のユニット(data-alive=false)は、選べない札なので飛ばす
+const candidates = () => [...document.querySelectorAll(FOCUSABLE)].filter((el) => el.getAttribute('data-alive') !== 'false' && !el.closest(OVERLAY) && visible(el)) // 戦闘不能のユニット(data-alive=false)は、選べない札なので飛ばす
 const rect = (el) => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, r } }
 
 export function moveFocus(dir) {
