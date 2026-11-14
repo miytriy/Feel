@@ -1060,26 +1060,35 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
   const [logOpen, setLogOpen] = useState(false) // 戦闘実況のオーバーレイを開いている
   // キーボード: バトルログ(Tab)・ターン終了(Space)・攻撃(A)。ボタンが出ていて押せるときだけ働く(キーは、設定の「コンフィグ」で変えられる)
   const pressBtn = (testid) => { const b = document.querySelector(`[data-testid="${testid}"]`); if (!b || b.disabled) return false; b.click(); return true }
-  // スマホ: 操作パネルで盤面が隠れるときは、盤面を自動で縮めて、全部見えるようにする(設定でオン・オフ。縮めるのは、最大で6割まで)
+  // 操作パネルで盤面が隠れるときは、フィールドのユニット(カード)だけを小さくして、画面内に収める(スマホ・小さいPC。設定でオン・オフ。小さくするのは、最大で約半分まで)
+  // 盤面ぜんたいを拡大縮小するのではなく、カードの大きさ(--fit)を変えるので、見出しや文字はそのまま。カードが小さくなったぶん、盤面の高さが縮む
   const fitOn = useRef(loadSettings().fitField !== false).current
+  const FIT_MIN = 0.5
   const headRef = useRef(null), panelRef = useRef(null), boardRef = useRef(null)
-  const [fit, setFit] = useState(1)
   useEffect(() => {
     if (!fitOn) return undefined
     const calc = () => {
-      const h = headRef.current, p = panelRef.current, b = boardRef.current
-      if (!h || !p || !b) return
-      const natural = b.offsetHeight
-      const avail = window.innerHeight - h.offsetHeight - p.offsetHeight - 20
-      const s = natural > 0 ? Math.max(0.6, Math.min(1, avail / natural)) : 1
-      setFit((cur) => (Math.abs(cur - s) > 0.015 ? s : cur))
+      const p = panelRef.current, b = boardRef.current
+      if (!p || !b) return
+      const heightAt = (v) => { b.style.setProperty('--fit', String(v)); return b.getBoundingClientRect().height }
+      const top = b.getBoundingClientRect().top + window.scrollY
+      const wrapBottom = desktop ? 28 : 12
+      const avail = window.innerHeight - top - p.offsetHeight - wrapBottom - 8
+      const full = heightAt(1)
+      let s = 1
+      if (full > avail) {
+        const small = heightAt(FIT_MIN)
+        s = full - small > 1 ? FIT_MIN + (1 - FIT_MIN) * ((avail - small) / (full - small)) : FIT_MIN // 高さは、カードの大きさにほぼ比例する
+        s = Math.max(FIT_MIN, Math.min(1, s))
+      }
+      b.style.setProperty('--fit', String(Math.floor(s * 100) / 100))
     }
     calc()
     const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(calc) : null
-    ;[headRef.current, panelRef.current, boardRef.current].forEach((el) => el && ro && ro.observe(el))
+    ;[headRef.current, panelRef.current].forEach((el) => el && ro && ro.observe(el))
     window.addEventListener('resize', calc)
     return () => { ro && ro.disconnect(); window.removeEventListener('resize', calc) }
-  }, [fitOn, !!state])
+  }, [fitOn, desktop, state])
   useHotkey('battle.log', () => { if (!state) return false; setLogOpen((v) => !v) })
   useHotkey('battle.endTurn', () => pressBtn('end-turn'))
   useHotkey('battle.attack', () => pressBtn('attack-go'))
@@ -1805,8 +1814,8 @@ export default function BattleScreen({ onExit, cpuDelay = 700, rewardApi: reward
       {speedBar}
       {errBox}
 
-      <div style={fitOn && fit < 1 && boardRef.current ? { height: Math.ceil(boardRef.current.offsetHeight * fit), flex: 'none' } : { flex: 'none' }}>
-        <div ref={boardRef} style={fitOn && fit < 1 ? { transform: `scale(${fit})`, transformOrigin: 'top left', width: `${100 / fit}%` } : undefined}>
+      <div style={{ flex: 'none' }}>
+        <div ref={boardRef} className="fit-board">
       <Row extra={<TeamStatus state={view} team={OPP()} inline />} title="相手" color={C.enemy}>{enemies.map(card)}</Row>
       <Row tight title="相手の召喚物" color={C.enemy}>{summonCards(enemySummons)}</Row>
 
