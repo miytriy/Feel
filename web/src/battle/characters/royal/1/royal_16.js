@@ -7,9 +7,9 @@ export default {
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '『スティールナイト』4体を召喚する。', log: '『スティールナイト』4体を召喚する。', effects: [{ type: 'summon', count: 4, unit: steelKnight }] },
     {
-      name: '常時', trigger: 'allyEnter', enterType: '兵士',
-      desc: '自分の場に「タイプ：兵士」のフォロワーが出たとき、それは攻撃力+100し、【突進】と【守護】を持つ。',
-      log: 'それは攻撃力+100し、【突進】と【守護】を持つ。',
+      name: '常時', trigger: 'allyEnter', enterFollower: true,
+      desc: '自分の他のフォロワーが場に出たとき、それは+100/+0して【突進】と【守護】を持つ。',
+      log: 'それは+100/+0して【突進】と【守護】を持つ。',
       effects: [
         { type: 'buff', stat: 'atk', flat: 100, target: 'entered' },
         { type: 'gainKeyword', keyword: 'rush', target: 'entered' },

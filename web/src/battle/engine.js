@@ -1174,6 +1174,7 @@ function fire(state, trigger, unit, ctx = {}, from = 0) {
     const p = unit.passiveObjs[i]
     if (p.trigger !== trigger || !checkCond(state, unit, p.condition)) continue
     if (p.enterType && !hasType(ctx.other, p.enterType)) continue
+    if (p.enterFollower && ctx.other.isAmulet) continue // 「フォロワーが場に出たとき」: アミュレットは含まない
     if (p.enterName && ctx.other.name !== p.enterName) continue // 指定の名前のキャラ(トークンなど)が出たときだけ
     if (p.deathKeyword && !(ctx.other && hasKw(ctx.other, p.deathKeyword))) continue // 指定のキーワード(守護など)を持つキャラが倒れたときだけ(allyDeath用)
     state.log.push(`${unit.name}の${bracket(p.name || TRIGGER_LABELS[trigger])}`)
