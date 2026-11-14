@@ -1145,6 +1145,7 @@ function runEffects(state, source, effects, ctx = {}) {
             recalc(state)
           }
           state.log.push(`${t.name}は再出場した`)
+          afterEnter(state, t) // 再出場 = 場を離れて、もう一度出場する: 【場に出たとき】や味方の「場に出たとき」も働く(【ファンファーレ】は、次の自分のターン開始時にもう一度働く)
           break
         case 'advance': // 行動順アップ: いまの行動値(curAV)を、基準の行動値(baseAV)の pct% ぶん減らす(0未満にはならない)。
           // 減らすのはその1回だけ。そのキャラが行動すると行動値は基準に戻る(curAV = baseAV)ので、アップはそのターンにしか効かない
