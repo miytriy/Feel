@@ -8,7 +8,7 @@ export default {
   skill: { name: '-', stat: 'atk', type: 'physical', mult: 0 },
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '『フェアリー』1体を召喚する。', log: '『フェアリー』1体を召喚する。',
-      logCombo: { combo: 3, log: '『フェアリー』1体を召喚する。『森の神秘』1回を有効化する。' }, // コンボ3以上のときは、この1行にまとめて出す
+      logIf: [{ condition: { combo: 3 }, log: '『フェアリー』1体を召喚する。『森の神秘』1回を有効化する。' }], // コンボ3以上のときは、この1行にまとめて出す
       effects: [{ type: 'summon', count: 1, unit: fairy }] },
     { name: 'コンボ_3', trigger: 'combo', min: 3, desc: '『森の神秘』1回を有効化する。', log: false, effects: [{ type: 'enableSpell', spell: forestMystery }] },
   ],

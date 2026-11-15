@@ -7,7 +7,7 @@ export default {
       name: 'ファンファーレ', trigger: 'fanfare',
       desc: '自分の場の他のキャラクター1体を選ぶ。それは+200/+200する。【覚醒】なら、+200/+200ではなく、+300/+300。',
       log: '自分の場の他のフォロワー1体を選ぶ。それは+200/+200する。',
-      logAwaken: '自分の場の他のフォロワー1体を選ぶ。それは+300/+300する。', // 【覚醒】のとき
+      logIf: [{ condition: { awaken: true }, log: '自分の場の他のフォロワー1体を選ぶ。それは+300/+300する。' }], // 【覚醒】のとき
       effects: [
         { type: 'buff', stat: 'atk', flat: 200, target: 'otherAllyOne', choose: true }, // ここで対象を選ぶ(以降の効果も同じ対象)
         { type: 'maxHp', flat: 200, target: 'otherAllyOne' },

@@ -6,7 +6,7 @@ export default {
     name: 'ファンファーレ', trigger: 'fanfare', usesCombo: true,
     desc: '相手の場のキャラクターからランダム1体に150の物理ダメージ。【コンボ_3】1体ではなく3体。',
     log: '相手の場からランダム1体に150の物理ダメージ。',
-    logCombo: { combo: 3, log: '相手の場からランダム3体に150の物理ダメージ。' },
+    logIf: [{ condition: { combo: 3 }, log: '相手の場からランダム3体に150の物理ダメージ。' }],
     effects: [{ type: 'damage', stat: 'atk', mult: 0, add: 150, dmgType: 'physical', target: 'enemyRandom', count: 1, comboCount: { combo: 3, count: 3 } }],
   }],
 }
