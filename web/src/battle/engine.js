@@ -626,8 +626,26 @@ function placeCrest(state, source, def, onEnemy = false) {
 // 墓場: 攻撃を受けるたびに+1、キャラが倒されると+3(チーム共有)
 const GRAVE_PER_HIT = 1
 const GRAVE_PER_DEATH = 3
-// 効果の perGraveyard が指定されていれば、墓場1つにつきその分だけ効果が大きくなる
-const graveBonus = (state, source, e) => (e.perGraveyard || 0) * state.graveyard[source.team]
+// 「〜1つにつき、効果がその分だけ増える」: 数えるもの(COUNTERS)× 1つあたりの量。効果に per* を書く(キー名 → 数えるもの)
+//   perEarth(土の印)/ perGraveyard(墓場)/ perCombo(コンボ)/ perFollower(自分の場のフォロワー数)/ perBoost(スペルブーストされた回数)/ perType(タイプの数。1つあたりは perTypeFlat)
+//   新しく数えるものを足すときは、COUNTERS に1行と PER_KEYS に1行足すだけ
+const COUNTERS = {
+  earth: (state, src) => state.earth[src.team],
+  graveyard: (state, src) => state.graveyard[src.team],
+  combo: (state, src) => comboOf(state, src),
+  follower: (state, src) => state.units.filter((u) => u.alive && !u.isAmulet && u.team === src.team).length,
+  boost: (state, src) => src.boost || 0,
+  type: (state, src, e) => typeCount(state, src, e.perType),
+}
+const PER_KEYS = { perEarth: 'earth', perGraveyard: 'graveyard', perCombo: 'combo', perFollower: 'follower', perBoost: 'boost' }
+// skip: 数えない per キー(バフの perGraveyard は、割合(pct)のほうに足すため、flat では数えない)
+function perAmount(state, src, e, skip = []) {
+  let sum = 0
+  for (const [key, of] of Object.entries(PER_KEYS)) if (e[key] && !skip.includes(key)) sum += e[key] * COUNTERS[of](state, src, e)
+  if (e.perType) sum += (e.perTypeFlat ?? 1) * COUNTERS.type(state, src, e)
+  return sum
+}
+const graveBonus = (state, source, e) => (e.perGraveyard || 0) * COUNTERS.graveyard(state, source) // バフの割合(pct)に足す墓場の分
 
 // 消滅させる: 破壊でも「場を離れる」でもない。墓場にも倒された記録にも入らず、ラストワードや味方の戦闘不能の能力も働かない
 function vanishUnit(state, u, log = true, blast = false) {
@@ -1032,7 +1050,7 @@ function runEffects(state, source, effects, ctx = {}) {
           }
           if (e.logChar && ctx.spell) noteAbility(state, 'スペル', source.team === 'A' ? '自分' : '相手', ctx.spellName || state.casting || '', e.desc || '', source.team, e.logChar) // 相手がキャラクターのときのログ
           if (e.perMpSpent != null && !(ctx.mpSpent > 0)) break // perMpSpent: 消費したMP1つにつき、倍率が perMpSpent ずつ増える(MPを使わなかったら何もしない)
-          const skill = { stat: e.stat || 'atk', mult: (e.perMpSpent != null ? (e.mult ?? 0) + e.perMpSpent * ctx.mpSpent : e.mult ?? 1), add: (e.split && e.add != null ? e.add / targets.length : (e.add || 0)) + graveBonus(state, source, e) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0) + (e.perEarth ? e.perEarth * state.earth[source.team] : 0) + (e.perFollower ? e.perFollower * state.units.filter((u) => u.alive && !u.isAmulet && u.team === source.team).length : 0), type: e.dmgType || 'physical' } // perEarth: 自分の場の土の印1つにつき、add が perEarth ずつ増える / perType: 自分の場の「そのタイプ」のキャラ1体につき、add が perTypeFlat(省くと1)ずつ増える
+          const skill = { stat: e.stat || 'atk', mult: (e.perMpSpent != null ? (e.mult ?? 0) + e.perMpSpent * ctx.mpSpent : e.mult ?? 1), add: (e.split && e.add != null ? e.add / targets.length : (e.add || 0)) + perAmount(state, source, e), type: e.dmgType || 'physical' } // perEarth: 自分の場の土の印1つにつき、add が perEarth ずつ増える / perType: 自分の場の「そのタイプ」のキャラ1体につき、add が perTypeFlat(省くと1)ずつ増える
           const { damage } = calcDamage(source, t, skill, ctx.opts)
           const dealt = applyDamage(state, source, t, damage, skill.type === 'true', skill.type)
           loseStealth(source) // 能力でダメージを与えたら潜伏を失う
@@ -1045,11 +1063,11 @@ function runEffects(state, source, effects, ctx = {}) {
           if (e.pctMax != null) hb(state, t, (t.maxHp * e.pctMax) / 100) // 回復される本人の最大HPの○%
           else if (e.pctPerSummon != null) hb(state, t, (t.maxHp * e.pctPerSummon * summonsOf(state, source).length) / 100) // 回復する本人の最大HPの(pctPerSummon×召喚物の数)%
           else if (e.split && e.flat != null) hb(state, t, e.flat / targets.length) // 回復量を、対象の人数で等分に割り振る(全体で合計 flat)
-          else hb(state, t, (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + graveBonus(state, source, e))
+          else hb(state, t, (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + perAmount(state, source, e))
           break
         }
         case 'buff':
-          const bf = { stat: e.stat, pct: (e.pct || 0) + graveBonus(state, source, e), flat: (e.flat || 0) + (e.perCombo || 0) * comboOf(state, source) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0), turns: e.turns ?? null, ...(e.turnsBy === 'source' ? { owner: source.uid } : {}) } // perCombo: コンボ1つにつき、flat がその分だけ増える
+          const bf = { stat: e.stat, pct: (e.pct || 0) + graveBonus(state, source, e), flat: (e.flat || 0) + perAmount(state, source, e, ['perGraveyard']), turns: e.turns ?? null, ...(e.turnsBy === 'source' ? { owner: source.uid } : {}) } // perCombo: コンボ1つにつき、flat がその分だけ増える
           t.buffs.push(bf)
           emit(state, 'buff', { target: t.uid, stat: e.stat, text: `${statLabel(e.stat)}${bf.flat ? ` ${bf.flat >= 0 ? '+' : ''}${bf.flat}${e.stat === 'dmgUp' ? '%' : ''}` : ''}${bf.pct ? ` ${bf.pct >= 0 ? '+' : ''}${bf.pct}%` : ''}`.replace(/\s+/g, ' ') })
           state.log.push(`${t.name}の${statLabel(e.stat)}が上がった`)
@@ -1065,7 +1083,7 @@ function runEffects(state, source, effects, ctx = {}) {
         }
         case 'maxHp': { // 最大HPを元のHPの+%だけ増やす(現在HPも同じだけ増える。アミュレットには体力がない)
           if (t.isAmulet) break
-          const up = Math.round((t.baseMaxHp * (e.pct || 0)) / 100) + (e.flat || 0) + (e.perType ? (e.perTypeFlat ?? 1) * typeCount(state, source, e.perType) : 0)
+          const up = Math.round((t.baseMaxHp * (e.pct || 0)) / 100) + (e.flat || 0) + perAmount(state, source, e)
           t.maxHp += up
           t.hp += up
           state.log.push(`${t.name}の最大HPが${up}増えた`)
@@ -1073,7 +1091,7 @@ function runEffects(state, source, effects, ctx = {}) {
         }
         case 'armor':
         case 'shield': { // 'shield' は昔の書き方(アーマーと同じ)
-          const amount = (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + graveBonus(state, source, e)
+          const amount = (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + perAmount(state, source, e)
           t.armor += amount
           t.armorRate = e.rate ?? 1
           state.log.push(`${t.name}は${Math.round(amount)}のアーマーを得た(吸収${Math.round((e.rate ?? 1) * 100)}%)`)
