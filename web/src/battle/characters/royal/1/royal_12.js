@@ -1,6 +1,7 @@
 export default {
   id: 'royal_12', name: 'レヴィオンの迅雷・アルベール', class: 'ロイヤル', rarity: 'legend', type: 'レヴィオン',
   stats: { hp: 505, atk: 487, def: 90, spd: 58 },
+  tags: ['範囲攻撃', '連続攻撃', '速度操作', 'アタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     'dash', // 【疾走】

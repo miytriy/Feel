@@ -3,6 +3,7 @@ import annHero from './tokens/witch_token_04.js' // 召喚する「アンの大�
 export default {
   id: 'witch_10', name: 'マナリアフレンズ・アン&グレア', class: 'ウィッチ', rarity: 'legend', type: 'マナリア',
   stats: { hp: 402, atk: 400, def: 90, spd: 60 },
+  tags: ['スペルブースト', '召喚物生成', '魔法ダメージ', 'オールラウンダー'],
   skill: { name: '攻撃', stat: 'mag', type: 'magic', mult: 1.0 }, // 敵単体に魔力100%分の魔法ダメージ
   passives: [
     {

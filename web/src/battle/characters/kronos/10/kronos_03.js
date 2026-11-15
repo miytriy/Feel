@@ -2,6 +2,7 @@
 export default {
   id: 'kronos_03', name: '超可愛の使い・リーノ', class: 'クロノス', rarity: 'legend', type: '超可愛',
   stats: { hp: 500, atk: 534, def: 90, spd: 60 },
+  tags: ['回復', 'バフ', 'ヒーラー'],
   skill: { name: '攻撃', stat: 'mag', type: 'magic', mult: 1.0 }, // 相手単体に、自身の魔力100%分の魔法ダメージ
   passives: [
     'aura', // 【オーラ】

@@ -1,6 +1,7 @@
 export default {
   id: 'dragon_12', name: '灼熱のアナテマ・バーンドナイト', class: 'ドラゴン', rarity: 'legend', type: 'アナテマ',
   stats: { hp: 710, atk: 700, def: 90, spd: 40 },
+  tags: ['範囲攻撃', '大ダメージ', 'アタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     {

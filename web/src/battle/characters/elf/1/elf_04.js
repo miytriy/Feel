@@ -1,6 +1,7 @@
 export default {
   id: 'elf_04', name: 'ピュアクリスタリア・リリィ', class: 'エルフ', rarity: 'gold',
   stats: { hp: 353, atk: 107, def: 200, spd: 89 },
+  tags: ['コンボ', 'デバフ', '行動促進', 'デバッファー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare', condition: { combo: 3 },

@@ -2,6 +2,7 @@
 export default {
   id: 'kronos_01', name: '天秤の旧金・レインドット', class: 'クロノス', rarity: 'legend',
   stats: { hp: 396, atk: 349, def: 191, spd: 80 },
+  tags: ['行動促進', 'バフ', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     'aura', // 【オーラ】

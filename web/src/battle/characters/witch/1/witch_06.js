@@ -1,6 +1,7 @@
 export default {
   id: 'witch_06', name: '理光の天宮・エーデルワイス', class: 'ウィッチ', rarity: 'gold',
   stats: { hp: 203, atk: 200, def: 90, spd: 72 },
+  tags: ['土の印', '進化', '魔法ダメージ', 'アタッカー'],
   skill: { name: '攻撃', stat: 'mag', type: 'magic', mult: 1.25 }, // 敵単体に魔力125%分の魔法ダメージ
   passives: [
     // 【土の秘術_2】= earthCost: 2(土の印を2消費して働く。足りないときは進化しない)

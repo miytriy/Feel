@@ -1,6 +1,7 @@
 export default {
   id: 'nightmare_04', name: '燃え盛る魔剣・オルトルス', class: 'ナイトメア', rarity: 'gold',
   stats: { hp: 200, atk: 210, def: 90, spd: 90 },
+  tags: ['墓地利用', '連続攻撃', 'アタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     'guard',

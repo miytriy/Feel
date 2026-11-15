@@ -1,6 +1,7 @@
 // Feel Battle - キャラクターのデータが正しい書き方かをチェックする
 // (名前の打ち間違い・足りない項目を、戦闘を始める前に見つけるためのものです)
 import { KEYWORDS, TRIGGER_LABELS, RELICS } from '../engine.js'
+import { ALL_TAGS, MAX_TAGS } from './tags.js'
 
 // 画面で、クラスを並べるときの順番(編成・人事)
 export const CLASS_ORDER = ['ニュートラル', 'エルフ', 'ロイヤル', 'ウィッチ', 'ドラゴン', 'ナイトメア', 'ビショップ', 'ネメシス', 'クロノス']
@@ -73,6 +74,14 @@ export function validateCharacter(def, opts = {}) {
   if (def.rarity != null && !RARITIES.includes(def.rarity)) add(`rarity「${def.rarity}」は使えません(${RARITIES.join(' / ')})`)
   if (def.type != null && !isStr(def.type)) add('type は文字で書いてください(例: 兵士 / 兵士/妖精)')
   if (isStr(def.type) && /トークン|スペル|アミュレット/.test(def.type)) add('type には、トークン・スペル・アミュレットは書けません(ユニットタイプは自動で決まります。召喚専用なら token: true)')
+  if (def.tags != null) { // 得意なこと・特徴のタグ(tags.js にあるものだけ)
+    if (!Array.isArray(def.tags)) add('tags は配列で書いてください(例: [\'範囲攻撃\', \'アタッカー\'])')
+    else {
+      if (def.tags.length > MAX_TAGS) add(`tags は${MAX_TAGS}つまでです`)
+      if (new Set(def.tags).size !== def.tags.length) add('tags に同じタグが2回あります')
+      for (const t of def.tags) if (!ALL_TAGS.includes(t)) add(`tags の「${t}」は使えないタグです(使えるもの: tags.js)`)
+    }
+  }
   if (def.token != null && typeof def.token !== 'boolean') add('token は true か false で書いてください')
   if (!CLASSES.includes(def.class)) add(`class「${def.class}」は使えません(${CLASSES.join(' / ')})`)
 

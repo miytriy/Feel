@@ -1,6 +1,7 @@
 export default {
   id: 'elf_03', name: 'ベビーカーバンクル', class: 'エルフ', rarity: 'silver',
   stats: { hp: 226, atk: 231, def: 128, spd: 86 },
+  tags: ['再展開', 'リソース回収', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '自分の場の他のユニット1体を選ぶ。それを再出場させる。', log: '自分の場の他のユニット1体を選ぶ。それを再出場させる。',

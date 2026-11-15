@@ -3,6 +3,7 @@ import fox from '../tokens/nightmare_token_05.js' // 召喚する「一ツ尾狐
 export default {
   id: 'nightmare_2_08', name: '双輪夜行・ギンセツ&ユヅキ', class: 'ナイトメア', rarity: 'legend',
   stats: { hp: 909, atk: 550, def: 350, spd: 20 },
+  tags: ['召喚物生成', '撃破', '回復', 'オールラウンダー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [{
     name: 'ファンファーレ', trigger: 'fanfare',

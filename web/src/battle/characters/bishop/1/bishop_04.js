@@ -2,6 +2,7 @@
 export default {
   id: 'bishop_04', name: 'セイントシールド', class: 'ビショップ', rarity: 'bronze',
   stats: { hp: 147, atk: 212, def: 100, spd: 71 },
+  tags: ['シールド', '生存特化', 'タンク'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     'guard', // 【守護】

@@ -4,6 +4,7 @@ import bat from '../tokens/nightmare_token_03.js' // 召喚する「バット」
 export default {
   id: 'nightmare_08', name: '怪奇の探索者・ユナ', class: 'ナイトメア', rarity: 'silver',
   stats: { hp: 520, atk: 308, def: 201, spd: 70 },
+  tags: ['召喚物生成', '生存特化', 'タンク'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     'guard', // 【守護】

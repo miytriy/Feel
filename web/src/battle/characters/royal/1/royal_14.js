@@ -4,6 +4,7 @@ import steelKnight from './tokens/royal_token_02.js' // 「スティールナイ
 export default {
   id: 'royal_14', name: '白銀の騎士団長・エミリア', class: 'ロイヤル', rarity: 'legend',
   stats: { hp: 403, atk: 400, def: 90, spd: 55 },
+  tags: ['召喚物生成', 'リソース回収', 'シールド', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     {

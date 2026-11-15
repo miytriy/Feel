@@ -3,6 +3,7 @@ import steelKnight from './tokens/royal_token_02.js' // 召喚する「スティ
 export default {
   id: 'royal_16', name: '煌刃の勇者・アマリア', class: 'ロイヤル', rarity: 'gold',
   stats: { hp: 600, atk: 580, def: 90, spd: 30 },
+  tags: ['召喚物生成', 'バフ', '連携', 'バッファー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '『スティールナイト』4体を召喚する。', log: '『スティールナイト』4体を召喚する。', effects: [{ type: 'summon', count: 4, unit: steelKnight }] },

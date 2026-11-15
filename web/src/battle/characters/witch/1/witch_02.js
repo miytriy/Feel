@@ -1,6 +1,7 @@
 export default {
   id: 'witch_02', name: 'アドラブルティーチャー・ミラ', class: 'ウィッチ', rarity: 'silver', type: 'マナリア',
   stats: { hp: 200, atk: 200, def: 90, spd: 80 },
+  tags: ['スペルブースト', '魔法ダメージ', 'サブアタッカー'],
   skill: { name: '攻撃', stat: 'mag', type: 'magic', mult: 1.0 }, // 魔力100%分の魔法ダメージ
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '1回スペルブーストする。', effects: [{ type: 'boost', amount: 1 }] },

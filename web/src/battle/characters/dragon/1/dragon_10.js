@@ -3,6 +3,7 @@ import bigWing from './tokens/dragon_token_04.js' // 召喚する「大翼のド
 export default {
   id: 'dragon_10', name: '荒波のドラグーン・ハザール', class: 'ドラゴン', rarity: 'gold',
   stats: { hp: 330, atk: 310, def: 90, spd: 50 },
+  tags: ['召喚物生成', '生存特化', 'タンク'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     'guard', // 【守護】

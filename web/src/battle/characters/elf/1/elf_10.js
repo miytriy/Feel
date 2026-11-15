@@ -4,6 +4,7 @@ import fairy from './tokens/elf_token_01.js' // 召喚する「フェアリー�
 export default {
   id: 'elf_10', name: '自然の妖精姫・アリア', class: 'エルフ', rarity: 'legend',
   stats: { hp: 410, atk: 408, def: 92, spd: 50 },
+  tags: ['召喚物生成', '進化', 'オールラウンダー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     {

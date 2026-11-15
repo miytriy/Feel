@@ -4,6 +4,7 @@ import { ALL_CHARACTERS } from './battle/characters/index.js'
 import { CLASS_ORDER } from './battle/characters/validate.js'
 import { KEYWORDS, TRIGGER_LABELS, RELICS } from './battle/engine.js'
 import Tip from './Tip.jsx'
+import { ROLE_TAGS } from './battle/characters/tags.js'
 import { useRelicInv, equippedOf, ownerMap, equipRelic, forgeRelic, deleteRelic, RELICS_USABLE } from './relicInv.js'
 import { RELIC_PARTS, PART_IDS, RELIC_RARITIES, relicLines, relicTotals, statText, applyRelics } from './battle/relicRules.js'
 import { ENHANCE_STEP } from './enhance.js'
@@ -155,6 +156,13 @@ const CSS = `
 .jp-nm b { display: block; font-size: 48px; line-height: 1.1; font-weight: 700; color: #1d1d20; overflow-wrap: anywhere; }
 .jp-pips { display: flex; gap: 6px; margin-top: 8px; color: var(--rc); font-size: 26px; }
 .jp-pips i { font-style: normal; opacity: 0.25; color: #333; } .jp-pips i.on { opacity: 1; background: var(--rbg); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-stroke: 1.5px rgba(0,0,0,0.55); }
+.jp-ft { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+.jp-ft span { padding: 2px 14px; border: 2px solid rgba(0,0,0,0.55); color: #2a2a2e; font-size: 20px; font-weight: 700; line-height: 1.4; background: rgba(255,255,255,0.55); }
+.jp-ft span.role { background: #1d1d20; border-color: #1d1d20; color: #ffe600; }
+.jp.dk .jp-ft span { border-color: rgba(255,255,255,0.6); color: #f1f1f2; background: rgba(0,0,0,0.3); }
+.jp.dk .jp-ft span.role { background: #ffe600; border-color: #ffe600; color: #1d1d20; }
+.jp.p .jp-ft { position: absolute; left: 0; top: -895px; margin: 0; width: 1000px; } /* スマホ: ほかの帯と同じく、名前のすぐ下へ */
+.jp.p .jp-ft span { font-size: 26px; padding: 2px 16px; }
 .jp-tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 12px; }
 .jp-tags span { padding: 4px 22px; background: rgba(0,0,0,0.38); color: #fff; font-size: 24px; }
 .jp-bar { display: flex; align-items: center; height: 56px; padding: 0 20px; background: rgba(0,0,0,0.5); color: #fff; font-size: 28px; font-weight: 600; margin-top: 14px; }
@@ -595,6 +603,7 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
         <div className="jp-cls" aria-label={c.class}>{CLASS_ICON[c.class] ? <img src={CLASS_ICON[c.class]} alt="" draggable={false} /> : c.class.slice(0, 1)}</div>
         <div className="jp-nm"><b>{c.name}</b><Pips rarity={c.rarity} /></div>
       </div>
+      {c.tags?.length > 0 && <div className="jp-ft" data-testid="jp-feature-tags" aria-label="得意なこと・特徴">{c.tags.map((t) => <span key={t} className={ROLE_TAGS.includes(t) ? 'role' : ''}>{t}</span>)}</div>}
       <div className="jp-tags">
         {(c.passives || []).filter((p) => typeof p === 'string').slice(0, 3).map((p) => <span key={p}>{passiveLabel(p)}</span>)}
         <span>{c.class}</span>

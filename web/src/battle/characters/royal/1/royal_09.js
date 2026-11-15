@@ -1,6 +1,7 @@
 export default {
   id: 'royal_09', name: '常在戦場・カゲミツ', class: 'ロイヤル', rarity: 'legend',
   stats: { hp: 220, atk: 201, def: 90, spd: 80 },
+  tags: ['自己強化', '奇襲', 'アタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     {

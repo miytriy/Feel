@@ -1,6 +1,7 @@
 export default {
   id: 'royal_04', name: '忍びのムササビ', class: 'ロイヤル', rarity: 'silver',
   stats: { hp: 111, atk: 216, def: 120, spd: 90 },
+  tags: ['奇襲', '召喚物生成', 'サブアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     'stealth_3', // 【潜伏_3】: 攻撃すると剥がれ、自分のターンが3回始まるたびに戻る

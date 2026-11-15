@@ -3,6 +3,7 @@ import bigWing from './tokens/dragon_token_04.js' // 召喚する「大翼のド
 export default {
   id: 'dragon_13', name: '雲海の騎竜兵', class: 'ドラゴン', rarity: 'bronze',
   stats: { hp: 604, atk: 606, def: 90, spd: 30 },
+  tags: ['召喚物生成', '生存特化', 'タンク'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     'guard', // 【守護】

@@ -1,6 +1,7 @@
 export default {
   id: 'elf_13', name: '煌撃の戦士・ベイル', class: 'エルフ', rarity: 'gold',
   stats: { hp: 410, atk: 400, def: 90, spd: 20 },
+  tags: ['大ダメージ', '自己強化', 'アタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     {

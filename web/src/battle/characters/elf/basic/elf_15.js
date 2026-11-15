@@ -1,6 +1,7 @@
 export default {
   id: 'elf_15', name: 'アドベンチャーエルフ・メイ', class: 'エルフ', rarity: 'silver',
   stats: { hp: 114, atk: 153, def: 90, spd: 98 },
+  tags: ['コンボ', '大ダメージ', 'アタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [{
     name: 'ファンファーレ', trigger: 'fanfare', condition: { combo: 3 },

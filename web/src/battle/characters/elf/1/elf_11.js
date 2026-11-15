@@ -1,6 +1,7 @@
 export default {
   id: 'elf_11', name: 'フロストクリスタシア・エリン', class: 'エルフ', rarity: 'silver',
   stats: { hp: 800, atk: 621, def: 201, spd: 40 },
+  tags: ['物理ダメージ', '生存特化', 'タンク'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     'guard', // 【守護】

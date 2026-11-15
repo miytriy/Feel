@@ -3,6 +3,7 @@ import fairy from './tokens/elf_token_01.js'
 export default {
   id: 'elf_12', name: '深奥のフェアリービースト', class: 'エルフ', rarity: 'bronze',
   stats: { hp: 401, atk: 431, def: 90, spd: 30 },
+  tags: ['召喚物生成', '回復', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [{
     name: 'ファンファーレ', trigger: 'fanfare',

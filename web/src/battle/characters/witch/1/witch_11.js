@@ -1,6 +1,7 @@
 export default {
   id: 'witch_11', name: 'マナリアの学徒・ウィリアム', class: 'ウィッチ', rarity: 'silver', type: 'マナリア',
   stats: { hp: 550, atk: 510, def: 90, spd: 55 },
+  tags: ['スペルブースト', '範囲攻撃', 'アタッカー'],
   skill: { name: '攻撃', stat: 'mag', type: 'magic', mult: 1.25 }, // 敵単体に魔力125%分の魔法ダメージ
   passives: [
     // Xは0から始まり、これがスペルブーストされるたびに+1される(数えるのはエンジンの「ブーストされた回数」。perBoost で使う)

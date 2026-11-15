@@ -1,6 +1,7 @@
 export default {
   id: 'nightmare_12', name: 'エンドレスハンター・アラガビィ', class: 'ナイトメア', rarity: 'legend',
   stats: { hp: 302, atk: 428, def: 100, spd: 61 },
+  tags: ['範囲攻撃', '大ダメージ', 'アタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 相手単体に攻撃力100%分の物理ダメージ
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '相手の場のフォロワーすべてに700の物理ダメージを割り振る。',

@@ -1,6 +1,7 @@
 export default {
   id: 'royal_07', name: 'ミリタリードッグ', class: 'ロイヤル', rarity: 'bronze',
   stats: { hp: 210, atk: 405, def: 187, spd: 70 },
+  tags: ['強襲', '召喚物生成', 'アタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     'rush', // 【突進】

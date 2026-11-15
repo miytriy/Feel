@@ -2,6 +2,7 @@
 export default {
   id: 'kronos_02', name: '蒼豹の銀氷・アレイ', class: 'クロノス', rarity: 'legend',
   stats: { hp: 401, atk: 462, def: 162, spd: 70 },
+  tags: ['行動促進', 'バフ', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     'dash', // 【疾走】

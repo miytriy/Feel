@@ -10,6 +10,7 @@ const summonFairies = [
 export default {
   id: 'elf_05', name: 'コンタクトフェアリー', class: 'エルフ', rarity: 'bronze',
   stats: { hp: 131, atk: 122, def: 90, spd: 81 },
+  tags: ['召喚物生成', '進化', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '『フェアリー』1体を召喚する。MPを1消費すると、『フェアリー』1体を追加召喚する。', log: '『フェアリー』1体を召喚する。MPを1消費すると、『フェアリー』1体を追加召喚する。', effects: summonFairies },

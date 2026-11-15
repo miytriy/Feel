@@ -5,6 +5,7 @@ const hasten = [{ type: 'advance', pct: 10, target: 'nearestAlly' }] // 行動�
 export default {
   id: 'neutral_basic_02', name: 'ベルエンジェル・リア', class: 'ニュートラル', rarity: 'bronze',
   stats: { hp: 200, atk: 0, def: 200, spd: 90 },
+  tags: ['行動促進', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 相手単体に攻撃力100%分の物理ダメージ
   passives: [
     'guard', // 【守護】

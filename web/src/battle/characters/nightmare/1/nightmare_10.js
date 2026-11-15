@@ -3,6 +3,7 @@ import ghost from '../tokens/nightmare_token_02.js' // 召喚する「ゴース�
 export default {
   id: 'nightmare_10', name: '瞑地の天宮・ムカン', class: 'ナイトメア', rarity: 'gold',
   stats: { hp: 330, atk: 333, def: 90, spd: 70 },
+  tags: ['墓地利用', '進化', '必殺', 'サブアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     // 【ネクロマンス_8】= graveCost: 8(墓場を8消費して働く。足りないときは進化しない)

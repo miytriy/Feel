@@ -1,6 +1,7 @@
 export default {
   id: 'elf_02', name: '舞い踊る妖精', class: 'エルフ', rarity: 'bronze',
   stats: { hp: 113, atk: 236, def: 183, spd: 91 },
+  tags: ['コンボ', 'バフ', 'バッファー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [{
     name: 'ファンファーレ', trigger: 'fanfare', condition: { combo: 3 },

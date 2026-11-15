@@ -2,6 +2,7 @@
 export default {
   id: 'nightmare_09', name: '青薔薇の令嬢・セレス', class: 'ナイトメア', rarity: 'gold',
   stats: { hp: 400, atk: 111, def: 300, spd: 70 },
+  tags: ['必殺', 'シールド', '回復', 'タンク'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     'finisher', // 【必殺】
