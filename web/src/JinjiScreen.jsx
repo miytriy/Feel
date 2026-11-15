@@ -628,7 +628,7 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
     <div className={`jp-yel${tabGone ? ' gone' : ''}`} style={vars}>
       <div className="shape" />
       <div className="big"><small>×</small>{sigN}</div>
-      <div className="cap">{c.name}の署名 / SIGNATURE</div>
+      <div className="cap">署名 / SIGNATURE</div>
       <div className="rar"><span>{RARITY[c.rarity]?.label || c.rarity}</span><span className="pp">{'◆'.repeat(PIPS[c.rarity] || 0)}</span></div>
       <div className="relic"><small>遺物</small><b>{relicCount}/{PART_IDS.length}部位</b>{relic ? <div>{relicName}:{relic.desc}</div> : null}</div>
       <div className="tiles">
