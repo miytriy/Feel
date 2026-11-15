@@ -535,20 +535,106 @@ function noteAbility(state, kind, owner, name, desc, team, log) {
 
 // ---------- 効果の実行 ----------
 
+// ---------- 対象の指定 ----------
+// 対象は { side, scope, pick, other } で表す。古い文字列(target: 'enemyFieldOne' など)は TARGETS の表で同じものに読み替える。
+//   side : ally(味方) / enemy(相手) / field(両チーム)
+//   scope: main(場のキャラ) / follower(キャラ + 召喚物。アミュレットは含まない) / unit(キャラ + 召喚物 + アミュレット) / amulet / summon(召喚物 + アミュレット)
+//          'auto' = 効果の units / followers フラグで決める(units → unit、followers → follower、なければ main)
+//   pick : all(全員) / chosen(選ぶ。選ばれなければ先頭) / random(ランダム1体) / weakest(選ばれなければ、HP割合が最も低い1体)
+//          chosenRandom(選ばれなければ、ランダム1体)
+//   other: true なら自分を除く
+//   cand : 選ぶとき(choose)の候補の範囲(省略すると scope と同じ)
+// 新しい対象を足すときは、TARGETS に1行足すだけ
+const TARGETS = {
+  allies: { side: 'ally', scope: 'auto', pick: 'all' },
+  otherAllies: { side: 'ally', scope: 'auto', pick: 'all', other: true },
+  summons: { side: 'ally', scope: 'summon', pick: 'all' },
+  allyField: { side: 'ally', scope: 'unit', pick: 'all' },
+  otherAllyField: { side: 'ally', scope: 'unit', pick: 'all', other: true },
+  allyFieldRandom: { side: 'ally', scope: 'unit', pick: 'random', charsOnly: true },
+  allyFieldOne: { side: 'ally', scope: 'unit', pick: 'chosen' },
+  allyAmuletOne: { side: 'ally', scope: 'amulet', pick: 'chosen' },
+  allyOne: { side: 'ally', scope: 'auto', pick: 'weakest', cand: 'follower' },
+  otherAllyOne: { side: 'ally', scope: 'auto', pick: 'chosen', other: true },
+  enemies: { side: 'enemy', scope: 'auto', pick: 'all', enemyAuto: true },
+  enemyFollowers: { side: 'enemy', scope: 'follower', pick: 'all' },
+  enemyField: { side: 'enemy', scope: 'unit', pick: 'all' },
+  enemyRandom: { side: 'enemy', scope: 'auto', pick: 'random', enemyAuto: true },
+  enemyFieldRandom: { side: 'enemy', scope: 'unit', pick: 'random' },
+  enemyOne: { side: 'enemy', scope: 'auto', pick: 'chosenRandom', enemyAuto: true, cand: 'mainAmulet' },
+  enemyFieldOne: { side: 'enemy', scope: 'unit', pick: 'chosenRandom', pool: 'enemyUnits' },
+  fieldOthers: { side: 'field', scope: 'main', pick: 'all', other: true },
+  fieldSummons: { side: 'field', scope: 'follower', pick: 'all', only: 'summon' },
+  fieldAll: { side: 'field', scope: 'unit', pick: 'all' },
+  fieldAmulets: { side: 'field', scope: 'amulet', pick: 'all' },
+}
+
+// side と scope から、対象の候補(全員)を作る
+function poolOf(state, source, side, scope, e = {}) {
+  if (scope === 'auto') scope = e.units ? 'unit' : e.followers ? 'follower' : 'main'
+  if (side === 'field') {
+    const live = state.units.filter((u) => u.alive)
+    if (scope === 'main') return live.filter((u) => u.field === 'main')
+    if (scope === 'follower') return live.filter((u) => u.field === 'summon' && !u.isAmulet)
+    if (scope === 'amulet') return live.filter((u) => u.isAmulet)
+    return live
+  }
+  if (side === 'ally') {
+    const main = alliesOf(state, source)
+    const sm = summonsOf(state, source)
+    if (scope === 'main') return main
+    if (scope === 'follower') return [...main, ...sm.filter((u) => !u.isAmulet)]
+    if (scope === 'unit') return [...main, ...sm]
+    if (scope === 'amulet') return sm.filter((u) => u.isAmulet)
+    if (scope === 'summon') return sm
+    return main
+  }
+  // 相手: 隠れている・オーラのあるユニットは、能力の対象にならない
+  const main = enemiesOf(state, source).filter(abilityTargetable)
+  const sm = enemiesSummonsOf(state, source)
+  if (scope === 'main') return main
+  if (scope === 'follower') return [...main, ...sm.filter((u) => !u.isAmulet && abilityTargetable(u))]
+  if (scope === 'unit') return [...main, ...sm.filter(abilityTargetable)]
+  if (scope === 'mainAmulet') return enemyOneList(state, source)
+  if (scope === 'enemyUnits') return enemyUnitsOf(state, source)
+  return main
+}
+
 function resolveTargets(state, source, key, ctx) {
   const rng = ctx.opts?.rng || Math.random
-  const alliesMain = alliesOf(state, source)
-  // followers: 説明文が「フォロワー」(= キャラクター + 召喚物。アミュレットは含まない)の能力は、場のキャラに加えて召喚物も対象にする
-  const allies = ctx.followers ? [...alliesMain, ...summonsOf(state, source).filter((u) => !u.isAmulet)] : alliesMain
-  const enemies = [...enemiesOf(state, source), ...(ctx.followers ? enemiesSummonsOf(state, source).filter((u) => !u.isAmulet) : [])].filter(abilityTargetable)
   const onlyFilter = ctx.only ? filterOf(ctx.only, EFFECT_FILTER_KEYS) : {} // ランダムに選ぶ前に、候補をしぼる
   const keep = (u) => matchUnit(u, onlyFilter)
-  const pickRandom = (list0) => { const list = list0.filter(keep); return list.length ? [list[Math.floor(rng() * list.length)]] : [] }
+  const randomOf = (list0) => { const list = list0.filter(keep); return list.length ? [list[Math.floor(rng() * list.length)]] : [] }
+  const T = TARGETS[key]
+  if (T) {
+    const eff = { followers: ctx.followers, units: ctx.units }
+    let scope = T.scope
+    if (T.charsOnly && ctx.only?.charsOnly) scope = 'main'
+    let pool = poolOf(state, source, T.side, T.pool || scope, eff)
+    if (T.only === 'summon') pool = pool.filter((u) => u.field === 'summon')
+    if (T.other) pool = pool.filter((u) => u !== source && u.uid !== source.uid)
+    switch (T.pick) {
+      case 'all': return pool
+      case 'random': return randomOf(pool)
+      case 'weakest': {
+        if (ctx.chosen) return [getUnit(state, ctx.chosen)]
+        return [[...pool].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]].filter(Boolean)
+      }
+      case 'chosenRandom':
+        return ctx.chosen ? [getUnit(state, ctx.chosen)] : randomOf(pool)
+      case 'chosen': {
+        if (ctx.chosen) { // 選ぶ段階で候補が決まっている。召喚物・アミュレットも選べるので、広い範囲から探す
+          const wide = T.scope === 'auto' ? poolOf(state, source, T.side, 'unit', eff) : pool
+          return wide.filter((u) => u.uid === ctx.chosen && u.uid !== source.uid || (!T.other && u.uid === ctx.chosen))
+        }
+        return pool.slice(0, 1) // 選ばれなかった(CPUの読み・テストなど)ときは先頭の1体
+      }
+    }
+  }
+  const alliesMain = alliesOf(state, source)
   switch (key) {
     case 'self': return [source]
     case 'opponent': return ctx.other && ctx.other.alive ? [ctx.other] : []
-    case 'allies': return allies
-    case 'otherAllies': return allies.filter((u) => u !== source)
     // 【最も近い味方1体】(target: 'nearestAlly')
     //   効果が働いた時点(このキャラが行動中)で、自分以外の場のキャラ(召喚物・アミュレットは含まない)のうち、
     //   いまの行動値(curAV)が最も小さい1体。同じ行動値なら、場の並びで先の1体。味方がいなければ何もしない
@@ -556,41 +642,7 @@ function resolveTargets(state, source, key, ctx) {
       const others = alliesMain.filter((u) => u !== source && u.uid !== source.uid)
       return [[...others].sort((a, b) => a.curAV - b.curAV)[0]].filter(Boolean)
     }
-    case 'otherAllyOne': {
-      const others = allies.filter((u) => u !== source)
-      if (ctx.chosen) return [...others, ...summonsOf(state, source)].filter((u) => u.uid === ctx.chosen && u.uid !== source.uid) // 選ぶ段階で候補が決まっている(召喚物・アミュレットも、選べる能力のときは候補に入っている)
-      return others.slice(0, 1) // 選ばれなかった(CPUの読み・テストなど)ときは先頭の1体
-    }
     case 'entered': return ctx.other && ctx.other.alive ? [ctx.other] : [] // 「味方が場に出たとき」の、出てきたキャラ
-    case 'summons': return summonsOf(state, source)
-    case 'fieldOthers': return state.units.filter((u) => u.alive && u.field === 'main' && u.uid !== source.uid) // 場(両チーム)の、自分以外のキャラクターすべて
-    case 'fieldSummons': return state.units.filter((u) => u.alive && u.field === 'summon' && !u.isAmulet) // 場(両チーム)の召喚物すべて(アミュレットは含まない)
-    case 'fieldAll': return state.units.filter((u) => u.alive) // 場(両チーム)のすべて(キャラ・召喚物・アミュレット)
-    case 'fieldAmulets': return state.units.filter((u) => u.alive && u.isAmulet) // 場(両チーム)のアミュレットすべて
-    case 'otherAllyField': return [...allies, ...summonsOf(state, source)].filter((u) => u.uid !== source.uid) // 自分以外の場すべて
-    case 'allyField': return [...allies, ...summonsOf(state, source)] // 自分の場すべて(場のキャラ + 召喚物)
-    case 'allyFieldRandom': return pickRandom(ctx.only?.charsOnly ? [...allies] : [...allies, ...summonsOf(state, source)]) // 自分の場(場のキャラ + 召喚物)からランダム1体
-    case 'allyOne': {
-      if (ctx.chosen) return [getUnit(state, ctx.chosen)]
-      return [[...allies].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]].filter(Boolean)
-    }
-    case 'allyAmuletOne': { // 自分の場のアミュレット1つ(選ぶ効果用)。選ばれなかったときは先頭の1つ
-      const list = summonsOf(state, source).filter((u) => u.isAmulet)
-      if (ctx.chosen) return list.filter((u) => u.uid === ctx.chosen)
-      return list.slice(0, 1)
-    }
-    case 'allyFieldOne': { // 自分の場(場のキャラ + 召喚物)から1体(選ぶ効果用)
-      const field = [...allies, ...summonsOf(state, source)]
-      if (ctx.chosen) return field.filter((u) => u.uid === ctx.chosen)
-      return field.slice(0, 1)
-    }
-    case 'enemies': return enemies
-    case 'enemyFollowers': return [...enemies, ...enemiesSummonsOf(state, source).filter((u) => !u.isAmulet && abilityTargetable(u))] // 相手の場のフォロワーすべて(場のキャラ + 召喚物。アミュレットは含まない)
-    case 'enemyField': return [...enemies, ...enemiesSummonsOf(state, source).filter(abilityTargetable)] // 相手の場すべて(場のキャラ + 召喚物)
-    case 'enemyOne': return ctx.chosen ? [getUnit(state, ctx.chosen)] : pickRandom(enemies)
-    case 'enemyFieldOne': return ctx.chosen ? [getUnit(state, ctx.chosen)] : pickRandom(enemyUnitsOf(state, source))
-    case 'enemyRandom': return pickRandom(enemies)
-    case 'enemyFieldRandom': return pickRandom([...enemies, ...enemiesSummonsOf(state, source).filter(abilityTargetable)]) // 相手の場(場のキャラ + 召喚物)からランダム1体。count があれば、その数(重ならない)
     default: return []
   }
 }
@@ -786,15 +838,15 @@ function afterEnter(state, u) {
 // 選択が必要な効果(choose: true)の、選べる対象の一覧
 function candidatesOf(state, source, e) {
   const key = e.target || 'self'
+  const T = TARGETS[key]
   let list
-  const fol = e.followers ? summonsOf(state, source).filter((u) => !u.isAmulet) : [] // フォロワーなら、召喚物も選べる
-  if (key === 'otherAllyOne') list = [...alliesOf(state, source), ...(e.units ? summonsOf(state, source) : fol)].filter((u) => u.uid !== source.uid) // units: 「ユニット」(キャラ + 召喚物 + アミュレット)から選ぶ
-  else if (key === 'allyOne') list = [...alliesOf(state, source), ...fol]
-  else if (key === 'allyFieldOne') list = [...alliesOf(state, source), ...summonsOf(state, source)]
-  else if (key === 'allyAmuletOne') list = summonsOf(state, source).filter((u) => u.isAmulet)
-  else if (key === 'enemyOne') list = e.followers ? [...enemiesOf(state, source), ...enemiesSummonsOf(state, source).filter((u) => !u.isAmulet)].filter(abilityTargetable) : enemyOneList(state, source)
-  else if (key === 'enemyFieldOne') list = enemyUnitsOf(state, source) // 相手の場のユニット(キャラ + 召喚物 + アミュレット)
-  else list = resolveTargets(state, source, key, { followers: e.followers })
+  if (T && (T.pick === 'chosen' || T.pick === 'chosenRandom' || T.pick === 'weakest')) {
+    // 選べる範囲: cand があればそれ(allyOne はフォロワーまで)、なければ scope と同じ。enemyOne は、フォロワーの能力なら召喚物も、そうでなければ場のキャラ + アミュレット
+    const cand = T.cand === 'mainAmulet' ? (e.followers ? 'follower' : 'mainAmulet') : T.cand || T.scope
+    list = poolOf(state, source, T.side, cand, e)
+    if (T.pool && !T.cand) list = poolOf(state, source, T.side, T.pool, e)
+    if (T.other) list = list.filter((u) => u.uid !== source.uid)
+  } else list = resolveTargets(state, source, key, { followers: e.followers, units: e.units })
   const f = filterOf(e, EFFECT_FILTER_KEYS)
   return hasFilter(f) ? list.filter((u) => matchUnit(u, f)) : list
 }
@@ -935,7 +987,7 @@ function runEffects(state, source, effects, ctx = {}) {
     }
     if (e.type === 'boost' && e.target) { // 対象つき: 場のキャラ(と召喚物)それぞれが、ブーストされた回数を数える
       const n = (e.amount ?? 1) + witchBonus(state, source.team, 'boost', e.amount ?? 1)
-      for (const t of resolveTargets(state, source, e.target, { ...ctx, followers: e.followers })) {
+      for (const t of resolveTargets(state, source, e.target, { ...ctx, followers: e.followers, units: e.units })) {
         boostUnit(state, t, n)
       }
       continue
@@ -1057,7 +1109,7 @@ function runEffects(state, source, effects, ctx = {}) {
       continue
     }
 
-    let targets = resolveTargets(state, source, e.target || 'self', { ...ctx, only: e, followers: e.followers })
+    let targets = resolveTargets(state, source, e.target || 'self', { ...ctx, only: e, followers: e.followers, units: e.units })
     const tf = filterOf(e, EFFECT_FILTER_KEYS) // 指定のクラス・タイプ・名前・場(main / summon)だけ
     if (hasFilter(tf)) targets = targets.filter((t) => matchUnit(t, tf))
     // ランダムな相手の人数: count(基本は1体)。comboCount: { combo: 3, count: 3 } なら、コンボが3以上のとき3体(重ならないように選ぶ)
