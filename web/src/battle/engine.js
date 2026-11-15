@@ -564,7 +564,7 @@ function resolveTargets(state, source, key, ctx) {
     case 'fieldAmulets': return state.units.filter((u) => u.alive && u.isAmulet) // 場(両チーム)のアミュレットすべて
     case 'otherAllyField': return [...allies, ...summonsOf(state, source)].filter((u) => u.uid !== source.uid) // 自分以外の場すべて
     case 'allyField': return [...allies, ...summonsOf(state, source)] // 自分の場すべて(場のキャラ + 召喚物)
-    case 'allyFieldRandom': return pickRandom([...allies, ...summonsOf(state, source)]) // 自分の場(場のキャラ + 召喚物)からランダム1体
+    case 'allyFieldRandom': return pickRandom(ctx.only?.charsOnly ? [...allies] : [...allies, ...summonsOf(state, source)]) // 自分の場(場のキャラ + 召喚物)からランダム1体
     case 'allyOne': {
       if (ctx.chosen) return [getUnit(state, ctx.chosen)]
       return [[...allies].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]].filter(Boolean)
