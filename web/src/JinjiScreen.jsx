@@ -412,7 +412,7 @@ function RelicPane({ c }) {
   return (
     <div data-testid="relic-pane">
       <div className="jp-row" data-testid="relic-banned">
-        <p>遺物は、キャラクターの装備品です。{!RELICS_USABLE && <>遺物は今期のローテーションでは、<Tip title="『使用禁止』" text="「ローテーション」「アンリミテッド」での使用を禁止する効果。" testId="relic-ban-tip">『使用禁止』</Tip>です。</>}</p>
+        <p>遺物は、キャラクターの装備品です。{!RELICS_USABLE && <>遺物は今期では、<Tip title="『使用禁止』" text="「ローテーション」「アンリミテッド」での使用を禁止する効果。" testId="relic-ban-tip">『使用禁止』</Tip>です。</>}</p>
       </div>
       <div className="jp-rl-sum">{Object.keys(totals).length ? Object.entries(totals).map(([k, v]) => <span key={k}>{statText(k, Math.round(v * 10) / 10)}</span>) : <span>遺物なし</span>}</div>
       <div className="jp-rl-tabs">
