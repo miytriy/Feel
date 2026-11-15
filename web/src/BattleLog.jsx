@@ -86,7 +86,9 @@ function Bar({ pct, color, h = 6 }) {
 
 function UnitDetail({ u, color, first }) {
   const b = u.base || {}
-  const rows = [['HP', u.baseMaxHp ?? u.maxHp, u.maxHp, 'hp'], ...STAT_ROWS.filter(([k]) => k !== 'mag' || (b.mag || 0) > 0 || u.mag > 0 || u.skill?.stat === 'mag').map(([k, l]) => [l, b[k] ?? 0, u[k] ?? 0, k])]
+  const rows0 = [['体力', u.baseMaxHp ?? u.maxHp, u.maxHp, 'hp'], ...STAT_ROWS.filter(([k]) => k !== 'mag' || (b.mag || 0) > 0 || u.mag > 0 || u.skill?.stat === 'mag').map(([k, l]) => [l, b[k] ?? 0, u[k] ?? 0, k])]
+  const BASIC = ['atk', 'mag', 'hp', 'def', 'spd'] // 基礎ステータスの並び(人事のステータス詳細と同じ)
+  const rows = [...BASIC.map((k) => rows0.find((r) => r[3] === k)).filter(Boolean), ...rows0.filter((r) => !BASIC.includes(r[3]))]
   const statRow = ([label, base, cur, key], big) => {
     const d = Math.round(cur - base)
     return (
@@ -114,9 +116,10 @@ function UnitDetail({ u, color, first }) {
     <div>
       {sec('ステータス(基礎 → いま)')}
       <div data-testid="stat-list">
-        {rows.filter((r) => ['hp', 'atk', 'def'].includes(r[3])).map((r) => statRow(r, true))}
-        {rows.some((r) => !['hp', 'atk', 'def'].includes(r[3])) && <div style={{ fontSize: 13, color: C.mute, margin: '12px 2px 6px', letterSpacing: 1 }}>その他</div>}
-        {rows.filter((r) => !['hp', 'atk', 'def'].includes(r[3])).map((r) => statRow(r, false))}
+        <div style={{ fontSize: 13, color: C.mute, margin: '0 2px 6px', letterSpacing: 1 }}>基礎ステータス</div>
+        {rows.filter((r) => BASIC.includes(r[3])).map((r) => statRow(r, true))}
+        {rows.some((r) => !BASIC.includes(r[3])) && <div style={{ fontSize: 13, color: C.mute, margin: '12px 2px 6px', letterSpacing: 1 }}>高級ステータス</div>}
+        {rows.filter((r) => !BASIC.includes(r[3])).map((r) => statRow(r, false))}
       </div>
 
       {sec('いまの状態', color)}
