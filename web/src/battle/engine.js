@@ -484,6 +484,13 @@ function heal(state, unit, amount) {
   }
 }
 
+// クレストの能力を1つ働かせる(ログ → 左のログ → 効果)。クレストの能力は、すべてここを通る
+function runCrestPassive(state, crest, p, source, ctx = {}, kind = 'クレスト', head = `クレスト【${crest.name}】が働いた`) {
+  state.log.push(head)
+  noteAbility(state, kind, crest.name, p.name, p.desc ?? crest.desc, crest.team, p.log)
+  runEffects(state, source, p.effects, ctx)
+}
+
 // クレストの【味方が回復したとき】。oncePerTurn: true のものは、そのチームのターン開始ごとに1回まで
 function fireCrestsOnHeal(state, team) {
   for (const crest of [...state.crests[team]]) {
@@ -493,9 +500,7 @@ function fireCrestsOnHeal(state, team) {
       const source = crestSource(state, crest)
       if (!source) continue
       crest.healUsed = true
-      state.log.push(`クレスト【${crest.name}】が働いた`)
-      noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team, p.log)
-      runEffects(state, source, p.effects, {})
+      runCrestPassive(state, crest, p, source)
     }
   }
 }
@@ -1193,16 +1198,19 @@ function fire(state, trigger, unit, ctx = {}, from = 0) {
 }
 
 // クレストのトリガー(ラウンド開始時・味方のターン開始時)
+// subject があるトリガー(自分のターン開始・終了 / 味方のターン開始・終了)は、subject が働く本人になる。
+//   持ち主のターンのもの(turnStart / turnEnd)は、そのクレストを置いたキャラ自身のターンのときだけ働く
+const CREST_OWNER_TRIGGERS = ['turnStart', 'turnEnd']
+const CREST_SUBJECT_TRIGGERS = ['turnStart', 'turnEnd', 'allyTurnStart', 'allyTurnEnd']
 function fireCrests(state, team, trigger, subject, opts) {
   if (trigger === 'allyTurnStart') for (const c of state.crests[team]) c.healUsed = false // 【味方が回復したとき】(oncePerTurn)の回数をリセット
   for (const crest of [...state.crests[team]]) {
+    if (CREST_OWNER_TRIGGERS.includes(trigger) && crest.sourceUid !== subject.uid) continue
     for (const p of crest.passives) {
       if (p.trigger !== trigger) continue
-      const source = trigger === 'allyTurnStart' ? subject : crestSource(state, crest)
+      const source = CREST_SUBJECT_TRIGGERS.includes(trigger) ? subject : crestSource(state, crest)
       if (!source || !checkCond(state, source, p.condition) || earthShort(state, crest.team, p.effects)) continue
-      state.log.push(`クレスト【${crest.name}】が働いた`)
-      noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team, p.log)
-      runEffects(state, source, p.effects, { opts })
+      runCrestPassive(state, crest, p, source, { opts })
     }
   }
 }
@@ -1220,9 +1228,7 @@ function tickCrest(state, crest, opts) {
       if (p.trigger !== 'lastWord') continue
       const src = crestSource(state, crest)
       if (!src) continue
-      state.log.push(`クレスト【${crest.name}】の【ラストワード】`)
-      noteAbility(state, 'クレスト・ラストワード', crest.name, p.name, p.desc ?? crest.desc, crest.team, p.log)
-      runEffects(state, src, p.effects, { opts, crest })
+      runCrestPassive(state, crest, p, src, { opts, crest }, 'クレスト・ラストワード', `クレスト【${crest.name}】の【ラストワード】`)
     }
   }
 }
@@ -1410,15 +1416,7 @@ function beginTurn(state, unit, opts) {
       return
     }
   }
-  for (const crest of [...state.crests[unit.team]]) { // クレストの【(持ち主の)ターン開始時】: カウントダウンを進める前に働く(カウントダウン_2なら2回働く)
-    if (crest.sourceUid !== unit.uid) continue
-    for (const p of crest.passives) {
-      if (p.trigger !== 'turnStart' || !checkCond(state, unit, p.condition) || earthShort(state, crest.team, p.effects)) continue
-      state.log.push(`クレスト【${crest.name}】が働いた`)
-      noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team, p.log)
-      runEffects(state, unit, p.effects, { opts })
-    }
-  }
+  fireCrests(state, unit.team, 'turnStart', unit, opts) // クレストの【(持ち主の)ターン開始時】: カウントダウンを進める前に働く(カウントダウン_2なら2回働く)
   for (const crest of [...state.crests[unit.team]]) {
     if (crest.sourceUid === unit.uid) tickCrest(state, crest, opts)
   }
@@ -1431,15 +1429,7 @@ function beginTurn(state, unit, opts) {
 function endTurn(state, actor) {
   actor.hasActed = true
   if (actor.alive) { // クレストの【ターン終了時】: そのクレストを持つキャラ自身のターンが終わるときに働く
-    for (const crest of [...state.crests[actor.team]]) {
-      if (crest.sourceUid !== actor.uid) continue
-      for (const p of crest.passives) {
-        if (p.trigger !== 'turnEnd' || !checkCond(state, actor, p.condition) || earthShort(state, crest.team, p.effects)) continue
-        state.log.push(`クレスト【${crest.name}】が働いた`)
-        noteAbility(state, 'クレスト', crest.name, p.name, p.desc ?? crest.desc, crest.team, p.log)
-        runEffects(state, actor, p.effects, {})
-      }
-    }
+    fireCrests(state, actor.team, 'turnEnd', actor, undefined)
     fireCrests(state, actor.team, 'allyTurnEnd', actor, {}) // クレストの【味方のターン終了時】: 味方(自分のチームのキャラ・召喚物)のターンが終わるとき
     resolveDeaths(state)
   }
