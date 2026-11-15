@@ -8,11 +8,13 @@ export default {
     {
       name: 'ファンファーレ', trigger: 'fanfare',
       desc: '相手の場のフォロワーすべてにX×60ダメージ。',
+      log: '相手の場のフォロワーすべてにXダメージ。',
       effects: [{ type: 'damage', stat: 'atk', mult: 0, add: 0, perBoost: 60, dmgType: 'magic', target: 'enemyFollowers' }],
     },
     {
       name: '進化時', trigger: 'onEvolve',
       desc: '自分の場すべては2回スペルブーストする。',
+      log: '自分の場すべては2回スペルブーストする。',
       effects: [{ type: 'boost', amount: 2, target: 'allyField' }],
     },
   ],
