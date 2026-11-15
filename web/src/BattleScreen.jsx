@@ -35,8 +35,8 @@ export function buildTimeline(state, count = 12) {
   const items = []
   for (const u of state.units) {
     if (!u.alive) continue
-    items.push({ time: u.curAV, unit: u, k: 0 })
-    if (u.accel) items.push({ time: u.accel.curAV, unit: u, accel: true, k: 0 })
+    items.push({ time: u.curAV, unit: u, k: 0, tie: u.base?.spd ?? u.spd }) // tie: 行動値が同じときの順番(基礎速度が高いほうが先。エンジンと同じ)
+    if (u.accel) items.push({ time: u.accel.curAV, unit: u, accel: true, k: 0, tie: u.accel.speed })
   }
   for (const team of ['A', 'B']) {
     const cr = state.comboReset?.[team]
@@ -50,7 +50,7 @@ export function buildTimeline(state, count = 12) {
   const last = items.reduce((m, it) => Math.max(m, it.time), 0)
   const toNext = state.round * 100 - state.totalAV
   for (let k = 0; k < count; k++) { const time = toNext + 100 * k; if (k === 0 || time <= last) items.push({ time, round: state.round + 1 + k }) }
-  items.sort((a, b) => a.time - b.time || (a.round ? 1 : 0) - (b.round ? 1 : 0) || (b.unit?.spd ?? -1) - (a.unit?.spd ?? -1))
+  items.sort((a, b) => a.time - b.time || (a.round ? 1 : 0) - (b.round ? 1 : 0) || (b.tie ?? -1) - (a.tie ?? -1))
   return items.slice(0, count)
 }
 

@@ -1590,7 +1590,7 @@ function advance(state, opts) {
     // 行動バー上の枠: キャラ本体と、アクセラレート(あれば)は別々の枠
     const slots = []
     for (const u of alive) {
-      slots.push({ u, kind: 'body', av: u.curAV, spd: u.spd })
+      slots.push({ u, kind: 'body', av: u.curAV, spd: u.base.spd }) // 行動値が同じときは、基礎速度が高いほうが先(速度バフなどの一時的な変化は見ない)
       if (u.accel) slots.push({ u, kind: 'accel', av: u.accel.curAV, spd: u.accel.speed })
     }
     // βのコンボリセット: 味方のアクションバーに並ぶシステムターン(同じ行動値なら、キャラの行動のあとに回る)
