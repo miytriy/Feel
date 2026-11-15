@@ -626,6 +626,27 @@ function placeCrest(state, source, def, onEnemy = false) {
 // 墓場: 攻撃を受けるたびに+1、キャラが倒されると+3(チーム共有)
 const GRAVE_PER_HIT = 1
 const GRAVE_PER_DEATH = 3
+// 効果に払うコスト(足りなければ、その効果は働かない)。新しいコストは、COSTS に1つ足すだけ
+//   quietShort: 足りないときに、ログを出さない / unit: ログに出す単位
+const COSTS = {
+  earthCost: { name: '土の秘術', unit: '土の印', quietShort: true, have: (st, team) => st.earth[team], pay: (st, src, n) => addEarth(st, src.team, src, -n) },
+  graveCost: { name: 'ネクロマンス', unit: '墓場', have: (st, team) => st.graveyard[team], pay: (st, src, n) => { st.graveyard[src.team] -= n } },
+}
+const COST_KEYS = Object.keys(COSTS)
+function payCosts(state, source, e) {
+  const need = COST_KEYS.filter((k) => e[k])
+  for (const k of need) { // 先に、すべて足りるか確かめる(一部だけ払って失敗、をなくす)
+    const c = COSTS[k]
+    if (c.have(state, source.team) < e[k]) { if (!c.quietShort) state.log.push(`${c.unit}が足りないので、【${c.name}_${e[k]}】は働かなかった`); return false }
+  }
+  for (const k of need) {
+    const c = COSTS[k]
+    c.pay(state, source, e[k])
+    state.log.push(`【${c.name}_${e[k]}】${c.unit}を${e[k]}消費(${c.have(state, source.team)})`)
+  }
+  return true
+}
+
 // 「〜1つにつき、効果がその分だけ増える」: 数えるもの(COUNTERS)× 1つあたりの量。効果に per* を書く(キー名 → 数えるもの)
 //   perEarth(土の印)/ perGraveyard(墓場)/ perCombo(コンボ)/ perFollower(自分の場のフォロワー数)/ perBoost(スペルブーストされた回数)/ perType(タイプの数。1つあたりは perTypeFlat)
 //   新しく数えるものを足すときは、COUNTERS に1行と PER_KEYS に1行足すだけ
@@ -760,8 +781,8 @@ function candidatesOf(state, source, e) {
 
 // 候補が0体 → 何もしない / 1体 → 自動で選ぶ / 2体以上 → state.pending に残して、選ばれるまで待つ(ファンファーレのときだけ)
 function runEffects(state, source, effects, ctx = {}) {
-  // repeat: n … 同じ効果を n 回行う(コストの graveCost / earthCost は、最初の1回だけ払う。対象は毎回選び直す)
-  if (effects.some((x) => x.repeat > 1)) effects = effects.flatMap((x, gi) => (x.repeat > 1 ? Array.from({ length: x.repeat }, (_, i) => ({ ...x, repeat: undefined, repGroup: `${gi}`, ...(i > 0 ? { graveCost: undefined, earthCost: undefined } : null) })) : [x]))
+  // repeat: n … 同じ効果を n 回行う(COSTS のコスト(土の印・墓場)は、最初の1回だけ払う。対象は毎回選び直す)
+  if (effects.some((x) => x.repeat > 1)) effects = effects.flatMap((x, gi) => (x.repeat > 1 ? Array.from({ length: x.repeat }, (_, i) => ({ ...x, repeat: undefined, repGroup: `${gi}`, ...(i > 0 ? Object.fromEntries(COST_KEYS.map((k) => [k, undefined])) : null) })) : [x]))
   let skipGroup = null // コストが払えなかった repeat の組は、残りも行わない
   for (let idx = 0; idx < effects.length; idx++) {
     const e = effects[idx]
@@ -774,16 +795,7 @@ function runEffects(state, source, effects, ctx = {}) {
       source.everyCnt[key] = n + 1
       if (n % e.everyTurns !== 0) continue
     }
-    if (e.earthCost) { // 【土の秘術_N】土の印をN消費して、この効果が働く。足りないときは働かない(対象を選ぶ効果とは組み合わせない: 選んだあとの再開で二重に消費するため)
-      if (state.earth[source.team] < e.earthCost) { skipGroup = e.repGroup ?? null; continue } // 足りないときは、何も出さずに働かない
-      addEarth(state, source.team, source, -e.earthCost)
-      state.log.push(`【土の秘術_${e.earthCost}】土の印を${e.earthCost}消費(${state.earth[source.team]})`)
-    }
-    if (e.graveCost) { // 【ネクロマンス_N】墓場をN消費して、この効果が働く。足りないときは働かない
-      if (state.graveyard[source.team] < e.graveCost) { state.log.push(`墓場が足りないので、【ネクロマンス_${e.graveCost}】は働かなかった`); skipGroup = e.repGroup ?? null; continue }
-      state.graveyard[source.team] -= e.graveCost
-      state.log.push(`【ネクロマンス_${e.graveCost}】墓場を${e.graveCost}消費(${state.graveyard[source.team]})`)
-    }
+    if (!payCosts(state, source, e)) { skipGroup = e.repGroup ?? null; continue } // コスト(土の印・墓場)が払えないときは、働かない(対象を選ぶ効果とは組み合わせない: 選んだあとの再開で二重に消費するため)
     if (e.timesPerType && !ctx.noRepeat) { // 「自分の場の〇〇タイプの数だけ、この効果を繰り返す」(対象は毎回選び直す)
       const n = typeCount(state, source, e.timesPerType)
       state.log.push(`${e.timesPerType}タイプが${n}体なので、${n}回行う`)
@@ -980,7 +992,7 @@ function runEffects(state, source, effects, ctx = {}) {
       const entered = []
       const summonOne = (x, def) => { for (let i = 0; i < (x.count ?? 1); i++) { const nu = summon(state, source, x.randomUnits ? x.randomUnits[Math.floor(rng0() * x.randomUnits.length)] : def, { defer: true }); if (nu) entered.push(nu) } } // randomUnits: 1体ごとに、候補からランダムに選ぶ
       summonOne(e, sdef)
-      const simple = (x) => x && x.type === 'summon' && !x.condition && !x.mpCost && !x.earthCost && !x.graveCost && !x.optional && !x.timesPerType && !x.fromCrest && !x.repGroup && (x.unit || x.randomUnits || x.copySelf)
+      const simple = (x) => x && x.type === 'summon' && !x.condition && !x.mpCost && !COST_KEYS.some((k) => x[k]) && !x.optional && !x.timesPerType && !x.fromCrest && !x.repGroup && (x.unit || x.randomUnits || x.copySelf)
       while (simple(effects[idx + 1])) { idx++; const x = effects[idx]; summonOne(x, x.copySelf ? source.charDef : x.randomUnits ? x.randomUnits[0] : x.unit) }
       for (const nu of entered) afterEnter(state, nu)
       continue
@@ -1189,7 +1201,7 @@ function runEffects(state, source, effects, ctx = {}) {
 }
 
 // 【土の秘術_N】が最初の効果にあるのに、土の印が足りない能力は、発動しない(ログも出さない)
-const earthShort = (state, team, effects) => { const e = effects && effects[0]; return !!(e && e.earthCost && state.earth[team] < e.earthCost) }
+const earthShort = (state, team, effects) => { const e = effects && effects[0]; return !!(e && COST_KEYS.some((k) => e[k] && COSTS[k].quietShort && COSTS[k].have(state, team) < e[k])) }
 
 // 左のログに出す文。logIf: [{ condition, log }, ...] は、条件(condition と同じ書き方: combo / awaken など)に合う最初のものを、log の代わりに出す
 function logOf(state, unit, p) {
