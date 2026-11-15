@@ -599,7 +599,7 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
       </div>
       <div className="jp-bar tap" data-testid="jp-stat-open" role="button" tabIndex={0} onClick={() => setStatOpen(true)} onKeyDown={(e) => { if (e.key === 'Enter') setStatOpen(true) }}>能力値<em>詳細 ›</em></div>
       <div className="jp-stats tap" role="button" tabIndex={0} onClick={() => setStatOpen(true)}>
-        {['hp', 'atk', 'def', 'spd'].map((k) => (
+        {['atk', 'hp', 'def', 'spd'].map((k) => (
           <div key={k}><div className="ic"><StatIcon stat={k} /></div><small>{STAT_LABEL[k]}</small><b>{c.stats[k]}{sb[k].extra ? <u>{sb[k].extra > 0 ? '+' : ''}{sb[k].extra}</u> : null}</b></div>
         ))}
       </div>
