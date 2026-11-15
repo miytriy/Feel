@@ -8,7 +8,7 @@ export default {
     'aura', // 【オーラ】
     {
       name: '味方がアミュレットをアクトしたとき', trigger: 'allyAmuletAct',
-      desc: '味方がアミュレットを【アクト】したとき、これは「攻撃力+40」をする。',
+      desc:　'味方がアミュレットを【アクト】したとき、これは+40/+0する。',
       effects: [{ type: 'buff', stat: 'atk', flat: 40, target: 'self' }], // turns を省く = 戦闘中ずっと
     },
   ],
