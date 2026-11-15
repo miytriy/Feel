@@ -1274,9 +1274,28 @@ function runEffects(state, source, effects, ctx = {}) {
 const earthShort = (state, team, effects) => { const e = effects && effects[0]; return !!(e && COST_KEYS.some((k) => e[k] && COSTS[k].quietShort && COSTS[k].have(state, team) < e[k])) }
 
 // 左のログに出す文。logIf: [{ condition, log }, ...] は、条件(condition と同じ書き方: combo / awaken など)に合う最初のものを、log の代わりに出す
+//   log を書かなかった能力は、desc から作る(deriveLog)
 function logOf(state, unit, p) {
   const hit = (p.logIf || []).find((l) => checkCond(state, unit, l.condition))
-  return hit ? hit.log : p.log
+  if (hit) return hit.log
+  if (p.log === undefined && typeof p.desc === 'string') return deriveLog(state, unit, p.desc)
+  return p.log
+}
+
+// desc から、左のログの文を作る(log を書いていない能力用)
+//   1. 先頭の【コンボ_N】と、きっかけの前置き(「これが進化したとき、」「自分の兵士・フォロワーが場に出たとき、」)を削る
+//   2. 「【条件】なら、a ではなく、b。」「【条件】a ではなく b。」は、あらかじめ文に組み込まれた置き換え。
+//      条件を満たすときだけ、元の文の a を b に置き換える。満たさないときは、その文ごと出さない
+//   3. 「X×50」「10×X」は、倍率が計算済みなので「X」だけにする。「(重なる)」は削る
+const LOG_COND_TAGS = [[/^【コンボ_(\d+)】$/, (m) => ({ combo: +m[1] })], [/^【覚醒】$/, () => ({ awaken: true })], [/^【土の秘術_(\d+)】$/, (m) => ({ earth: +m[1] })]]
+const condOfTag = (tag) => { for (const [re, f] of LOG_COND_TAGS) { const m = tag.match(re); if (m) return f(m) } return null }
+function deriveLog(state, unit, desc) {
+  let t = String(desc).replace(/[(（]重なる[)）]/g, '')
+  const swaps = []
+  t = t.replace(/(【[^】]+】)(?:なら、)?([^。]+?)ではなく、?([^。]+?)。/g, (m, tag, a, b) => { const cond = condOfTag(tag); if (cond) { swaps.push({ cond, a, b }); return '' } return m })
+  t = t.replace(/^【コンボ_\d+】/, '').replace(/^[^。、]*(とき|たび)、/, '').replace(/自分のターン終了まで、/, '')
+  for (const sw of swaps) if (checkCond(state, unit, sw.cond) && t.includes(sw.a)) t = t.replace(sw.a, sw.b)
+  return t.replace(/X×\d+/g, 'X').replace(/\d+×X/g, 'X').trim()
 }
 
 // トリガー型パッシブ(ファンファーレ・攻撃時・交戦時・進化時・ラストワード)を発動する
@@ -1345,7 +1364,7 @@ function resolveDeaths(state, opts) {
         u.buffs = []; u.armor = 0; u.barrier = 0; u.stealth = false
         state.log.push(`${u.name}は消滅した`)
         emit(state, 'vanish', { target: u.uid })
-        noteAbility(state, TRIGGER_LABELS.onLeave, u.name, leave.name && leave.name !== TRIGGER_LABELS.onLeave ? leave.name : '', leave.desc, u.team, leave.log)
+        noteAbility(state, TRIGGER_LABELS.onLeave, u.name, leave.name && leave.name !== TRIGGER_LABELS.onLeave ? leave.name : '', leave.desc, u.team, logOf(state, u, leave))
         continue
       }
       u.deathHandled = true

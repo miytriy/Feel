@@ -17,7 +17,7 @@
 // passives: キーワードは文字列で書く
 //             'guard'守護 'stealth'潜伏 'aura'オーラ 'intimidate'威圧 'rush'突進 'dash'疾走
 //             'finisher'必殺 'drain'ドレイン 'barrier'バリア
-//           効果つきは { name, trigger, desc, effects, min(連携・コンボの回数), condition, log(左のログに出す文。なければ desc), logIf: [{ condition, log }](condition は他と同じ書き方。合う最初のものを、log の代わりに出す文。例: { combo: 3 } / { awaken: true }) }
+//           効果つきは { name, trigger, desc, effects, min(連携・コンボの回数), condition, log(左のログに出す文。なければ desc から自動で作る: きっかけの前置きと【コンボ_N】を削り、「【条件】なら、aではなく、b」は条件を満たすときだけ置き換え), logIf: [{ condition, log }](condition は他と同じ書き方。合う最初のものを、log の代わりに出す文。例: { combo: 3 } / { awaken: true }) }
 //             trigger: fanfare / constant / active / lastWord / onAttack / onEngage / combo / onEvolve(EP進化のときだけ) / onEvolved(進化したとき。効果での進化でも働く) / onEnter(場に出たとき。召喚された瞬間に働く。ファンファーレは最初の自分のターン開始時) / turnEnd(自分のターン終了時) / onLeave(場を離れる場合: 破壊の代わりに消滅する。effects は空で書く) / roundStart / allyTurnStart / link
 // traits  : 特性(MPを使う) { id, name, cost, target, desc, effects, repeatable, condition, log(左のログに出す文) }
 //             target: self / allies / otherAllies / allyOne / enemies / enemyOne / enemyRandom / summons
