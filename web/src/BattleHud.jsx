@@ -6,7 +6,7 @@ import { CommentaryButton } from './BattleLog.jsx'
 import { IconClose } from './icons.jsx'
 
 // 戦闘画面の、上の表示と、重ねて出す部品。参考: エンドフィールドの戦闘画面
-//   BattleHud     … 左上: 退出 / ステージ説明 ・ 中: ステージ名(CPU戦 Lv.) とラウンド ・ 右: 両チームの顔ぶれ(体力・いま動くキャラ)
+//   BattleHud     … 左上: ☰(バトルメニュー。Esc と同じ) / ステージ説明 ・ 中: ステージ名(CPU戦 Lv.) とラウンド ・ 右: 両チームの顔ぶれ(体力・いま動くキャラ)
 //   StageIntro    … 「ステージ説明」(対戦の始まりに出る。(i)で、いつでも開ける)
 //   ExitConfirm   … 退出の確認
 //   ResultBanner  … 勝敗の表示(もう一度・レベルを選ぶ・チームを変える・退出)
@@ -21,7 +21,6 @@ function Top({ children }) {
 }
 // 「Lv.5」のような名前は、もう「Lv.5」と出しているので、くり返さない
 const nameOf = (levelInfo) => (levelInfo && levelInfo.name && !/^Lv\.\d+$/.test(levelInfo.name) ? levelInfo.name : '')
-const ExitIcon = (p) => <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true" {...p}><path d="M3 3h9v2H5v14h7v2H3zm13.6 4.6L21 12l-4.4 4.4-1.4-1.4 2-2H9v-2h8.2l-2-2z" /></svg>
 const InfoIcon = (p) => <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" {...p}><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7.5v.5" /></svg>
 
 const CSS = `
@@ -32,8 +31,7 @@ const CSS = `
 @keyframes bh-pulse { 0%, 100% { box-shadow: 0 0 0 2px var(--tc), 0 0 6px var(--tc); } 50% { box-shadow: 0 0 0 2px var(--tc), 0 0 16px var(--tc); } }
 
 .bh { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.bh-leave { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px 0 12px; border: 0; background: #f2f2f3; color: #1c1c1f; font-family: ${FONT}; font-size: 13px; font-weight: 700; cursor: pointer; min-height: 0; transition: background 0.15s; }
-.bh-leave svg { font-size: 18px; }
+.bh-leave { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 36px; padding: 0; line-height: 1; font-size: 20px; border: 0; background: #f2f2f3; color: #1c1c1f; font-family: ${FONT}; font-weight: 700; cursor: pointer; min-height: 0; transition: background 0.15s; }
 .bh-leave:hover, .bh-leave:focus-visible { background: ${C.player}; outline: none; }
 .bh-icon { width: 36px; height: 36px; display: grid; place-items: center; border: 0; background: rgba(255,255,255,0.12); color: #fff; font-size: 22px; cursor: pointer; padding: 0; min-height: 0; transition: background 0.15s, color 0.15s; }
 .bh-icon:hover, .bh-icon:focus-visible { background: ${C.player}; color: #111; outline: none; }
@@ -116,11 +114,11 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) { .bh-auto[aria-pressed="true"] .ba-run { animation: none; stroke-dasharray: none; } .bm, .bm-win, .br, .br-band, .br-title, .br-sub, .br-msg, .br-btns, .bh-p.act .bh-face { animation: none !important; } }
 `
 
-export function BattleHud({ view, level, levelInfo, desktop, onLeave, onIntro, onCommentary, auto = false, onAuto, stage = null, sub = null }) {
+export function BattleHud({ view, level, levelInfo, desktop, onMenu, onIntro, onCommentary, auto = false, onAuto, stage = null, sub = null }) {
   return (
     <div className={`bh${desktop ? ' big' : ''}`} data-testid="battle-hud">
       <style>{CSS}</style>
-      <button type="button" className="bh-leave" data-testid="hud-leave" onClick={onLeave}><ExitIcon />退出</button>
+      <button type="button" className="bh-leave" data-testid="hud-menu" onClick={onMenu} aria-label="メニュー" title="メニュー(Esc)">☰</button>
       {onIntro && <button type="button" className="bh-icon" data-testid="hud-intro" onClick={onIntro} aria-label="ステージ説明" title="ステージ説明"><InfoIcon /></button>}
       <div className="bh-stage"><b>{stage || `CPU戦 Lv.${level}`}</b><span>{sub ? `${sub} ・ ` : nameOf(levelInfo) ? `${nameOf(levelInfo)} ・ ` : ''}ラウンド {view.round}</span></div>
       <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flex: 'none' }}>

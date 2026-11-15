@@ -1789,7 +1789,7 @@ export default function BattleScreen({ settingsView = null, onExit, cpuDelay = 7
     }
     return null
   })()
-  const hud = <BattleHud view={view} level={level} levelInfo={levelInfo} desktop={desktop} onLeave={() => setLeaveAsk(true)} onIntro={online ? null : () => { setIntroFirst(false); setIntro(true) }} onCommentary={() => setLogOpen(true)} auto={auto} onAuto={online ? null : () => setAuto((v) => !v)} stage={online ? (online.ranked ? 'ランクマッチ' : 'カジュアルマッチ') : null} sub={online ? `vs ${online.opp || '相手'}${leftSec != null ? ` ・ 残り ${leftSec}秒` : ''}` : null} />
+  const hud = <BattleHud view={view} level={level} levelInfo={levelInfo} desktop={desktop} onMenu={() => { if (!leaveAsk) setMenuOpen(true) }} onIntro={online ? null : () => { setIntroFirst(false); setIntro(true) }} onCommentary={() => setLogOpen(true)} auto={auto} onAuto={online ? null : () => setAuto((v) => !v)} stage={online ? (online.ranked ? 'ランクマッチ' : 'カジュアルマッチ') : null} sub={online ? `vs ${online.opp || '相手'}${leftSec != null ? ` ・ 残り ${leftSec}秒` : ''}` : null} />
   const leave = () => { setLeaveAsk(false); if (online) { if (state && !state.winner) online.client.surrender(); online.client.leave(); onExit(); return } if (flow) onExit(); else setState(null) }
   const backTeam = () => { if (flow && onBackTeam) onBackTeam(); else setTeam(null) }
   const reasonText = { surrender: '相手が降参しました', forfeit: '相手の接続が戻らず、不戦勝になりました', disconnect: '相手の接続が戻りませんでした', timeout: '時間切れ' }
