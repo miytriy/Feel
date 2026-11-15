@@ -1180,7 +1180,7 @@ function fire(state, trigger, unit, ctx = {}, from = 0) {
     if (earthShort(state, unit.team, p.effects)) continue // 土の印が足りない【土の秘術】の能力は、発動しない(ログなし)
     if (p.deathKeyword && !(ctx.other && hasKw(ctx.other, p.deathKeyword))) continue // 指定のキーワード(守護など)を持つキャラが倒れたときだけ(allyDeath用)
     state.log.push(`${unit.name}の${bracket(p.name || TRIGGER_LABELS[trigger])}`)
-    noteAbility(state, p.tag ?? TRIGGER_LABELS[trigger] ?? trigger, unit.name, p.name && p.name !== (p.tag ?? TRIGGER_LABELS[trigger]) ? p.name : '', p.desc, unit.team, p.logCombo && comboOf(state, unit) >= p.logCombo.combo ? p.logCombo.log : p.log)
+    noteAbility(state, p.tag ?? TRIGGER_LABELS[trigger] ?? trigger, unit.name, p.name && p.name !== (p.tag ?? TRIGGER_LABELS[trigger]) ? p.name : '', p.desc, unit.team, p.logAwaken && checkCond(state, unit, { awaken: true }) ? p.logAwaken : p.logCombo && comboOf(state, unit) >= p.logCombo.combo ? p.logCombo.log : p.log) // logAwaken: 【覚醒】のときだけ使うログ
     runEffects(state, unit, p.effects, { ...ctx, trigger, nextPassive: i + 1 })
     if (state.pending) return // 選ぶのを待つ。続きは、選ばれたあとに行う
   }
