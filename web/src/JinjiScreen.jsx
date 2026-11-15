@@ -357,8 +357,8 @@ function statBreakdown(c, pieces, enhLv) {
   return out
 }
 const ICON_KEYS = ['hp', 'atk', 'def', 'spd', 'mag', 'critRate', 'critDmg']
-const SD_BASIC = [['spd', '速度', ''], ['atk', '攻撃力', ''], ['hp', '体力', ''], ['def', '防御力', ''], ['mag', '魔力', '']]
-const SD_ADV = [['critRate', 'クリティカルレート', '%'], ['critDmg', 'クリティカルダメージ', '%'], ['healUp', '治癒量', '%'], ['effHit', '効果効率', '%'], ['dmgResist', '耐性値', ''], ['physUp', '物理ダメージ', '%'], ['magUp', '魔法ダメージ', '%']]
+const SD_BASIC = [['atk', '攻撃力', ''], ['mag', '魔力', ''], ['hp', '体力', ''], ['def', '防御力', '']]
+const SD_ADV = [['spd', '速度', ''], ['critRate', 'クリティカルレート', '%'], ['critDmg', 'クリティカルダメージ', '%'], ['healUp', '治癒量', '%'], ['effHit', '効果効率', '%'], ['dmgResist', '耐性値', ''], ['physUp', '物理ダメージ', '%'], ['magUp', '魔法ダメージ', '%']]
 function StatDetail({ c, sb, onClose }) {
   const [sum, setSum] = useState(false) // タップで、青い「+」の数字が、基礎+強化の合算値に切り替わる(もう一度タップで元に戻る)
   const row = ([k, label, u]) => {
@@ -372,7 +372,7 @@ function StatDetail({ c, sb, onClose }) {
         <div className="jp-sd-h">{c.name}<button type="button" aria-label="閉じる" onClick={onClose}>×</button></div>
         <div className="jp-sd-t">基礎ステータス</div>
         {SD_BASIC.filter(([k]) => k !== 'mag' || sb.mag.base || sb.mag.extra).map(row)}
-        <div className="jp-sd-t">上級ステータス</div>
+        <div className="jp-sd-t">高級ステータス</div>
         {SD_ADV.map(row)}
         <div className="jp-sd-n">左が基礎値、右の青い数字が、強化・遺物などで足されている分です。タップすると、青い数字が合算した値になります(もう一度タップで元に戻ります)。</div>
       </div>
