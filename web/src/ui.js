@@ -84,6 +84,12 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-d-fadem { 0% { opacity: 0.35; scale: 1.04 1.14; } 100% { opacity: 0.4; scale: 1 1; } }
     @keyframes feel-d-glow { 0% { opacity: 0; } 100% { opacity: 0.45; } }
     @keyframes feel-int-f8 { 0%, 12.4% { opacity: 1; } 12.5%, 100% { opacity: 0; } }
+    .tip { position: relative; display: inline-block; cursor: help; border-bottom: 2px dotted currentColor; outline: none; }
+    .tip-box { position: absolute; left: 0; top: calc(100% + 8px); z-index: 3500; width: max-content; max-width: min(300px, 78vw); padding: 10px 14px; border-radius: 6px; background: #1c1c20; color: #f1f1f2; border: 1px solid rgba(255,255,255,0.35); box-shadow: 0 6px 18px rgba(0,0,0,0.4); font-size: 14px; font-weight: 400; line-height: 1.6; text-align: left; font-style: normal; opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity 0.15s ease-out, transform 0.15s ease-out; will-change: opacity, transform; }
+    .tip-box.r { left: auto; right: 0; }
+    .tip-box.up { top: auto; bottom: calc(100% + 8px); transform: translateY(4px); }
+    .tip-box b { display: block; margin-bottom: 2px; color: #ffe600; font-size: 15px; }
+    .tip:hover .tip-box, .tip:focus-visible .tip-box { opacity: 1; transform: none; }
     @keyframes feel-sel-glow { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
     @keyframes feel-note-in { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
     @keyframes feel-log-in { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: translateX(0); } }
