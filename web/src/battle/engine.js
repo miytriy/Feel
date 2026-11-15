@@ -541,8 +541,8 @@ function resolveTargets(state, source, key, ctx) {
   // followers: 説明文が「フォロワー」(= キャラクター + 召喚物。アミュレットは含まない)の能力は、場のキャラに加えて召喚物も対象にする
   const allies = ctx.followers ? [...alliesMain, ...summonsOf(state, source).filter((u) => !u.isAmulet)] : alliesMain
   const enemies = [...enemiesOf(state, source), ...(ctx.followers ? enemiesSummonsOf(state, source).filter((u) => !u.isAmulet) : [])].filter(abilityTargetable)
-  const only = ctx.only || {} // onlyName / onlyType / onlyClass: ランダムに選ぶ前に、候補をしぼる
-  const keep = (u) => !(only.onlyName && u.name !== only.onlyName) && !(only.onlyType && !hasType(u, only.onlyType)) && !(only.onlyClass && u.class !== only.onlyClass)
+  const onlyFilter = ctx.only ? filterOf(ctx.only, EFFECT_FILTER_KEYS) : {} // ランダムに選ぶ前に、候補をしぼる
+  const keep = (u) => matchUnit(u, onlyFilter)
   const pickRandom = (list0) => { const list = list0.filter(keep); return list.length ? [list[Math.floor(rng() * list.length)]] : [] }
   switch (key) {
     case 'self': return [source]
@@ -626,6 +626,26 @@ function placeCrest(state, source, def, onEnemy = false) {
 // 墓場: 攻撃を受けるたびに+1、キャラが倒されると+3(チーム共有)
 const GRAVE_PER_HIT = 1
 const GRAVE_PER_DEATH = 3
+// ユニットの絞り込み: filter: { name, type, class, field, follower, keyword }(書いたものすべてに合うユニットだけ)
+//   効果の filter は「対象」を、パッシブの filter は「出た / 倒れたユニット(ctx.other)」を絞る。
+//   古い書き方(効果: onlyName / onlyType / onlyClass / onlyField、パッシブ: enterName / enterType / enterFollower / deathKeyword)も、同じ filter として読む
+//   新しい絞り込みを足すときは、matchUnit に1行足すだけ
+const EFFECT_FILTER_KEYS = { onlyName: 'name', onlyType: 'type', onlyClass: 'class', onlyField: 'field' }
+const PASSIVE_FILTER_KEYS = { enterName: 'name', enterType: 'type', enterFollower: 'follower', deathKeyword: 'keyword' }
+function filterOf(obj, keys) {
+  const f = { ...(obj.filter || {}) }
+  for (const [k, to] of Object.entries(keys)) if (obj[k] != null && obj[k] !== false) f[to] = obj[k]
+  return f
+}
+const matchUnit = (u, f) => !!u
+  && (!f.name || u.name === f.name)
+  && (!f.type || hasType(u, f.type))
+  && (!f.class || u.class === f.class)
+  && (!f.field || u.field === f.field) // 'main' = 場のキャラクターだけ / 'summon' = 召喚物(アミュレットも)だけ
+  && (!f.follower || !u.isAmulet) // フォロワー(キャラ + 召喚物。アミュレットは含まない)
+  && (!f.keyword || hasKw(u, f.keyword))
+const hasFilter = (f) => Object.keys(f).length > 0
+
 // 効果に払うコスト(足りなければ、その効果は働かない)。新しいコストは、COSTS に1つ足すだけ
 //   quietShort: 足りないときに、ログを出さない / unit: ログに出す単位
 const COSTS = {
@@ -775,8 +795,8 @@ function candidatesOf(state, source, e) {
   else if (key === 'enemyOne') list = e.followers ? [...enemiesOf(state, source), ...enemiesSummonsOf(state, source).filter((u) => !u.isAmulet)].filter(abilityTargetable) : enemyOneList(state, source)
   else if (key === 'enemyFieldOne') list = enemyUnitsOf(state, source) // 相手の場のユニット(キャラ + 召喚物 + アミュレット)
   else list = resolveTargets(state, source, key, { followers: e.followers })
-  if (e.onlyName) list = list.filter((u) => u.name === e.onlyName) // onlyName: 指定の名前のキャラだけ
-  return e.onlyType ? list.filter((u) => hasType(u, e.onlyType)) : list // onlyType: 指定のタイプ(式神など)だけ
+  const f = filterOf(e, EFFECT_FILTER_KEYS)
+  return hasFilter(f) ? list.filter((u) => matchUnit(u, f)) : list
 }
 
 // 候補が0体 → 何もしない / 1体 → 自動で選ぶ / 2体以上 → state.pending に残して、選ばれるまで待つ(ファンファーレのときだけ)
@@ -1038,10 +1058,8 @@ function runEffects(state, source, effects, ctx = {}) {
     }
 
     let targets = resolveTargets(state, source, e.target || 'self', { ...ctx, only: e, followers: e.followers })
-    if (e.onlyClass) targets = targets.filter((t) => t.class === e.onlyClass) // 指定のクラス(ロイヤルなど)だけ
-    if (e.onlyType) targets = targets.filter((t) => hasType(t, e.onlyType)) // 指定のタイプ(式神など)だけ
-    if (e.onlyName) targets = targets.filter((t) => t.name === e.onlyName) // 指定の名前のキャラ(トークンなど)だけ
-    if (e.onlyField) targets = targets.filter((t) => t.field === e.onlyField) // 'main'=場のキャラクターだけ / 'summon'=召喚物(アミュレットも)だけ(例: 攻撃時に、攻撃した相手が召喚物なら破壊する)
+    const tf = filterOf(e, EFFECT_FILTER_KEYS) // 指定のクラス・タイプ・名前・場(main / summon)だけ
+    if (hasFilter(tf)) targets = targets.filter((t) => matchUnit(t, tf))
     // ランダムな相手の人数: count(基本は1体)。comboCount: { combo: 3, count: 3 } なら、コンボが3以上のとき3体(重ならないように選ぶ)
     if (((e.target || 'self') === 'enemyRandom' || e.target === 'enemyFieldRandom') && (e.count != null || e.comboCount)) {
       let n = e.count ?? 1
@@ -1215,11 +1233,9 @@ function fire(state, trigger, unit, ctx = {}, from = 0) {
   for (let i = from; i < unit.passiveObjs.length; i++) {
     const p = unit.passiveObjs[i]
     if (p.trigger !== trigger || !checkCond(state, unit, p.condition)) continue
-    if (p.enterType && !hasType(ctx.other, p.enterType)) continue
-    if (p.enterFollower && ctx.other.isAmulet) continue // 「フォロワーが場に出たとき」: アミュレットは含まない
-    if (p.enterName && ctx.other.name !== p.enterName) continue // 指定の名前のキャラ(トークンなど)が出たときだけ
+    const pf = filterOf(p, PASSIVE_FILTER_KEYS) // 出た / 倒れたユニット(ctx.other)の絞り込み
+    if (hasFilter(pf) && !matchUnit(ctx.other, pf)) continue
     if (earthShort(state, unit.team, p.effects)) continue // 土の印が足りない【土の秘術】の能力は、発動しない(ログなし)
-    if (p.deathKeyword && !(ctx.other && hasKw(ctx.other, p.deathKeyword))) continue // 指定のキーワード(守護など)を持つキャラが倒れたときだけ(allyDeath用)
     state.log.push(`${unit.name}の${bracket(p.name || TRIGGER_LABELS[trigger])}`)
     noteAbility(state, p.tag ?? TRIGGER_LABELS[trigger] ?? trigger, unit.name, p.name && p.name !== (p.tag ?? TRIGGER_LABELS[trigger]) ? p.name : '', p.desc, unit.team, logOf(state, unit, p))
     runEffects(state, unit, p.effects, { ...ctx, trigger, nextPassive: i + 1 })
@@ -1358,7 +1374,8 @@ function crestSkillMax(state, u) {
       if (p.trigger !== 'constant' || !checkCond(state, src, p.condition)) continue
       for (const e of p.effects) {
         if (e.type !== 'extraSkill') continue
-        if (e.onlyName ? u.name === e.onlyName : u.uid === src.uid) max = Math.max(max, e.times ?? 2)
+        const sf = filterOf(e, EFFECT_FILTER_KEYS)
+        if (hasFilter(sf) ? matchUnit(u, sf) : u.uid === src.uid) max = Math.max(max, e.times ?? 2)
       }
     }
   }
