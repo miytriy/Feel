@@ -4,7 +4,7 @@ export default {
   skill: { name: '攻撃', stat: 'mag', type: 'magic', mult: 1.25 }, // 敵単体に魔力125%分の魔法ダメージ
   passives: [
     // Xは0から始まり、これがスペルブーストされるたびに+1される(数えるのはエンジンの「ブーストされた回数」。perBoost で使う)
-    { name: 'スペルブースト時', trigger: 'onBoost', desc: 'Xは0から始まる。これのXを+1する。', effects: [] },
+    { name: 'スペルブースト時', trigger: 'onBoost', desc: 'Xは0から始まる。これのXを+1する。', log: false, effects: [] },
     {
       name: 'ファンファーレ', trigger: 'fanfare',
       desc: '相手の場のフォロワーすべてにX×60ダメージ。',
