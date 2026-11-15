@@ -30,7 +30,7 @@ const TARGET_LABELS = {
 }
 const STAT_ROWS = [
   ['hp', 'HP'], ['atk', '攻撃力'], ['def', '防御力'], ['spd', '速度'],
-  ['mag', '魔力'], ['critRate', 'クリティカルレート'], ['critDmg', 'クリティカルダメージ'], ['dmgResist', 'ダメージ耐性'],
+  ['mag', '魔力'], ['critRate', 'クリティカルレート'], ['critDmg', 'クリティカルダメージ'], ['dmgResist', '耐性値'],
 ]
 const DEFAULTS = { critRate: 5, critDmg: 50 } // ルールの初期値(クリティカルレート5%/ダメージ50%)
 const DMG_TYPE = { physical: '物理', magic: '魔法', true: '確定' }

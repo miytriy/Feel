@@ -76,7 +76,7 @@ export const RELICS = {
   '鬼の形相': { rotation: 'basic', desc: 'HP +21%', mods: [{ stat: 'hp', pct: 21 }] },
   '月と太陽の印字': { rotation: 'basic', desc: '魔力 +13%', mods: [{ stat: 'mag', pct: 13 }] },
   '紅血の証': { rotation: 'basic', desc: '防御力 +29%', mods: [{ stat: 'def', pct: 29 }] },
-  '少女の物語': { rotation: 'basic', desc: 'ダメージ耐性値 +10', mods: [{ stat: 'dmgResist', flat: 10 }] },
+  '少女の物語': { rotation: 'basic', desc: '耐性値 +10', mods: [{ stat: 'dmgResist', flat: 10 }] },
 }
 
 // ---------- ユニットの作成 ----------
