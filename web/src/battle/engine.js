@@ -648,7 +648,7 @@ function resolveTargets(state, source, key, ctx) {
 }
 
 function statLabel(stat) {
-  return { atk: '攻撃力', mag: '魔力', def: '防御力', spd: '速度', critRate: 'クリティカルレート', critDmg: 'クリティカルダメージ', dmgResist: 'ダメージ耐性', dmgUp: '与ダメージ' }[stat] || stat
+  return { atk: '攻撃力', mag: '魔力', def: '防御力', spd: '速度', critRate: 'クリティカルレート', critDmg: 'クリティカルダメージ', dmgResist: '耐性値', dmgUp: '与ダメージ' }[stat] || stat
 }
 
 // クレストを置く(最大5つ、同名は置けない)
