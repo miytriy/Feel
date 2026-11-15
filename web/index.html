@@ -2,7 +2,7 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0" />
     <meta name="theme-color" content="#0b0b12" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <title>Feel</title>
@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet" />
     <style>
       /* サイト全体で、文字の選択・長押しメニューを無効にする(入力欄だけは、打てるように残す) */
+      html, body { overflow-x: clip; } /* 光の演出などが画面の外にはみ出しても、ページが勝手に縮小(右と下に余白)されないように */
       html, body, #root, #root * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
       input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-select: text; }
     </style>
