@@ -203,6 +203,11 @@ const CSS = `
 .jp-sd-row { cursor: pointer; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; padding: 12px 14px; border-bottom: 1px solid #34343a; } .jp-sd-row span { color: #d6d6dc; display: flex; align-items: center; gap: 14px; } .jp-sd-ic { width: 1.3em; height: 1.3em; flex: none; display: grid; place-items: center; color: #fff; font-size: 1.3em; }
 .jp-sd-row b { margin-left: auto; font-family: ${DISPLAY}; font-size: 46px; } .jp-sd-row em { font-style: normal; color: #6cb6ff; margin-left: 14px; font-size: 40px; }
 .jp-sd-n { margin-top: 14px; font-size: 26px; color: #9a9aa2; }
+/* 用語のヒント: 文中の語にカーソルを合わせる(キーボードならフォーカス)と、すぐ下に小さなダイアログが出る。opacity と transform だけで動かす */
+.jp-tip { position: relative; display: inline-block; cursor: help; border-bottom: 2px dotted currentColor; outline: none; }
+.jp-tipbox { position: absolute; left: 0; top: calc(100% + 8px); z-index: 30; width: max-content; max-width: min(300px, 78vw); padding: 10px 14px; border-radius: 6px; background: #1c1c20; color: #f1f1f2; border: 1px solid rgba(255,255,255,0.35); box-shadow: 0 6px 18px rgba(0,0,0,0.4); font-size: 0.7em; font-weight: 400; line-height: 1.6; text-align: left; opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity 0.15s ease-out, transform 0.15s ease-out; will-change: opacity, transform; }
+.jp-tipbox b { display: block; margin-bottom: 2px; color: #ffe600; font-size: 1.05em; }
+.jp-tip:hover .jp-tipbox, .jp-tip:focus-visible .jp-tipbox { opacity: 1; transform: none; }
 /* 遺物(部位つき) */
 .jp-rl-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 6px 0 10px; }
 .jp-rl-tab { min-height: 0; padding: 10px 8px; border: 2px solid #3a3a40; border-radius: 10px; background: #2b2b2f; color: #cfcfd4; cursor: pointer; font-size: 22px; font-weight: 700; line-height: 1.2; transition: transform .15s ease-out; }
@@ -410,7 +415,9 @@ function RelicPane({ c }) {
   if (!inv.loaded) return <div className="jp-empty" data-testid="relic-need-login">{inv.error ? `遺物を読み込めませんでした(${inv.error})` : '遺物を持つには、ログインが必要です。'}</div>
   return (
     <div data-testid="relic-pane">
-      {!RELICS_USABLE && <div className="jp-row" data-testid="relic-banned"><p>遺物は、ローテーション・アンリミテッドでは使用禁止です(ステータスにも反映されません)。インフィニティでは、使用禁止のユニット・遺物も使えます。</p></div>}
+      <div className="jp-row" data-testid="relic-banned">
+        <p>遺物は、キャラクターの装備品です。{!RELICS_USABLE && <>遺物は今期のローテーションでは、<span className="jp-tip" tabIndex={0} data-testid="relic-ban-tip">『使用禁止』<span className="jp-tipbox" role="tooltip"><b>『使用禁止』</b>「ローテーション」「アンリミテッド」での使用を禁止する効果。</span></span>です。</>}</p>
+      </div>
       <div className="jp-rl-sum">{Object.keys(totals).length ? Object.entries(totals).map(([k, v]) => <span key={k}>{statText(k, Math.round(v * 10) / 10)}</span>) : <span>遺物なし</span>}</div>
       <div className="jp-rl-tabs">
         {PART_IDS.map((p) => {
