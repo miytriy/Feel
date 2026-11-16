@@ -1152,8 +1152,8 @@ function runEffects(state, source, effects, ctx = {}) {
       targets = []
       while (targets.length < n && pool.length) targets.push(pool.splice(Math.floor(rng() * pool.length), 1)[0])
     }
-    // 「割り振る」(split)の人数 = 実際に受けとれる対象の数(生きている者。回復はアミュレットを除く)。対象が1人だけなら、合計がすべてその1人に入る
-    const splitN = Math.max(1, targets.filter((x) => x && x.alive && !(e.type === 'heal' && x.isAmulet)).length)
+    // 「割り振る」(split)の人数 = 実際に受けとれる対象の数(生きている者。アミュレットは体力がなくダメージも回復も受けないので数えない)。対象が1人だけなら、合計がすべてその1人に入る
+    const splitN = Math.max(1, targets.filter((x) => x && x.alive && !x.isAmulet).length)
     let nDestroyed = 0 // この効果で破壊した数。あとの効果の perDestroyed(damage)で使う(「Xはアミュレットを破壊した総数」)
     for (const t of targets) {
       if (!t) continue
