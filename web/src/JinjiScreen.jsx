@@ -394,8 +394,7 @@ const SD_TIPS = {
 // 能力値の詳細: 基礎ステータスは「…」で内訳(基礎・強化・遺物)を開く。高級ステータスは「?」に、カーソルを合わせる(スマホはタップ)と説明が出る
 function StatDetail({ c, sb, enh = 0, onClose }) {
   const [open, setOpen] = useState({}) // 内訳を開いているステータス
-  const [tip, setTip] = useState(null) // 説明を出しているステータス(PCは、カーソルを合わせると出る。スマホは、タップで出る・もう一度タップで消える)
-  const ptr = useRef('mouse') // 最後に押した操作の種類(mouse / touch)
+  const [tip, setTip] = useState(null) // 説明を出しているステータス(タップで出る・もう一度タップで消える)
   const num = (x) => Math.round(x * 10) / 10
   const pct = (x, base) => (base ? `${x > 0 ? '+' : ''}${num((x / base) * 100)}%` : '') // 基礎に対する割合
   const main = ([k, label, u]) => {
@@ -427,9 +426,7 @@ function StatDetail({ c, sb, enh = 0, onClose }) {
         <span><i className="jp-sd-ic">{ICON_KEYS.includes(k) && <StatIcon stat={k} />}</i>{label}</span>
         <b>{total}{u}</b>
         <button type="button" className={`jp-sd-btn q${tip === k ? ' on' : ''}`} aria-label={`${label}の説明`}
-          onPointerDown={(e) => { ptr.current = e.pointerType }}
-          onPointerEnter={(e) => { if (e.pointerType === 'mouse') setTip(k) }} onPointerLeave={(e) => { if (e.pointerType === 'mouse') setTip((t) => (t === k ? null : t)) }}
-          onClick={(e) => { e.stopPropagation(); setTip((t) => (t === k && ptr.current !== 'mouse' ? null : k)) }}>?</button>
+          onClick={(e) => { e.stopPropagation(); setTip((t) => (t === k ? null : k)) }}>?</button>
         {tip === k && <div className="jp-sd-tip" role="tooltip"><i>{label}</i>{SD_TIPS[k]}</div>}
       </div>
     )
