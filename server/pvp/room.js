@@ -89,7 +89,7 @@ export class Room {
   start() {
     const { engine } = this.reg
     const A = this.players.A, B = this.players.B
-    const pool = (p) => this.reg.chars.filter((c) => !c.amulet && !c.id.startsWith('test_') && (p.built.owned ? p.built.owned[c.id] > 0 : true))
+    const pool = (p) => this.reg.chars.filter((c) => !c.id.startsWith('test_') && (p.built.owned ? p.built.owned[c.id] > 0 : true))
     this.state = engine.createBattle(A.built.defs, B.built.defs, { pool: { A: pool(A), B: pool(B) }, spells: { A: A.built.spells, B: B.built.spells } })
     this.phase = 'battle'
     this.clearTimer(this.timers.wait)

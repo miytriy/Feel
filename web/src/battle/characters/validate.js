@@ -10,7 +10,7 @@ export const RARITIES = ['legend', 'gold', 'silver', 'bronze']
 const SKILL_STATS = ['atk', 'mag']
 const DMG_TYPES = ['physical', 'magic', 'true']
 const EFFECT_TYPES = ['pick', 'copyAmulet', 'damage', 'heal', 'buff', 'armor', 'shield', 'barrier', 'advance', 'delay', 'mp', 'ep', 'faith', 'earth', 'earthSummon', 'reanimate', 'clearCrests', 'boost', 'boostPick', 'graveyard', 'crest', 'summon', 'reenter', 'loseKeyword', 'destroy', 'vanish', 'maxHp', 'loseHp', 'enableTrait', 'gainKeyword', 'gainDoubleSkill', 'setBaseSpd', 'gainCombo', 'extraSkill', 'enableSpell', 'mode', 'evolve', 'growByDead', 'mpMax', 'spendMp']
-const EFFECT_TARGETS = ['allyAmulets', 'enemyFollowers', 'allyAmuletOne', 'self', 'opponent', 'allies', 'otherAllies', 'allyOne', 'enemies', 'enemyOne', 'enemyFieldOne', 'enemyRandom', 'enemyFieldRandom', 'summons', 'otherAllyOne', 'allyField', 'allyFieldOne', 'allyFieldRandom', 'enemyField', 'otherAllyField', 'entered', 'nearestAlly', 'fieldOthers', 'fieldSummons', 'fieldAll', 'fieldAmulets']
+const EFFECT_TARGETS = ['enemyTopAtk', 'allyAmulets', 'enemyFollowers', 'allyAmuletOne', 'self', 'opponent', 'allies', 'otherAllies', 'allyOne', 'enemies', 'enemyOne', 'enemyFieldOne', 'enemyRandom', 'enemyFieldRandom', 'summons', 'otherAllyOne', 'allyField', 'allyFieldOne', 'allyFieldRandom', 'enemyField', 'otherAllyField', 'entered', 'nearestAlly', 'fieldOthers', 'fieldSummons', 'fieldAll', 'fieldAmulets']
 const TRAIT_TARGETS = ['self', 'allies', 'otherAllies', 'allyOne', 'allyFieldOne', 'otherAllyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons']
 const BUFF_STATS = ['atk', 'mag', 'def', 'spd', 'critRate', 'critDmg', 'dmgResist', 'dmgUp']
 const CONDITION_KEYS = ['link', 'gauge', 'ultimate', 'liberation', 'faith', 'earth', 'boost', 'graveyard', 'hpBelow', 'hpAbove', 'evolved', 'crests', 'combo', 'evolveTurn', 'awaken']
@@ -40,7 +40,7 @@ function checkEffects(effects, where, errs, depth = 0) {
       if (e.turnsBy != null && (e.turnsBy !== 'source' || e.turns == null)) errs.push(`${w}: turnsBy は 'source'(かけた本人のターンで数える)だけで、turns と一緒に書きます`)
     }
     if (e.type === 'summon') {
-      if (!e.unit && !e.fromOwned && !e.copySelf && !e.fromCrest && !e.randomUnits) errs.push(`${w}: summon には unit(召喚するキャラ)・randomUnits・fromOwned: true・copySelf: true・fromCrest: true のどれかが必要です`)
+      if (!e.unit && !e.fromOwned && !e.fromOwnedAmulets && !e.copySelf && !e.fromCrest && !e.randomUnits) errs.push(`${w}: summon には unit(召喚するキャラ)・randomUnits・fromOwned: true・fromOwnedAmulets: true・copySelf: true・fromCrest: true のどれかが必要です`)
       else if (e.unit && depth < 2) errs.push(...validateCharacter(e.unit, { summon: true }).map((m) => `${w} の召喚物 → ${m}`))
       else if (Array.isArray(e.randomUnits) && depth < 2) e.randomUnits.forEach((u) => errs.push(...validateCharacter(u, { summon: true }).map((m) => `${w} の召喚物 → ${m}`)))
     }

@@ -540,7 +540,7 @@ function noteAbility(state, kind, owner, name, desc, team, log) {
 //   side : ally(味方) / enemy(相手) / field(両チーム)
 //   scope: main(場のキャラ) / follower(キャラ + 召喚物。アミュレットは含まない) / unit(キャラ + 召喚物 + アミュレット) / amulet / summon(召喚物 + アミュレット)
 //          'auto' = 効果の units / followers フラグで決める(units → unit、followers → follower、なければ main)
-//   pick : all(全員) / chosen(選ぶ。選ばれなければ先頭) / random(ランダム1体) / weakest(選ばれなければ、HP割合が最も低い1体)
+//   pick : all(全員) / chosen(選ぶ。選ばれなければ先頭) / random(ランダム1体) / weakest(選ばれなければ、HP割合が最も低い1体) / topAtk(攻撃力が最大のものからランダム1体)
 //          chosenRandom(選ばれなければ、ランダム1体)
 //   other: true なら自分を除く
 //   cand : 選ぶとき(choose)の候補の範囲(省略すると scope と同じ)
@@ -560,6 +560,7 @@ const TARGETS = {
   enemies: { side: 'enemy', scope: 'auto', pick: 'all', enemyAuto: true },
   enemyFollowers: { side: 'enemy', scope: 'follower', pick: 'all' },
   enemyField: { side: 'enemy', scope: 'unit', pick: 'all' },
+  enemyTopAtk: { side: 'enemy', scope: 'main', pick: 'topAtk' }, // 相手の場のキャラクターのうち、攻撃力が最大のものからランダム1体
   enemyRandom: { side: 'enemy', scope: 'auto', pick: 'random', enemyAuto: true },
   enemyFieldRandom: { side: 'enemy', scope: 'unit', pick: 'random' },
   enemyOne: { side: 'enemy', scope: 'auto', pick: 'chosenRandom', enemyAuto: true, cand: 'mainAmulet' },
@@ -617,6 +618,7 @@ function resolveTargets(state, source, key, ctx) {
     switch (T.pick) {
       case 'all': return pool
       case 'random': return randomOf(pool)
+      case 'topAtk': { const l = pool.filter(keep); const top = Math.max(...l.map((u) => u.atk)); return randomOf(l.filter((u) => u.atk === top)) }
       case 'weakest': {
         if (ctx.chosen) return [getUnit(state, ctx.chosen)]
         return [[...pool].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]].filter(Boolean)
@@ -1042,10 +1044,23 @@ function runEffects(state, source, effects, ctx = {}) {
       summon(state, source, pick.charDef)
       continue
     }
+    if (e.type === 'summon' && e.fromOwnedAmulets) { // 所持アミュレット(トークンを除く)のうち、速度 maxSpd 以下のものから、ランダムに count 種類を召喚する(満員なら出せない)
+      const rng = ctx.opts?.rng || Math.random
+      const cands = (state.pool[source.team] || []).filter((c) => c.amulet && !c.token && c.stats.spd <= (e.maxSpd ?? Infinity))
+      const names = []
+      for (let i = 0; i < (e.count ?? 1) && cands.length; i++) {
+        const c = cands.splice(Math.floor(rng() * cands.length), 1)[0]
+        names.push(c.name)
+        const nu = summon(state, source, c, { defer: true })
+        if (nu) afterEnter(state, nu)
+      }
+      if (!names.length) state.log.push('召喚できる所持アミュレットがなかった')
+      continue
+    }
     if (e.type === 'summon' && e.fromOwned) { // 所持キャラクターから、速度が コンボ数×10(最大10コンボ)のキャラをランダムに1体召喚する
       const x = Math.min(e.maxCombo ?? 10, comboOf(state, source))
       const spd = x * (e.speedPerCombo ?? 10)
-      const cands = (state.pool[source.team] || []).filter((c) => c.stats.spd === spd)
+      const cands = (state.pool[source.team] || []).filter((c) => !c.amulet && c.stats.spd === spd)
       if (!cands.length) { state.log.push(`コンボ${x}(速度${spd})の所持キャラがいないので、召喚はなし`); continue }
       const rng = ctx.opts?.rng || Math.random
       const pick = cands[Math.floor(rng() * cands.length)]
@@ -1127,6 +1142,7 @@ function runEffects(state, source, effects, ctx = {}) {
     let targets = resolveTargets(state, source, e.target || 'self', { ...ctx, only: e, followers: e.followers, units: e.units })
     const tf = filterOf(e, EFFECT_FILTER_KEYS) // 指定のクラス・タイプ・名前・場(main / summon)だけ
     if (hasFilter(tf)) targets = targets.filter((t) => matchUnit(t, tf))
+    if (e.exceptPrev) targets = targets.filter((t) => !(ctx.prevTargets || []).includes(t.uid)) // 「それ以外」: 直前の効果の対象は除く
     // ランダムな相手の人数: count(基本は1体)。comboCount: { combo: 3, count: 3 } なら、コンボが3以上のとき3体(重ならないように選ぶ)
     if (((e.target || 'self') === 'enemyRandom' || e.target === 'enemyFieldRandom') && (e.count != null || e.comboCount)) {
       let n = e.count ?? 1
@@ -1283,7 +1299,7 @@ function runEffects(state, source, effects, ctx = {}) {
           break
       }
     }
-    if (nDestroyed) ctx = { ...ctx, destroyed: (ctx.destroyed || 0) + nDestroyed }
+    ctx = { ...ctx, prevTargets: targets.filter(Boolean).map((t) => t.uid), ...(nDestroyed ? { destroyed: (ctx.destroyed || 0) + nDestroyed } : {}) }
   }
   recalc(state)
 }
