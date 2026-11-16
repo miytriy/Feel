@@ -17,6 +17,7 @@ import { ME, OPP, setMe, winnerView } from './perspective.js'
 import { VanishFx, VANISH_BASE_MS } from './VanishFx.jsx'
 import { useHotkey } from './keys.js'
 import { loadSettings } from './settings.js'
+import { TABLE, ROW_OTHER, rowOf, groupOfRow } from './battle/abilityOrder.js'
 // 強化のエフェクトで、文字ではなくアイコンで見せるステータス
 const BUFF_ICON = new Set(['hp', 'atk', 'def', 'spd', 'mag', 'critRate', 'critDmg', 'dmgResist'])
 const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', margin: '0 2px 0 0' }} />
@@ -739,18 +740,6 @@ function crestsOf(unit) {
   for (const t of unit.traits || []) walk(t.effects)
   return out
 }
-
-// ---- 性能表の書き方(上の行ほど先に書く。グループの境目に ── を引く) ----
-// [グループ, [同じ行に並ぶ見出し]]。グループ: 0=召喚・融合・ブースト / 1=スキルと各種能力 / 2=キーワードと戦闘中の能力 / 3=進化時
-const TABLE = [
-  [0, ['直接召喚']], [0, ['融合']], [0, ['スペルブースト時']],
-  [1, ['スキル']], [1, ['ファンファーレ', 'モード', 'コンボ', '連携', '土の秘術', '土の印', '覚醒', 'ネクロマンス', 'リアニメイト']], [1, ['常時', 'アクティブ']], [1, ['エンハンス']], [1, ['奥義']], [1, ['解放奥義']],
-  [2, ['突進']], [2, ['疾走']], [2, ['必殺']], [2, ['守護']], [2, ['威圧']], [2, ['オーラ']], [2, ['潜伏']], [2, ['バリア']], [2, ['ドレイン']], [2, ['交戦時']], [2, ['攻撃時']], [2, ['ラストワード']],
-  [3, ['進化時']],
-]
-const ROW_OTHER = TABLE.findIndex((r) => r[1][0] === 'ラストワード') + 0.5 // 表にない能力(ターン終了時など)は、ラストワードの次(進化時の前)に置く
-const rowOf = (label) => { const i = TABLE.findIndex((r) => r[1].some((n) => label.includes(n))); return i }
-const groupOfRow = (i) => (i < 0 ? 2 : TABLE[i][0])
 
 const hasFaith = (p) => p.condition?.faith != null || JSON.stringify(p.effects || []).includes('"type":"faith"')
 

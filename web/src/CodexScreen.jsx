@@ -6,6 +6,7 @@ import { ALL_CHARACTERS, charById } from './battle/characters/index.js'
 import { ALL_SPELLS, spellById } from './battle/spells/index.js'
 import { KEYWORDS, TRIGGER_LABELS, RELICS, bracket, isEnhance, enhanceBody } from './battle/engine.js'
 import { CLASSES } from './battle/characters/validate.js'
+import { rowOf, ROW_OTHER } from './battle/abilityOrder.js'
 
 // 資料集: キャラクター/スペルをタブで分け、さらにクラスで絞り込み、名前や効果の文字で検索できる。
 // データは characters/ と spells/ から自動で集まるので、キャラやスペルを足すと、ここにも自動で載る。
@@ -131,6 +132,35 @@ function AbilityRow({ head, tag, desc }) {
   )
 }
 
+// ステータスの1マス。魔力は、持っていなくても 0 で出す(攻撃力・魔力 / 体力・防御力 の並びをそろえるため)。耐性値は、あるときだけ
+function statCell(def, k, label) {
+  const v = def.stats[k]
+  if (v == null && k === 'dmgResist') return null
+  const shown = v ?? (k === 'mag' ? 0 : DEFAULTS[k])
+  if (shown == null) return null
+  return (
+    <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2px 0', borderBottom: `1px dotted ${C.line}` }}>
+      <span style={{ color: C.mute, display: 'flex', alignItems: 'center', gap: 8 }}><StatIcon stat={k} style={{ fontSize: 26, color: C.ink }} />{label}</span>
+      <b>{shown}{k === 'critRate' || k === 'critDmg' ? '%' : ''}</b>
+    </div>
+  )
+}
+
+// 「能力」の行: パッシブ・特性(アクト・アクティブなど)・アクセラレートを、バトルの性能表と同じ順番(abilityOrder.js)に並べる
+function abilityRows(def) {
+  const items = []
+  const add = (label, node) => { const r = rowOf(label); items.push({ row: r < 0 ? ROW_OTHER : r, order: items.length, node }) }
+  ;(def.passives || []).forEach((p, i) => add(passiveLabel(p) || '', <AbilityRow key={'p' + i} head={bracket(passiveLabel(p))} desc={passiveDesc(p)} />))
+  ;(def.traits || []).forEach((t) => add(t.name || '', (
+    // 「コスト1 【アクト】」の1行目 + 2行目に説明(説明の頭の【アクト】は、1行目と重なるので取る)。【アクティブ】は、MPの消費が説明に書いてあるので、コストは出さず「【アクティブ】」+ 説明だけ
+    <AbilityRow key={'t' + t.id} head={`【${t.name}】`} tag={isEnhance(t) || t.cost == null || t.name === 'アクティブ' ? null : `コスト${t.cost}`} desc={isEnhance(t) ? enhanceBody(t) : `${String(t.desc || '').replace(`【${t.name}】`, '')}${t.target ? `(対象: ${TARGET_LABELS[t.target] || t.target})` : ''}${t.repeatable ? ' ※1ターンに複数回使える' : ''}`} />
+  )))
+  if (def.accelerate) add('アクセラレート', (
+    <AbilityRow key="acc" head={`【${def.accelerate.name || 'アクセラレート'}_${def.accelerate.speed}】`} desc={`MP${def.accelerate.cost} ${def.accelerate.desc || ''}(速度 ${def.accelerate.speed}・対象: ${TARGET_LABELS[def.accelerate.target] || def.accelerate.target})`} />
+  ))
+  return items.sort((a, b) => a.row - b.row || a.order - b.order)
+}
+
 // ---------- 詳細 ----------
 export function CharDetail({ def, onOpen }) {
   const rel = collectRelated(def)
@@ -138,24 +168,14 @@ export function CharDetail({ def, onOpen }) {
   return (
     <>
       <Section title="ステータス">
+        {/* 基礎ステータス: 攻撃力・魔力 / 体力・防御力 / 速度。高級ステータス: クリティカルレート / クリティカルダメージ(耐性値があれば) */}
+        <div style={{ fontSize: 12, color: C.mute, margin: '2px 0 4px' }}>基礎ステータス</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px 18px', fontSize: 18 }}>
-          {STAT_ROWS.map(([k, label]) => {
-            const v = def.stats[k]
-            if (v == null && DEFAULTS[k] == null && k !== 'mag' && k !== 'dmgResist') return null
-            if (v == null && k === 'mag' && def.skill?.stat === 'mag') return (
-              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2px 0', borderBottom: `1px dotted ${C.line}` }}>
-                <span style={{ color: C.mute, display: 'flex', alignItems: 'center', gap: 8 }}><StatIcon stat={k} style={{ fontSize: 26, color: C.ink }} />{label}</span><b>0</b>
-              </div>
-            )
-            if (v == null && ['mag', 'dmgResist'].includes(k)) return null
-            const shown = v ?? DEFAULTS[k]
-            return (
-              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2px 0', borderBottom: `1px dotted ${C.line}` }}>
-                <span style={{ color: C.mute, display: 'flex', alignItems: 'center', gap: 8 }}><StatIcon stat={k} style={{ fontSize: 26, color: C.ink }} />{label}</span>
-                <b>{shown}{k === 'critRate' || k === 'critDmg' ? '%' : ''}</b>
-              </div>
-            )
-          })}
+          {[['atk', '攻撃力'], ['mag', '魔力'], ['hp', '体力'], ['def', '防御力'], ['spd', '速度']].map(([k, label]) => statCell(def, k, label))}
+        </div>
+        <div style={{ fontSize: 12, color: C.mute, margin: '10px 0 4px' }}>高級ステータス</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px 18px', fontSize: 18 }}>
+          {[['critRate', 'クリティカルレート'], ['critDmg', 'クリティカルダメージ'], ['dmgResist', '耐性値']].map(([k, label]) => statCell(def, k, label))}
         </div>
       </Section>
 
@@ -166,26 +186,9 @@ export function CharDetail({ def, onOpen }) {
         />
       </Section>
 
-      {(def.passives || []).length > 0 && (
-        <Section title="パッシブ">
-          {def.passives.map((p, i) => (
-            <AbilityRow key={i} head={bracket(passiveLabel(p))} desc={passiveDesc(p)} />
-          ))}
-        </Section>
-      )}
-
-      {(def.traits || []).length > 0 && (
-        <Section title="特性">
-          {def.traits.map((t) => (
-            // 「コスト1 【アクト】」の1行目 + 2行目に説明(説明の頭の【アクト】は、1行目と重なるので取る)。【アクティブ】は、MPの消費が説明に書いてあるので、コストは出さず「【アクティブ】」+ 説明だけ
-            <AbilityRow key={t.id} head={`【${t.name}】`} tag={isEnhance(t) || t.cost == null || t.name === 'アクティブ' ? null : `コスト${t.cost}`} desc={isEnhance(t) ? enhanceBody(t) : `${String(t.desc || '').replace(`【${t.name}】`, '')}${t.target ? `(対象: ${TARGET_LABELS[t.target] || t.target})` : ''}${t.repeatable ? ' ※1ターンに複数回使える' : ''}`} />
-          ))}
-        </Section>
-      )}
-
-      {def.accelerate && (
-        <Section title="アクセラレート">
-          <AbilityRow head={`【${def.accelerate.name || 'アクセラレート'}_${def.accelerate.speed}】`} desc={`MP${def.accelerate.cost} ${def.accelerate.desc || ''}(速度 ${def.accelerate.speed}・対象: ${TARGET_LABELS[def.accelerate.target] || def.accelerate.target})`} />
+      {abilityRows(def).length > 0 && (
+        <Section title="能力">
+          {abilityRows(def).map((r) => r.node)}
         </Section>
       )}
 
