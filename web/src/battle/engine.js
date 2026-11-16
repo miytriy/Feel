@@ -550,6 +550,7 @@ const TARGETS = {
   otherAllies: { side: 'ally', scope: 'auto', pick: 'all', other: true },
   summons: { side: 'ally', scope: 'summon', pick: 'all' },
   allyField: { side: 'ally', scope: 'unit', pick: 'all' },
+  allyAmulets: { side: 'ally', scope: 'amulet', pick: 'all' },
   otherAllyField: { side: 'ally', scope: 'unit', pick: 'all', other: true },
   allyFieldRandom: { side: 'ally', scope: 'unit', pick: 'random', charsOnly: true },
   allyFieldOne: { side: 'ally', scope: 'unit', pick: 'chosen' },
@@ -1123,6 +1124,7 @@ function runEffects(state, source, effects, ctx = {}) {
       targets = []
       while (targets.length < n && pool.length) targets.push(pool.splice(Math.floor(rng() * pool.length), 1)[0])
     }
+    let nDestroyed = 0 // この効果で破壊した数。あとの効果の perDestroyed(damage)で使う(「Xはアミュレットを破壊した総数」)
     for (const t of targets) {
       if (!t) continue
       switch (e.type) {
@@ -1133,8 +1135,9 @@ function runEffects(state, source, effects, ctx = {}) {
             break
           }
           if (e.logChar && ctx.spell) noteAbility(state, 'スペル', source.team === 'A' ? '自分' : '相手', ctx.spellName || state.casting || '', e.desc || '', source.team, e.logChar) // 相手がキャラクターのときのログ
+          if (e.perDestroyed != null && !(ctx.destroyed > 0)) break // perDestroyed: 破壊した数 X につき、ダメージが perDestroyed ずつ増える(1つも破壊しなかったら何もしない)
           if (e.perMpSpent != null && !(ctx.mpSpent > 0)) break // perMpSpent: 消費したMP1つにつき、倍率が perMpSpent ずつ増える(MPを使わなかったら何もしない)
-          const skill = { stat: e.stat || 'atk', mult: (e.perMpSpent != null ? (e.mult ?? 0) + e.perMpSpent * ctx.mpSpent : e.mult ?? 1), add: (e.split && e.add != null ? e.add / targets.length : (e.add || 0)) + perAmount(state, source, e), type: e.dmgType || 'physical' } // perEarth: 自分の場の土の印1つにつき、add が perEarth ずつ増える / perType: 自分の場の「そのタイプ」のキャラ1体につき、add が perTypeFlat(省くと1)ずつ増える
+          const skill = { stat: e.stat || 'atk', mult: (e.perMpSpent != null ? (e.mult ?? 0) + e.perMpSpent * ctx.mpSpent : e.mult ?? 1), add: (e.split && e.add != null ? e.add / targets.length : (e.add || 0)) + (e.perDestroyed != null ? e.perDestroyed * (ctx.destroyed || 0) : 0) + perAmount(state, source, e), type: e.dmgType || 'physical' } // perEarth: 自分の場の土の印1つにつき、add が perEarth ずつ増える / perType: 自分の場の「そのタイプ」のキャラ1体につき、add が perTypeFlat(省くと1)ずつ増える
           const { damage } = calcDamage(source, t, skill, ctx.opts)
           const dealt = applyDamage(state, source, t, damage, skill.type === 'true', skill.type)
           loseStealth(source) // 能力でダメージを与えたら潜伏を失う
@@ -1241,7 +1244,7 @@ function runEffects(state, source, effects, ctx = {}) {
           break
         case 'destroy': // 破壊する(召喚物の「自身を破壊」など)
           if (hasKw(t, 'earthSign')) break // 土の印は、能力で破壊できない
-          if (t.alive) { t.hp = 0; t.alive = false; state.log.push(`${t.name}は破壊された`) }
+          if (t.alive) { t.hp = 0; t.alive = false; nDestroyed++; state.log.push(`${t.name}は破壊された`) }
           if (e.settle) resolveDeaths(state, ctx.opts) // settle: 破壊の処理(ラストワード・倒された記録)を、次の効果より先に済ませる
           break
         case 'reenter': // 入場し直す: 入場直後の状態に戻る(次の自分のターン開始時にファンファーレがもう一度働き、そのターンはスキル攻撃ができない)
@@ -1268,6 +1271,7 @@ function runEffects(state, source, effects, ctx = {}) {
           break
       }
     }
+    if (nDestroyed) ctx = { ...ctx, destroyed: (ctx.destroyed || 0) + nDestroyed }
   }
   recalc(state)
 }
