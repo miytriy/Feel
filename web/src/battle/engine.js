@@ -1304,6 +1304,7 @@ function fire(state, trigger, unit, ctx = {}, from = 0) {
   for (let i = from; i < unit.passiveObjs.length; i++) {
     const p = unit.passiveObjs[i]
     if (p.trigger !== trigger || !checkCond(state, unit, p.condition)) continue
+    if (p.engageRole && ctx.role !== p.engageRole) continue // 交戦時のうち、攻撃された側(defender)・攻撃した側(attacker)だけで働く能力
     const pf = filterOf(p, PASSIVE_FILTER_KEYS) // 出た / 倒れたユニット(ctx.other)の絞り込み
     if (hasFilter(pf) && !matchUnit(ctx.other, pf)) continue
     if (earthShort(state, unit.team, p.effects)) continue // 土の印が足りない【土の秘術】の能力は、発動しない(ログなし)
@@ -1757,8 +1758,8 @@ function doSkill(state, actor, targetUid, opts) {
 
   // 攻撃時・交戦時の能力(ダメージ計算の前に働く)
   fire(state, 'onAttack', actor, { other: target, opts })
-  fire(state, 'onEngage', actor, { other: target, opts })
-  fire(state, 'onEngage', target, { other: actor, opts })
+  fire(state, 'onEngage', actor, { other: target, role: 'attacker', opts })
+  fire(state, 'onEngage', target, { other: actor, role: 'defender', opts })
   recalc(state)
 
   emit(state, 'attack', { src: actor.uid, target: target.uid, skill: skill.name })
