@@ -1187,6 +1187,13 @@ function runEffects(state, source, effects, ctx = {}) {
           emit(state, 'buff', { target: t.uid, stat: e.stat, text: `${statLabel(e.stat)}${bf.flat ? ` ${bf.flat >= 0 ? '+' : ''}${bf.flat}${e.stat === 'dmgUp' ? '%' : ''}` : ''}${bf.pct ? ` ${bf.pct >= 0 ? '+' : ''}${bf.pct}%` : ''}`.replace(/\s+/g, ' ') })
           state.log.push(`${t.name}の${statLabel(e.stat)}が上がった`)
           break
+        case 'countdown': { // カウントダウンを amount(負の数で減らす)だけ動かす。0になったら破壊される(カウントダウンを持つものだけ)
+          if (t.countdown == null) break
+          t.countdown += e.amount ?? -1
+          state.log.push(`${t.name}のカウントダウンが${t.countdown <= 0 ? 0 : t.countdown}になった`)
+          if (t.countdown <= 0) { t.hp = 0; t.alive = false; t.killedBy = source.uid }
+          break
+        }
         case 'loseHp': { // 現在体力を直接減らす(ダメージではないので、防御・アーマー・バリアは関係なく、墓場も増えない)
           if (t.isAmulet || !t.alive) break
           const before = t.hp
