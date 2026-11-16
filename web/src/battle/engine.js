@@ -1073,7 +1073,19 @@ function runEffects(state, source, effects, ctx = {}) {
       continue
     }
     if (e.type === 'copyAmulet') { // 選んだ自分のアミュレットと同名のアミュレットを、もう1つ場に出す(満員なら出せない)
-      const src = ctx.chosen ? getUnit(state, ctx.chosen) : null
+      // from: 'destroyed' = このバトル中に破壊された自分のアミュレットから(maxSpd: 元の速度が最大のものの中から)ランダムに1つ。消滅したものは含まない
+      let src = ctx.chosen ? getUnit(state, ctx.chosen) : null
+      if (e.from === 'destroyed') {
+        let pool = state.units.filter((u) => !u.alive && u.deathHandled && !u.vanished && u.isAmulet && u.team === source.team)
+        if (e.maxSpd && pool.length) { const top = Math.max(...pool.map((u) => u.charDef?.stats?.spd ?? u.base.spd)); pool = pool.filter((u) => (u.charDef?.stats?.spd ?? u.base.spd) === top) }
+        const rng = ctx.opts?.rng || Math.random
+        src = pool.length ? pool[Math.floor(rng() * pool.length)] : null
+        if (src) {
+          const nu = summon(state, source, src.charDef, { defer: true })
+          if (nu) afterEnter(state, nu)
+        } else state.log.push(`${source.name}の効果: 破壊されたアミュレットがいなかった`)
+        continue
+      }
       if (src && src.alive && src.isAmulet) {
         const nu = summon(state, source, src.charDef, { defer: true })
         if (nu) afterEnter(state, nu)
