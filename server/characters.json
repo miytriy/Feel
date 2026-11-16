@@ -57,6 +57,7 @@
   { "id": "bishop_07", "name": "標を与えるレディアンスエンジェル", "class": "ビショップ", "rarity": "bronze", "rotation": "1" },
   { "id": "bishop_08", "name": "水の守護神・サレファ", "class": "ビショップ", "rarity": "legend", "rotation": "1" },
   { "id": "bishop_09", "name": "終焉のスカルフェイン", "class": "ビショップ", "rarity": "gold", "rotation": "1" },
+  { "id": "bishop_10", "name": "大地の守護神・ミーヴェ", "class": "ビショップ", "rarity": "silver", "rotation": "1" },
   { "id": "dragon_01", "name": "竜育の少女", "class": "ドラゴン", "rarity": "bronze", "rotation": "1" },
   { "id": "dragon_02", "name": "風を駆る者・エイファ", "class": "ドラゴン", "rarity": "silver", "rotation": "1" },
   { "id": "dragon_03", "name": "風を読む者・ゼル", "class": "ドラゴン", "rarity": "silver", "rotation": "1" },
