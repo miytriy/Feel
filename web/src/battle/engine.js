@@ -791,7 +791,8 @@ function summonEarth(state, source, amount) {
 function reanimate(state, source, speed, opts) {
   const rng = opts?.rng || Math.random
   const full = summonsOf(state, source).length >= SUMMON_MAX
-  const cands = state.units.filter((u) => !u.alive && !u.vanished && u.team === source.team && Math.round(u.base.spd) === speed && !(u.field === 'summon' && full))
+  // 蘇生できるのは、破壊されたフォロワー(キャラクター・召喚物。アミュレットは含まない)のうち、元の速度(base.spd)がちょうど speed のもの
+  const cands = state.units.filter((u) => !u.alive && !u.vanished && !u.isAmulet && u.team === source.team && Math.round(u.base.spd) === speed && !(u.field === 'summon' && full))
   if (!cands.length) { state.log.push(`【リアニメイト_${speed}】蘇生できるものがいなかった`); return null }
   const old = cands[Math.floor(rng() * cands.length)]
   const idx = state.units.indexOf(old)

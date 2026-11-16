@@ -10,12 +10,13 @@ export default {
   passives: [
     {
       name: 'ファンファーレ', trigger: 'fanfare',
-      desc: '『番犬の右腕・ミミ』1体と『番犬の左腕・ココ』1体を召喚する。【ネクロマンス_6】自分の場の他のキャラクターすべては+200/+0する。',
+      desc: '『番犬の右腕・ミミ』1体と『番犬の左腕・ココ』1体を召喚する。【ネクロマンス_6】自分の場の他のフォロワーすべては+200/+0する。',
       effects: [
         { type: 'summon', count: 1, unit: mimi },
         { type: 'summon', count: 1, unit: coco },
-        // 【ネクロマンス_6】= graveCost: 6(墓場を6消費して働く。足りないときはこの効果だけ働かない)。召喚した2体にもかかる
-        { type: 'buff', stat: 'atk', flat: 200, target: 'otherAllies', graveCost: 6 },
+        // 【ネクロマンス_6】= graveCost: 6(墓場を6消費して働く。足りないときはこの効果だけ働かない)
+        // フォロワー = キャラクターと召喚物(アミュレットは含まない)。召喚した2体にもかかる
+        { type: 'buff', stat: 'atk', flat: 200, target: 'otherAllies', followers: true, graveCost: 6 },
       ],
     },
     {
