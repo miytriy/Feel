@@ -177,7 +177,8 @@ export function CharDetail({ def, onOpen }) {
       {(def.traits || []).length > 0 && (
         <Section title="特性">
           {def.traits.map((t) => (
-            <AbilityRow key={t.id} head={isEnhance(t) ? `【${t.name}】` : t.name} tag={isEnhance(t) ? null : `MP${t.cost}`} desc={isEnhance(t) ? enhanceBody(t) : `${t.desc || ''}${t.target ? `(対象: ${TARGET_LABELS[t.target] || t.target})` : ''}${t.repeatable ? ' ※1ターンに複数回使える' : ''}`} />
+            // 「コスト1 【アクト】」の1行目 + 2行目に説明(説明の頭の【アクト】は、1行目と重なるので取る)
+            <AbilityRow key={t.id} head={`【${t.name}】`} tag={isEnhance(t) || t.cost == null ? null : `コスト${t.cost}`} desc={isEnhance(t) ? enhanceBody(t) : `${String(t.desc || '').replace(`【${t.name}】`, '')}${t.target ? `(対象: ${TARGET_LABELS[t.target] || t.target})` : ''}${t.repeatable ? ' ※1ターンに複数回使える' : ''}`} />
           ))}
         </Section>
       )}
