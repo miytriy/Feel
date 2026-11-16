@@ -26,8 +26,7 @@ const CSS = `
 .rw-head { position: absolute; left: 0; right: 0; top: 0; z-index: 2; width: 100%; padding: 18px 0 10px; padding-top: calc(18px + env(safe-area-inset-top)); text-align: center; font-weight: 700; font-size: 15px; letter-spacing: 0.12em; animation: rw-head 1.5s linear backwards; }
 .rw-head svg { display: block; margin: 0 auto 4px; font-size: 26px; }
 .rw-head::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: rgba(255,255,255,0.4); transform-origin: center; animation: rw-line 0.5s 0.1s ease-out backwards; }
-.rw-body { position: relative; z-index: 1; flex: 1; min-height: 0; width: min(900px, 94vw); display: flex; align-items: center; justify-content: center; overflow-y: auto; padding: 18px 0; scrollbar-width: none; }
-.rw-body::-webkit-scrollbar { display: none; }
+.rw-body { position: relative; z-index: 1; flex: 1; min-height: 0; width: min(900px, 94vw); display: flex; align-items: center; justify-content: center; overflow-y: auto; padding: 18px 0; }
 .rw-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px 14px; margin: auto 0; }
 .rw-item { width: 96px; text-align: center; animation: rw-float 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(1.3s + var(--i) * 0.09s); }
 .rw-tile { position: relative; aspect-ratio: 1; display: grid; place-items: center; background: linear-gradient(165deg, color-mix(in srgb, var(--rc) 55%, #fff) 0%, var(--rc) 45%, #2a2a2f 100%); box-shadow: 0 4px 14px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.25); color: #1c1608; font-size: 46px; }

@@ -43,8 +43,7 @@ const CSS = `
 .st-tab.on { background: ${C.player}; color: #111; }
 .st-tab .st-lab { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: 8px; padding: 3px 10px; background: #f2f2f3; color: #111; font-size: 12px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 2; }
 .st-tab:hover .st-lab { opacity: 1; }
-.st-body { flex: 1; min-width: 0; overflow-y: auto; padding: 6px 4vw 40px 22px; scrollbar-width: none; }
-.st-body::-webkit-scrollbar { display: none; }
+.st-body { flex: 1; min-width: 0; overflow-y: auto; padding: 6px 4vw 40px 22px; }
 .st-page { max-width: 1000px; margin: 0; }
 .st-head { display: flex; align-items: center; gap: 8px; font-family: ${DISPLAY}; font-weight: 600; font-size: 14px; letter-spacing: 0.06em; color: ${C.player}; border-left: 3px solid ${C.player}; padding-left: 7px; margin: 10px 0 8px; animation: st-row 0.35s ease-out backwards; }
 .st-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 46px; padding: 6px 12px 6px 16px; margin-bottom: 6px; background: linear-gradient(90deg, #2a2a2e, #212125); border-top: 1px solid rgba(255,255,255,0.07);

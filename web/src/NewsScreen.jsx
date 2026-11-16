@@ -12,11 +12,9 @@ const CSS = `
 @keyframes nw-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes nw-row { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @keyframes nw-body { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
-.nw-tabs { padding: 4px 20px 8px; overflow-x: auto; scrollbar-width: none; }
-.nw-tabs::-webkit-scrollbar { display: none; }
+.nw-tabs { padding: 4px 20px 8px; overflow-x: auto; }
 .nw-tabs .fx-pills { width: max-content; max-width: none; flex-wrap: nowrap; }
-.nw-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 20px calc(24px + env(safe-area-inset-bottom)); scrollbar-width: none; }
-.nw-scroll::-webkit-scrollbar { display: none; }
+.nw-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 20px calc(24px + env(safe-area-inset-bottom)); }
 .nw-list { max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
 .nw-item { background: linear-gradient(90deg, #2a2a2e, #212125); border-top: 1px solid rgba(255,255,255,0.07); animation: nw-row 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: var(--i, 0ms); }
 .nw-item.on { background: #f2f2f3; color: #151517; }

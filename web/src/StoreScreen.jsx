@@ -42,8 +42,7 @@ const CSS = `
 .sp-chip svg { color: ${C.player}; font-size: 20px; }
 .sp-x { width: 44px; height: 44px; padding: 0; min-height: 0; border: 0; border-radius: 50%; background: #f2f2f3; color: #1c1c1f; font-size: 26px; display: grid; place-items: center; cursor: pointer; transition: background 0.15s, transform 0.15s; }
 .sp-x:hover, .sp-x:focus-visible { background: ${C.player}; transform: rotate(90deg); outline: none; }
-.sp-tabs { display: flex; gap: 10px; padding: 8px 28px 12px; overflow-x: auto; scrollbar-width: none; }
-.sp-tabs::-webkit-scrollbar { display: none; }
+.sp-tabs { display: flex; gap: 10px; padding: 8px 28px 12px; overflow-x: auto; }
 .sp-tab { flex: none; display: inline-flex; align-items: center; gap: 10px; min-height: 0; padding: 8px 30px 8px 22px; border-radius: 999px; border: 2px solid rgba(255,255,255,0.22); background: #1d1d21; color: #9c9ca4; font-family: ${DISPLAY}; font-weight: 600; font-size: 18px; letter-spacing: 0.03em; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
 .sp-tab svg { font-size: 22px; }
 .sp-tab:hover, .sp-tab:focus-visible { border-color: ${C.player}; color: #fff; outline: none; }

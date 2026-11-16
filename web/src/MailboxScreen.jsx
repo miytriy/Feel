@@ -32,8 +32,7 @@ const CSS = `
 .ml-list { min-height: 0; display: flex; flex-direction: column; animation: ml-left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .ml-head { display: flex; justify-content: space-between; align-items: baseline; font-family: ${DISPLAY}; font-weight: 600; font-size: 14px; letter-spacing: 0.06em; color: ${C.player}; border-left: 3px solid ${C.player}; padding-left: 7px; margin: 6px 0 8px; }
 .ml-head span { color: ${C.mute}; font-size: 12px; }
-.ml-scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: 6px; }
-.ml-scroll::-webkit-scrollbar { display: none; }
+.ml-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
 .ml-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 10px 10px 14px; border: 0; text-align: left; cursor: pointer; min-height: 0; font-family: ${FONT};
   background: linear-gradient(90deg, #2a2a2e, #212125); color: #bdbdc4; border-top: 1px solid rgba(255,255,255,0.07); transition: background 0.15s, color 0.15s; animation: ml-row 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(0.1s + var(--i, 0) * 0.05s); }
 .ml-item:hover, .ml-item:focus-visible { background: linear-gradient(90deg, #36363b, #2b2b30); outline: none; }
@@ -45,8 +44,7 @@ const CSS = `
 .ml-tick { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid currentColor; opacity: 0.55; font-size: 18px; background: transparent; color: inherit; cursor: pointer; padding: 0; min-height: 0; transition: opacity 0.15s, background 0.15s, color 0.15s; }
 .ml-tick:hover:not(:disabled), .ml-tick:focus-visible { opacity: 1; background: ${C.player}; color: #111; border-color: ${C.player}; outline: none; }
 .ml-tick:disabled { opacity: 0.25; cursor: default; }
-.ml-view { min-height: 0; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; animation: ml-right 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
-.ml-view::-webkit-scrollbar { display: none; }
+.ml-view { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; animation: ml-right 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .ml-sub { padding: 12px 18px; background: linear-gradient(90deg, rgba(255,230,0,0.2), rgba(255,230,0,0.08)); border-left: 4px solid ${C.player}; font-size: 18px; font-weight: 700; animation: ml-fade 0.3s ease-out backwards; }
 .ml-text { flex: 1; padding: 18px 20px; background: rgba(255,255,255,0.04); font-size: 14px; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; animation: ml-fade 0.35s ease-out backwards; animation-delay: 0.06s; }
 .ml-attach { display: flex; align-items: center; gap: 14px; padding: 12px 18px; margin-top: 6px; background: rgba(255,255,255,0.06); border-top: 1px solid rgba(255,255,255,0.08); animation: ml-fade 0.35s ease-out backwards; animation-delay: 0.12s; }

@@ -80,8 +80,7 @@ const CSS = `
 .wk-corner::after { content: ''; position: absolute; left: 6px; right: 6px; top: 50%; height: 1px; background: rgba(0,0,0,0.35); transform: rotate(45deg); }
 .wk-bar { display: flex; align-items: center; gap: 14px; padding: 14px 20px; padding-top: calc(14px + env(safe-area-inset-top));
   background: radial-gradient(rgba(0,0,0,0.12) 1px, transparent 1.2px) 0 0 / 6px 6px, rgba(255,255,255,0.35); border-bottom: 1px solid rgba(0,0,0,0.12); }
-.wk-path { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 46px; padding: 0 12px; background: #f1f1f2; border: 1.5px solid #2a2a2e; overflow-x: auto; white-space: nowrap; font-size: 17px; color: #1c1c1f; scrollbar-width: none; }
-.wk-path::-webkit-scrollbar { display: none; }
+.wk-path { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 46px; padding: 0 12px; background: #f1f1f2; border: 1.5px solid #2a2a2e; overflow-x: auto; white-space: nowrap; font-size: 17px; color: #1c1c1f; }
 .wk-path > svg { font-size: 24px; flex: none; }
 .wk-sep { color: #6e6e76; font-size: 15px; flex: none; }
 .wk-crumb { flex: none; border: 0; background: #2a2a2e; color: #fff; padding: 4px 12px; font-size: 16px; font-family: ${FONT}; cursor: pointer; min-height: 0; transition: background 0.15s, color 0.15s; }
@@ -163,8 +162,7 @@ const CSS = `
 
 /* 項目の中: 左に分類、右に一覧・詳細 */
 .wk-body { flex: 1; display: grid; grid-template-columns: minmax(200px, 270px) 1fr; gap: 22px; padding: 22px 4vw 40px; align-items: start; align-content: start; } /* align-content: start = 行(分類・一覧)の高さを、中身だけにする。入れないと、余った高さが行に配られて、分類と一覧の間が空く */
-.wk-side { display: flex; flex-direction: column; gap: 6px; position: sticky; top: 14px; max-height: calc(100vh - 110px); overflow-y: auto; overflow-x: hidden; padding-right: 6px; scrollbar-width: none; }
-.wk-side::-webkit-scrollbar { display: none; }
+.wk-side { display: flex; flex-direction: column; gap: 6px; position: sticky; top: 14px; max-height: calc(100vh - 110px); overflow-y: auto; overflow-x: hidden; padding-right: 6px; }
 .wk-sub { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 16px 0 18px; height: 52px; border: 0; cursor: pointer; text-align: left; min-height: 0;
   background: linear-gradient(135deg, #cfcfd3, #bfbfc4); color: #3a3a3e; font-size: 18px; font-family: ${FONT}; transition: background 0.15s, transform 0.15s; }
 .wk-sub .wk-n { font-family: ${DISPLAY}; font-weight: 600; font-size: 14px; color: rgba(0,0,0,0.45); }

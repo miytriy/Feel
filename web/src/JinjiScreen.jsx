@@ -103,8 +103,7 @@ const CSS = `
 .jp-x:hover, .jp-x:focus-visible { background: ${C.player}; transform: rotate(90deg); outline: none; }
 
 /* 左: キャラの列 */
-.jp-list { position: absolute; left: 0; top: 130px; bottom: 150px; width: 170px; z-index: 11; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; padding: 6px 0 40px; background: linear-gradient(90deg, rgba(0,0,0,0.12), transparent); animation: jp-left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s backwards; }
-.jp-list::-webkit-scrollbar { display: none; }
+.jp-list { position: absolute; left: 0; top: 130px; bottom: 150px; width: 170px; z-index: 11; overflow-y: auto; overflow-x: hidden; padding: 6px 0 40px; background: linear-gradient(90deg, rgba(0,0,0,0.12), transparent); animation: jp-left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s backwards; }
 .jp-av { position: relative; display: block; width: 170px; height: 150px; padding: 0; min-height: 0; border: 0; background: none; cursor: pointer; animation: jp-left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(0.25s + var(--i) * 45ms); }
 .jp-av .ring { position: absolute; left: 36px; top: 19px; width: 112px; height: 112px; border-radius: 50%; overflow: hidden; border: 4px solid transparent; background: linear-gradient(160deg, color-mix(in srgb, var(--tc) 60%, #fff), var(--tc) 55%, #1a1a20) padding-box, var(--rbg) border-box; box-shadow: 0 6px 14px rgba(0,0,0,0.35); transition: transform 0.15s, box-shadow 0.15s; }
 .jp-av .ring svg { position: absolute; left: 50%; top: 50%; width: 76%; transform: translate(-50%, -50%); mix-blend-mode: multiply; opacity: 0.9; }
@@ -253,8 +252,7 @@ const CSS = `
 .jp-tab.on::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 6px; background: ${C.player}; }
 
 /* 右: 内容のパネル(パッシブ / 特性・遺物 / 関連) */
-.jp-pane { position: absolute; z-index: 6; right: 190px; top: 130px; width: 520px; max-height: 790px; overflow-y: auto; scrollbar-width: none; color: #1d1d20; animation: jp-right 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s backwards; }
-.jp-pane::-webkit-scrollbar { display: none; }
+.jp-pane { position: absolute; z-index: 6; right: 190px; top: 130px; width: 520px; max-height: 790px; overflow-y: auto; color: #1d1d20; animation: jp-right 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s backwards; }
 .jp-pane.gone { animation: jp-right-out 0.22s ease-in forwards; pointer-events: none; }
 .jp.dk .jp-pane { color: #f1f1f2; }
 .jp-ph { display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: rgba(0,0,0,0.5); color: #fff; font-size: 34px; font-weight: 700; border-left: 8px solid ${C.player}; }

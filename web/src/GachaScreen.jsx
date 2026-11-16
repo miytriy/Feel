@@ -155,8 +155,7 @@ const CSS = `
 .gl.leaving { animation: gc-fadeout 0.22s ease-in forwards; }
 .gl-head { width: 100%; padding: 18px 0 10px; padding-top: calc(18px + env(safe-area-inset-top)); text-align: center; border-bottom: 1px solid rgba(255,255,255,0.35); font-weight: 700; font-size: 15px; letter-spacing: 0.1em; }
 .gl-head svg { display: block; margin: 0 auto 4px; font-size: 26px; }
-.gl-body { flex: 1; min-height: 0; width: min(900px, 94vw); overflow-y: auto; padding: 22px 0; scrollbar-width: none; }
-.gl-body::-webkit-scrollbar { display: none; }
+.gl-body { flex: 1; min-height: 0; width: min(900px, 94vw); overflow-y: auto; padding: 22px 0; }
 .gl-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 10px; }
 .gl-item { position: relative; width: 104px; text-align: center; animation: gs-float 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(var(--i) * 55ms + 120ms); }
 .gl-tile { position: relative; aspect-ratio: 1; overflow: hidden; background: linear-gradient(165deg, color-mix(in srgb, var(--rc) 55%, #fff) 0%, var(--rc) 40%, #17171d 100%); box-shadow: 0 3px 8px rgba(0,0,0,0.5); }

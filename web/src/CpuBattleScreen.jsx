@@ -54,8 +54,7 @@ const CSS = `
 .cb-x:hover, .cb-x:focus-visible { background: ${C.player}; transform: rotate(90deg); outline: none; }
 
 /* 左: レベルの一覧 */
-.cb-levels { position: absolute; left: 56px; top: 180px; bottom: 300px; z-index: 6; width: 560px; overflow-y: auto; scrollbar-width: none; animation: cb-left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
-.cb-levels::-webkit-scrollbar { display: none; }
+.cb-levels { position: absolute; left: 56px; top: 180px; bottom: 300px; z-index: 6; width: 560px; overflow-y: auto; animation: cb-left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .cb-lv { position: relative; display: flex; align-items: center; gap: 18px; width: 100%; height: 96px; margin-bottom: 10px; padding: 0 24px 0 22px; min-height: 0; border: 0; border-left: 10px solid var(--bar); background: linear-gradient(90deg, rgba(26,26,30,0.95), rgba(26,26,30,0.55)); color: ${C.ink}; text-align: left; cursor: pointer; transition: transform 0.12s, background 0.12s; }
 .cb-lv .st { flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,0.12); color: var(--bar); font-size: 28px; }
 .cb-lv .nm { flex: 1; min-width: 0; font-family: ${DISPLAY}; font-weight: 700; font-size: 38px; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -67,8 +66,7 @@ const CSS = `
 .cb-lv:disabled { cursor: default; opacity: 0.55; }
 
 /* 右: 詳細 */
-.cb-detail { position: absolute; left: 720px; right: 56px; top: 180px; bottom: 300px; z-index: 6; max-width: 1500px; overflow-y: auto; scrollbar-width: none; animation: cb-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
-.cb-detail::-webkit-scrollbar { display: none; }
+.cb-detail { position: absolute; left: 720px; right: 56px; top: 180px; bottom: 300px; z-index: 6; max-width: 1500px; overflow-y: auto; animation: cb-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .cb-name { display: flex; align-items: center; gap: 16px; margin: 0; padding-bottom: 12px; border-bottom: 3px solid rgba(255,255,255,0.3); font-family: ${DISPLAY}; font-weight: 700; font-size: 64px; letter-spacing: 0.05em; line-height: 1.15; }
 .cb-name::before { content: ''; flex: none; width: 16px; height: 56px; background: ${C.ink}; }
 .cb-area { margin-top: 12px; font-size: 26px; font-weight: 700; color: ${C.player}; }

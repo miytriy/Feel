@@ -135,8 +135,7 @@ const CSS = `
 .fm-ph span { flex: 1; }
 .fm-ph button { height: 54px; padding: 0 26px; min-height: 0; border: 0; background: #f2f2f3; color: #1c1c1f; font-size: 24px; font-weight: 700; cursor: pointer; }
 .fm-ph button:hover, .fm-ph button:focus-visible { background: ${C.player}; outline: none; }
-.fm-grid { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: max-content; gap: 10px; align-content: start; padding: 8px; background: rgba(0,0,0,0.4); scrollbar-width: none; }
-.fm-grid::-webkit-scrollbar { display: none; }
+.fm-grid { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: max-content; gap: 10px; align-content: start; padding: 8px; background: rgba(0,0,0,0.4); }
 .fm-cls { grid-column: 1 / -1; margin-top: 4px; padding: 4px 12px; background: rgba(255,255,255,0.12); border-left: 5px solid ${C.player}; font-size: 22px; font-weight: 700; letter-spacing: 0.06em; color: #f2f2f3; }
 .fm-grid > .fm-cls:first-child { margin-top: 0; }
 .fm.p .fm-cls { font-size: 20px; padding: 3px 10px; }
