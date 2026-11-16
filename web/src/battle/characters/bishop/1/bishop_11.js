@@ -7,10 +7,10 @@ export default {
   passives: [
     {
       name: 'ファンファーレ', trigger: 'fanfare',
-      desc: '自分の場の1体を選ぶ。それを破壊。自分の所持アミュレットの中から、速度80以下のアミュレットからランダム3種類を召喚する。',
+      desc: '自分の場の1体を選ぶ。それを破壊。ビショップ・アミュレットの中から、速度80以下のランダムな3種類を召喚する。',
       effects: [
         { type: 'destroy', target: 'allyFieldOne', choose: true, settle: true }, // 自分の場の1体(自分自身・アミュレットも選べる)。破壊の処理を先に済ませてから召喚する
-        { type: 'summon', fromOwnedAmulets: true, maxSpd: 80, count: 3 }, // 所持アミュレットのうち速度80以下から、ランダム3種類
+        { type: 'summon', fromCatalog: { amulet: true, class: 'ビショップ', maxSpd: 80 }, count: 3 }, // 全カードのうち、ビショップのアミュレットで速度80以下のものから、ランダム3種類(所持は関係ない)
       ],
     },
     {

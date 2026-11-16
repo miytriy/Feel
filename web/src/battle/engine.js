@@ -251,6 +251,7 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
     link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 }, summonSeq: Math.max(startSummons.A, startSummons.B), pending: null,
     active: null, activeKind: null, winner: null, log: ['バトル開始!'],
     comboReset: { A: null, B: null }, comboCount: { A: 0, B: 0 },
+    catalog: opts.catalog || [], // 全カードの定義(「ビショップ・アミュレットの中から召喚」など、所持に関係なく全カードから選ぶ能力の候補)
     pool: { A: opts.pool?.A || [], B: opts.pool?.B || [] }, // 所持キャラクター(「所持キャラから召喚する」能力の候補)
     // スペル(プレイヤー能力): opts.spells = { A: [スペル定義...], B: [...] }(同じスペルを何回入れてもよい。最大 MAX_SPELL_SLOTS 回分)
     // 自分のキャラのターン中に、枠1つにつき1回、MPを払って使える
@@ -1044,17 +1045,18 @@ function runEffects(state, source, effects, ctx = {}) {
       summon(state, source, pick.charDef)
       continue
     }
-    if (e.type === 'summon' && e.fromOwnedAmulets) { // 所持アミュレット(トークンを除く)のうち、速度 maxSpd 以下のものから、ランダムに count 種類を召喚する(満員なら出せない)
+    if (e.type === 'summon' && e.fromCatalog) { // 全カードのうち、条件(amulet / class / maxSpd)に合うものから、ランダムに count 種類を召喚する(トークン・テスト用を除く。満員なら出せない)
       const rng = ctx.opts?.rng || Math.random
-      const cands = (state.pool[source.team] || []).filter((c) => c.amulet && !c.token && c.stats.spd <= (e.maxSpd ?? Infinity))
-      const names = []
+      const w = e.fromCatalog
+      const cands = (state.catalog || []).filter((c) => !c.token && !String(c.id).startsWith('test_') && (w.amulet == null || !!c.amulet === w.amulet) && (!w.class || c.class === w.class) && c.stats.spd <= (w.maxSpd ?? Infinity))
+      let n = 0
       for (let i = 0; i < (e.count ?? 1) && cands.length; i++) {
         const c = cands.splice(Math.floor(rng() * cands.length), 1)[0]
-        names.push(c.name)
         const nu = summon(state, source, c, { defer: true })
         if (nu) afterEnter(state, nu)
+        n++
       }
-      if (!names.length) state.log.push('召喚できる所持アミュレットがなかった')
+      if (!n) state.log.push('召喚できるものがなかった')
       continue
     }
     if (e.type === 'summon' && e.fromOwned) { // 所持キャラクターから、速度が コンボ数×10(最大10コンボ)のキャラをランダムに1体召喚する

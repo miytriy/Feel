@@ -1276,7 +1276,7 @@ export default function BattleScreen({ settingsView = null, onExit, cpuDelay = 7
     setSideLog([])
     const cpuTeam = testInit ? testInit.team : buildCpuTeam(ALL_CHARACTERS, cpuChars, Math.random, level, ALL_SPELLS) // Lv.5以上は、シナジーのある編成。テスト戦は、自分で選んだ相手のチーム
     const cpuSpells = testInit ? testInit.spells : level >= SPELL_LEVEL ? buildCpuSpells(ALL_SPELLS, cpuTeam, Math.random, level) : [] // Lv.5以上のCPUは、編成に合う強いスペルを持つ
-    const first = createBattle(team.map((d) => enhanceDef(withRelicPieces(d))), cpuTeam, { pool: ownedPool(cpuChars), spells: { A: spellSet, B: cpuSpells } })
+    const first = createBattle(team.map((d) => enhanceDef(withRelicPieces(d))), cpuTeam, { catalog: ALL_CHARACTERS, pool: ownedPool(cpuChars), spells: { A: spellSet, B: cpuSpells } })
     statsRef.current = newStats()
     const firstActor = first.units.find((u) => u.uid === first.active)
     if (firstActor) statsRef.current.turns[firstActor.team]++ // 最初のターンも数える

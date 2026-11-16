@@ -40,7 +40,7 @@ function checkEffects(effects, where, errs, depth = 0) {
       if (e.turnsBy != null && (e.turnsBy !== 'source' || e.turns == null)) errs.push(`${w}: turnsBy は 'source'(かけた本人のターンで数える)だけで、turns と一緒に書きます`)
     }
     if (e.type === 'summon') {
-      if (!e.unit && !e.fromOwned && !e.fromOwnedAmulets && !e.copySelf && !e.fromCrest && !e.randomUnits) errs.push(`${w}: summon には unit(召喚するキャラ)・randomUnits・fromOwned: true・fromOwnedAmulets: true・copySelf: true・fromCrest: true のどれかが必要です`)
+      if (!e.unit && !e.fromOwned && !e.fromCatalog && !e.copySelf && !e.fromCrest && !e.randomUnits) errs.push(`${w}: summon には unit(召喚するキャラ)・randomUnits・fromOwned: true・fromCatalog: {…}・copySelf: true・fromCrest: true のどれかが必要です`)
       else if (e.unit && depth < 2) errs.push(...validateCharacter(e.unit, { summon: true }).map((m) => `${w} の召喚物 → ${m}`))
       else if (Array.isArray(e.randomUnits) && depth < 2) e.randomUnits.forEach((u) => errs.push(...validateCharacter(u, { summon: true }).map((m) => `${w} の召喚物 → ${m}`)))
     }
