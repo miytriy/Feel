@@ -1080,7 +1080,7 @@ function runEffects(state, source, effects, ctx = {}) {
       // 複数体は、まず全員を一気に召喚して、そのあとで「場に出たとき」の能力・付与(疾走・守護など)を働かせる
       // 続けて書かれた別々の召喚(例: ゴースト1体・バット1体)も、同じようにまとめて先に出す
       const entered = []
-      const summonOne = (x, def) => { for (let i = 0; i < (x.count ?? 1); i++) { const nu = summon(state, source, x.randomUnits ? x.randomUnits[Math.floor(rng0() * x.randomUnits.length)] : def, { defer: true }); if (nu) entered.push(nu) } } // randomUnits: 1体ごとに、候補からランダムに選ぶ
+      const summonOne = (x, def) => { for (let i = 0; i < (x.count ?? 1); i++) { const nu = summon(state, source, x.randomUnits ? x.randomUnits[Math.floor(rng0() * x.randomUnits.length)] : def, { defer: true }); if (nu) { if (x.gainKeyword && !nu.keywords.includes(x.gainKeyword)) { nu.keywords.push(x.gainKeyword); state.log.push(`${nu.name}は【${KEYWORDS[x.gainKeyword]?.label || x.gainKeyword}】を持つ`) } entered.push(nu) } } } // gainKeyword: 召喚したキャラが、そのキーワード能力(疾走など)を持つ // randomUnits: 1体ごとに、候補からランダムに選ぶ
       summonOne(e, sdef)
       const simple = (x) => x && x.type === 'summon' && !x.condition && !x.mpCost && !COST_KEYS.some((k) => x[k]) && !x.optional && !x.timesPerType && !x.fromCrest && !x.repGroup && (x.unit || x.randomUnits || x.copySelf)
       while (simple(effects[idx + 1])) { idx++; const x = effects[idx]; summonOne(x, x.copySelf ? source.charDef : x.randomUnits ? x.randomUnits[0] : x.unit) }
