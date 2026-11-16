@@ -6,9 +6,9 @@ export default {
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     {
-      // 攻撃された側のときだけ働く(自分から攻撃したときは、攻撃してきた相手がいないので働かない)
-      name: '交戦時', trigger: 'onEngage', engageRole: 'defender',
-      desc: '攻撃してきた相手に100の物理ダメージ。',
+      // 交戦時は、攻撃したときも攻撃されたときも働く。交戦の相手(opponent)に100の物理ダメージ
+      name: '交戦時', trigger: 'onEngage',
+      desc: '100の物理ダメージ。',
       effects: [{ type: 'damage', stat: 'atk', mult: 0, add: 100, dmgType: 'physical', target: 'opponent' }],
     },
     {
