@@ -1152,6 +1152,8 @@ function runEffects(state, source, effects, ctx = {}) {
       targets = []
       while (targets.length < n && pool.length) targets.push(pool.splice(Math.floor(rng() * pool.length), 1)[0])
     }
+    // 「割り振る」(split)の人数 = 実際に受けとれる対象の数(生きている者。回復はアミュレットを除く)。対象が1人だけなら、合計がすべてその1人に入る
+    const splitN = Math.max(1, targets.filter((x) => x && x.alive && !(e.type === 'heal' && x.isAmulet)).length)
     let nDestroyed = 0 // この効果で破壊した数。あとの効果の perDestroyed(damage)で使う(「Xはアミュレットを破壊した総数」)
     for (const t of targets) {
       if (!t) continue
@@ -1165,7 +1167,7 @@ function runEffects(state, source, effects, ctx = {}) {
           if (e.logChar && ctx.spell) noteAbility(state, 'スペル', source.team === 'A' ? '自分' : '相手', ctx.spellName || state.casting || '', e.desc || '', source.team, e.logChar) // 相手がキャラクターのときのログ
           if (e.perDestroyed != null && !(ctx.destroyed > 0)) break // perDestroyed: 破壊した数 X につき、ダメージが perDestroyed ずつ増える(1つも破壊しなかったら何もしない)
           if (e.perMpSpent != null && !(ctx.mpSpent > 0)) break // perMpSpent: 消費したMP1つにつき、倍率が perMpSpent ずつ増える(MPを使わなかったら何もしない)
-          const skill = { stat: e.stat || 'atk', mult: (e.perMpSpent != null ? (e.mult ?? 0) + e.perMpSpent * ctx.mpSpent : e.mult ?? 1), add: (e.split && e.add != null ? e.add / targets.length : (e.add || 0)) + (e.perDestroyed != null ? e.perDestroyed * (ctx.destroyed || 0) : 0) + perAmount(state, source, e), type: e.dmgType || 'physical' } // perEarth: 自分の場の土の印1つにつき、add が perEarth ずつ増える / perType: 自分の場の「そのタイプ」のキャラ1体につき、add が perTypeFlat(省くと1)ずつ増える
+          const skill = { stat: e.stat || 'atk', mult: (e.perMpSpent != null ? (e.mult ?? 0) + e.perMpSpent * ctx.mpSpent : e.mult ?? 1), add: (e.split && e.add != null ? e.add / splitN : (e.add || 0)) + (e.perDestroyed != null ? e.perDestroyed * (ctx.destroyed || 0) : 0) + perAmount(state, source, e), type: e.dmgType || 'physical' } // perEarth: 自分の場の土の印1つにつき、add が perEarth ずつ増える / perType: 自分の場の「そのタイプ」のキャラ1体につき、add が perTypeFlat(省くと1)ずつ増える
           const { damage } = calcDamage(source, t, skill, ctx.opts)
           const dealt = applyDamage(state, source, t, damage, skill.type === 'true', skill.type)
           loseStealth(source) // 能力でダメージを与えたら潜伏を失う
@@ -1177,7 +1179,7 @@ function runEffects(state, source, effects, ctx = {}) {
           const hb = (st, tt, n) => heal(st, tt, n * (1 + (source.healUp || 0) / 100)) // 治癒量%(遺物)
           if (e.pctMax != null) hb(state, t, (t.maxHp * e.pctMax) / 100) // 回復される本人の最大HPの○%
           else if (e.pctPerSummon != null) hb(state, t, (t.maxHp * e.pctPerSummon * summonsOf(state, source).length) / 100) // 回復する本人の最大HPの(pctPerSummon×召喚物の数)%
-          else if (e.split && e.flat != null) hb(state, t, e.flat / targets.length) // 回復量を、対象の人数で等分に割り振る(全体で合計 flat)
+          else if (e.split && e.flat != null) hb(state, t, e.flat / splitN) // 回復量を、対象の人数で等分に割り振る(全体で合計 flat)
           else hb(state, t, (e.flat ?? (e.stat === 'maxHp' ? source.maxHp : source.atk) * (e.mult ?? 1)) + perAmount(state, source, e))
           break
         }
