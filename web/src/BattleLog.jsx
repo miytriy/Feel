@@ -77,7 +77,7 @@ export function CommentaryButton({ onClick }) {
 }
 
 const pill = (on, color) => ({ flex: 'none', padding: '6px 12px', whiteSpace: 'nowrap', borderRadius: 8, border: `1px solid ${on ? color : C.line}`, background: on ? alpha(color, 22) : C.card, color: on ? color : C.mute, fontFamily: FONT, fontSize: 13, fontWeight: 700, cursor: 'pointer' })
-const sec = (t, color) => <div style={{ fontSize: 12, letterSpacing: 1, color: color || C.mute, margin: '12px 0 6px', fontWeight: 700 }}>◆ {t}</div>
+const sec = (t, color) => <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, letterSpacing: 2, color: C.mute, margin: '18px 0 8px', fontWeight: 700 }}><i style={{ width: 9, height: 9, flex: 'none', background: color || C.player, clipPath: 'polygon(50% 0, 100% 50%, 50% 100%, 0 50%)' }} /><span>{t}</span><i style={{ flex: 1, height: 1, background: C.line }} /></div>
 const chip = (t, color) => <span key={t} style={{ fontSize: 11, padding: '1px 7px', borderRadius: 6, background: alpha(color || C.mute, 22), color: color || C.mute, whiteSpace: 'nowrap' }}>{t}</span>
 
 function Bar({ pct, color, h = 6 }) {
@@ -86,7 +86,7 @@ function Bar({ pct, color, h = 6 }) {
 
 function UnitDetail({ u, color, first }) {
   const b = u.base || {}
-  const rows0 = [['体力', u.baseMaxHp ?? u.maxHp, u.maxHp, 'hp'], ...STAT_ROWS.filter(([k]) => k !== 'mag' || (b.mag || 0) > 0 || u.mag > 0 || u.skill?.stat === 'mag').map(([k, l]) => [l, b[k] ?? 0, u[k] ?? 0, k])]
+  const rows0 = [['HP', u.baseMaxHp ?? u.maxHp, u.maxHp, 'hp'], ...STAT_ROWS.filter(([k]) => k !== 'mag' || (b.mag || 0) > 0 || u.mag > 0 || u.skill?.stat === 'mag').map(([k, l]) => [l, b[k] ?? 0, u[k] ?? 0, k])]
   const BASIC = ['atk', 'mag', 'hp', 'def', 'spd'] // 基礎ステータスの並び(人事のステータス詳細と同じ)
   const rows = [...BASIC.map((k) => rows0.find((r) => r[3] === k)).filter(Boolean), ...rows0.filter((r) => !BASIC.includes(r[3]))]
   const statRow = ([label, base, cur, key], big) => {
@@ -192,6 +192,7 @@ function ReadableLog({ events, units, empty }) {
     else if (e.type === 'keyword') body = <><b>{nm(e.target)}</b> が【{e.label}】を得た</>
     else if (e.type === 'destroy') body = <><b>{nm(e.target)}</b> が倒れた{e.grave ? '(墓場+)' : ''}</>
     else if (e.type === 'av') body = <><b>{nm(e.target)}</b> の行動順が{e.dir === 'up' ? '上がった(早まる)' : '下がった(遅れる)'}{e.pct ? ` ${e.pct}%` : ''}</>
+    else if (e.type === 'evolve') body = <><b>{e.name || nm(e.uid ?? e.target)}</b> が進化した</>
     else if (e.type === 'vanish') body = <><b>{nm(e.target)}</b> が消滅した</>
     else if (e.type === 'ability') { teamOf = e.team; body = <>【{e.kind}】<b>{e.owner}</b>{e.name ? ` ― ${e.name}` : ''}{e.desc && <div style={{ color: C.mute, fontSize: 12 }}>{e.desc}</div>}</> }
     out.push(
@@ -203,6 +204,18 @@ function ReadableLog({ events, units, empty }) {
   })
   return <div>{out}</div>
 }
+
+// 画面の動きは transform と opacity だけ(EFFECTS.md)
+const CM_CSS = `
+.cm-root { animation: cm-in 0.18s ease-out; }
+@keyframes cm-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.cm-body { animation: cm-body 0.16s ease-out; }
+@keyframes cm-body { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
+.cm-x { margin-left: auto; flex: none; width: 40px; height: 40px; min-height: 0; padding: 0; border: 0; border-radius: 50%; background: #fff; color: #111; font-size: 24px; line-height: 1; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.cm-x:active { transform: scale(0.92); }
+.cm-tab { flex: 1 0 auto; min-height: 0; padding: 11px 14px; border: 0; border-bottom: 3px solid transparent; font-family: inherit; font-size: 14px; font-weight: 700; letter-spacing: 1px; white-space: nowrap; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+@media (prefers-reduced-motion: reduce) { .cm-root, .cm-body { animation: none; } }
+`
 
 // オーバーレイ本体。units: 場のすべて(view.units) / active: いま動くユニットの uid / log: ここまでの文章の記録 / ab, dead: 履歴
 export function CommentaryOverlay({ units, active, round, log, ab, dead, events = [], onClose }) {
@@ -236,17 +249,21 @@ export function CommentaryOverlay({ units, active, round, log, ab, dead, events 
 
   if (typeof document === 'undefined') return null
   return createPortal(
-    <div data-testid="commentary" role="dialog" aria-label="戦闘実況" style={{ position: 'fixed', inset: 0, zIndex: 2800, display: 'flex', flexDirection: 'column', background: C.paper, color: C.ink, fontFamily: FONT }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'rgba(0,0,0,0.6)', color: '#fff', flex: 'none' }}>
-        <b style={{ fontSize: 16, letterSpacing: 2, whiteSpace: 'nowrap' }}>⌸ 戦闘実況</b>
-        <span style={{ fontSize: 12, opacity: 0.8, whiteSpace: 'nowrap' }}>ラウンド {round}</span>
-        <button type="button" aria-label="閉じる" data-testid="commentary-close" onClick={onClose} style={{ marginLeft: 'auto', padding: '6px 14px', whiteSpace: 'nowrap', minHeight: 0, borderRadius: 8, border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.1)', color: '#fff', fontFamily: FONT, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>✕ 閉じる</button>
+    <div className="cm-root" data-testid="commentary" role="dialog" aria-label="戦闘実況" style={{ position: 'fixed', inset: 0, zIndex: 2800, display: 'flex', flexDirection: 'column', background: C.paper, color: C.ink, fontFamily: FONT }}>
+      <style>{CM_CSS}</style>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', flex: 'none', borderBottom: `1px solid ${C.line}`, background: `linear-gradient(90deg, ${alpha(C.player, 14)}, transparent 70%)` }}>
+        <i style={{ width: 18, height: 18, flex: 'none', background: C.player, clipPath: 'polygon(50% 0, 100% 50%, 50% 100%, 0 50%)' }} />
+        <b style={{ fontSize: 17, letterSpacing: 1.5, whiteSpace: 'nowrap' }}>//戦闘実況</b>
+        <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 10px', borderRadius: 999, background: alpha(C.player, 22), color: C.player, whiteSpace: 'nowrap' }}>ラウンド {round}</span>
+        <button type="button" className="cm-x" aria-label="閉じる" data-testid="commentary-close" onClick={onClose}>×</button>
       </div>
 
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: '8px 12px', borderBottom: `1px solid ${C.line}`, flex: 'none' }}>
+      <div className="cm-tabs" role="tablist" style={{ display: 'flex', borderBottom: `1px solid ${C.line}`, flex: 'none', overflowX: 'auto' }}>
         {TABS.map(([id, label]) => {
           const n = id === 'ab' ? abShown.length : id === 'dead' ? deadShown.length : null
-          return <button key={id} type="button" data-testid={`commentary-tab-${id}`} aria-pressed={tab === id} onClick={() => setTab(id)} style={pill(tab === id, id === 'enemy' ? C.enemy : C.player)}>{label}{n ? ` ${n}` : ''}</button>
+          const on = tab === id
+          const c = id === 'enemy' ? C.enemy : C.player
+          return <button key={id} type="button" role="tab" data-testid={`commentary-tab-${id}`} aria-pressed={on} aria-selected={on} onClick={() => setTab(id)} className="cm-tab" style={{ color: on ? c : C.mute, borderBottomColor: on ? c : 'transparent', background: on ? alpha(c, 10) : 'transparent' }}>{label}{n ? <em style={{ marginLeft: 6, fontStyle: 'normal', fontSize: 11, padding: '0 6px', borderRadius: 999, background: alpha(c, 22) }}>{n}</em> : null}</button>
         })}
       </div>
 
@@ -256,6 +273,7 @@ export function CommentaryOverlay({ units, active, round, log, ab, dead, events 
             {list.map((u) => (
               <button key={u.uid} type="button" data-testid={`commentary-unit-${u.uid}`} onClick={() => setPick((p) => ({ ...p, [team]: u.uid }))} style={{ ...pill(cur && cur.uid === u.uid, color), opacity: u.alive ? 1 : 0.45, textAlign: 'center', padding: '5px 10px' }}>
                 <div>{u.name}</div>
+                {u.alive && !u.isAmulet && u.field !== 'summon' && <div style={{ margin: '3px 0 2px' }}><Bar pct={u.maxHp > 0 ? (u.hp / u.maxHp) * 100 : 0} color={color} h={3} /></div>}
                 <div style={{ fontSize: 10, fontWeight: 400 }}>{!u.alive ? '戦闘不能' : u.isAmulet ? 'アミュレット' : u.field === 'summon' ? '召喚物' : u.uid === active ? '行動中' : `HP ${Math.max(0, Math.ceil(u.hp))}`}</div>
               </button>
             ))}
@@ -276,7 +294,7 @@ export function CommentaryOverlay({ units, active, round, log, ab, dead, events 
         </>
       )}
 
-      <div ref={bodyRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 12px 24px', fontSize: 13, lineHeight: 1.6, width: 'min(860px, 100%)', boxSizing: 'border-box', alignSelf: 'center' }}>
+      <div ref={bodyRef} key={`${tab}-${team}-${sub}`} className="cm-body" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: `${tab === 'log' ? 0 : 10}px 12px 24px`, fontSize: 13, lineHeight: 1.6, width: 'min(860px, 100%)', boxSizing: 'border-box', alignSelf: 'center' }}>
         {isTeam && (!cur ? empty('ユニットがいません') : sub === 'detail' ? <UnitDetail u={cur} color={color} /> : <UnitSkills u={cur} color={color} />)}
 
         {tab === 'log' && (
