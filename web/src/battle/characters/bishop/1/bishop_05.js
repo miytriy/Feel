@@ -14,7 +14,7 @@ export default {
     {
       // 進化すると、1ターンに2回スキルを発動できるようになる(2回目はMPを2消費する)
       name: '進化時', trigger: 'onEvolve',
-      desc: 'これは「【アクティブ】MPを2消費する。そのターン中、1ターンに2回スキルを発動できる。」を持つ。',
+      desc: 'これは「【アクティブ】MPを2消費する。そのターン中、2回スキルを発動できる。」を持つ。',
       effects: [{ type: 'gainDoubleSkill', mpCost: 2, target: 'self' }],
     },
   ],
