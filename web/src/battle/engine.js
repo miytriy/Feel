@@ -902,6 +902,8 @@ function runEffects(state, source, effects, ctx = {}) {
       ctx = { ...ctx, chosen: cands[0].uid } // 1体だけなら自動で選ぶ
     }
 
+    if (e.type === 'pick') continue // 対象を選ぶだけ(選んだものは、このあとの効果の target が、そのまま使う)。選ぶ範囲に絞り込みがかからないよう、絞り込み(onlyType など)は、あとの効果に書く
+
     if (e.type === 'spendMp') { // MPを好きな数(0〜いまのMP)だけ消費する。消費した数Xは、あとの効果の perMpSpent(damage)で使う
       let x = ctx.mpSpent
       if (x === undefined) {
