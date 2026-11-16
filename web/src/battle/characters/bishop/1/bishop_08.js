@@ -2,7 +2,7 @@
 export default {
   id: 'bishop_08', name: '水の守護神・サレファ', class: 'ビショップ', rarity: 'legend',
   stats: { hp: 336, atk: 347, def: 90, spd: 63 },
-  tags: ['回復', '確定ダメージ', '範囲攻撃', 'サポーター'],
+  tags: ['治療', '貫通', '範囲攻撃', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 相手単体に攻撃力100%分の物理ダメージ
   passives: [
     'guard', // 【守護】

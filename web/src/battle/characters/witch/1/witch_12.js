@@ -6,7 +6,7 @@ import kijin from './tokens/witch_token_08.js' // 式神・貴人
 export default {
   id: 'witch_12', name: '五行の果て・クオン', class: 'ウィッチ', rarity: 'legend',
   stats: { hp: 307, atk: 310, def: 90, spd: 43 },
-  tags: ['召喚物生成', 'トリッキー', 'オールラウンダー'],
+  tags: ['展開', '奇策', 'サブアタッカー'],
   skill: { name: '攻撃', stat: 'mag', type: 'magic', mult: 1.25 }, // 敵単体に魔力125%分の魔法ダメージ
   passives: [
     {

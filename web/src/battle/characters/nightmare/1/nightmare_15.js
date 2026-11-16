@@ -2,7 +2,7 @@
 export default {
   id: 'nightmare_15', name: '串刺し公・ヴラド', class: 'ナイトメア', rarity: 'silver',
   stats: { hp: 829, atk: 532, def: 300, spd: 33 },
-  tags: ['物理ダメージ', '回復', 'サポーター'],
+  tags: ['治療', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 相手単体に攻撃力100%分の物理ダメージ
   passives: [
     {

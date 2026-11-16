@@ -2,7 +2,7 @@
 export default {
   id: 'bishop_09', name: '終焉のスカルフェイン', class: 'ビショップ', rarity: 'gold',
   stats: { hp: 483, atk: 425, def: 90, spd: 54 },
-  tags: ['範囲攻撃', '物理ダメージ', 'アタッカー'],
+  tags: ['範囲攻撃', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     {

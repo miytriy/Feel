@@ -1,7 +1,7 @@
 export default {
   id: 'nightmare_11', name: '禁約の悪魔', class: 'ナイトメア', rarity: 'bronze',
   stats: { hp: 494, atk: 442, def: 90, spd: 54 },
-  tags: ['自己犠牲', '行動促進', 'アタッカー'],
+  tags: ['奇策', '促進', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 相手単体に攻撃力100%分の物理ダメージ
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '自分の場に200の物理ダメージを割り振る。最も近い味方1体の行動順+20%。',

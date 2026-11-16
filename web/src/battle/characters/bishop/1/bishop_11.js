@@ -2,7 +2,7 @@
 export default {
   id: 'bishop_11', name: '裁決のアナテマ・ロデオ', class: 'ビショップ', rarity: 'legend', type: 'アナテマ',
   stats: { hp: 554, atk: 501, def: 90, spd: 45 },
-  tags: ['召喚物生成', '範囲攻撃', 'アタッカー'],
+  tags: ['展開', '範囲攻撃', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     {

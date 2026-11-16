@@ -3,7 +3,7 @@ import golem from './tokens/witch_token_01.js' // 召喚する「クレイゴー
 export default {
   id: 'witch_08', name: 'ワンダーウィッチ・エミル', class: 'ウィッチ', rarity: 'silver',
   stats: { hp: 220, atk: 203, def: 90, spd: 64 },
-  tags: ['スペルブースト', '召喚物生成', '範囲攻撃', 'アタッカー'],
+  tags: ['増幅', '展開', '範囲攻撃', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'mag', type: 'magic', mult: 1.25 }, // 敵単体に魔力125%分の魔法ダメージ
   passives: [
     { name: 'スペルブースト時', trigger: 'onBoost', desc: 'これの速度を+10する。', log: false, effects: [{ type: 'buff', stat: 'spd', flat: 10, target: 'self' }] },

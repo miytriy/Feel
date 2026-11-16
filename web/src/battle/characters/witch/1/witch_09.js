@@ -3,7 +3,7 @@ import guardian from './tokens/witch_token_02.js' // 召喚する「ガーディ
 export default {
   id: 'witch_09', name: '黎明の錬金術師・ノノ', class: 'ウィッチ', rarity: 'gold',
   stats: { hp: 303, atk: 309, def: 90, spd: 63 },
-  tags: ['土の印', '大ダメージ', 'アタッカー'],
+  tags: ['増幅', '大ダメージ', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'mag', type: 'magic', mult: 1.25 }, // 敵単体に魔力125%分の魔法ダメージ
   passives: [
     {

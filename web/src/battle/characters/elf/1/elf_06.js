@@ -1,7 +1,7 @@
 export default {
   id: 'elf_06', name: '働きバッタ', class: 'エルフ', rarity: 'bronze',
   stats: { hp: 110, atk: 207, def: 100, spd: 81 },
-  tags: ['コンボ', '召喚物生成', 'サブアタッカー'],
+  tags: ['増幅', '展開', 'サブアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [{
     name: 'ファンファーレ', trigger: 'fanfare', usesCombo: true,

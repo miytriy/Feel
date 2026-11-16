@@ -1,7 +1,7 @@
 export default {
   id: 'dragon_07', name: '艶麗なる竜人・マリオン', class: 'ドラゴン', rarity: 'silver',
   stats: { hp: 302, atk: 300, def: 90, spd: 73 },
-  tags: ['バフ', 'サポート', 'バッファー'],
+  tags: ['強化', 'バッファー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     {

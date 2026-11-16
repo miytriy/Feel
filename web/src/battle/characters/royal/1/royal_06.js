@@ -3,7 +3,7 @@ import steelKnight from './tokens/royal_token_02.js' // 召喚する「スティ
 export default {
   id: 'royal_06', name: '救援のルミナスヒーラー', class: 'ロイヤル', rarity: 'bronze', type: 'ルミナス',
   stats: { hp: 219, atk: 114, def: 102, spd: 81 },
-  tags: ['回復', '召喚物生成', '連携', 'ヒーラー'],
+  tags: ['治療', '展開', '増幅', 'ヒーラー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     {

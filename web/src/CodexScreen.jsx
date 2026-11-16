@@ -79,7 +79,7 @@ export function collectRelated(def) {
 export function searchText(def, isSpell) {
   const parts = [def.name, def.id, def.class, def.type, RARITY[def.rarity]?.label, def.desc]
   if (!isSpell) {
-    parts.push(def.skill?.name, def.relic)
+    parts.push(def.skill?.name, def.relic, ...(def.tags || []))
     for (const p of def.passives || []) parts.push(passiveLabel(p), passiveDesc(p), triggerLabel(p))
     for (const t of def.traits || []) parts.push(t.name, t.desc)
     if (def.accelerate) parts.push(def.accelerate.name, def.accelerate.desc, 'アクセラレート')
@@ -379,7 +379,7 @@ export default function CodexScreen({ onExit, title = 'Wiki', ownedMap = null })
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={isSpell ? '名前・効果で検索(例: 召喚 ヒール)' : '名前・効果・キーワードで検索(例: 疾走 ファンファーレ)'}
+          placeholder={isSpell ? '名前・効果で検索(例: 召喚 ヒール)' : '名前・効果・キーワード・タグで検索(例: 疾走 範囲攻撃)'}
           style={{ width: '100%', fontSize: 16, padding: '10px 36px 10px 12px', borderRadius: 10, border: `1.5px solid ${C.line}`, background: C.card, color: C.ink }}
         />
         {query && <button onClick={() => setQuery('')} aria-label="検索をクリア" style={{ position: 'absolute', right: 6, top: 6, width: 32, height: 32, border: 'none', background: 'transparent', fontSize: 18, color: C.mute, cursor: 'pointer' }}>×</button>}

@@ -1,7 +1,7 @@
 export default {
   id: 'elf_18', name: '温厚なるトレント', class: 'エルフ', rarity: 'bronze',
   stats: { hp: 431, atk: 480, def: 90, spd: 74 },
-  tags: ['コンボ', '進化', '回復', 'ヒーラー'],
+  tags: ['増幅', '自己強化', '治療', 'ヒーラー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     {

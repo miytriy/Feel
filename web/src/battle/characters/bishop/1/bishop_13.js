@@ -2,7 +2,7 @@
 export default {
   id: 'bishop_13', name: '大いなる熾天使・ラピス', class: 'ビショップ', rarity: 'gold',
   stats: { hp: 676, atk: 721, def: 100, spd: 31 },
-  tags: ['再展開', 'アタッカー'],
+  tags: ['展開', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 相手単体に攻撃力100%分の物理ダメージ
   passives: [
     {

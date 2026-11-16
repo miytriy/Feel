@@ -1,7 +1,7 @@
 export default {
   id: 'neutral_03', name: '観察の探偵', class: 'ニュートラル', rarity: 'bronze',
   stats: { hp: 307, atk: 301, def: 90, spd: 80 },
-  tags: ['召喚物生成', 'サポーター'],
+  tags: ['展開', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [{ name: 'ラストワード', trigger: 'lastWord', desc: '「探偵のルーペ」を召喚する。',
     effects: [{ type: 'summon', count: 1, unit: {

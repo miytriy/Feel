@@ -5,7 +5,7 @@ import coco from '../tokens/nightmare_token_07.js' // 召喚する『番犬の�
 export default {
   id: 'nightmare_16', name: '奔放なる獄炎・ケルベロス', class: 'ナイトメア', rarity: 'legend',
   stats: { hp: 600, atk: 618, def: 90, spd: 36 },
-  tags: ['召喚物生成', '蘇生', 'バフ', 'サポーター'],
+  tags: ['展開', '強化', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 相手単体に攻撃力100%分の物理ダメージ
   passives: [
     {

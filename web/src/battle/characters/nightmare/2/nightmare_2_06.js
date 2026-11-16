@@ -1,7 +1,7 @@
 export default {
   id: 'nightmare_2_06', name: '流れ堕つ冥河・カローン', class: 'ナイトメア', rarity: 'legend',
   stats: { hp: 400, atk: 410, def: 90, spd: 60 },
-  tags: ['蘇生', '墓地利用', 'サポーター'],
+  tags: ['展開', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     // 【リアニメイト_N】= reanimate(speed: N): 自分の倒れたキャラ・召喚物のうち、速度がNのものからランダム1体を、元いた場所に蘇生する

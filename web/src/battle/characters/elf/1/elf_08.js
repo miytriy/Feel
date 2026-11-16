@@ -1,7 +1,7 @@
 export default {
   id: 'elf_08', name: 'ビギンズブレイダー・アマツ', class: 'エルフ', rarity: 'legend',
   stats: { hp: 210, atk: 208, def: 90, spd: 82 },
-  tags: ['自己強化', '連続攻撃', 'アタッカー'],
+  tags: ['自己強化', '連続攻撃', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     'guard', // 【守護】

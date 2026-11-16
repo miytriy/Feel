@@ -1,7 +1,7 @@
 export default {
   id: 'nightmare_14', name: '猛毒姫・メドゥーサ', class: 'ナイトメア', rarity: 'legend',
   stats: { hp: 720, atk: 323, def: 400, spd: 44 },
-  tags: ['強襲', '撃破', '追加攻撃', 'アタッカー'],
+  tags: ['奇策', '大ダメージ', '追加攻撃', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 相手単体に攻撃力100%分の物理ダメージ
   passives: [
     'rush', // 【突進】

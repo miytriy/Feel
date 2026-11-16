@@ -3,7 +3,7 @@ import bat from '../tokens/nightmare_token_03.js' // 召喚する「バット」
 export default {
   id: 'nightmare_05', name: 'ミッドナイトヴァンパイア・エラル', class: 'ナイトメア', rarity: 'bronze',
   stats: { hp: 100, atk: 150, def: 90, spd: 70 },
-  tags: ['召喚物生成', '奇襲', '自己犠牲', 'サポーター'],
+  tags: ['展開', '奇策', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '『バット』1体を召喚する。', effects: [{ type: 'summon', count: 1, unit: bat }] },

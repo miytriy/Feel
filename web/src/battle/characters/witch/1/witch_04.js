@@ -1,7 +1,7 @@
 export default {
   id: 'witch_04', name: 'オウルサモナー', class: 'ウィッチ', rarity: 'bronze',
   stats: { hp: 300, atk: 321, def: 90, spd: 70 },
-  tags: ['土の印', '進化', 'サブアタッカー'],
+  tags: ['増幅', '自己強化', 'サブアタッカー'],
   skill: { name: '攻撃', stat: 'mag', type: 'magic', mult: 1.25 }, // 相手単体に魔力125%分の魔法ダメージ
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '自分の場の土の印を+1する。', effects: [{ type: 'earth', amount: 1 }] },

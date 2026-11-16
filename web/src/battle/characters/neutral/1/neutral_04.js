@@ -4,7 +4,7 @@ const blast = [{ type: 'damage', stat: 'atk', mult: 1.0, dmgType: 'physical', ta
 export default {
   id: 'neutral_04', name: '迸る光明・アポロン', class: 'ニュートラル', rarity: 'silver',
   stats: { hp: 209, atk: 117, def: 131, spd: 80 },
-  tags: ['範囲攻撃', '物理ダメージ', 'アタッカー'],
+  tags: ['範囲攻撃', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '相手すべてに攻撃力100%の物理ダメージ。', effects: blast },

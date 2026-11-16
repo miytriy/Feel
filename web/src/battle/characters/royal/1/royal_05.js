@@ -1,7 +1,7 @@
 export default {
   id: 'royal_05', name: '愛の騎士・イアン', class: 'ロイヤル', rarity: 'bronze',
   stats: { hp: 264, atk: 211, def: 90, spd: 81 },
-  tags: ['バフ', '生存特化', 'バッファー'],
+  tags: ['強化', 'ダメージ軽減', 'バッファー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     'guard', // 【守護】

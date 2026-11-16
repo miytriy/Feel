@@ -1,7 +1,7 @@
 export default {
   id: 'witch_07', name: 'ルーンブレイドコンダクター', class: 'ウィッチ', rarity: 'bronze',
   stats: { hp: 100, atk: 100, def: 90, spd: 60 },
-  tags: ['スペルブースト', '自己強化', 'アタッカー'],
+  tags: ['増幅', '自己強化', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     {

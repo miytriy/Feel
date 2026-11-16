@@ -1,7 +1,7 @@
 export default {
   id: 'nightmare_07', name: '闇の賞金稼ぎ・バルト', class: 'ナイトメア', rarity: 'gold',
   stats: { hp: 120, atk: 320, def: 200, spd: 70 },
-  tags: ['自己強化', 'アタッカー'],
+  tags: ['自己強化', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     {

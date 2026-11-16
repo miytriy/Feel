@@ -2,7 +2,7 @@
 export default {
   id: 'bishop_02', name: '煌槍のアルミラージ・サリッサ', class: 'ビショップ', rarity: 'silver',
   stats: { hp: 206, atk: 220, def: 90, spd: 80 },
-  tags: ['自己強化', '連携', 'アタッカー'],
+  tags: ['自己強化', '増幅', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     {

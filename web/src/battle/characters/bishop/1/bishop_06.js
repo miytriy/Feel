@@ -2,7 +2,7 @@
 export default {
   id: 'bishop_06', name: '禁密の天宮・ロナヴェロ', class: 'ビショップ', rarity: 'gold',
   stats: { hp: 336, atk: 141, def: 200, spd: 82 },
-  tags: ['大ダメージ', '撃破', 'アタッカー'],
+  tags: ['大ダメージ', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     'stealth_3', // 【潜伏_3】

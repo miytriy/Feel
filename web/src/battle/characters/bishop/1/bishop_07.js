@@ -2,7 +2,7 @@
 export default {
   id: 'bishop_07', name: '標を与えるレディアンスエンジェル', class: 'ビショップ', rarity: 'bronze',
   stats: { hp: 318, atk: 224, def: 101, spd: 61 },
-  tags: ['行動促進', '回復', 'サポーター'],
+  tags: ['促進', '治療', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     {

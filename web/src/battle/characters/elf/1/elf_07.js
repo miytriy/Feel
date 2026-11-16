@@ -1,7 +1,7 @@
 export default {
   id: 'elf_07', name: '殺戮のリノセウス', class: 'エルフ', rarity: 'gold',
   stats: { hp: 202, atk: 0, def: 200, spd: 82 },
-  tags: ['コンボ', '奇襲', '自己強化', 'アタッカー'],
+  tags: ['増幅', '奇策', '自己強化', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     'dash', // 【疾走】

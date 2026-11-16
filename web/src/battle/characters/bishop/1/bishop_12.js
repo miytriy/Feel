@@ -2,7 +2,7 @@
 export default {
   id: 'bishop_12', name: '純白の聖女・ジャンヌ', class: 'ビショップ', rarity: 'legend',
   stats: { hp: 631, atk: 686, def: 90, spd: 46 },
-  tags: ['範囲攻撃', 'バフ', 'アタッカー'],
+  tags: ['範囲攻撃', '強化', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 相手単体に攻撃力100%分の物理ダメージ
   passives: [
     {

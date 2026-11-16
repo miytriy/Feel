@@ -1,7 +1,7 @@
 export default {
   id: 'dragon_03', name: '風を読む者・ゼル', class: 'ドラゴン', rarity: 'silver',
   stats: { hp: 308, atk: 320, def: 90, spd: 80 },
-  tags: ['速度操作', 'バフ', 'サポーター'],
+  tags: ['促進', '強化', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     { name: '進化時', trigger: 'onEvolve', desc: '自分の場のフォロワー1体を選ぶ。それは【疾走】を持つ。', effects: [{ type: 'gainKeyword', keyword: 'dash', target: 'allyFieldOne', choose: true }] },

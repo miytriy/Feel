@@ -2,7 +2,7 @@
 export default {
   id: 'bishop_10', name: '大地の守護神・ミーヴェ', class: 'ビショップ', rarity: 'silver',
   stats: { hp: 740, atk: 528, def: 198, spd: 42 },
-  tags: ['召喚物生成', '再展開', 'タンク'],
+  tags: ['展開', 'タンク'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 相手単体に攻撃力100%分の物理ダメージ
   passives: [
     'guard', // 【守護】

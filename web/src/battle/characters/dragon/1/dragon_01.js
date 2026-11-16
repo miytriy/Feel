@@ -6,7 +6,7 @@ const summonDrake = [{ type: 'summon', count: 1, unit: babyDrake }]
 export default {
   id: 'dragon_01', name: '竜育の少女', class: 'ドラゴン', rarity: 'bronze',
   stats: { hp: 100, atk: 100, def: 90, spd: 90 },
-  tags: ['召喚物生成', '進化', 'サポーター'],
+  tags: ['展開', '自己強化', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '『ベビーファイアドレイク』1体を召喚する。', effects: summonDrake },

@@ -1,7 +1,7 @@
 export default {
   id: 'elf_19', name: 'ソニックアーチャー・セルウェン', class: 'エルフ', rarity: 'silver',
   stats: { hp: 666, atk: 444, def: 200, spd: 42 },
-  tags: ['奇襲', '再展開', '妨害', 'サブアタッカー'],
+  tags: ['奇策', '展開', '牽制', 'サブアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     'dash', // 【疾走】

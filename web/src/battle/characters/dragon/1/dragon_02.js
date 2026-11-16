@@ -1,7 +1,7 @@
 export default {
   id: 'dragon_02', name: '風を駆る者・エイファ', class: 'ドラゴン', rarity: 'silver',
   stats: { hp: 100, atk: 208, def: 100, spd: 80 },
-  tags: ['奇襲', 'アタッカー'],
+  tags: ['奇策', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     'dash', // 【疾走】

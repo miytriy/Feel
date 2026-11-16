@@ -1,7 +1,7 @@
 export default {
   id: 'royal_08', name: 'サイレントスナイパー・ワルツ', class: 'ロイヤル', rarity: 'gold',
   stats: { hp: 129, atk: 232, def: 130, spd: 80 },
-  tags: ['大ダメージ', '自己強化', 'アタッカー'],
+  tags: ['大ダメージ', '自己強化', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     {

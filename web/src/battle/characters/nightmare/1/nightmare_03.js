@@ -1,7 +1,7 @@
 export default {
   id: 'nightmare_03', name: 'ナイトメア・ヴェリィ', class: 'ナイトメア', rarity: 'silver',
   stats: { hp: 350, atk: 380, def: 90, spd: 90 },
-  tags: ['自己犠牲', '回復', 'サポーター'],
+  tags: ['奇策', '治療', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     // 「割りふる」= 合計を、対象の人数で等分する(split: true)。ダメージは物理ダメージ

@@ -2,7 +2,7 @@
 export default {
   id: 'bishop_05', name: '煌翼のフェザーフォルク・リノ', class: 'ビショップ', rarity: 'silver',
   stats: { hp: 554, atk: 318, def: 200, spd: 82 },
-  tags: ['カウンター', '連続攻撃', 'アタッカー'],
+  tags: ['反撃', '連続攻撃', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     {

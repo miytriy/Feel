@@ -3,7 +3,7 @@ import knight from './tokens/royal_token_01.js' // 召喚する「ナイト」
 export default {
   id: 'royal_03', name: '勇猛のルミナスランサー', class: 'ロイヤル', rarity: 'silver', type: 'ルミナス',
   stats: { hp: 291, atk: 121, def: 121, spd: 93 },
-  tags: ['召喚物生成', 'バフ', 'サポーター'],
+  tags: ['展開', '強化', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     {

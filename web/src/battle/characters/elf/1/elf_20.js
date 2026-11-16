@@ -1,7 +1,7 @@
 export default {
   id: 'elf_20', name: '薫交の天宮・バックウッド', class: 'エルフ', rarity: 'gold',
   stats: { hp: 304, atk: 317, def: 90, spd: 63 },
-  tags: ['行動促進', '範囲攻撃', 'アタッカー'],
+  tags: ['促進', '範囲攻撃', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare',

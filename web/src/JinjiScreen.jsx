@@ -466,7 +466,7 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
   const [searchOpen, setSearchOpen] = useState(false)
   const list = useMemo(() => {
     const q = fold(query).split(/\s+/).filter(Boolean)
-    return q.length ? owned.filter((d) => q.every((w) => fold(`${d.name} ${d.class} ${d.id}`).includes(w))) : owned
+    return q.length ? owned.filter((d) => q.every((w) => fold(`${d.name} ${d.class} ${d.id} ${(d.tags || []).join(' ')}`).includes(w))) : owned
   }, [owned, query])
 
   const [selId, setSelId] = useState(() => (owned[0] ? owned[0].id : null))
@@ -768,7 +768,7 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
         <div className="jp-tools">
           <button type="button" className="jp-tool" onClick={() => setGridOpen(true)} aria-label="所持一覧">▦</button>
           <button type="button" className={`jp-tool${searchOpen ? ' on' : ''}`} onClick={() => { setSearchOpen(!searchOpen); if (searchOpen) setQuery('') }} aria-label="さがす">⌕</button>
-          {searchOpen && <input className="jp-search" autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="名前・クラス" aria-label="さがす" />}
+          {searchOpen && <input className="jp-search" autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="名前・クラス・タグ" aria-label="さがす" />}
           <div className="jp-pct" title="所持キャラ / 全キャラ">◔ {pct}%</div>
         </div>
 

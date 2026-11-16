@@ -4,7 +4,7 @@ import silverDragon from './tokens/dragon_token_06.js' // 召喚する「覇道�
 export default {
   id: 'dragon_14', name: '龍人演義・ガリュウ', class: 'ドラゴン', rarity: 'legend',
   stats: { hp: 550, atk: 505, def: 90, spd: 30 },
-  tags: ['召喚物生成', 'バフ', 'オールラウンダー'],
+  tags: ['展開', '強化', 'サブアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '『覇道の金龍』1体と『覇道の銀龍』1体を召喚する。', effects: [{ type: 'summon', count: 1, unit: goldDragon }, { type: 'summon', count: 1, unit: silverDragon }] },

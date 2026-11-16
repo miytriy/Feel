@@ -7,7 +7,7 @@ const buffOthers = [
 export default {
   id: 'royal_13', name: 'ピースディーラー・エルネスタ', class: 'ロイヤル', rarity: 'bronze',
   stats: { hp: 602, atk: 400, def: 203, spd: 52 },
-  tags: ['バフ', '進化', 'バッファー'],
+  tags: ['強化', '自己強化', 'バッファー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 },
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '自分以外の場すべてのフォロワーは+100/+100する。', effects: buffOthers },
