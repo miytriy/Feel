@@ -212,7 +212,6 @@ const CSS = `
 .jp-sd-box { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
 .jp-sd-h { flex: none; display: flex; align-items: center; gap: 18px; padding: 26px 40px 22px; font-size: 38px; font-weight: 700; letter-spacing: 0.04em; color: #fff; } .jp-sd-h .mk { width: 44px; height: 44px; flex: none; background: #ffe14d; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); } .jp-sd-h .ti { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .jp-sd-h button { margin-left: auto; flex: none; min-height: 0; width: 64px; height: 64px; padding: 0; font-size: 36px; border: 0; border-radius: 50%; background: #fff; color: #111; cursor: pointer; }
 .jp-sd-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 8px 40px 50px; -webkit-overflow-scrolling: touch; }
-.jp-sd-list { scrollbar-width: thin; scrollbar-color: rgba(255,225,77,0.55) transparent; } .jp-sd-list::-webkit-scrollbar { width: 8px; } .jp-sd-list::-webkit-scrollbar-track { background: transparent; } .jp-sd-list::-webkit-scrollbar-thumb { background: rgba(255,225,77,0.5); border-radius: 4px; border: 2px solid transparent; background-clip: padding-box; } .jp-sd-list::-webkit-scrollbar-thumb:hover { background: #ffe14d; background-clip: padding-box; }
 .jp-sd-t { margin: 30px 0 12px; font-size: 32px; font-weight: 700; letter-spacing: 0.12em; color: #aeb0b8; } .jp-sd-t:first-child { margin-top: 6px; }
 .jp-sd-main { background: #0a0a0c; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
 .jp-sd-main > div + div { border-top: 2px solid #17171b; }
