@@ -1,7 +1,7 @@
 // 聖心のプリズムブースト(ローテーション: 伝説の幕開け = フォルダ 1)
 export default {
   id: 'bishop_03', name: '聖心のプリズムブースト', class: 'ビショップ', rarity: 'bronze',
-  stats: { hp: 223, atk: 200, def: 90, spd: 70 },
+  stats: { hp: 223, atk: 200, def: 90, spd: 79 },
   tags: ['召喚物生成', '速度操作', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
