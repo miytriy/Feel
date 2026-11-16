@@ -205,13 +205,20 @@ const CSS = `
 
 .jp-bar.tap { cursor: pointer; } .jp-stats.tap { cursor: pointer; } .jp-bar.tap:hover { background: rgba(0,0,0,0.68); }
 .jp-stats b u, .jp-mini b u { text-decoration: none; font-size: 0.55em; color: #1a73d9; margin-left: 4px; font-family: ${FONT}; }
-.jp-sd { position: absolute; inset: 0; z-index: 70; display: grid; place-items: center; background: rgba(0,0,0,0.55); animation: jp-tile-in 0.15s linear; }
-.jp-sd-box { width: min(940px, 96%); max-height: 94%; overflow-y: auto; padding: 28px 36px 26px; background: #1d1d21; color: #fff; box-shadow: 0 10px 40px rgba(0,0,0,0.5); font-size: 38px; }
-.jp-sd-h { display: flex; align-items: center; font-size: 44px; font-weight: 700; padding-bottom: 8px; } .jp-sd-h button { margin-left: auto; min-height: 0; width: 48px; height: 48px; padding: 0; font-size: 30px; border: 0; background: transparent; color: #fff; cursor: pointer; }
-.jp-sd-t { margin: 14px 0 4px; padding: 8px 14px; background: #3a3a42; font-size: 32px; font-weight: 700; letter-spacing: 0.06em; }
-.jp-sd-row { cursor: pointer; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; padding: 12px 14px; border-bottom: 1px solid #34343a; } .jp-sd-row span { color: #d6d6dc; display: flex; align-items: center; gap: 14px; } .jp-sd-ic { width: 1.3em; height: 1.3em; flex: none; display: grid; place-items: center; color: #fff; font-size: 1.3em; }
-.jp-sd-row b { margin-left: auto; font-family: ${DISPLAY}; font-size: 46px; } .jp-sd-row em { font-style: normal; color: #6cb6ff; margin-left: 14px; font-size: 40px; }
-.jp-sd-n { margin-top: 14px; font-size: 26px; color: #9a9aa2; }
+.jp-sd { position: absolute; inset: 0; z-index: 70; display: grid; place-items: center; background: rgba(0,0,0,0.62); animation: jp-tile-in 0.15s linear; }
+.jp-sd-box { position: relative; width: min(1500px, 96%); max-height: 94%; display: flex; flex-direction: column; background: #17171a; color: #fff; box-shadow: 0 10px 40px rgba(0,0,0,0.5); font-size: 38px; }
+.jp-sd-h { flex: none; display: flex; align-items: center; gap: 16px; padding: 22px 30px; font-size: 38px; font-weight: 700; color: #d6d6dc; border-bottom: 1px solid #34343a; } .jp-sd-h b { color: #fff; } .jp-sd-h button { margin-left: auto; min-height: 0; width: 56px; height: 56px; padding: 0; font-size: 34px; border: 0; border-radius: 50%; background: #fff; color: #17171a; cursor: pointer; }
+.jp-sd-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 22px 30px 26px; -webkit-overflow-scrolling: touch; }
+.jp-sd-t { margin: 22px 0 8px; font-size: 32px; font-weight: 700; letter-spacing: 0.08em; color: #b8b8c0; } .jp-sd-t:first-child { margin-top: 0; }
+.jp-sd-main { margin-bottom: 8px; background: #0c0c0e; box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
+.jp-sd-row { position: relative; display: flex; align-items: center; gap: 14px; min-height: 88px; padding: 0 20px; border-bottom: 1px solid #26262b; } .jp-sd-row > span { color: #d6d6dc; display: flex; align-items: center; gap: 16px; } .jp-sd-ic { width: 1.3em; height: 1.3em; flex: none; display: grid; place-items: center; color: #fff; font-size: 1.3em; }
+.jp-sd-row b { margin-left: auto; font-family: ${DISPLAY}; font-size: 46px; font-weight: 700; }
+.jp-sd-main .jp-sd-row { border-bottom: 0; } .jp-sd-sub .jp-sd-row { background: #1f1f24; } .jp-sd-sub .jp-sd-row:nth-child(even) { background: #26262c; }
+.jp-sd-btn { flex: none; min-height: 0; width: 64px; height: 64px; padding: 0; border: 0; border-left: 1px solid #34343a; border-radius: 0; background: transparent; color: #e6e6ea; font-size: 34px; letter-spacing: 2px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.jp-sd-btn.q { width: 52px; height: 52px; border: 2px solid #8a8a92; border-radius: 50%; font-size: 30px; letter-spacing: 0; color: #b8b8c0; } .jp-sd-btn.q.on { border-color: #ffe14d; color: #ffe14d; }
+.jp-sd-open { padding: 8px 20px 14px 20px; background: #101013; } .jp-sd-open div { display: flex; justify-content: space-between; padding: 8px 0 8px 60px; font-size: 32px; color: #b8b8c0; border-bottom: 1px solid #1d1d22; } .jp-sd-open div b { font-size: 34px; color: #fff; } .jp-sd-open div.plus b { color: #6cb6ff; } .jp-sd-open div b small { display: inline-block; min-width: 190px; margin-left: 18px; font-size: 30px; font-weight: 400; color: #9a9aa2; text-align: right; } .jp-sd-open div.sum { margin-top: 4px; color: #fff; border-bottom: 0; } .jp-sd-open div.sum b { color: #6cb6ff; } .jp-sd-open div.none { color: #7a7a82; }
+.jp-sd-tip { position: absolute; right: 8px; top: calc(100% + 12px); z-index: 5; width: min(760px, 86%); padding: 18px 24px; background: #c9c9cf; color: #111; font-size: 32px; line-height: 1.5; box-shadow: 0 8px 24px rgba(0,0,0,0.5); pointer-events: none; } .jp-sd-tip::before { content: ''; position: absolute; right: 20px; top: -22px; border: 12px solid transparent; border-bottom: 12px solid #ffe14d; } .jp-sd-tip i { display: block; font-style: normal; font-weight: 700; font-size: 36px; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid #8a8a92; }
+.jp-sd-n { margin-top: 18px; font-size: 26px; color: #9a9aa2; }
 /* 遺物(部位つき) */
 .jp-rl-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 6px 0 10px; }
 .jp-rl-tab { min-height: 0; padding: 10px 8px; border: 2px solid #3a3a40; border-radius: 10px; background: #2b2b2f; color: #cfcfd4; cursor: pointer; font-size: 22px; font-weight: 700; line-height: 1.2; transition: transform .15s ease-out; }
@@ -362,28 +369,77 @@ function statBreakdown(c, pieces, enhLv) {
   for (const m of (RELICS_USABLE && c.relic && RELICS[c.relic] ? RELICS[c.relic].mods : [])) f[m.stat] = Math.round(f[m.stat] * (1 + (m.pct || 0) / 100) + (m.flat || 0))
   const g = RELICS_USABLE && pieces.length ? applyRelics(f, pieces) : f
   const out = {}
-  for (const k of Object.keys(base)) out[k] = { base: base[k], extra: Math.round((g[k] - base[k]) * 10) / 10 }
+  const enhOf = (k) => (enhLv > 0 && !c.amulet && (['hp', 'atk', 'def', 'spd'].includes(k) || (k === 'mag' && s.mag != null)) ? enhLv * ENHANCE_STEP : 0)
+  for (const k of Object.keys(base)) { const extra = Math.round((g[k] - base[k]) * 10) / 10; const enh = enhOf(k); out[k] = { base: base[k], extra, enh, relic: Math.round((extra - enh) * 10) / 10 } }
   return out
 }
 const ICON_KEYS = ['hp', 'atk', 'def', 'spd', 'mag', 'critRate', 'critDmg']
 const SD_BASIC = [['atk', '攻撃力', ''], ['mag', '魔力', ''], ['hp', '体力', ''], ['def', '防御力', ''], ['spd', '速度', '']]
 const SD_ADV = [['critRate', 'クリティカルレート', '%'], ['critDmg', 'クリティカルダメージ', '%'], ['healUp', '治癒量', '%'], ['effHit', '効果効率', '%'], ['dmgResist', '耐性値', ''], ['physUp', '物理ダメージ', '%'], ['magUp', '魔法ダメージ', '%']]
+// 高級ステータスの「?」に出す説明(バトルの計算 engine.js と同じ意味)
+const SD_TIPS = {
+  critRate: '攻撃がクリティカルになる確率。',
+  critDmg: 'クリティカルが出たときの、ダメージの増加率。',
+  healUp: 'ヒールで回復させる量の増加率。',
+  effHit: '効果の当たりやすさ。いまのバトルには効果の命中判定がないので、数字だけ持っています。',
+  dmgResist: '受けるダメージを減らす。軽減率 = 耐性値 ÷ (耐性値 + 800)。物理・魔法・確定ダメージのすべてに効く。',
+  physUp: '物理ダメージを与えるときの、ダメージの増加率。',
+  magUp: '魔法ダメージを与えるときの、ダメージの増加率。',
+}
+// 能力値の詳細: 基礎ステータスは「…」で内訳(基礎・強化・遺物)を開く。高級ステータスは「?」に、カーソルを合わせる(スマホはタップ)と説明が出る
 function StatDetail({ c, sb, onClose }) {
-  const [sum, setSum] = useState(false) // タップで、青い「+」の数字が、基礎+強化の合算値に切り替わる(もう一度タップで元に戻る)
-  const row = ([k, label, u]) => {
+  const [open, setOpen] = useState({}) // 内訳を開いているステータス
+  const [tip, setTip] = useState(null) // 説明を出しているステータス(PCは、カーソルを合わせると出る。スマホは、タップで出る・もう一度タップで消える)
+  const ptr = useRef('mouse') // 最後に押した操作の種類(mouse / touch)
+  const num = (x) => Math.round(x * 10) / 10
+  const pct = (x, base) => (base ? `${x > 0 ? '+' : ''}${num((x / base) * 100)}%` : '') // 基礎に対する割合
+  const main = ([k, label, u]) => {
     const v = sb[k]
-    const total = Math.round((v.base + v.extra) * 10) / 10
-    return <div className="jp-sd-row" key={k} data-testid={`sd-${k}`} role="button" tabIndex={0} aria-pressed={sum} onClick={() => setSum((x) => !x)}><span><i className="jp-sd-ic">{ICON_KEYS.includes(k) && <StatIcon stat={k} />}</i>{label}</span><b>{v.base}{u}{v.extra ? <em key={String(sum)}>{sum ? `= ${total}` : `${v.extra > 0 ? '+' : ''}${v.extra}`}{u}</em> : null}</b></div>
+    const total = num(v.base + v.extra)
+    return (
+      <div key={k} data-testid={`sd-${k}`}>
+        <div className="jp-sd-row">
+          <span><i className="jp-sd-ic">{ICON_KEYS.includes(k) && <StatIcon stat={k} />}</i>{label}</span>
+          <b>{total}{u}</b>
+          <button type="button" className="jp-sd-btn" aria-label={`${label}の内訳`} aria-expanded={!!open[k]} onClick={() => setOpen((o) => ({ ...o, [k]: !o[k] }))}>{open[k] ? '▲' : '•••'}</button>
+        </div>
+        {open[k] && (
+          <div className="jp-sd-open">
+            <div><span>基礎{label}</span><b>{v.base}{u}</b></div>
+            {v.enh ? <div className="plus"><span>強化</span><b>+{v.enh}{u}<small>{pct(v.enh, v.base)}</small></b></div> : null}
+            {v.relic ? <div className="plus"><span>遺物</span><b>{v.relic > 0 ? '+' : ''}{v.relic}{u}<small>{pct(v.relic, v.base)}</small></b></div> : null}
+            {v.extra ? <div className="sum"><span>付加の合計</span><b>{v.extra > 0 ? '+' : ''}{v.extra}{u}<small>{pct(v.extra, v.base)}</small></b></div> : <div className="none"><span>強化・遺物による付加はありません</span></div>}
+          </div>
+        )}
+      </div>
+    )
+  }
+  const sub = ([k, label, u]) => {
+    const v = sb[k]
+    const total = num(v.base + v.extra)
+    return (
+      <div className="jp-sd-row" key={k} data-testid={`sd-${k}`}>
+        <span><i className="jp-sd-ic">{ICON_KEYS.includes(k) && <StatIcon stat={k} />}</i>{label}</span>
+        <b>{total}{u}</b>
+        <button type="button" className={`jp-sd-btn q${tip === k ? ' on' : ''}`} aria-label={`${label}の説明`}
+          onPointerDown={(e) => { ptr.current = e.pointerType }}
+          onPointerEnter={(e) => { if (e.pointerType === 'mouse') setTip(k) }} onPointerLeave={(e) => { if (e.pointerType === 'mouse') setTip((t) => (t === k ? null : t)) }}
+          onClick={(e) => { e.stopPropagation(); setTip((t) => (t === k && ptr.current !== 'mouse' ? null : k)) }}>?</button>
+        {tip === k && <div className="jp-sd-tip" role="tooltip"><i>{label}</i>{SD_TIPS[k]}</div>}
+      </div>
+    )
   }
   return (
     <div className="jp-sd" data-testid="stat-detail" onClick={onClose}>
-      <div className="jp-sd-box" onClick={(e) => e.stopPropagation()}>
-        <div className="jp-sd-h">{c.name}<button type="button" aria-label="閉じる" onClick={onClose}>×</button></div>
-        <div className="jp-sd-t">基礎ステータス</div>
-        {SD_BASIC.filter(([k]) => k !== 'mag' || sb.mag.base || sb.mag.extra).map(row)}
-        <div className="jp-sd-t">高級ステータス</div>
-        {SD_ADV.map(row)}
-        <div className="jp-sd-n">左が基礎値、右の青い数字が、強化・遺物などで足されている分です。タップすると、青い数字が合算した値になります(もう一度タップで元に戻ります)。</div>
+      <div className="jp-sd-box" onClick={(e) => { e.stopPropagation(); setTip(null) }}>
+        <div className="jp-sd-h">//<b>{c.name}</b>/ステータス詳細<button type="button" aria-label="閉じる" onClick={onClose}>×</button></div>
+        <div className="jp-sd-list">
+          <div className="jp-sd-t">基礎ステータス</div>
+          <div className="jp-sd-main">{SD_BASIC.filter(([k]) => k !== 'mag' || sb.mag.base || sb.mag.extra).map(main)}</div>
+          <div className="jp-sd-t">高級ステータス</div>
+          <div className="jp-sd-sub">{SD_ADV.map(sub)}</div>
+          <div className="jp-sd-n">数字は、強化・遺物などを足した合計です。基礎ステータスの「•••」で内訳、高級ステータスの「?」で説明が出ます。</div>
+        </div>
       </div>
     </div>
   )
