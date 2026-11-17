@@ -107,3 +107,12 @@ console.log('artifact tests ok')
   assert.ok(om2 && om2.keywords.includes('dash') && om2.keywords.includes('guard') && om2.keywords.includes('aura'))
   console.log('nemesis chain ok')
 }
+// イリス: 倒れると、パスト・コアが手持ちに付与される
+{
+  const iris = by('nemesis_01')
+  assert.ok(iris, 'nemesis_01 が読み込まれていません')
+  let n = settle(E.createBattle([iris, by('witch_09')], [by('witch_09'), by('witch_10')], {}))
+  for (let i = 0; i < 400 && !n.winner && !n.artifacts.A.length; i++) { const a = AI.chooseAction(n, 3); n = settle(E.applyAction(n, a)) }
+  assert.deepEqual(n.artifacts.A.map((x) => x.name), ['パスト・コア'])
+  console.log('iris ok')
+}

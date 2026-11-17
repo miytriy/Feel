@@ -9,7 +9,7 @@ export const CLASSES = ['エルフ', 'ロイヤル', 'ウィッチ', 'ドラゴ�
 export const RARITIES = ['legend', 'gold', 'silver', 'bronze']
 const SKILL_STATS = ['atk', 'mag']
 const DMG_TYPES = ['physical', 'magic', 'true']
-const EFFECT_TYPES = ['pick', 'copyAmulet', 'damage', 'heal', 'buff', 'armor', 'shield', 'barrier', 'advance', 'delay', 'mp', 'ep', 'faith', 'earth', 'earthSummon', 'reanimate', 'clearCrests', 'boost', 'boostPick', 'graveyard', 'crest', 'summon', 'reenter', 'loseKeyword', 'destroy', 'vanish', 'maxHp', 'loseHp', 'enableTrait', 'gainKeyword', 'gainDoubleSkill', 'setBaseSpd', 'gainCombo', 'extraSkill', 'enableSpell', 'mode', 'evolve', 'growByDead', 'mpMax', 'spendMp', 'countdown']
+const EFFECT_TYPES = ['giveArtifact', 'pick', 'copyAmulet', 'damage', 'heal', 'buff', 'armor', 'shield', 'barrier', 'advance', 'delay', 'mp', 'ep', 'faith', 'earth', 'earthSummon', 'reanimate', 'clearCrests', 'boost', 'boostPick', 'graveyard', 'crest', 'summon', 'reenter', 'loseKeyword', 'destroy', 'vanish', 'maxHp', 'loseHp', 'enableTrait', 'gainKeyword', 'gainDoubleSkill', 'setBaseSpd', 'gainCombo', 'extraSkill', 'enableSpell', 'mode', 'evolve', 'growByDead', 'mpMax', 'spendMp', 'countdown']
 const EFFECT_TARGETS = ['enemyTopAtk', 'allyAmulets', 'enemyFollowers', 'allyFollowers', 'allyAmuletOne', 'self', 'opponent', 'allies', 'otherAllies', 'allyOne', 'enemies', 'enemyOne', 'enemyFieldOne', 'enemyRandom', 'enemyFieldRandom', 'summons', 'otherAllyOne', 'allyField', 'allyFieldOne', 'allyFieldRandom', 'enemyField', 'otherAllyField', 'entered', 'nearestAlly', 'fieldOthers', 'fieldSummons', 'fieldAll', 'fieldAmulets']
 const TRAIT_TARGETS = ['self', 'allies', 'otherAllies', 'allyOne', 'allyFieldOne', 'otherAllyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons']
 const BUFF_STATS = ['atk', 'mag', 'def', 'spd', 'critRate', 'critDmg', 'dmgResist', 'dmgUp']
@@ -48,6 +48,7 @@ function checkEffects(effects, where, errs, depth = 0) {
     if (e.type === 'gainKeyword' && !KEYWORDS[e.keyword]) errs.push(`${w}: gainKeyword の keyword「${e.keyword}」は知らないキーワードです`)
     if (e.type === 'enableTrait' && !(e.trait && isStr(e.trait.id) && isStr(e.trait.name) && Array.isArray(e.trait.effects))) errs.push(`${w}: enableTrait には id・name・effects を持つ trait が必要です`)
     if (e.type === 'enableTrait' && e.trait?.effects) checkEffects(e.trait.effects, `${w} の特性`, errs)
+    if (e.type === 'giveArtifact' && !(e.artifact && isStr(e.artifact.id) && isStr(e.artifact.name))) errs.push(`${w}: giveArtifact には id・name を持つ artifact(付与するアーティファクト)が必要です`)
     if (e.type === 'enableSpell' && !(e.spell && isStr(e.spell.id) && isStr(e.spell.name) && Array.isArray(e.spell.effects))) errs.push(`${w}: enableSpell には id・name・effects を持つ spell(有効化するスペル)が必要です`)
     if (e.type === 'mode') {
       if (!Array.isArray(e.modes) || e.modes.length < 2) errs.push(`${w}: mode には2つ以上の modes(各モードに name と effects)が必要です`)

@@ -1322,6 +1322,18 @@ function runEffects(state, source, effects, ctx = {}) {
           else source.traits.push({ ...structuredClone(e.trait), charges: n })
           break
         }
+        case 'giveArtifact': { // アーティファクトを手持ちに付与する(手持ちが MAX_ARTIFACT_SLOTS で満杯なら、付与できない)
+          const list = state.artifacts[source.team]
+          const n = e.count ?? 1
+          let given = 0
+          for (let i = 0; i < n; i++) {
+            if (list.length >= MAX_ARTIFACT_SLOTS) { state.log.push(`手持ちが満杯で、アーティファクト【${e.artifact.name}】は付与できなかった`); break }
+            const next = Math.max(-1, ...list.map((x) => Number(x.slot.slice(2)))) + 1
+            list.push(makeArtifact(e.artifact, next)); given++
+          }
+          if (given) state.log.push(`アーティファクト【${e.artifact.name}】が手持ちに${given}つ付与された`)
+          break
+        }
         case 'enableSpell': { // スペルを1回分有効化する(スペルセットの最大回数には数えない。すぐに使える)
           const list = state.spells[source.team]
           // perAllySpeed: 指定した速度の味方(自分以外・場のキャラと召喚物)の数だけ、使えるようにする
