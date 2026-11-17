@@ -262,7 +262,7 @@ function chooseAccel(state, actions, level, rng) {
 
 // 今の状態で、CPUが選ぶ行動を返す(特性を使ったあとも、同じキャラの番が続くので何度か呼ばれる)
 export function chooseAction(state, level = 1, rng = Math.random) {
-  const actions = legalActions(state)
+  const actions = legalActions(state).filter((x) => x.type !== 'fuse' && x.type !== 'playArtifact') // CPUは、アーティファクトをまだ使わない
   if (actions.length <= 1) return actions[0]
   if (actions[0].type === 'choose') return level <= 1 ? pickRandom(actions, rng) : pickChoice(state, actions, rng, level) // 効果の対象を選ぶ場面
   if (state.activeKind === 'accel') return chooseAccel(state, actions, level, rng)

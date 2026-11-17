@@ -173,6 +173,81 @@ function makeSpell(def, i) {
   refreshSpell(sp)
   return sp
 }
+// ---------- アーティファクト ----------
+// 手持ちに抱えるリソース(スペルと同じく、opts.artifacts = { A: [定義...], B: [...] })。単体では場に出ない特殊なユニット群。
+//  ・【融合】: 手持ちのアーティファクトに「素材」(opts.materials)を融合させると、上位のアーティファクトに変身する。
+//     変身先は、アーティファクト定義の fusions に書く。上から順に調べて、最初に合ったものになる:
+//       fusions: [{ when: { costMin, costMax, kindsMin, kindsMax, countMin, countMax, ids: [素材のid(すべて含む)] }, into: アーティファクト定義 }]
+//       ・ベース = このアーティファクト自身(変身後は、変身先の fusions が次の段階になる)
+//       ・cost = 素材の合計コスト / kinds = 素材の種類数(idの種類) / count = 素材の枚数
+//  ・【場に出す】: 好きな段階で、MPを払って場に出せる(召喚物として、ユニットになる)。出したら手持ちから無くなる
+//  どちらも、スペルと同じく、キャラの行動(スキル・特性)は消費しない
+export const MAX_ARTIFACT_SLOTS = 3 // 手持ちのアーティファクトの数(仮。環境を見て変更する)
+export const MAX_MATERIAL_SLOTS = 5 // 手持ちの素材カードの数(仮)
+export const MAX_FUSE_MATERIALS = 3 // 1回の融合に使える素材の最大数(アーティファクトの fuse.max で変えられる)
+function makeArtifact(def, i) {
+  markFollowers(def)
+  return { slot: `af${i}`, id: def.id, name: def.name, cost: def.cost ?? 0, desc: def.desc ?? '', def }
+}
+function makeMaterial(def, i) {
+  return { slot: `mt${i}`, id: def.id, name: def.name, cost: def.cost ?? 0, desc: def.desc ?? '' }
+}
+// 素材の組み合わせに合う変身先(なければ null)
+export function fusionFor(art, mats) {
+  const fuse = art.def.fuse || {}
+  const max = fuse.max ?? MAX_FUSE_MATERIALS
+  if (!mats.length || mats.length > max) return null
+  const cost = mats.reduce((a, m) => a + m.cost, 0)
+  const kinds = new Set(mats.map((m) => m.id)).size
+  const n = mats.length
+  const ok = (w) => (w.costMin == null || cost >= w.costMin) && (w.costMax == null || cost <= w.costMax) && (w.kindsMin == null || kinds >= w.kindsMin) && (w.kindsMax == null || kinds <= w.kindsMax) &&
+    (w.countMin == null || n >= w.countMin) && (w.countMax == null || n <= w.countMax) && (!w.ids || w.ids.every((id) => mats.some((m) => m.id === id)))
+  const hit = (art.def.fusions || []).find((f) => ok(f.when || {}))
+  return hit ? hit.into : null
+}
+function artifactActions(state, actor) {
+  const team = actor.team
+  const mp = state.mp[team]
+  const out = []
+  const full = summonsOf(state, actor).length >= SUMMON_MAX
+  const mats = state.materials[team]
+  for (const art of state.artifacts[team]) {
+    if (!full && mp >= art.cost) out.push({ type: 'playArtifact', artifact: art.slot })
+    if (!(art.def.fusions || []).length || mp < (art.def.fuse?.cost ?? 0)) continue
+    for (let mask = 1; mask < 1 << mats.length; mask++) { // 素材のすべての組み合わせ(手持ちは最大 MAX_MATERIAL_SLOTS 枚なので、最大31通り)
+      const pick = mats.filter((_, i) => mask & (1 << i))
+      if (fusionFor(art, pick)) out.push({ type: 'fuse', artifact: art.slot, materials: pick.map((m) => m.slot) })
+    }
+  }
+  return out
+}
+function doFuse(state, actor, action) {
+  const team = actor.team
+  const who = team === 'A' ? '自分' : '相手'
+  const i = state.artifacts[team].findIndex((a) => a.slot === action.artifact)
+  const art = state.artifacts[team][i]
+  const mats = action.materials.map((sl) => state.materials[team].find((m) => m.slot === sl))
+  const into = fusionFor(art, mats)
+  state.mp[team] -= art.def.fuse?.cost ?? 0
+  state.materials[team] = state.materials[team].filter((m) => !action.materials.includes(m.slot))
+  const next = makeArtifact(into, 0)
+  next.slot = art.slot
+  state.artifacts[team][i] = next
+  state.log.push(`${who}は【${mats.map((m) => m.name).join('・')}】を融合して、アーティファクト【${art.name}】は【${next.name}】に変身した`)
+  emit(state, 'fuse', { team, from: art.name, into: next.name, materials: mats.map((m) => m.name) })
+}
+function doPlayArtifact(state, actor, action, opts) {
+  const team = actor.team
+  const i = state.artifacts[team].findIndex((a) => a.slot === action.artifact)
+  const art = state.artifacts[team][i]
+  state.mp[team] -= art.cost
+  state.artifacts[team].splice(i, 1)
+  state.log.push(`${team === 'A' ? '自分' : '相手'}のアーティファクト【${art.name}】を場に出す(MP${art.cost})`)
+  const u = summon(state, actor, art.def)
+  if (u) u.artifact = true
+  recalc(state)
+}
+
 // ブーストで育つスペル(onBoost を持つもの): いまのXを、効果(addX × X を add に)と説明に反映する
 function refreshSpell(sp) {
   if (!sp.onBoost) return
@@ -256,6 +331,9 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
     // スペル(プレイヤー能力): opts.spells = { A: [スペル定義...], B: [...] }(同じスペルを何回入れてもよい。最大 MAX_SPELL_SLOTS 回分)
     // 自分のキャラのターン中に、枠1つにつき1回、MPを払って使える
     spells: { A: (opts.spells?.A || []).slice(0, MAX_SPELL_SLOTS).map(makeSpell), B: (opts.spells?.B || []).slice(0, MAX_SPELL_SLOTS).map(makeSpell) },
+    // アーティファクトと、融合の素材(opts.artifacts / opts.materials = { A: [定義...], B: [...] })
+    artifacts: { A: (opts.artifacts?.A || []).slice(0, MAX_ARTIFACT_SLOTS).map(makeArtifact), B: (opts.artifacts?.B || []).slice(0, MAX_ARTIFACT_SLOTS).map(makeArtifact) },
+    materials: { A: (opts.materials?.A || []).slice(0, MAX_MATERIAL_SLOTS).map(makeMaterial), B: (opts.materials?.B || []).slice(0, MAX_MATERIAL_SLOTS).map(makeMaterial) },
     casting: null, lastAbility: null, abilitySeq: 0, means: '', // means = いま働いている攻撃手段の名前(スキル名・特性名など。画面の「○○の△△!」用)
     events: [], rec: opts.record !== false, // events = 直近の行動で起きたことの記録(画面で1つずつ再生する用)
   }
@@ -1531,12 +1609,13 @@ export function legalActions(state) {
     if (actor.evolvable && !actor.evolved && state.ep[actor.team] >= 1) actions.push({ type: 'evolve' })
   }
   actions.push(...spellActions(state, actor)) // スペルはキャラの行動を消費しない
+  actions.push(...artifactActions(state, actor)) // アーティファクトの【融合】・場に出す(これもキャラの行動を消費しない)
   actions.push({ type: 'endTurn' }) // ターン終了(スキル攻撃ができるときも、攻撃せずに終えられる。CPUは、攻撃できるなら攻撃を選ぶ)
   return actions
 }
 
 const sameAction = (a, b) =>
-  a.type === b.type && (a.target ?? null) === (b.target ?? null) && (a.trait ?? null) === (b.trait ?? null) && (a.spell ?? null) === (b.spell ?? null)
+  a.type === b.type && (a.target ?? null) === (b.target ?? null) && (a.trait ?? null) === (b.trait ?? null) && (a.spell ?? null) === (b.spell ?? null) && (a.artifact ?? null) === (b.artifact ?? null) && (a.materials ?? []).join() === (b.materials ?? []).join()
 
 // ---------- ターンとラウンドの進行 ----------
 
@@ -1973,6 +2052,16 @@ export function applyAction(prev, action, opts = {}) {
     doSpell(state, actor, action, opts)
     if (checkWinner(state) || !actor.alive) return advance(state, opts)
     return state // スペルを使っても、そのキャラのターンは続く
+  }
+
+  if (action.type === 'fuse') {
+    doFuse(state, actor, action)
+    return state // 融合しても、そのキャラのターンは続く
+  }
+  if (action.type === 'playArtifact') {
+    doPlayArtifact(state, actor, action, opts)
+    if (checkWinner(state) || !actor.alive) return advance(state, opts)
+    return state
   }
 
   if (action.type === 'choose') {
