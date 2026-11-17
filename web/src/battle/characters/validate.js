@@ -13,7 +13,7 @@ const EFFECT_TYPES = ['giveArtifact', 'pick', 'copyAmulet', 'damage', 'heal', 'b
 const EFFECT_TARGETS = ['enemyTopAtk', 'allyAmulets', 'enemyFollowers', 'allyFollowers', 'allyAmuletOne', 'self', 'opponent', 'allies', 'otherAllies', 'allyOne', 'enemies', 'enemyOne', 'enemyFieldOne', 'enemyRandom', 'enemyFieldRandom', 'summons', 'otherAllyOne', 'allyField', 'allyFieldOne', 'allyFieldRandom', 'enemyField', 'otherAllyField', 'entered', 'nearestAlly', 'fieldOthers', 'fieldSummons', 'fieldAll', 'fieldAmulets']
 const TRAIT_TARGETS = ['self', 'allies', 'otherAllies', 'allyOne', 'allyFieldOne', 'otherAllyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons']
 const BUFF_STATS = ['atk', 'mag', 'def', 'spd', 'critRate', 'critDmg', 'dmgResist', 'dmgUp']
-const CONDITION_KEYS = ['link', 'gauge', 'ultimate', 'liberation', 'faith', 'earth', 'boost', 'graveyard', 'hpBelow', 'hpAbove', 'hpAtMost', 'evolved', 'crests', 'combo', 'evolveTurn', 'awaken']
+const CONDITION_KEYS = ['link', 'gauge', 'ultimate', 'liberation', 'faith', 'earth', 'boost', 'graveyard', 'hpBelow', 'hpAbove', 'hpAtMost', 'evolved', 'crests', 'combo', 'evolveTurn', 'awaken', 'fieldCharsBelow', 'fieldCharsAtLeast']
 
 const isNum = (x) => typeof x === 'number' && Number.isFinite(x)
 const isStr = (x) => typeof x === 'string' && x.length > 0

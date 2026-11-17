@@ -390,6 +390,8 @@ function checkCond(state, unit, c) {
   if (c.evolveTurn && state.round < EP_GRANT_ROUND) return false // 進化可能ターン: EPが配られたラウンドから戦闘終了まで
   if (c.crests != null && state.crests[unit.team].length < c.crests) return false
   if (c.combo != null && comboOf(state, unit) < c.combo) return false // コンボ: 味方の特性が使われた回数
+  if (c.fieldCharsBelow != null && state.units.filter((x) => x.alive && x.field === 'main' && x.team === unit.team).length >= c.fieldCharsBelow) return false // 自分の場の生存しているキャラクターが N 体未満
+  if (c.fieldCharsAtLeast != null && state.units.filter((x) => x.alive && x.field === 'main' && x.team === unit.team).length < c.fieldCharsAtLeast) return false // 自分の場の生存しているキャラクターが N 体以上
   return true
 }
 
