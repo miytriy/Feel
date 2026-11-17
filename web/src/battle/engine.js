@@ -559,6 +559,7 @@ const TARGETS = {
   allyOne: { side: 'ally', scope: 'auto', pick: 'weakest', cand: 'follower' },
   otherAllyOne: { side: 'ally', scope: 'auto', pick: 'chosen', other: true },
   enemies: { side: 'enemy', scope: 'auto', pick: 'all', enemyAuto: true },
+  allyFollowers: { side: 'ally', scope: 'follower', pick: 'all' },
   enemyFollowers: { side: 'enemy', scope: 'follower', pick: 'all' },
   enemyField: { side: 'enemy', scope: 'unit', pick: 'all' },
   enemyTopAtk: { side: 'enemy', scope: 'main', pick: 'topAtk' }, // 相手の場のキャラクターのうち、攻撃力が最大のものからランダム1体

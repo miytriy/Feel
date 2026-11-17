@@ -8,11 +8,11 @@ export default {
   passives: [
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '『バット』1体を召喚する。', log: '『バット』1体を召喚する。', effects: [{ type: 'summon', count: 1, unit: bat }] },
     // enterName: 出てきたのが『バット』のときだけ働く。「割り振る」= 合計を、対象の人数で等分する
-    { name: 'バットの疾走', trigger: 'allyEnter', enterName: 'バット', desc: '自分の『バット』が場に出たとき、それは【疾走】を持つ。自分の場のすべてに50の物理ダメージを割り振る。',
+    { name: '常時', trigger: 'allyEnter', enterName: 'バット', desc: '自分の『バット』が場に出たとき、それは【疾走】を持つ。自分の場のフォロワーすべてに50の物理ダメージを割り振る。',
       log: 'それは【疾走】を持つ。自分の場のフォロワーすべてに50の物理ダメージを割り振る。',
       effects: [
         { type: 'gainKeyword', keyword: 'dash', target: 'entered' },
-        { type: 'damage', stat: 'atk', mult: 0, add: 50, split: true, dmgType: 'physical', target: 'allyField' },
+        { type: 'damage', stat: 'atk', mult: 0, add: 50, split: true, dmgType: 'physical', target: 'allyFollowers' },
       ] },
   ],
 }
