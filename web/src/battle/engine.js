@@ -302,6 +302,7 @@ function checkCond(state, unit, c) {
   if (c.earth != null && (state.earth?.[unit.team] ?? 0) < c.earth) return false
   if (c.graveyard != null && state.graveyard[unit.team] < c.graveyard) return false
   if (c.hpBelow != null && (unit.hp / unit.maxHp) * 100 > c.hpBelow) return false
+  if (c.hpAtMost != null && unit.hp > c.hpAtMost) return false // HPの実数(「体力が400以下」)
   if (c.hpAbove != null && (unit.hp / unit.maxHp) * 100 < c.hpAbove) return false
   if (c.awaken && state.mpMax[unit.team] < AWAKEN_MP) return false // 【覚醒】
   if (c.evolved != null && unit.evolved !== c.evolved) return false
