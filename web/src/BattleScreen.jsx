@@ -1,11 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { addEvents, buildMatch, newStats } from './career.js'
-import { createBattle, applyAction, addGhosts, getActiveUnit, legalActions, getUnit, gaugeOf, calcDamage, KEYWORDS, TRIGGER_LABELS, bracket, isEnhance, enhanceBody } from './battle/engine.js'
+import { createBattle, applyAction, addGhosts, getActiveUnit, legalActions, getUnit, gaugeOf, calcDamage, KEYWORDS, TRIGGER_LABELS, bracket, isEnhance, enhanceBody, fusionFor } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS, SPELL_LEVEL } from './battle/ai.js'
 import { DEFAULT_PLAYER_IDS, buildCpuTeam, buildCpuSpells, loadCpuCharSetting, saveCpuCharSetting, isTestChar } from './battle/teams.js'
 import { enhanceDef } from './enhance.js'
 import { ALL_CHARACTERS, charById } from './battle/characters/index.js'
 import { ALL_SPELLS } from './battle/spells/index.js'
+import { ARTIFACT_CATALOG } from './battle/artifact/index.js'
 import FormationScreen from './FormationScreen.jsx'
 import { createPortal } from 'react-dom'
 import { BattleHud, StageIntro, ExitConfirm, ResultBanner, BattleMenu } from './BattleHud.jsx'
@@ -1049,6 +1050,9 @@ export default function BattleScreen({ settingsView = null, onExit, cpuDelay = 7
   const skillTargets = legal.filter((a) => a.type === 'skill').map((a) => a.target)
   const traitActions = (id) => legal.filter((a) => a.type === 'trait' && a.trait === id)
   const spellActs = legal.filter((a) => a.type === 'spell')
+  const artifactActs = legal.filter((a) => a.type === 'playArtifact' || a.type === 'fuse')
+  const [fuseArt, setFuseArt] = useState(null) // 融合するアーティファクト(slot)。選ぶと、素材を選べる
+  const [fuseMats, setFuseMats] = useState([]) // 選んだ素材(slot)
   const canEnd = legal.some((a) => a.type === 'endTurn')
   const canEvolve = legal.some((a) => a.type === 'evolve')
   const isAccel = !!state && state.activeKind === 'accel'
@@ -1265,7 +1269,7 @@ export default function BattleScreen({ settingsView = null, onExit, cpuDelay = 7
     setSideLog([])
     const cpuTeam = testInit ? testInit.team : buildCpuTeam(ALL_CHARACTERS, cpuChars, Math.random, level, ALL_SPELLS) // Lv.5以上は、シナジーのある編成。テスト戦は、自分で選んだ相手のチーム
     const cpuSpells = testInit ? testInit.spells : level >= SPELL_LEVEL ? buildCpuSpells(ALL_SPELLS, cpuTeam, Math.random, level) : [] // Lv.5以上のCPUは、編成に合う強いスペルを持つ
-    const first = createBattle(team.map((d) => enhanceDef(withRelicPieces(d))), cpuTeam, { catalog: ALL_CHARACTERS, pool: ownedPool(cpuChars), spells: { A: spellSet, B: cpuSpells } })
+    const first = createBattle(team.map((d) => enhanceDef(withRelicPieces(d))), cpuTeam, { catalog: ALL_CHARACTERS, artifactCatalog: ARTIFACT_CATALOG, pool: ownedPool(cpuChars), spells: { A: spellSet, B: cpuSpells } })
     statsRef.current = newStats()
     const firstActor = first.units.find((u) => u.uid === first.active)
     if (firstActor) statsRef.current.turns[firstActor.team]++ // 最初のターンも数える
@@ -1596,6 +1600,62 @@ export default function BattleScreen({ settingsView = null, onExit, cpuDelay = 7
       })}
     </div>
   )
+  // アーティファクト・素材(手持ち): 「場に出す」(MP)と「融合」(アーティファクトを選び → 素材を選び → 融合する)。キャラの行動は消費しない
+  const handArts = state.artifacts?.[ME] || []
+  const handMats = state.materials?.[ME] || []
+  const artifactBlock = (handArts.length > 0 || handMats.length > 0) && !state.winner && !playing && !cpuTurn && !choosing && !isAccel && (() => {
+    const art = handArts.find((x) => x.slot === fuseArt)
+    const picked = handMats.filter((m) => fuseMats.includes(m.slot)) // 手持ちの並び順
+    const fuseAct = art && artifactActs.find((a) => a.type === 'fuse' && a.artifact === art.slot && a.materials.join() === picked.map((m) => m.slot).join())
+    const into = art && picked.length ? fusionFor(art, picked, state.artifactCatalog) : null
+    const chip = (on, dis) => ({ ...buttonStyle(on, dis), padding: '4px 8px', fontSize: 12, marginRight: 4, marginBottom: 4 })
+    return (
+      <div data-testid="artifact-block" style={{ marginBottom: 8 }}>
+        <div style={{ fontSize: 11, color: C.mute, marginBottom: 4 }}>アーティファクト({handArts.length + handMats.length}/9・場に出す=MP・行動は消えません)</div>
+        {handArts.map((x) => {
+          const canPlay = artifactActs.some((a) => a.type === 'playArtifact' && a.artifact === x.slot)
+          const canFuse = (x.def.fusions || []).length > 0 && handMats.length > 0
+          const why = x.def.noField ? '場に出せません' : state.mp[ME] < x.cost ? 'MP不足' : '場が満員'
+          return (
+            <div key={x.slot} style={{ marginBottom: 4 }}>
+              <span style={{ fontSize: 13, marginRight: 6, color: C.player }}>◆{x.name}</span>
+              <button aria-label={`${x.name}を場に出す`} onClick={() => act({ type: 'playArtifact', artifact: x.slot })} disabled={!canPlay} style={{ ...buttonStyle(false, !canPlay), padding: '4px 8px', fontSize: 12, marginRight: 4 }}>
+                場に出す(MP{x.cost}){!canPlay ? ` ${why}` : ''}
+              </button>
+              {canFuse && (
+                <button aria-label={`${x.name}を融合する`} onClick={() => { setFuseArt(fuseArt === x.slot ? null : x.slot); setFuseMats([]) }} style={{ ...buttonStyle(fuseArt === x.slot, false), padding: '4px 8px', fontSize: 12 }}>
+                  {fuseArt === x.slot ? '融合をやめる' : '融合'}
+                </button>
+              )}
+              {showDesc && x.desc && <span style={{ fontSize: 11, color: C.mute, ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> {x.desc}</span>}
+            </div>
+          )
+        })}
+        {handMats.length > 0 && (
+          <div style={{ marginTop: 4 }}>
+            <div style={{ fontSize: 11, color: C.mute, marginBottom: 3 }}>{art ? `素材を選ぶ(最大${art.def.fuse?.max ?? 3}枚)` : '素材'}</div>
+            {handMats.map((m) => {
+              const on = fuseMats.includes(m.slot)
+              return art
+                ? <button key={m.slot} aria-pressed={on} onClick={() => setFuseMats((cur) => (on ? cur.filter((k) => k !== m.slot) : cur.length < (art.def.fuse?.max ?? 3) ? [...cur, m.slot] : cur))} style={chip(on, false)}>{on ? '✓ ' : ''}{m.name}(コスト{m.cost})</button>
+                : <span key={m.slot} style={{ fontSize: 12, color: C.mute, marginRight: 8 }} title={m.desc}>{m.name}(コスト{m.cost})</span>
+            })}
+          </div>
+        )}
+        {art && (
+          <div style={{ marginTop: 4 }}>
+            <button
+              onClick={() => { act(fuseAct); setFuseArt(null); setFuseMats([]) }}
+              disabled={!fuseAct}
+              style={{ ...buttonStyle(true, !fuseAct), padding: '6px 10px', fontSize: 13 }}
+            >
+              融合する{art.def.fuse?.cost ? `(MP${art.def.fuse.cost})` : ''}{into ? ` → ${into.name}` : ''}{!fuseAct && picked.length ? ' (この組み合わせは融合できません)' : ''}
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  })()
   // 選択したユニットの性能メモ: 左上か右上。選んだユニットと重ならない側に出す
   // 性能メモは常に1つだけ。最後にタップしたユニット(なければ選択中のユニット)のものを出す
   const infoUnit = (inspect && getUnit(state, inspect)) || selectedUnit
@@ -1842,6 +1902,7 @@ export default function BattleScreen({ settingsView = null, onExit, cpuDelay = 7
               <Row big extra={<TeamStatus state={view} team={ME} big inline />} title="自分" color={C.player}>{players.map(card)}</Row>
             </div>
             {spellsBlock}
+            {artifactBlock}
           </div>
           <div data-keep="1" className="no-sb" style={{ flex: '0 0 auto', maxHeight: '34vh', overflowY: 'auto', width: '100%', maxWidth: 1100, margin: '0 auto', boxSizing: 'border-box', padding: 14, borderRadius: 10, background: C.card, border: `1px solid ${C.line}`, fontSize: 14 }}>
             {panelInner}
@@ -1873,6 +1934,7 @@ export default function BattleScreen({ settingsView = null, onExit, cpuDelay = 7
       <Row tight title="自分の召喚物" color={C.player}>{summonCards(playerSummons)}</Row>
       <Row extra={<TeamStatus state={view} team={ME} inline />} title="自分" color={C.player}>{players.map(card)}</Row>
       {spellsBlock && <div style={{ marginTop: 8 }}>{spellsBlock}</div>}
+      {artifactBlock && <div style={{ marginTop: 8 }}>{artifactBlock}</div>}
         </div>
       </div>
 
