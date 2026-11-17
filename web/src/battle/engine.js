@@ -184,7 +184,7 @@ function makeSpell(def, i) {
 //  ・noField: true のアーティファクトは、場に出せない(「フィールドに存在できない」)
 //  ・fuse.accept: { type, amulet, ids } = 融合できる素材の種類(素材カードの type / amulet が合うものだけ)
 //  どちらも、スペルと同じく、キャラの行動(スキル・特性)は消費しない
-export const MAX_ARTIFACT_SLOTS = 3 // 手持ちのアーティファクトの数(仮。環境を見て変更する)
+export const MAX_ARTIFACT_SLOTS = 9 // 手持ちのアーティファクトの数(最大9つ)
 export const MAX_MATERIAL_SLOTS = 5 // 手持ちの素材カードの数(仮)
 export const MAX_FUSE_MATERIALS = 3 // 1回の融合に使える素材の最大数(アーティファクトの fuse.max で変えられる)
 function makeArtifact(def, i) {
