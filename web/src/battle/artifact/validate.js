@@ -1,4 +1,4 @@
-// Feel Battle - アーティファクト・素材カードの書き間違いチェック
+// Feel Battle - アーティファクトの書き間違いチェック
 // アーティファクトは「ユニットとして場に出せる定義」(キャラと同じ書き方 + cost / fusions / fuse)です。
 import { validateCharacter } from '../characters/validate.js'
 
@@ -23,21 +23,11 @@ export function validateArtifact(def, { expectedId, depth = 0 } = {}) {
       const at = `fusions[${i}]`
       if (!f || typeof f !== 'object') return errors.push(`${at}: { when, into } の形にしてください`)
       for (const k of Object.keys(f.when || {})) if (!WHEN_KEYS.includes(k)) errors.push(`${at}.when: 「${k}」は使えません(使えるのは ${WHEN_KEYS.join(' / ')})`)
-      if (f.when?.ids != null && !Array.isArray(f.when.ids)) errors.push(`${at}.when.ids は素材のidの配列にしてください`)
+      if (f.when?.ids != null && !Array.isArray(f.when.ids)) errors.push(`${at}.when.ids は素材にするアーティファクトのidの配列にしてください`)
       if (!f.into) return errors.push(`${at}: into(変身先のアーティファクト)がありません`)
       if (typeof f.into === 'string') return // 変身先のidか名前(まだ無いカードでもよい)
       for (const m of validateArtifact(f.into, { depth: depth + 1 })) errors.push(`${at}.into: ${m}`)
     })
   }
-  return errors
-}
-
-export function validateMaterial(def, { expectedId } = {}) {
-  const errors = []
-  if (!def || typeof def !== 'object') return ['素材のデータがオブジェクトではありません']
-  if (!def.id || typeof def.id !== 'string') errors.push('id がありません')
-  else if (expectedId && def.id !== expectedId) errors.push(`id「${def.id}」がファイル名「${expectedId}」と違います`)
-  if (!def.name) errors.push('name がありません')
-  if (!(Number.isInteger(def.cost) && def.cost >= 0)) errors.push('cost(素材としてのコスト)は0以上の整数にしてください')
   return errors
 }

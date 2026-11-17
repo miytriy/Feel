@@ -1,7 +1,7 @@
 // アーティファクト(手持ち・【融合】・場に出す)の骨格: node server/tests/artifact_test.mjs
 import assert from 'node:assert/strict'
 import { loadRegistry } from '../pvp/registry.js'
-import { validateArtifact, validateMaterial } from '../../web/src/battle/artifact/validate.js'
+import { validateArtifact } from '../../web/src/battle/artifact/validate.js'
 
 const reg = await loadRegistry()
 const E = reg.engine
@@ -10,16 +10,15 @@ const unit = (id, name, extra = {}) => ({ id, name, class: 'ウィッチ', rarit
 const top = unit('af_top', '頂点', { cost: 1 })
 const mid = unit('af_mid', '中段', { cost: 1, fusions: [{ when: { countMin: 2 }, into: top }] })
 const base = unit('af_base', '基礎', { cost: 1, fusions: [{ when: { costMin: 5 }, into: mid }, { when: { kindsMin: 2 }, into: unit('af_alt', '分岐', { cost: 1 }) }] })
-const M = (id, cost) => ({ id, name: id, cost })
+// 素材は、手持ちの別のアーティファクト(素材専用のカードはない)。M = 素材にするアーティファクト
+const M = (id, cost, extra = {}) => unit(id, id, { cost, noField: true, ...extra })
 
 // チェック
 assert.deepEqual(validateArtifact(base, { expectedId: 'af_base' }), [])
 assert.ok(validateArtifact({ ...base, fusions: [{ when: { foo: 1 }, into: top }] }).length)
 assert.ok(validateArtifact({ ...base, fusions: [{ when: {} }] }).length)
-assert.deepEqual(validateMaterial(M('m1', 2)), [])
-assert.ok(validateMaterial({ id: 'x', name: 'x' }).length)
 
-const mk = (arts, mats) => E.createBattle([by('witch_09'), by('witch_10')], [by('witch_09'), by('witch_10')], { artifacts: { A: arts, B: [] }, materials: { A: mats, B: [] } })
+const mk = (arts, mats) => E.createBattle([by('witch_09'), by('witch_10')], [by('witch_09'), by('witch_10')], { artifacts: { A: [...arts, ...mats], B: [] } })
 const act = (st) => E.legalActions(st)
 let st = mk([base], [M('m_a', 2), M('m_b', 3), M('m_c', 1)])
 // 先頭のキャラが、自分のチームの番になるまで進める
@@ -30,17 +29,18 @@ assert.equal(E.getActiveUnit(st).team, 'A')
 const fuses = act(st).filter((a) => a.type === 'fuse')
 // コスト合計5以上(a+b=5, a+b+c=6, b+c=4は不可 → 2種類以上なら分岐)。合う組み合わせだけが行動になる
 assert.ok(fuses.length > 0)
-const sums = (a) => a.materials.map((sl) => st.materials.A.find((m) => m.slot === sl).cost).reduce((x, y) => x + y, 0)
+const sums = (a) => a.materials.map((sl) => st.artifacts.A.find((m) => m.slot === sl).cost).reduce((x, y) => x + y, 0)
 for (const f of fuses) { const kinds = f.materials.length; assert.ok(sums(f) >= 5 || kinds >= 2) }
 // 素材 a+b(合計5)→ 中段
-const ab = fuses.find((a) => a.materials.join() === 'mt0,mt1')
+const ab = fuses.find((a) => a.materials.join() === 'af1,af2')
 st = E.applyAction(st, ab)
 assert.equal(st.artifacts.A[0].name, '中段')
-assert.equal(st.materials.A.length, 1) // 使った素材は無くなる
+assert.equal(st.artifacts.A.length, 2) // 使った素材(2つ)は無くなり、基礎→中段と残り1つ
 assert.equal(st.artifacts.A[0].slot, 'af0') // 枠は同じ
 assert.equal(E.getActiveUnit(st).team, 'A') // 融合しても、キャラのターンは続く
 // 中段は「2枚以上」で頂点へ。素材が1枚だけなら融合できない
 assert.equal(act(st).filter((a) => a.type === 'fuse').length, 0)
+st.artifacts.A = st.artifacts.A.slice(0, 1) // 以降は中段だけ
 // 場に出す(MPが足りているとき): 召喚物のユニットになり、手持ちから無くなる
 st.mp.A = 5
 const play = act(st).find((a) => a.type === 'playArtifact')
@@ -52,26 +52,27 @@ assert.ok(u && u.alive && u.field === 'summon' && u.artifact === true)
 assert.equal(st.mp.A, 4)
 // noField は場に出せない / fuse.accept に合う素材だけ / into が名前のときは、一覧にあるときだけ融合できる
 const core = unit('core', 'コア', { cost: 1, noField: true, amulet: true, type: 'アーティファクト', fuse: { accept: { type: 'アーティファクト', amulet: true } }, fusions: [{ when: {}, into: '上位' }] })
-const A = (id, type, amulet) => ({ id, name: id, cost: 1, type, amulet })
-const mk2 = (cat) => E.createBattle([by('witch_09')], [by('witch_09')], { artifacts: { A: [core], B: [] }, materials: { A: [A('x', 'アーティファクト', true), A('y', null, false)], B: [] }, artifactCatalog: cat })
+const A = (id, type, amulet) => M(id, 1, { type, amulet })
+const mk2 = (cat) => E.createBattle([by('witch_09')], [by('witch_09')], { artifacts: { A: [core, A('x', 'アーティファクト', true), A('y', null, false)], B: [] }, artifactCatalog: cat })
 let s3 = settle(mk2([]))
 assert.ok(!act(s3).some((a) => a.type === 'playArtifact'))
 assert.ok(!act(s3).some((a) => a.type === 'fuse')) // 変身先がまだ無い
 s3 = settle(mk2([unit('top2', '上位')]))
 const f3 = act(s3).filter((a) => a.type === 'fuse')
-assert.deepEqual(f3.map((a) => a.materials.join()), ['mt0']) // 「アーティファクト・アミュレット」だけ(mt1は不可)
+assert.deepEqual(f3.map((a) => a.materials.join()), ['af1']) // 「アーティファクト・アミュレット」だけ(af2は不可)
 s3 = E.applyAction(s3, f3[0])
 assert.equal(s3.artifacts.A[0].name, '上位')
+assert.deepEqual(s3.artifacts.A.map((x) => x.name), ['上位', 'y']) // 素材にした x は無くなる
 // ネメシスの実カード: フィーチャー・コア + アーティファクト・アミュレット → アタックアーティファクト。ユニットのコスト合計で次の段階が決まる
 const fc = (await import('../../web/src/battle/artifact/nemesis/tokens/nemesis_feature_core.js')).default
 const at = (await import('../../web/src/battle/artifact/nemesis/tokens/nemesis_attack_artifact.js')).default
 const ca = (await import('../../web/src/battle/artifact/nemesis/tokens/nemesis_castle_artifact.js')).default
-const mkN = (arts, mats, cat) => settle(E.createBattle([by('witch_09')], [by('witch_09')], { artifacts: { A: arts, B: [] }, materials: { A: mats, B: [] }, artifactCatalog: cat }))
+const mkN = (arts, mats, cat) => settle(E.createBattle([by('witch_09')], [by('witch_09')], { artifacts: { A: [...arts, ...mats], B: [] }, artifactCatalog: cat }))
 let n1 = mkN([fc], [A('amu', 'アーティファクト', true)], [at, ca])
 n1 = E.applyAction(n1, act(n1).find((a) => a.type === 'fuse'))
 assert.equal(n1.artifacts.A[0].name, 'アタックアーティファクト')
 const dest = (n) => unit('d' + n, 'デストロイアーティファクト' + n)
-const U = (id, cost) => ({ id, name: id, cost, type: 'アーティファクト', amulet: false })
+const U = (id, cost) => M(id, cost, { type: 'アーティファクト', amulet: false })
 const cat2 = [dest('α'), dest('β'), dest('γ')]
 for (const [mats, want] of [[[U('u1', 1)], 'α'], [[U('u2', 2)], 'β'], [[U('u1', 1), U('u2', 2)], 'γ'], [[U('u3', 3)], 'γ']]) {
   let n = mkN([at], mats, cat2)
@@ -94,10 +95,10 @@ console.log('artifact tests ok')
   const [al, be, ga, om] = [await ld('destroy_alpha'), await ld('destroy_beta'), await ld('destroy_gamma'), await ld('exceed_omega')]
   for (const d of [al, be, ga, om]) assert.deepEqual(validateArtifact(d), [])
   const cat = [al, be, ga, om]
-  const mat = (d) => ({ id: d.id, name: d.name, cost: d.cost, type: d.type, amulet: false })
+  const mat = (d) => ({ ...d, amulet: false })
   let n = mkN([al], [mat(be), mat(ga)], cat)
   const fs = act(n).filter((a) => a.type === 'fuse')
-  assert.deepEqual(fs.map((a) => a.materials.join()), ['mt0,mt1']) // βだけ・γだけでは融合できない(種類2のときだけ)
+  assert.deepEqual(fs.map((a) => a.materials.join()), ['af1,af2']) // βだけ・γだけでは融合できない(種類2のときだけ)
   n = E.applyAction(n, fs[0])
   assert.equal(n.artifacts.A[0].name, 'イクシードアーティファクトΩ')
   // Ωを場に出す: MP10。疾走・守護・オーラを持つ
@@ -116,12 +117,11 @@ console.log('artifact tests ok')
   assert.deepEqual(n.artifacts.A.map((x) => x.name), ['パスト・コア'])
   console.log('iris ok')
 }
-// 手持ちは、アーティファクトと素材を合わせて最大9つ
+// 手持ちは、アーティファクトで最大9つ
 {
   const arts = Array.from({ length: 7 }, (_, i) => unit(`h${i}`, `h${i}`, { cost: 1 }))
-  const mats9 = Array.from({ length: 5 }, (_, i) => M(`hm${i}`, 1))
-  const n = settle(E.createBattle([by('witch_09')], [by('witch_09')], { artifacts: { A: arts, B: [] }, materials: { A: mats9, B: [] } }))
-  assert.equal(n.artifacts.A.length, 7)
-  assert.equal(n.materials.A.length, 2) // 9 - 7
+  const more = Array.from({ length: 5 }, (_, i) => M(`hm${i}`, 1))
+  const n = settle(E.createBattle([by('witch_09')], [by('witch_09')], { artifacts: { A: [...arts, ...more], B: [] } }))
+  assert.equal(n.artifacts.A.length, 9) // 12個渡しても、最大9つ
   console.log('hand cap ok')
 }

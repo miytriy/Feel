@@ -1602,26 +1602,26 @@ export default function BattleScreen({ settingsView = null, onExit, cpuDelay = 7
   )
   // アーティファクト・素材(手持ち): 「場に出す」(MP)と「融合」(アーティファクトを選び → 素材を選び → 融合する)。キャラの行動は消費しない
   const handArts = state.artifacts?.[ME] || []
-  const handMats = state.materials?.[ME] || []
-  const artifactBlock = (handArts.length > 0 || handMats.length > 0) && !state.winner && !playing && !cpuTurn && !choosing && !isAccel && (() => {
+  const artifactBlock = handArts.length > 0 && !state.winner && !playing && !cpuTurn && !choosing && !isAccel && (() => {
     const art = handArts.find((x) => x.slot === fuseArt)
-    const picked = handMats.filter((m) => fuseMats.includes(m.slot)) // 手持ちの並び順
+    const mats = art ? handArts.filter((x) => x !== art) : [] // 素材にできるのは、手持ちの別のアーティファクト
+    const picked = mats.filter((m) => fuseMats.includes(m.slot)) // 手持ちの並び順
     const fuseAct = art && artifactActs.find((a) => a.type === 'fuse' && a.artifact === art.slot && a.materials.join() === picked.map((m) => m.slot).join())
     const into = art && picked.length ? fusionFor(art, picked, state.artifactCatalog) : null
     const chip = (on, dis) => ({ ...buttonStyle(on, dis), padding: '4px 8px', fontSize: 12, marginRight: 4, marginBottom: 4 })
     return (
       <div data-testid="artifact-block" style={{ marginBottom: 8 }}>
-        <div style={{ fontSize: 11, color: C.mute, marginBottom: 4 }}>アーティファクト({handArts.length + handMats.length}/9・場に出す=MP・行動は消えません)</div>
+        <div style={{ fontSize: 11, color: C.mute, marginBottom: 4 }}>アーティファクト({handArts.length}/9・場に出す=MP・行動は消えません)</div>
         {handArts.map((x) => {
           const canPlay = artifactActs.some((a) => a.type === 'playArtifact' && a.artifact === x.slot)
-          const canFuse = (x.def.fusions || []).length > 0 && handMats.length > 0
+          const canFuse = (x.def.fusions || []).length > 0 && handArts.length > 1
           const why = x.def.noField ? '場に出せません' : state.mp[ME] < x.cost ? 'MP不足' : '場が満員'
           return (
             <div key={x.slot} style={{ marginBottom: 4 }}>
               <span style={{ fontSize: 13, marginRight: 6, color: C.player }}>◆{x.name}</span>
-              <button aria-label={`${x.name}を場に出す`} onClick={() => act({ type: 'playArtifact', artifact: x.slot })} disabled={!canPlay} style={{ ...buttonStyle(false, !canPlay), padding: '4px 8px', fontSize: 12, marginRight: 4 }}>
+              {!x.def.noField && <button aria-label={`${x.name}を場に出す`} onClick={() => act({ type: 'playArtifact', artifact: x.slot })} disabled={!canPlay} style={{ ...buttonStyle(false, !canPlay), padding: '4px 8px', fontSize: 12, marginRight: 4 }}>
                 場に出す(MP{x.cost}){!canPlay ? ` ${why}` : ''}
-              </button>
+              </button>}
               {canFuse && (
                 <button aria-label={`${x.name}を融合する`} onClick={() => { setFuseArt(fuseArt === x.slot ? null : x.slot); setFuseMats([]) }} style={{ ...buttonStyle(fuseArt === x.slot, false), padding: '4px 8px', fontSize: 12 }}>
                   {fuseArt === x.slot ? '融合をやめる' : '融合'}
@@ -1631,14 +1631,12 @@ export default function BattleScreen({ settingsView = null, onExit, cpuDelay = 7
             </div>
           )
         })}
-        {handMats.length > 0 && (
+        {art && (
           <div style={{ marginTop: 4 }}>
-            <div style={{ fontSize: 11, color: C.mute, marginBottom: 3 }}>{art ? `素材を選ぶ(最大${art.def.fuse?.max ?? 3}枚)` : '素材'}</div>
-            {handMats.map((m) => {
+            <div style={{ fontSize: 11, color: C.mute, marginBottom: 3 }}>{`素材にするアーティファクトを選ぶ(最大${art.def.fuse?.max ?? 3}つ。素材にしたものは無くなります)`}</div>
+            {mats.map((m) => {
               const on = fuseMats.includes(m.slot)
-              return art
-                ? <button key={m.slot} aria-pressed={on} onClick={() => setFuseMats((cur) => (on ? cur.filter((k) => k !== m.slot) : cur.length < (art.def.fuse?.max ?? 3) ? [...cur, m.slot] : cur))} style={chip(on, false)}>{on ? '✓ ' : ''}{m.name}(コスト{m.cost})</button>
-                : <span key={m.slot} style={{ fontSize: 12, color: C.mute, marginRight: 8 }} title={m.desc}>{m.name}(コスト{m.cost})</span>
+              return <button key={m.slot} aria-pressed={on} title={m.desc} onClick={() => setFuseMats((cur) => (on ? cur.filter((k) => k !== m.slot) : cur.length < (art.def.fuse?.max ?? 3) ? [...cur, m.slot] : cur))} style={chip(on, false)}>{on ? '✓ ' : ''}{m.name}(コスト{m.cost})</button>
             })}
           </div>
         )}

@@ -175,23 +175,20 @@ function makeSpell(def, i) {
 }
 // ---------- アーティファクト ----------
 // 手持ちに抱えるリソース(スペルと同じく、opts.artifacts = { A: [定義...], B: [...] })。単体では場に出ない特殊なユニット群。
-//  ・【融合】: 手持ちのアーティファクトに「素材」(opts.materials)を融合させると、上位のアーティファクトに変身する。
+//  ・【融合】: 手持ちのアーティファクトに、手持ちの別のアーティファクト(素材にするもの)を融合させると、上位のアーティファクトに変身する。素材専用のカードはない。素材にしたアーティファクトは手持ちから無くなる
 //     変身先は、アーティファクト定義の fusions に書く。上から順に調べて、最初に合ったものになる:
-//       fusions: [{ when: { costMin, costMax, kindsMin, kindsMax, countMin, countMax, ids: [素材のid(すべて含む)] }, into: アーティファクト定義 }]
+//       fusions: [{ when: { costMin, costMax, kindsMin, kindsMax, countMin, countMax, ids: [素材にするアーティファクトのid(すべて含む)] }, into: アーティファクト定義 }]
 //       ・ベース = このアーティファクト自身(変身後は、変身先の fusions が次の段階になる)
-//       ・cost = 素材の合計コスト / kinds = 素材の種類数(idの種類) / count = 素材の枚数
+//       ・cost = 素材にしたアーティファクトの合計コスト / kinds = 素材の種類数(idの種類) / count = 素材の枚数
 //  ・【場に出す】: 好きな段階で、MPを払って場に出せる(召喚物として、ユニットになる)。出したら手持ちから無くなる
 //  ・noField: true のアーティファクトは、場に出せない(「フィールドに存在できない」)
-//  ・fuse.accept: { type, amulet, ids } = 融合できる素材の種類(素材カードの type / amulet が合うものだけ)
+//  ・fuse.accept: { type, amulet, ids } = 融合できる素材の種類(アーティファクトの type / amulet が合うものだけ)
 //  どちらも、スペルと同じく、キャラの行動(スキル・特性)は消費しない
-export const MAX_HAND = 9 // 手持ち(アーティファクトと素材カードを合わせて、最大9つ)
+export const MAX_HAND = 9 // 手持ち(アーティファクトの手持ちは、最大9つ)
 export const MAX_FUSE_MATERIALS = 3 // 1回の融合に使える素材の最大数(アーティファクトの fuse.max で変えられる)
 function makeArtifact(def, i) {
   markFollowers(def)
-  return { slot: `af${i}`, id: def.id, name: def.name, cost: def.cost ?? 0, desc: def.desc ?? '', def }
-}
-function makeMaterial(def, i) {
-  return { slot: `mt${i}`, id: def.id, name: def.name, cost: def.cost ?? 0, desc: def.desc ?? '', type: def.type ?? null, amulet: !!def.amulet }
+  return { slot: `af${i}`, id: def.id, name: def.name, cost: def.cost ?? 0, desc: def.desc ?? '', type: def.type ?? null, amulet: !!def.amulet, def }
 }
 // 素材の組み合わせに合う変身先(なければ null)
 export function fusionFor(art, mats, catalog = []) {
@@ -213,8 +210,8 @@ function artifactActions(state, actor) {
   const mp = state.mp[team]
   const out = []
   const full = summonsOf(state, actor).length >= SUMMON_MAX
-  const mats = state.materials[team]
   for (const art of state.artifacts[team]) {
+    const mats = state.artifacts[team].filter((x) => x !== art) // 素材にできるのは、手持ちの別のアーティファクト
     if (!art.def.noField && !full && mp >= art.cost) out.push({ type: 'playArtifact', artifact: art.slot })
     if (!(art.def.fusions || []).length || mp < (art.def.fuse?.cost ?? 0)) continue
     const max = Math.min(art.def.fuse?.max ?? MAX_FUSE_MATERIALS, mats.length)
@@ -232,13 +229,13 @@ function doFuse(state, actor, action) {
   const who = team === 'A' ? '自分' : '相手'
   const i = state.artifacts[team].findIndex((a) => a.slot === action.artifact)
   const art = state.artifacts[team][i]
-  const mats = action.materials.map((sl) => state.materials[team].find((m) => m.slot === sl))
+  const mats = action.materials.map((sl) => state.artifacts[team].find((m) => m.slot === sl))
   const into = fusionFor(art, mats, state.artifactCatalog)
   state.mp[team] -= art.def.fuse?.cost ?? 0
-  state.materials[team] = state.materials[team].filter((m) => !action.materials.includes(m.slot))
   const next = makeArtifact(into, 0)
   next.slot = art.slot
   state.artifacts[team][i] = next
+  state.artifacts[team] = state.artifacts[team].filter((m) => !action.materials.includes(m.slot)) // 素材にしたアーティファクトは、手持ちから無くなる
   state.log.push(`${who}は【${mats.map((m) => m.name).join('・')}】を融合して、アーティファクト【${art.name}】は【${next.name}】に変身した`)
   emit(state, 'fuse', { team, from: art.name, into: next.name, materials: mats.map((m) => m.name) })
 }
@@ -338,9 +335,8 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
     // 自分のキャラのターン中に、枠1つにつき1回、MPを払って使える
     spells: { A: (opts.spells?.A || []).slice(0, MAX_SPELL_SLOTS).map(makeSpell), B: (opts.spells?.B || []).slice(0, MAX_SPELL_SLOTS).map(makeSpell) },
     artifactCatalog: opts.artifactCatalog || [], // 融合の変身先(idや名前で書かれたもの)を探す一覧
-    // アーティファクトと、融合の素材(opts.artifacts / opts.materials = { A: [定義...], B: [...] })
+    // アーティファクト(opts.artifacts = { A: [定義...], B: [...] })
     artifacts: { A: (opts.artifacts?.A || []).slice(0, MAX_HAND).map(makeArtifact), B: (opts.artifacts?.B || []).slice(0, MAX_HAND).map(makeArtifact) },
-    materials: { A: (opts.materials?.A || []).slice(0, Math.max(0, MAX_HAND - (opts.artifacts?.A || []).length)).map(makeMaterial), B: (opts.materials?.B || []).slice(0, Math.max(0, MAX_HAND - (opts.artifacts?.B || []).length)).map(makeMaterial) },
     casting: null, lastAbility: null, abilitySeq: 0, means: '', // means = いま働いている攻撃手段の名前(スキル名・特性名など。画面の「○○の△△!」用)
     events: [], rec: opts.record !== false, // events = 直近の行動で起きたことの記録(画面で1つずつ再生する用)
   }
@@ -1329,7 +1325,7 @@ function runEffects(state, source, effects, ctx = {}) {
           const n = e.count ?? 1
           let given = 0
           for (let i = 0; i < n; i++) {
-            if (list.length + state.materials[source.team].length >= MAX_HAND) { state.log.push(`手持ちが満杯で、アーティファクト【${e.artifact.name}】は付与できなかった`); break }
+            if (list.length >= MAX_HAND) { state.log.push(`手持ちが満杯で、アーティファクト【${e.artifact.name}】は付与できなかった`); break }
             const next = Math.max(-1, ...list.map((x) => Number(x.slot.slice(2)))) + 1
             list.push(makeArtifact(e.artifact, next)); given++
           }
