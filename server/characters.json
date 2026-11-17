@@ -88,6 +88,8 @@
   { "id": "kronos_03", "name": "超可愛の使い・リーノ", "class": "クロノス", "rarity": "legend", "rotation": "10" },
   { "id": "nemesis_01", "name": "ビビッドインベンター・イリス", "class": "ネメシス", "rarity": "bronze", "rotation": "1" },
   { "id": "nemesis_02", "name": "アンストッパブルガンナー", "class": "ネメシス", "rarity": "bronze", "rotation": "1" },
+  { "id": "nemesis_03", "name": "愛執のドールユーザー", "class": "ネメシス", "rarity": "silver", "rotation": "1" },
+  { "id": "nemesis_04", "name": "オートマタアサシン", "class": "ネメシス", "rarity": "bronze", "rotation": "1" },
   { "id": "nightmare_01", "name": "無名の悪魔", "class": "ナイトメア", "rarity": "bronze", "rotation": "1" },
   { "id": "nightmare_02", "name": "辣腕の死神・ミーノ", "class": "ナイトメア", "rarity": "silver", "rotation": "1" },
   { "id": "nightmare_03", "name": "ナイトメア・ヴェリィ", "class": "ナイトメア", "rarity": "silver", "rotation": "1" },
