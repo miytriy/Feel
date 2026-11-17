@@ -1448,6 +1448,7 @@ function fire(state, trigger, unit, ctx = {}, from = 0) {
     const pf = filterOf(p, PASSIVE_FILTER_KEYS) // 出た / 倒れたユニット(ctx.other)の絞り込み
     if (hasFilter(pf) && !matchUnit(ctx.other, pf)) continue
     if (earthShort(state, unit.team, p.effects)) continue // 土の印が足りない【土の秘術】の能力は、発動しない(ログなし)
+    if (p.oncePerTurn) { if (p.usedSeq === (state.turnSeq || 0)) continue; p.usedSeq = state.turnSeq || 0 } // oncePerTurn: true の能力は、1ターンに1回まで(「それぞれのキャラクターのターンごとに1回」)
     state.log.push(`${unit.name}の${bracket(p.name || TRIGGER_LABELS[trigger])}`)
     noteAbility(state, p.tag ?? TRIGGER_LABELS[trigger] ?? trigger, unit.name, p.name && p.name !== (p.tag ?? TRIGGER_LABELS[trigger]) ? p.name : '', p.desc, unit.team, logOf(state, unit, p))
     runEffects(state, unit, p.effects, { ...ctx, trigger, nextPassive: i + 1 })
@@ -1655,6 +1656,7 @@ function startRound(state, opts) {
 
 function beginTurn(state, unit, opts) {
   state.actionsThisTurn = 0
+  state.turnSeq = (state.turnSeq || 0) + 1 // ターンの通し番号(oncePerTurn の能力が、ターンごとに1回までを数えるため)
   emit(state, 'turn', { uid: unit.uid, name: unit.name, team: unit.team })
   unit.usedTraits = []
   unit.skillsThisTurn = 0
