@@ -88,3 +88,22 @@ for (let i = 0; i < 60 && !s2.winner; i++) { const a = AI.chooseAction(s2, 3); a
 const plain = E.createBattle([by('witch_09')], [by('witch_09')], {})
 assert.ok(!E.legalActions(plain).some((a) => a.type === 'fuse' || a.type === 'playArtifact'))
 console.log('artifact tests ok')
+// ネメシスの連鎖: コア → アタック → デストロイα → (βとγを融合) → イクシードΩ
+{
+  const ld = async (n) => (await import(`../../web/src/battle/artifact/nemesis/tokens/nemesis_${n}.js`)).default
+  const [al, be, ga, om] = [await ld('destroy_alpha'), await ld('destroy_beta'), await ld('destroy_gamma'), await ld('exceed_omega')]
+  for (const d of [al, be, ga, om]) assert.deepEqual(validateArtifact(d), [])
+  const cat = [al, be, ga, om]
+  const mat = (d) => ({ id: d.id, name: d.name, cost: d.cost, type: d.type, amulet: false })
+  let n = mkN([al], [mat(be), mat(ga)], cat)
+  const fs = act(n).filter((a) => a.type === 'fuse')
+  assert.deepEqual(fs.map((a) => a.materials.join()), ['mt0,mt1']) // βだけ・γだけでは融合できない(種類2のときだけ)
+  n = E.applyAction(n, fs[0])
+  assert.equal(n.artifacts.A[0].name, 'イクシードアーティファクトΩ')
+  // Ωを場に出す: MP10。疾走・守護・オーラを持つ
+  n.mp.A = 10
+  n = E.applyAction(n, act(n).find((a) => a.type === 'playArtifact'))
+  const om2 = n.units.find((x) => x.name === 'イクシードアーティファクトΩ')
+  assert.ok(om2 && om2.keywords.includes('dash') && om2.keywords.includes('guard') && om2.keywords.includes('aura'))
+  console.log('nemesis chain ok')
+}

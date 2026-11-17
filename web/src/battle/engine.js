@@ -182,7 +182,7 @@ function makeSpell(def, i) {
 //       ・cost = 素材の合計コスト / kinds = 素材の種類数(idの種類) / count = 素材の枚数
 //  ・【場に出す】: 好きな段階で、MPを払って場に出せる(召喚物として、ユニットになる)。出したら手持ちから無くなる
 //  ・noField: true のアーティファクトは、場に出せない(「フィールドに存在できない」)
-//  ・fuse.accept: { type, amulet } = 融合できる素材の種類(素材カードの type / amulet が合うものだけ)
+//  ・fuse.accept: { type, amulet, ids } = 融合できる素材の種類(素材カードの type / amulet が合うものだけ)
 //  どちらも、スペルと同じく、キャラの行動(スキル・特性)は消費しない
 export const MAX_ARTIFACT_SLOTS = 3 // 手持ちのアーティファクトの数(仮。環境を見て変更する)
 export const MAX_MATERIAL_SLOTS = 5 // 手持ちの素材カードの数(仮)
@@ -197,7 +197,7 @@ function makeMaterial(def, i) {
 // 素材の組み合わせに合う変身先(なければ null)
 export function fusionFor(art, mats, catalog = []) {
   const fuse = art.def.fuse || {}
-  if (fuse.accept && !mats.every((m) => (fuse.accept.type == null || m.type === fuse.accept.type) && (fuse.accept.amulet == null || m.amulet === fuse.accept.amulet))) return null // 融合できる素材の種類(例: タイプ「アーティファクト」のアミュレット)
+  if (fuse.accept && !mats.every((m) => (fuse.accept.type == null || m.type === fuse.accept.type) && (fuse.accept.amulet == null || m.amulet === fuse.accept.amulet) && (!fuse.accept.ids || fuse.accept.ids.includes(m.id)))) return null // 融合できる素材の種類(例: タイプ「アーティファクト」のアミュレット)
   const max = fuse.max ?? MAX_FUSE_MATERIALS
   if (!mats.length || mats.length > max) return null
   const cost = mats.reduce((a, m) => a + m.cost, 0)
