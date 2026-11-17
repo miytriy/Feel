@@ -184,8 +184,7 @@ function makeSpell(def, i) {
 //  ・noField: true のアーティファクトは、場に出せない(「フィールドに存在できない」)
 //  ・fuse.accept: { type, amulet, ids } = 融合できる素材の種類(素材カードの type / amulet が合うものだけ)
 //  どちらも、スペルと同じく、キャラの行動(スキル・特性)は消費しない
-export const MAX_ARTIFACT_SLOTS = 9 // 手持ちのアーティファクトの数(最大9つ)
-export const MAX_MATERIAL_SLOTS = 5 // 手持ちの素材カードの数(仮)
+export const MAX_HAND = 9 // 手持ち(アーティファクトと素材カードを合わせて、最大9つ)
 export const MAX_FUSE_MATERIALS = 3 // 1回の融合に使える素材の最大数(アーティファクトの fuse.max で変えられる)
 function makeArtifact(def, i) {
   markFollowers(def)
@@ -218,10 +217,13 @@ function artifactActions(state, actor) {
   for (const art of state.artifacts[team]) {
     if (!art.def.noField && !full && mp >= art.cost) out.push({ type: 'playArtifact', artifact: art.slot })
     if (!(art.def.fusions || []).length || mp < (art.def.fuse?.cost ?? 0)) continue
-    for (let mask = 1; mask < 1 << mats.length; mask++) { // 素材のすべての組み合わせ(手持ちは最大 MAX_MATERIAL_SLOTS 枚なので、最大31通り)
-      const pick = mats.filter((_, i) => mask & (1 << i))
-      if (fusionFor(art, pick, state.artifactCatalog)) out.push({ type: 'fuse', artifact: art.slot, materials: pick.map((m) => m.slot) })
+    const max = Math.min(art.def.fuse?.max ?? MAX_FUSE_MATERIALS, mats.length)
+    const walk = (start, pick) => { // 素材の組み合わせ(最大 fuse.max 枚まで。手持ちは最大9枚なので、数は少ない)
+      if (pick.length && fusionFor(art, pick, state.artifactCatalog)) out.push({ type: 'fuse', artifact: art.slot, materials: pick.map((m) => m.slot) })
+      if (pick.length >= max) return
+      for (let k = start; k < mats.length; k++) walk(k + 1, [...pick, mats[k]])
     }
+    walk(0, [])
   }
   return out
 }
@@ -337,8 +339,8 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
     spells: { A: (opts.spells?.A || []).slice(0, MAX_SPELL_SLOTS).map(makeSpell), B: (opts.spells?.B || []).slice(0, MAX_SPELL_SLOTS).map(makeSpell) },
     artifactCatalog: opts.artifactCatalog || [], // 融合の変身先(idや名前で書かれたもの)を探す一覧
     // アーティファクトと、融合の素材(opts.artifacts / opts.materials = { A: [定義...], B: [...] })
-    artifacts: { A: (opts.artifacts?.A || []).slice(0, MAX_ARTIFACT_SLOTS).map(makeArtifact), B: (opts.artifacts?.B || []).slice(0, MAX_ARTIFACT_SLOTS).map(makeArtifact) },
-    materials: { A: (opts.materials?.A || []).slice(0, MAX_MATERIAL_SLOTS).map(makeMaterial), B: (opts.materials?.B || []).slice(0, MAX_MATERIAL_SLOTS).map(makeMaterial) },
+    artifacts: { A: (opts.artifacts?.A || []).slice(0, MAX_HAND).map(makeArtifact), B: (opts.artifacts?.B || []).slice(0, MAX_HAND).map(makeArtifact) },
+    materials: { A: (opts.materials?.A || []).slice(0, Math.max(0, MAX_HAND - (opts.artifacts?.A || []).length)).map(makeMaterial), B: (opts.materials?.B || []).slice(0, Math.max(0, MAX_HAND - (opts.artifacts?.B || []).length)).map(makeMaterial) },
     casting: null, lastAbility: null, abilitySeq: 0, means: '', // means = いま働いている攻撃手段の名前(スキル名・特性名など。画面の「○○の△△!」用)
     events: [], rec: opts.record !== false, // events = 直近の行動で起きたことの記録(画面で1つずつ再生する用)
   }
@@ -1322,12 +1324,12 @@ function runEffects(state, source, effects, ctx = {}) {
           else source.traits.push({ ...structuredClone(e.trait), charges: n })
           break
         }
-        case 'giveArtifact': { // アーティファクトを手持ちに付与する(手持ちが MAX_ARTIFACT_SLOTS で満杯なら、付与できない)
+        case 'giveArtifact': { // アーティファクトを手持ちに付与する(手持ちが MAX_HAND(9)で満杯なら、付与できない)
           const list = state.artifacts[source.team]
           const n = e.count ?? 1
           let given = 0
           for (let i = 0; i < n; i++) {
-            if (list.length >= MAX_ARTIFACT_SLOTS) { state.log.push(`手持ちが満杯で、アーティファクト【${e.artifact.name}】は付与できなかった`); break }
+            if (list.length + state.materials[source.team].length >= MAX_HAND) { state.log.push(`手持ちが満杯で、アーティファクト【${e.artifact.name}】は付与できなかった`); break }
             const next = Math.max(-1, ...list.map((x) => Number(x.slot.slice(2)))) + 1
             list.push(makeArtifact(e.artifact, next)); given++
           }

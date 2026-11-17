@@ -116,3 +116,12 @@ console.log('artifact tests ok')
   assert.deepEqual(n.artifacts.A.map((x) => x.name), ['パスト・コア'])
   console.log('iris ok')
 }
+// 手持ちは、アーティファクトと素材を合わせて最大9つ
+{
+  const arts = Array.from({ length: 7 }, (_, i) => unit(`h${i}`, `h${i}`, { cost: 1 }))
+  const mats9 = Array.from({ length: 5 }, (_, i) => M(`hm${i}`, 1))
+  const n = settle(E.createBattle([by('witch_09')], [by('witch_09')], { artifacts: { A: arts, B: [] }, materials: { A: mats9, B: [] } }))
+  assert.equal(n.artifacts.A.length, 7)
+  assert.equal(n.materials.A.length, 2) // 9 - 7
+  console.log('hand cap ok')
+}
