@@ -12,6 +12,7 @@ export function validateArtifact(def, { expectedId, depth = 0 } = {}) {
     if (typeof def.fuse !== 'object') errors.push('fuse は { max, cost } の形にしてください')
     else {
       if (def.fuse.max != null && !(Number.isInteger(def.fuse.max) && def.fuse.max >= 1)) errors.push('fuse.max は1以上の整数にしてください')
+      if (def.fuse.accept != null && typeof def.fuse.accept !== 'object') errors.push('fuse.accept は { type, amulet } の形にしてください')
       if (def.fuse.cost != null && !(Number.isInteger(def.fuse.cost) && def.fuse.cost >= 0)) errors.push('fuse.cost は0以上の整数にしてください')
     }
   }
@@ -24,6 +25,7 @@ export function validateArtifact(def, { expectedId, depth = 0 } = {}) {
       for (const k of Object.keys(f.when || {})) if (!WHEN_KEYS.includes(k)) errors.push(`${at}.when: 「${k}」は使えません(使えるのは ${WHEN_KEYS.join(' / ')})`)
       if (f.when?.ids != null && !Array.isArray(f.when.ids)) errors.push(`${at}.when.ids は素材のidの配列にしてください`)
       if (!f.into) return errors.push(`${at}: into(変身先のアーティファクト)がありません`)
+      if (typeof f.into === 'string') return // 変身先のidか名前(まだ無いカードでもよい)
       for (const m of validateArtifact(f.into, { depth: depth + 1 })) errors.push(`${at}.into: ${m}`)
     })
   }

@@ -181,6 +181,8 @@ function makeSpell(def, i) {
 //       ・ベース = このアーティファクト自身(変身後は、変身先の fusions が次の段階になる)
 //       ・cost = 素材の合計コスト / kinds = 素材の種類数(idの種類) / count = 素材の枚数
 //  ・【場に出す】: 好きな段階で、MPを払って場に出せる(召喚物として、ユニットになる)。出したら手持ちから無くなる
+//  ・noField: true のアーティファクトは、場に出せない(「フィールドに存在できない」)
+//  ・fuse.accept: { type, amulet } = 融合できる素材の種類(素材カードの type / amulet が合うものだけ)
 //  どちらも、スペルと同じく、キャラの行動(スキル・特性)は消費しない
 export const MAX_ARTIFACT_SLOTS = 3 // 手持ちのアーティファクトの数(仮。環境を見て変更する)
 export const MAX_MATERIAL_SLOTS = 5 // 手持ちの素材カードの数(仮)
@@ -190,11 +192,12 @@ function makeArtifact(def, i) {
   return { slot: `af${i}`, id: def.id, name: def.name, cost: def.cost ?? 0, desc: def.desc ?? '', def }
 }
 function makeMaterial(def, i) {
-  return { slot: `mt${i}`, id: def.id, name: def.name, cost: def.cost ?? 0, desc: def.desc ?? '' }
+  return { slot: `mt${i}`, id: def.id, name: def.name, cost: def.cost ?? 0, desc: def.desc ?? '', type: def.type ?? null, amulet: !!def.amulet }
 }
 // 素材の組み合わせに合う変身先(なければ null)
-export function fusionFor(art, mats) {
+export function fusionFor(art, mats, catalog = []) {
   const fuse = art.def.fuse || {}
+  if (fuse.accept && !mats.every((m) => (fuse.accept.type == null || m.type === fuse.accept.type) && (fuse.accept.amulet == null || m.amulet === fuse.accept.amulet))) return null // 融合できる素材の種類(例: タイプ「アーティファクト」のアミュレット)
   const max = fuse.max ?? MAX_FUSE_MATERIALS
   if (!mats.length || mats.length > max) return null
   const cost = mats.reduce((a, m) => a + m.cost, 0)
@@ -203,7 +206,8 @@ export function fusionFor(art, mats) {
   const ok = (w) => (w.costMin == null || cost >= w.costMin) && (w.costMax == null || cost <= w.costMax) && (w.kindsMin == null || kinds >= w.kindsMin) && (w.kindsMax == null || kinds <= w.kindsMax) &&
     (w.countMin == null || n >= w.countMin) && (w.countMax == null || n <= w.countMax) && (!w.ids || w.ids.every((id) => mats.some((m) => m.id === id)))
   const hit = (art.def.fusions || []).find((f) => ok(f.when || {}))
-  return hit ? hit.into : null
+  if (!hit) return null
+  return typeof hit.into === 'string' ? (catalog.find((c) => c.id === hit.into || c.name === hit.into) || null) : hit.into // into は、定義そのもの / 変身先のidか名前(まだ無いカードは、できあがるまで融合できない)
 }
 function artifactActions(state, actor) {
   const team = actor.team
@@ -212,11 +216,11 @@ function artifactActions(state, actor) {
   const full = summonsOf(state, actor).length >= SUMMON_MAX
   const mats = state.materials[team]
   for (const art of state.artifacts[team]) {
-    if (!full && mp >= art.cost) out.push({ type: 'playArtifact', artifact: art.slot })
+    if (!art.def.noField && !full && mp >= art.cost) out.push({ type: 'playArtifact', artifact: art.slot })
     if (!(art.def.fusions || []).length || mp < (art.def.fuse?.cost ?? 0)) continue
     for (let mask = 1; mask < 1 << mats.length; mask++) { // 素材のすべての組み合わせ(手持ちは最大 MAX_MATERIAL_SLOTS 枚なので、最大31通り)
       const pick = mats.filter((_, i) => mask & (1 << i))
-      if (fusionFor(art, pick)) out.push({ type: 'fuse', artifact: art.slot, materials: pick.map((m) => m.slot) })
+      if (fusionFor(art, pick, state.artifactCatalog)) out.push({ type: 'fuse', artifact: art.slot, materials: pick.map((m) => m.slot) })
     }
   }
   return out
@@ -227,7 +231,7 @@ function doFuse(state, actor, action) {
   const i = state.artifacts[team].findIndex((a) => a.slot === action.artifact)
   const art = state.artifacts[team][i]
   const mats = action.materials.map((sl) => state.materials[team].find((m) => m.slot === sl))
-  const into = fusionFor(art, mats)
+  const into = fusionFor(art, mats, state.artifactCatalog)
   state.mp[team] -= art.def.fuse?.cost ?? 0
   state.materials[team] = state.materials[team].filter((m) => !action.materials.includes(m.slot))
   const next = makeArtifact(into, 0)
@@ -331,6 +335,7 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
     // スペル(プレイヤー能力): opts.spells = { A: [スペル定義...], B: [...] }(同じスペルを何回入れてもよい。最大 MAX_SPELL_SLOTS 回分)
     // 自分のキャラのターン中に、枠1つにつき1回、MPを払って使える
     spells: { A: (opts.spells?.A || []).slice(0, MAX_SPELL_SLOTS).map(makeSpell), B: (opts.spells?.B || []).slice(0, MAX_SPELL_SLOTS).map(makeSpell) },
+    artifactCatalog: opts.artifactCatalog || [], // 融合の変身先(idや名前で書かれたもの)を探す一覧
     // アーティファクトと、融合の素材(opts.artifacts / opts.materials = { A: [定義...], B: [...] })
     artifacts: { A: (opts.artifacts?.A || []).slice(0, MAX_ARTIFACT_SLOTS).map(makeArtifact), B: (opts.artifacts?.B || []).slice(0, MAX_ARTIFACT_SLOTS).map(makeArtifact) },
     materials: { A: (opts.materials?.A || []).slice(0, MAX_MATERIAL_SLOTS).map(makeMaterial), B: (opts.materials?.B || []).slice(0, MAX_MATERIAL_SLOTS).map(makeMaterial) },
