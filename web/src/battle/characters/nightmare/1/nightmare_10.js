@@ -7,10 +7,10 @@ export default {
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     // 【ネクロマンス_8】= graveCost: 8(墓場を8消費して働く。足りないときは進化しない)
-    { name: 'ファンファーレ', trigger: 'fanfare', desc: '【ネクロマンス_8】これは進化する。', effects: [{ type: 'evolve', graveCost: 8 }] },
+    { name: 'ファンファーレ', trigger: 'fanfare', desc: '【ネクロマンス_8】これは進化する。', log: '【ネクロマンス_8】これは進化する。', effects: [{ type: 'evolve', graveCost: 8 }] },
     // enterType: 出てきたのが「タイプ:死者」のときだけ働く
-    { name: '死者の必殺', trigger: 'allyEnter', enterType: '死者', desc: '自分の場に「タイプ:死者」が出たとき、それは【必殺】を持つ。', effects: [{ type: 'gainKeyword', keyword: 'finisher', target: 'entered' }] },
+    { name: '常時', trigger: 'allyEnter', enterType: '死者', desc: '自分の場に死者・フォロワーが出たとき、それは【必殺】を持つ。', log: 'それは【必殺】を持つ。', effects: [{ type: 'gainKeyword', keyword: 'finisher', target: 'entered' }] },
     // 進化したとき(EPでも、効果での進化でも働く)
-    { name: '進化したとき', trigger: 'onEvolved', desc: 'これが進化したとき、『ゴースト』1体を召喚する。', effects: [{ type: 'summon', count: 1, unit: ghost }] },
+    { name: '進化したとき', trigger: 'onEvolved', plain: true, desc: 'これが進化したとき、『ゴースト』1体を召喚する。', log: '『ゴースト』1体を召喚する。', effects: [{ type: 'summon', count: 1, unit: ghost }] },
   ],
 }
