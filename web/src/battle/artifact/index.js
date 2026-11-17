@@ -10,18 +10,21 @@ const artMods = import.meta.glob(['./*/*/*.js', './*/*/tokens/*.js', './*/tokens
 const matMods = import.meta.glob(['./materials/*.js', './materials/*/*.js'], { eager: true })
 
 const arts = []
+const tokens = [] // 変身先などのトークン
 for (const [path, mod] of Object.entries(artMods)) {
   if (path.startsWith('./materials/') || /\/_[^/]*\.js$/.test(path)) continue
   const def = mod.default
   const isToken = path.includes('/tokens/')
   const errors = validateArtifact(def, { expectedId: isToken ? undefined : path.split('/').pop().replace(/\.js$/, '') })
   if (errors.length) { console.error(`[アーティファクトデータの問題] ${path}\n - ${errors.join('\n - ')}`); continue }
-  if (isToken) continue
+  if (isToken) { tokens.push(def); continue }
   if (arts.some((c) => c.id === def.id)) { console.error(`[アーティファクトデータの問題] ${path}: id「${def.id}」が重複しています`); continue }
   const rotation = def.rotation ?? rotationOfPath(path)
   arts.push({ ...def, unitType: 'アーティファクト', ...(rotation ? { rotation } : {}) })
 }
 export const ALL_ARTIFACTS = arts.sort((a, b) => a.id.localeCompare(b.id))
+// 融合の変身先を探す一覧(アーティファクト + トークン)。バトルを作るときに artifactCatalog として渡す
+export const ARTIFACT_CATALOG = [...ALL_ARTIFACTS, ...tokens]
 export const artifactById = (id) => ALL_ARTIFACTS.find((c) => c.id === id)
 
 const mats = []

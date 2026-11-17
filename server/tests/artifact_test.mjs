@@ -62,6 +62,24 @@ const f3 = act(s3).filter((a) => a.type === 'fuse')
 assert.deepEqual(f3.map((a) => a.materials.join()), ['mt0']) // 「アーティファクト・アミュレット」だけ(mt1は不可)
 s3 = E.applyAction(s3, f3[0])
 assert.equal(s3.artifacts.A[0].name, '上位')
+// ネメシスの実カード: フィーチャー・コア + アーティファクト・アミュレット → アタックアーティファクト。ユニットのコスト合計で次の段階が決まる
+const fc = (await import('../../web/src/battle/artifact/nemesis/tokens/nemesis_feature_core.js')).default
+const at = (await import('../../web/src/battle/artifact/nemesis/tokens/nemesis_attack_artifact.js')).default
+const ca = (await import('../../web/src/battle/artifact/nemesis/tokens/nemesis_castle_artifact.js')).default
+const mkN = (arts, mats, cat) => settle(E.createBattle([by('witch_09')], [by('witch_09')], { artifacts: { A: arts, B: [] }, materials: { A: mats, B: [] }, artifactCatalog: cat }))
+let n1 = mkN([fc], [A('amu', 'アーティファクト', true)], [at, ca])
+n1 = E.applyAction(n1, act(n1).find((a) => a.type === 'fuse'))
+assert.equal(n1.artifacts.A[0].name, 'アタックアーティファクト')
+const dest = (n) => unit('d' + n, 'デストロイアーティファクト' + n)
+const U = (id, cost) => ({ id, name: id, cost, type: 'アーティファクト', amulet: false })
+const cat2 = [dest('α'), dest('β'), dest('γ')]
+for (const [mats, want] of [[[U('u1', 1)], 'α'], [[U('u2', 2)], 'β'], [[U('u1', 1), U('u2', 2)], 'γ'], [[U('u3', 3)], 'γ']]) {
+  let n = mkN([at], mats, cat2)
+  const f = act(n).filter((a) => a.type === 'fuse' && a.materials.length === mats.length)[0]
+  n = E.applyAction(n, f)
+  assert.equal(n.artifacts.A[0].name, 'デストロイアーティファクト' + want)
+}
+assert.ok(!act(mkN([at], [A('amu', 'アーティファクト', true)], cat2)).some((a) => a.type === 'fuse')) // アミュレットは「ユニット」の素材にできない
 // CPUは、アーティファクトを使わない(行動を選んでもエラーにならない)
 const AI = await import('../../web/src/battle/ai.js')
 let s2 = mk([base], [M('m_a', 2), M('m_b', 3)])
