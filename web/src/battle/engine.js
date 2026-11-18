@@ -645,6 +645,7 @@ const TARGETS = {
   enemies: { side: 'enemy', scope: 'auto', pick: 'all', enemyAuto: true },
   allyFollowers: { side: 'ally', scope: 'follower', pick: 'all' },
   enemyFollowers: { side: 'enemy', scope: 'follower', pick: 'all' },
+  enemyFollowerRandom: { side: 'enemy', scope: 'follower', pick: 'random' }, // 相手の場のフォロワー(キャラ + 召喚物)からランダム1体
   enemyField: { side: 'enemy', scope: 'unit', pick: 'all' },
   enemyTopAtk: { side: 'enemy', scope: 'main', pick: 'topAtk' }, // 相手の場のキャラクターのうち、攻撃力が最大のものからランダム1体
   enemyRandom: { side: 'enemy', scope: 'auto', pick: 'random', enemyAuto: true },
