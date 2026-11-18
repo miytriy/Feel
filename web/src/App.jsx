@@ -4,7 +4,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth } from './firebase.js'
 import { openLogin } from './LoginDialog.jsx'
 import {
-  gateStatus, gateEnter, gateCheck, gateMe, getGateToken, setGateToken, fetchMe, enhanceChar, saveKeys, exchangeTicket, exchangeCrystal, buyPass, fetchCareer, recordMatch, clearCareer, drawGacha, claimLoginBonus, startBattleTicket, finishBattle, fetchGifts, claimGift, redeemCode, markMailRead, setMailStar, deleteMail, purgeReadMail,
+  gateStatus, gateEnter, gateCheck, gateMe, getGateToken, setGateToken, fetchMe, enhanceChar, saveKeys, saveParties, exchangeTicket, exchangeCrystal, buyPass, fetchCareer, recordMatch, clearCareer, drawGacha, claimLoginBonus, startBattleTicket, finishBattle, fetchGifts, claimGift, redeemCode, markMailRead, setMailStar, deleteMail, purgeReadMail,
 } from './api.js'
 import BattleScreen from './BattleScreen.jsx'
 import CareerScreen from './CareerScreen.jsx'
@@ -35,7 +35,7 @@ import { loadSettings, saveSettings, cpuDelayOf } from './settings.js'
 import { ALL_CHARACTERS } from './battle/characters/index.js'
 import { setEnhanceLevels } from './enhance.js'
 import { ALL_SPELLS } from './battle/spells/index.js'
-import { loadParties, saveParty, getActiveParty, setActiveParty, partyToSlots, partyToSpells, partyCount } from './battle/parties.js'
+import { loadParties, saveParty, getActiveParty, setActiveParty, partyToSlots, partyToSpells, partyCount, putParty, cacheParties, hasAnyParty, normalize as normalizeParties } from './battle/parties.js'
 import ErrorBoundary from './ErrorBoundary.jsx'
 import GateScreen from './GateScreen.jsx'
 import { useIsDesktop, useRemembered, C, FONT } from './ui.js'
@@ -180,14 +180,25 @@ export default function App() {
     return () => { alive = false }
   }, [authLoading, user, gateTry])
 
-  // パーティーは、アカウントごとに、この端末のブラウザに保存してある
-  // ログインなしで解放しているときは、'guest' という名前で、この端末に保存する
+  // パーティー(編成)は、ログイン中はアカウント(サーバー)に保存する(別の端末でも同じになる。本人だけが読める)。この端末には控えだけ置く
+  // ログインなしで解放しているときは、'guest' という名前で、この端末だけに保存する
   const partyUid = user ? user.uid : unlockLv >= 1 ? 'guest' : null
+  const partiesFor = useRef(null)
   useEffect(() => {
-    if (!partyUid) { setParties(null); setActiveIdx(null); return }
-    setParties(loadParties(partyUid))
-    setActiveIdx(getActiveParty(partyUid))
-  }, [partyUid])
+    if (!partyUid) { partiesFor.current = null; setParties(null); setActiveIdx(null); return }
+    if (!user) { setParties(loadParties(partyUid)); setActiveIdx(getActiveParty(partyUid)); return }
+    if (!me || partiesFor.current === user.uid) return // アカウントの情報が届くまで待つ
+    partiesFor.current = user.uid
+    if (me.parties && Array.isArray(me.parties.list)) { // アカウントにあれば、それを使う
+      const list = normalizeParties(me.parties.list)
+      const act = Number.isInteger(me.parties.active) && me.parties.active >= 0 && me.parties.active < list.length ? me.parties.active : null
+      setParties(list); setActiveIdx(act); cacheParties(user.uid, list); setActiveParty(user.uid, act)
+      return
+    }
+    const local = loadParties(user.uid) // 初めて: この端末にあった編成を、アカウントに上げる
+    setParties(local); setActiveIdx(getActiveParty(user.uid))
+    if (hasAnyParty(local)) saveParties(local, getActiveParty(user.uid)).catch(() => {})
+  }, [partyUid, user, me])
 
   useEffect(() => {
     if (!user || !gateOpen) return
@@ -367,12 +378,14 @@ export default function App() {
         parties,
         activeIdx,
         save: (i, slots, spellSet) => {
-          const all = saveParty(partyUid, i, slots, spellSet)
+          const all = user ? putParty(parties, i, slots, spellSet) : saveParty(partyUid, i, slots, spellSet)
           if (!all) return false
+          if (user) { cacheParties(partyUid, all); saveParties(all, i).catch(() => {}) } // アカウントに保存する
           setParties(all)
+          if (user) setActiveIdx(i)
           return true
         },
-        setActive: (i) => { setActiveIdx(i); setActiveParty(partyUid, i) },
+        setActive: (i) => { setActiveIdx(i); setActiveParty(partyUid, i); if (user) saveParties(parties, i).catch(() => {}) },
       }
     : null
 

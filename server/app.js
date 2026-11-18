@@ -96,7 +96,7 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
     const today = dayKey(t)
     const daily = data.battleDaily && data.battleDaily.day === today ? data.battleDaily.count : 0
     return {
-      gems: data.gems, tickets: ticketsOf(data), crystals: Number(data.crystals) || 0, ticketCost: CONFIG.TICKET_COST, crystalFree: !!CONFIG.CRYSTAL_FREE, pass: { ...passStatus(data.pass, t), cost: CONFIG.PASS_CRYSTALS, days: CONFIG.PASS_DAYS, dailyGems: CONFIG.PASS_DAILY_GEMS }, pityCount: data.pityCount, pickupPity: pickupPityNow(data), reprintPity: bannerPityNow(data, 'reprint'), banners: bannersInfo(new Date(now())), owned: data.owned, sig: data.sig || {}, enh: data.enh || {}, keys: data.keys || null,
+      gems: data.gems, tickets: ticketsOf(data), crystals: Number(data.crystals) || 0, ticketCost: CONFIG.TICKET_COST, crystalFree: !!CONFIG.CRYSTAL_FREE, pass: { ...passStatus(data.pass, t), cost: CONFIG.PASS_CRYSTALS, days: CONFIG.PASS_DAYS, dailyGems: CONFIG.PASS_DAILY_GEMS }, pityCount: data.pityCount, pickupPity: pickupPityNow(data), reprintPity: bannerPityNow(data, 'reprint'), banners: bannersInfo(new Date(now())), owned: data.owned, sig: data.sig || {}, enh: data.enh || {}, keys: data.keys || null, parties: data.parties || null,
       loginBonus: { canClaim: lb.canClaim, streak: lb.streak, nextAmount: lb.nextAmount, passBonus: lb.canClaim ? passBonusOf(data.pass, t) : 0, cycle: CONFIG.LOGIN_BONUS },
       battle: { todayCount: daily, dailyLimit: CONFIG.BATTLE_REWARD_DAILY_LIMIT, rewards: CONFIG.BATTLE_REWARD },
     }
@@ -287,6 +287,27 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
       }
       await userRefOf(req.user.uid).set({ keys, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
       res.json({ keys })
+    } catch (e) {
+      handleError(res, e)
+    }
+  })
+
+  // パーティー(編成の保存枠)。アカウントに保存する(本人だけが読み書きできる)。形: { list: [{ ids: [キャラid|null ×7], spellIds: [...] } ×最大5], active: 番号|null }
+  app.post('/api/parties', requireAuth, async (req, res) => {
+    try {
+      const src = req.body?.list
+      if (!Array.isArray(src) || src.length > 5) throw new HttpError(400, 'パーティーの形がちがいます')
+      const idOk = (x) => typeof x === 'string' && x.length > 0 && x.length <= 64
+      const list = Array.from({ length: 5 }, (_, i) => {
+        const p = src[i]
+        if (!p || !Array.isArray(p.ids)) return { ids: Array(7).fill(null), spellIds: [] }
+        const ids = p.ids.slice(0, 7).map((x) => (idOk(x) ? x : null))
+        while (ids.length < 7) ids.push(null)
+        return { ids, spellIds: Array.isArray(p.spellIds) ? p.spellIds.filter(idOk).slice(0, 3) : [] }
+      })
+      const active = Number.isInteger(req.body?.active) && req.body.active >= 0 && req.body.active < 5 ? req.body.active : null
+      await userRefOf(req.user.uid).set({ parties: { list, active }, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+      res.json({ parties: { list, active } })
     } catch (e) {
       handleError(res, e)
     }

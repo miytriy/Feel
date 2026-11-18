@@ -10,7 +10,7 @@ const activeKey = (uid) => `feel.parties.active.v1.${uid}`
 export const emptyParty = () => ({ ids: Array(TOTAL_SLOTS).fill(null), spellIds: [] })
 
 // 保存データの形を整える(壊れたデータでも、必ず MAX_PARTIES 個の正しい形にする)
-function normalize(raw) {
+export function normalize(raw) {
   const list = Array.isArray(raw) ? raw : []
   return Array.from({ length: MAX_PARTIES }, (_, i) => {
     const p = list[i]
@@ -29,6 +29,19 @@ export function loadParties(uid, storage = globalThis.localStorage) {
     return normalize(null)
   }
 }
+
+// index番目だけを入れ替えた、新しいパーティー一覧を返す(保存はしない)。形が正しくないときは null
+export function putParty(all, index, slots, spellSet) {
+  if (!Number.isInteger(index) || index < 0 || index >= MAX_PARTIES) return null
+  const next = normalize(all)
+  next[index] = { ids: slots.map((c) => (c ? c.id : null)), spellIds: spellSet.map((sp) => sp.id) }
+  return next
+}
+// この端末に、パーティー一覧を控えとして保存する(アカウントの本体はサーバー)
+export function cacheParties(uid, all, storage = globalThis.localStorage) {
+  try { storage.setItem(partiesKey(uid), JSON.stringify(all)) } catch { /* 保存できなくても動く */ }
+}
+export const hasAnyParty = (all) => normalize(all).some((p) => p.ids.some(Boolean) || p.spellIds.length)
 
 // index番目のパーティーを保存する。成功したら、保存後の全パーティーを返す(失敗したら null)
 export function saveParty(uid, index, slots, spellSet, storage = globalThis.localStorage) {

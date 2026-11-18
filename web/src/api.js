@@ -48,6 +48,7 @@ export const exchangeTicket = (kind, count) => request('/api/exchange-ticket', {
 export const exchangeCrystal = (mode, amount) => request('/api/crystal', { method: 'POST', body: JSON.stringify({ mode, amount }) })
 export const buyPass = () => request('/api/pass/buy', { method: 'POST', body: JSON.stringify({}) })
 export const saveKeys = (keys) => request('/api/keys', { method: 'POST', body: JSON.stringify({ keys }) })
+export const saveParties = (list, active) => request('/api/parties', { method: 'POST', body: JSON.stringify({ list, active }) }) // パーティー(編成)は、アカウントに保存する
 export const enhanceChar = (id) => request('/api/enhance', { method: 'POST', body: JSON.stringify({ id }) })
 
 // ---- 通貨の配布 ----
