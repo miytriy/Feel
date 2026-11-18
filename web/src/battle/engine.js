@@ -253,7 +253,7 @@ function doPlayArtifact(state, actor, action, opts) {
 
 // ブーストで育つスペル(onBoost を持つもの): いまのXを、効果(addX × X を add に)と説明に反映する
 function refreshSpell(sp) {
-  if (!sp.onBoost) return
+  if (!sp.onBoost || sp.onBoost.noX) return // noX: Xを持たない(コストだけが変わる)スペル
   sp.effects = sp.baseEffects.map((e) => (e.addX != null ? { ...e, add: e.addX * sp.x } : e))
   sp.desc = `${sp.baseDesc}(いま X=${sp.x})`
 }
@@ -262,7 +262,7 @@ function refreshSpell(sp) {
 function growSpell(state, team, sp, n) {
   for (let k = 0; k < n; k++) {
     sp.x = Math.min(sp.onBoost.maxX ?? 99, sp.x + (sp.onBoost.x ?? 1)) // Xの増加は maxX(99)まで
-    if ((sp.costUps || 0) < (sp.onBoost.maxCostUps ?? 9)) { sp.cost += sp.onBoost.cost ?? 0; sp.costUps = (sp.costUps || 0) + 1 } // MPが増えるのは maxCostUps(9)回まで
+    if ((sp.costUps || 0) < (sp.onBoost.maxCostUps ?? 9)) { sp.cost = Math.max(sp.onBoost.minCost ?? 0, sp.cost + (sp.onBoost.cost ?? 0)); sp.costUps = (sp.costUps || 0) + 1 } // MPが増えるのは maxCostUps(9)回まで
     const tf = sp.onBoost.transform // 例: { at: 5, into: スペル定義 }(「Xが5以上なら、これは〇〇に変身する」)
     if (tf && sp.x >= tf.at) {
       const i = state.spells[team].indexOf(sp)
