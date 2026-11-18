@@ -14,9 +14,9 @@ export default {
     },
     {
       name: '進化時', trigger: 'onEvolve',
-      desc: '自分の場すべては2回スペルブーストする。',
-      log: '自分の場すべては2回スペルブーストする。',
-      effects: [{ type: 'boost', amount: 2, target: 'allyField' }],
+      desc: '2回スペルブーストする。',
+      log: '2回スペルブーストする。',
+      effects: [{ type: 'boost', amount: 2 }],
     },
   ],
 }

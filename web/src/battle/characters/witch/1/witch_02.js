@@ -7,10 +7,10 @@ export default {
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '1回スペルブーストする。', effects: [{ type: 'boost', amount: 1 }] },
     {
       name: '進化時', trigger: 'onEvolve',
-      desc: '相手の場のフォロワー1体を選ぶ。それに150の魔法ダメージ。自分の場すべては1回スペルブーストする。',
+      desc: '相手の場のフォロワー1体を選ぶ。それに150の魔法ダメージ。1回スペルブーストする。',
       effects: [
         { type: 'damage', stat: 'mag', mult: 0, add: 150, dmgType: 'magic', target: 'enemyOne', choose: true },
-        { type: 'boost', amount: 1, target: 'allyField' },
+        { type: 'boost', amount: 1 },
       ],
     },
   ],

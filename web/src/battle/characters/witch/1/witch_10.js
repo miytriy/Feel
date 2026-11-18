@@ -8,10 +8,10 @@ export default {
   passives: [
     {
       name: 'ファンファーレ', trigger: 'fanfare',
-      desc: '「アンの大英霊」を1体召喚する。自分の場すべては3回スペルブーストする。',
+      desc: '「アンの大英霊」を1体召喚する。3回スペルブーストする。',
       effects: [
         { type: 'summon', count: 1, unit: annHero },
-        { type: 'boost', amount: 3, target: 'allyField' },
+        { type: 'boost', amount: 3 },
       ],
     },
     {

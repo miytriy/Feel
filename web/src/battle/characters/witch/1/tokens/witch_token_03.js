@@ -5,6 +5,6 @@ export default {
   skill: { name: '攻撃', stat: 'mag', type: 'magic', mult: 1.25 }, // 敵単体に魔力125%分の魔法ダメージ
   passives: [
     // 攻撃時の能力は、パッシブ(trigger: onAttack)として書く
-    { name: '攻撃時', trigger: 'onAttack', desc: '自分の場すべては1回スペルブーストする。', effects: [{ type: 'boost', amount: 1, target: 'allyField' }] },
+    { name: '攻撃時', trigger: 'onAttack', desc: '1回スペルブーストする。', effects: [{ type: 'boost', amount: 1 }] },
   ],
 }

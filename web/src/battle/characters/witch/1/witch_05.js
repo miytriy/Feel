@@ -4,6 +4,6 @@ export default {
   tags: ['増幅', '自己強化', 'サポーター'],
   skill: { name: '攻撃', stat: 'mag', type: 'magic', mult: 1.25 }, // 相手単体に魔力125%分の魔法ダメージ
   passives: [
-    { name: '進化時', trigger: 'onEvolve', desc: '自分の場すべては2回スペルブーストする。', effects: [{ type: 'boost', amount: 2, target: 'allyField' }] },
+    { name: '進化時', trigger: 'onEvolve', desc: '2回スペルブーストする。', effects: [{ type: 'boost', amount: 2 }] },
   ],
 }
