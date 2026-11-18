@@ -54,6 +54,7 @@ export const KEYWORDS = {
   finisher: { label: '必殺', desc: 'スキルでダメージを与えるとき、ターゲットに対象の最大HP15%分の確定ダメージを与える。そのターゲットが召喚物だったとき、それを破壊する' },
   drain: { label: 'ドレイン', desc: 'スキルで与えたダメージと同じだけ自身を回復' },
   barrier: { label: 'バリア', desc: '攻撃を一回0ダメージにして壊れる' },
+  silence: { label: 'スキル発動不可', desc: 'スキルを発動できない' },
   earthSign: { label: '土の印', desc: '自分の場の土の印の数は合算される。土の印は土の秘術によって消費される。これは能力で破壊できず、相手の能力で選ばれない' },
 }
 // 能力名を【】でかこむ。『ファンファーレ【コンボ_3】』のように中に【】があるときは、【ファンファーレ】【コンボ_3】と分けて並べる
@@ -1226,6 +1227,16 @@ function runEffects(state, source, effects, ctx = {}) {
       state.log.push(`MP最大値が${state.mpMax[source.team]}になった`)
       continue
     }
+    if (e.type === 'refreshSpells') { // 使用済みのスペルを、すべてもう一度使える状態に戻す(使える回数は増えない)
+      for (const sp of state.spells[source.team]) sp.used = false
+      state.log.push('すべてのスペルが有効になった')
+      continue
+    }
+    if (e.type === 'mpFull') { // 自分のMPを上限まで回復する
+      state.mp[source.team] = state.mpMax[source.team]
+      state.log.push(`MPが上限(${state.mpMax[source.team]})まで回復した`)
+      continue
+    }
     if (e.type === 'mp') {
       state.mp[source.team] = Math.min(state.mpMax[source.team], state.mp[source.team] + (e.amount ?? 1))
       continue
@@ -1355,6 +1366,11 @@ function runEffects(state, source, effects, ctx = {}) {
           state.log.push(`スペル【${e.spell.name}】が${n}回使えるようになった`)
           break
         }
+        case 'setHp': // HPを value にする(最大HPまで。体力の概念のないアミュレットには効かない)
+          if (t.isAmulet || !t.alive) break
+          t.hp = Math.min(t.maxHp, e.value)
+          state.log.push(`${t.name}のHPは${Math.round(t.hp)}になった`)
+          break
         case 'setBaseSpd': // 基礎速度を value に変える(バフ・デバフは、その上にかかる)
           if (t.isAmulet) break
           t.base.spd = e.value
@@ -1376,6 +1392,7 @@ function runEffects(state, source, effects, ctx = {}) {
           if (k === 'stealth' && !t.stealth) t.stealth = true // 潜伏は持っているだけでなく、いま潜伏している状態にする
           if (!t.keywords.includes(k)) {
             t.keywords.push(k)
+            if (e.untilTurnEnd) t.tempKeywords = [...(t.tempKeywords || []), k] // untilTurnEnd: 対象自身のターンが終わるときまで
             state.log.push(`${t.name}は【${KEYWORDS[k]?.label || k}】を持つ`)
             emit(state, 'keyword', { target: t.uid, keyword: k, label: KEYWORDS[k]?.label || k })
           }
@@ -1624,7 +1641,7 @@ export function legalActions(state) {
   // 「1ターンにN回スキルを発動できる」(skillLimit)。2回目以降に必要なMPは nextSkillMp
   const skillsDone = actor.skillsThisTurn || 0
   const moreOk = skillsDone >= 1 && skillsDone < skillLimit(state, actor) && state.mp[actor.team] >= nextSkillMp(state, actor, skillsDone)
-  const canUseSkill = !actor.isAmulet && (actor.hasActed || hasKw(actor, 'rush') || hasKw(actor, 'dash')) && (skillsDone === 0 || moreOk)
+  const canUseSkill = !actor.isAmulet && !hasKw(actor, 'silence') && (actor.hasActed || hasKw(actor, 'rush') || hasKw(actor, 'dash')) && (skillsDone === 0 || moreOk)
   const targets = attackableTargets(state, actor)
   if (canUseSkill) for (const t of targets) actions.push({ type: 'skill', target: t.uid })
 
@@ -1726,6 +1743,10 @@ function endTurn(state, actor) {
   resolveDeaths(state)
   actor.curAV = actor.baseAV
   actor.acts = (actor.acts || 0) + 1
+  if (actor.tempKeywords?.length) { // 「自分のターン終了時まで」持つキーワード(スキル発動不可など)は、ここで無くなる
+    actor.keywords = actor.keywords.filter((k) => !actor.tempKeywords.includes(k))
+    actor.tempKeywords = []
+  }
   tickBuffs(state, actor)
   state.turns += 1
   state.active = null
