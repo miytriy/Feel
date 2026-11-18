@@ -248,8 +248,13 @@ function RelicDetail({ def, onOpen }) {
   )
 }
 
-export default function WikiScreen({ onExit }) {
-  const [nav, setNav] = useState({ section: null, sub: 'all', itemId: null })
+export default function WikiScreen({ onExit, focus = null }) {
+  // focus = { id, spell? }: 開いた瞬間に、そのキャラ(スペル)の詳細を出す(編成などから飛んでくる)
+  const [nav, setNav] = useState(() => {
+    if (!focus) return { section: null, sub: 'all', itemId: null }
+    const key = focus.spell ? 'spells' : AMULET_IDS.has(focus.id) ? 'amulets' : 'chars'
+    return { section: key, sub: firstSub(key), itemId: focus.id }
+  })
   const [query, setQuery] = useState('')
   const [rarity, setRarity] = useState('all')
   const [pickup, setPickup] = useRemembered('wiki.pickup', 'all') // ピックアップ(ローテーションの名前)で絞る。画面を出入りしても、最後に選んだものを残す

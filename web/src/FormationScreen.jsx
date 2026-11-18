@@ -6,6 +6,7 @@ import {
 } from './battle/formation.js'
 import { MAX_PARTIES, partyToSlots, partyToSpells, partyCount } from './battle/parties.js'
 import { RARITY } from './CodexScreen.jsx'
+import WikiScreen from './WikiScreen.jsx'
 import { CLASS_ORDER } from './battle/characters/validate.js'
 import { StatIcon } from './icons.jsx'
 import { CLASS_TRAITS, classTraitOf } from './battle/engine.js'
@@ -100,6 +101,11 @@ const CSS = `
 .fm-plate .nm { font-size: 30px; font-weight: 700; line-height: 1.3; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
 .fm-plate .cl { display: inline-block; margin-top: 2px; padding: 0 12px; border-left: 5px solid var(--rc); background: rgba(0,0,0,0.6); font-size: 21px; font-weight: 700; }
 .fm-plate .st { margin-top: 4px; font-size: 20px; color: #d6d6dc; text-shadow: 0 2px 6px rgba(0,0,0,0.8); }
+.fm-ctl button.wk { width: 46px; font-size: 24px; font-weight: 700; }
+.fm-card .wk { position: absolute; right: 8px; top: 8px; z-index: 2; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: rgba(0,0,0,0.55); border: 2px solid rgba(255,255,255,0.55); color: #fff; font-size: 26px; font-weight: 700; cursor: pointer; }
+.fm-card .wk:hover, .fm-card .wk:focus-visible { background: #fff; color: #111; outline: none; }
+.fm-am .wk { flex: none; width: 44px; align-self: stretch; min-height: 0; border: 0; background: rgba(255,255,255,0.16); color: #fff; font-size: 24px; font-weight: 700; cursor: pointer; }
+.fm-sinfo .wkb { flex: none; min-height: 0; padding: 10px 16px; border: 2px solid rgba(255,255,255,0.55); background: transparent; color: #fff; font-size: 20px; cursor: pointer; }
 .fm-ctl { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
 .fm-ctl button { width: 64px; height: 46px; padding: 0; min-height: 0; border: 0; background: rgba(255,255,255,0.16); color: #fff; font-size: 24px; display: grid; place-items: center; cursor: pointer; transition: background 0.15s, color 0.15s; }
 .fm-ctl button:hover:not(:disabled), .fm-ctl button:focus-visible { background: #f2f2f3; color: #111; outline: none; }
@@ -376,6 +382,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
   const [spellSet, setSpellSet] = useState(() => (startParty ? partyToSpells(startParty, allSpells) : loadSpellSet(allSpells)))
   const [savedSpellIds, setSavedSpellIds] = useState(() => JSON.stringify((startParty ? partyToSpells(startParty, allSpells) : loadSpellSet(allSpells)).map((sp) => sp.id)))
   const [spellPick, setSpellPick] = useState(false) // スペルの一覧を開いているか
+  const [wikiFocus, setWikiFocus] = useState(null) // { id, spell? }: そのユニット(スペル)のWikiを、この上に重ねて出す(編成の途中の状態は、そのまま残る)
   const [spellInfo, setSpellInfo] = useState(null) // 一覧でタップして、説明を出しているスペル
   const [confirm, setConfirm] = useState(false) // 「対戦へ」の確認
 
@@ -513,6 +520,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
                 <button type="button" aria-label="前へ" disabled={i === 0} onClick={() => apply(swapSlots(slots, i, i - 1))}><Tri dir="l" /></button>
                 <button type="button" className="rm" aria-label="外す" onClick={() => { apply(removeChar(slots, i)); if (activeSlot === i) setActiveSlot(null) }}><IconX /></button>
                 <button type="button" aria-label="後ろへ" disabled={i === MAX_SLOTS - 1} onClick={() => apply(swapSlots(slots, i, i + 1))}><Tri dir="r" /></button>
+                <button type="button" className="wk" aria-label="Wikiで見る" data-testid={`fm-wiki-${i + 1}`} onClick={() => setWikiFocus({ id: c.id })}>?</button>
               </div>
             </div>
           ))}
@@ -555,6 +563,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
                   <button type="button" className="pick" data-testid={`fm-am-${k + 1}`} onClick={() => handleSlot(i)}>
                     {a ? <><span className="nm">◆{a.name}</span><span className="cl">{a.class}</span></> : <span className="nm empty">＋ アミュレットを選ぶ</span>}
                   </button>
+                  {a && <button type="button" className="wk" aria-label="Wikiで見る" onClick={() => setWikiFocus({ id: a.id })}>?</button>}
                   {a && <button type="button" className="rm" aria-label="外す" onClick={() => apply(removeChar(slots, i))}><IconX /></button>}
                 </div>
               )
@@ -596,6 +605,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
                       <div className="cl">{c.class}</div>
                       <div className="st">{statLine(c)}</div>
                     </span>
+                    <span className="wk" role="button" tabIndex={0} aria-label="Wikiで見る" onClick={(e) => { e.stopPropagation(); setWikiFocus({ id: c.id }) }} onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); e.preventDefault(); setWikiFocus({ id: c.id }) } }}>?</span>
                     {quick && pickIdx !== -1 && <b className="bn">{pickIdx + 1}</b>}
                     {!quick && inSlot !== -1 && inSlot !== activeSlot && <span className="tag">{inSlot >= MAX_SLOTS ? 'アミュレット枠' : 'スロット'}{inSlot >= MAX_SLOTS ? inSlot - MAX_SLOTS + 1 : inSlot + 1}</span>}
                     {!quick && !ok && <span className="tag warn">クラス違い</span>}
@@ -642,6 +652,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
                     <div className="ds" style={{ whiteSpace: 'pre-line' }}>{spellInfo.desc}</div>
                     {!ok && <div className="ng-t">{spellClassOf(spellInfo)}のスペルなので、いまの編成({teamClassOf(filled) || 'ニュートラルのみ'})では入れられません</div>}
                   </div>
+                  <button type="button" className="wkb" aria-label="Wikiで見る" onClick={() => setWikiFocus({ id: spellInfo.id, spell: true })}>Wikiで見る</button>
                   <button type="button" className="add" data-testid="fm-spell-add" disabled={!ok} onClick={() => { setMessage(''); setSpellSet([...spellSet, spellInfo]); setSpellInfo(null); setSpellPick(false) }}>追加</button>
                 </div>
               )
@@ -708,6 +719,11 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
           </div>
         )}
       </div>
+      {wikiFocus && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 60, overflowY: 'auto', background: '#050506' }} data-testid="fm-wiki">
+          <WikiScreen focus={wikiFocus} onExit={() => setWikiFocus(null)} />
+        </div>
+      )}
     </div>
   )
 }
