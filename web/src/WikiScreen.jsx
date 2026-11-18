@@ -236,7 +236,7 @@ function RelicDetail({ def, onOpen }) {
   const users = RELIC_USERS(def.name)
   return (
     <>
-      <div style={{ marginTop: 14, fontSize: 15, lineHeight: 1.7 }}>効果: {def.desc}</div>
+      <div style={{ marginTop: 14, fontSize: 15, lineHeight: 1.7, whiteSpace: 'pre-line' }}>効果: {def.desc}</div>
       <div style={{ marginTop: 16, fontSize: 13, fontWeight: 700, color: C.mute, borderBottom: `1px solid ${C.line}`, paddingBottom: 3 }}>この遺物を持つキャラクター</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
         {users.length === 0 && <span style={{ fontSize: 13, color: C.mute }}>まだいません</span>}

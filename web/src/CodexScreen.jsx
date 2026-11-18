@@ -294,7 +294,7 @@ function ListItem({ tab, def, selected, onClick, count = null }) {
           ? <>{`${def.class}${def.type ? ' / ' + def.type : ''} ・ `}<StatIcon stat="hp" style={{ verticalAlign: '-0.14em' }} />{def.stats.hp} <StatIcon stat="atk" style={{ verticalAlign: '-0.14em' }} />{def.stats.atk} <StatIcon stat="def" style={{ verticalAlign: '-0.14em' }} />{def.stats.def} <StatIcon stat="spd" style={{ verticalAlign: '-0.14em' }} />{def.stats.spd}{(def.skill?.stat === 'mag' || def.stats.mag > 0) && <> <StatIcon stat="mag" style={{ verticalAlign: '-0.14em' }} />{def.stats.mag || 0}</>}</>
           : `${spellClassName(def)} ・ MP ${def.cost}${def.type ? ' / ' + def.type : ''}`}
       </div>
-      {tab === 'spells' && <div style={{ fontSize: 12, marginTop: 3, opacity: 0.85 }}>{def.desc}</div>}
+      {tab === 'spells' && <div style={{ fontSize: 12, marginTop: 3, opacity: 0.85, whiteSpace: 'pre-line' }}>{def.desc}</div>}
     </button>
   )
 }
