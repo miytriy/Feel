@@ -639,7 +639,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
                 <div className="fm-sinfo" data-testid="fm-spell-info">
                   <div className="tx">
                     <div className="nm">✦{spellInfo.name}(MP{spellInfo.cost}) ・ {spellInfo.class}</div>
-                    <div className="ds">{spellInfo.desc}</div>
+                    <div className="ds" style={{ whiteSpace: 'pre-line' }}>{spellInfo.desc}</div>
                     {!ok && <div className="ng-t">{spellClassOf(spellInfo)}のスペルなので、いまの編成({teamClassOf(filled) || 'ニュートラルのみ'})では入れられません</div>}
                   </div>
                   <button type="button" className="add" data-testid="fm-spell-add" disabled={!ok} onClick={() => { setMessage(''); setSpellSet([...spellSet, spellInfo]); setSpellInfo(null); setSpellPick(false) }}>追加</button>
