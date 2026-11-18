@@ -5,6 +5,6 @@ export default {
   skill: { name: '攻撃', stat: 'mag', type: 'magic', mult: 1.25 }, // 敵単体に魔力125%分の魔法ダメージ
   passives: [
     'guard', // 【守護】
-    { name: 'ラストワード', trigger: 'lastWord', desc: '自分の場すべては3回スペルブーストする。', effects: [{ type: 'boost', amount: 3, target: 'allyField' }] },
+    { name: 'ラストワード', trigger: 'lastWord', desc: '3回スペルブーストする。', effects: [{ type: 'boost', amount: 3 }] },
   ],
 }
