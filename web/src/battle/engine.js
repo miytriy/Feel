@@ -706,15 +706,15 @@ function resolveTargets(state, source, key, ctx) {
       case 'random': return randomOf(pool)
       case 'topAtk': { const l = pool.filter(keep); const top = Math.max(...l.map((u) => u.atk)); return randomOf(l.filter((u) => u.atk === top)) }
       case 'weakest': {
-        if (ctx.chosen) return [getUnit(state, ctx.chosen)]
+        if (ctx.chosen) return [getUnit(state, ctx.chosen)].filter((u) => u?.alive) // 破壊されたユニットは対象にしない
         return [[...pool].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]].filter(Boolean)
       }
       case 'chosenRandom':
-        return ctx.chosen ? [getUnit(state, ctx.chosen)] : randomOf(pool)
+        return ctx.chosen ? [getUnit(state, ctx.chosen)].filter((u) => u?.alive) : randomOf(pool)
       case 'chosen': {
         if (ctx.chosen) { // 選ぶ段階で候補が決まっている。召喚物・アミュレットも選べるので、広い範囲から探す
           const wide = T.scope === 'auto' ? poolOf(state, source, T.side, 'unit', eff) : pool
-          return wide.filter((u) => u.uid === ctx.chosen && u.uid !== source.uid || (!T.other && u.uid === ctx.chosen))
+          return wide.filter((u) => u.alive && (u.uid === ctx.chosen && u.uid !== source.uid || (!T.other && u.uid === ctx.chosen))) // wide は生存しているものだけだが、念のため
         }
         return pool.slice(0, 1) // 選ばれなかった(CPUの読み・テストなど)ときは先頭の1体
       }
@@ -1230,6 +1230,7 @@ function runEffects(state, source, effects, ctx = {}) {
     let targets = resolveTargets(state, source, e.target || 'self', { ...ctx, only: e, followers: e.followers, units: e.units })
     const tf = filterOf(e, EFFECT_FILTER_KEYS) // 指定のクラス・タイプ・名前・場(main / summon)だけ
     if (hasFilter(tf)) targets = targets.filter((t) => matchUnit(t, tf))
+    targets = targets.filter((t) => t && (t.alive || t.uid === source.uid)) // 破壊されたキャラ・召喚物は、割り振り・ランダム・効果の対象に含めない(ラストワードなど、倒れた本人が自分に使う効果だけは残す)
     if (e.exceptPrev) targets = targets.filter((t) => !(ctx.prevTargets || []).includes(t.uid)) // 「それ以外」: 直前の効果の対象は除く
     // ランダムな相手の人数: count(基本は1体)。comboCount: { combo: 3, count: 3 } なら、コンボが3以上のとき3体(重ならないように選ぶ)
     if (((e.target || 'self') === 'enemyRandom' || e.target === 'enemyFieldRandom') && (e.count != null || e.comboCount)) {
