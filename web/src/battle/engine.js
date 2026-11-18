@@ -656,6 +656,7 @@ const TARGETS = {
   fieldOthers: { side: 'field', scope: 'main', pick: 'all', other: true },
   fieldSummons: { side: 'field', scope: 'follower', pick: 'all', only: 'summon' },
   fieldAll: { side: 'field', scope: 'unit', pick: 'all' },
+  fieldFollowers: { side: 'field', scope: 'followerAll', pick: 'all' }, // 場のフォロワーすべて(敵味方)
   fieldAmulets: { side: 'field', scope: 'amulet', pick: 'all' },
 }
 
@@ -667,6 +668,7 @@ function poolOf(state, source, side, scope, e = {}) {
     if (scope === 'main') return live.filter((u) => u.field === 'main')
     if (scope === 'follower') return live.filter((u) => u.field === 'summon' && !u.isAmulet)
     if (scope === 'amulet') return live.filter((u) => u.isAmulet)
+    if (scope === 'followerAll') return live.filter((u) => !u.isAmulet) // 場のフォロワーすべて(キャラ + 召喚物。敵味方とも。アミュレットは除く)
     return live
   }
   if (side === 'ally') {
