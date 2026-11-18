@@ -1255,6 +1255,7 @@ function runEffects(state, source, effects, ctx = {}) {
           if (e.logChar && ctx.spell) noteAbility(state, 'スペル', source.team === 'A' ? '自分' : '相手', ctx.spellName || state.casting || '', e.desc || '', source.team, e.logChar) // 相手がキャラクターのときのログ
           if (e.perDestroyed != null && !(ctx.destroyed > 0)) break // perDestroyed: 破壊した数 X につき、ダメージが perDestroyed ずつ増える(1つも破壊しなかったら何もしない)
           if (e.perMpSpent != null && !(ctx.mpSpent > 0)) break // perMpSpent: 消費したMP1つにつき、倍率が perMpSpent ずつ増える(MPを使わなかったら何もしない)
+          if (e.destroyIfSummon && t.alive && t.field === 'summon' && !hasKw(t, 'earthSign')) { t.hp = 0; t.alive = false; state.log.push(`${t.name}は破壊された`); break } // ターゲットが召喚物なら、ダメージは与えず破壊だけ(破壊のエフェクトを2回出さない)
           const skill = { stat: e.stat || 'atk', mult: (e.perMpSpent != null ? (e.mult ?? 0) + e.perMpSpent * ctx.mpSpent : e.mult ?? 1), add: (e.split && e.add != null ? e.add / splitN : (e.add || 0)) + (e.perDestroyed != null ? e.perDestroyed * (ctx.destroyed || 0) : 0) + perAmount(state, source, e), type: e.dmgType || 'physical' } // perEarth: 自分の場の土の印1つにつき、add が perEarth ずつ増える / perType: 自分の場の「そのタイプ」のキャラ1体につき、add が perTypeFlat(省くと1)ずつ増える
           const { damage } = calcDamage(source, t, skill, ctx.opts)
           const dealt = applyDamage(state, source, t, damage, skill.type === 'true', skill.type)
@@ -1903,6 +1904,13 @@ function doSkill(state, actor, targetUid, opts) {
 
   // 攻撃時・交戦時の能力(ダメージ計算の前に働く)
   fire(state, 'onAttack', actor, { other: target, opts })
+  if (!target.alive) { // 攻撃時の能力で、ターゲットがもう破壊されていた(メドゥーサなど): 破壊だけで済ませ、スキルの攻撃は出さない(破壊のエフェクトを2回出さない)
+    recalc(state)
+    resolveDeaths(state, opts)
+    if (actor.field === 'main') countLink(state, actor, opts)
+    emit(state, 'sync')
+    return
+  }
   fire(state, 'onEngage', actor, { other: target, opts })
   fire(state, 'onEngage', target, { other: actor, opts })
   recalc(state)
