@@ -645,6 +645,7 @@ const TARGETS = {
   enemies: { side: 'enemy', scope: 'auto', pick: 'all', enemyAuto: true },
   allyFollowers: { side: 'ally', scope: 'follower', pick: 'all' },
   enemyFollowers: { side: 'enemy', scope: 'follower', pick: 'all' },
+  allyFollowerRandom: { side: 'ally', scope: 'follower', pick: 'random' }, // 自分の場のフォロワー(キャラ + 召喚物)からランダム1体(count で複数)
   enemyFollowerRandom: { side: 'enemy', scope: 'follower', pick: 'random' }, // 相手の場のフォロワー(キャラ + 召喚物)からランダム1体
   enemyField: { side: 'enemy', scope: 'unit', pick: 'all' },
   enemyTopAtk: { side: 'enemy', scope: 'main', pick: 'topAtk' }, // 相手の場のキャラクターのうち、攻撃力が最大のものからランダム1体
@@ -1241,6 +1242,13 @@ function runEffects(state, source, effects, ctx = {}) {
       const pool = [...enemiesOf(state, source).filter(abilityTargetable), ...(e.target === 'enemyFieldRandom' ? enemiesSummonsOf(state, source).filter(abilityTargetable) : [])]
       targets = []
       while (targets.length < n && pool.length) targets.push(pool.splice(Math.floor(rng() * pool.length), 1)[0])
+    }
+    else if (TARGETS[e.target]?.pick === 'random' && e.count > 1) { // ランダムに count 体(重ならないように選ぶ。味方側のランダムなど)。絞り込み(onlyName / onlyClass / filter など)をかけてから選ぶ
+      const T0 = TARGETS[e.target]
+      const rng = ctx.opts?.rng || Math.random
+      const pool = poolOf(state, source, T0.side, T0.scope, { followers: e.followers, units: e.units }).filter((u) => matchUnit(u, tf) && (!T0.other || u.uid !== source.uid))
+      targets = []
+      while (targets.length < e.count && pool.length) targets.push(pool.splice(Math.floor(rng() * pool.length), 1)[0])
     }
     // 「割り振る」(split)の人数 = 実際に受けとれる対象の数(生きている者。アミュレットは体力がなくダメージも回復も受けないので数えない)。対象が1人だけなら、合計がすべてその1人に入る
     const splitN = Math.max(1, targets.filter((x) => x && x.alive && !x.isAmulet).length)
