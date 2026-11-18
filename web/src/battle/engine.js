@@ -387,6 +387,8 @@ function checkCond(state, unit, c) {
   if (c.hpAtMost != null && unit.hp > c.hpAtMost) return false // HPの実数(「体力が400以下」)
   if (c.hpAbove != null && (unit.hp / unit.maxHp) * 100 < c.hpAbove) return false
   if (c.awaken && state.mpMax[unit.team] < AWAKEN_MP) return false // 【覚醒】
+  if (c.notAwaken && state.mpMax[unit.team] >= AWAKEN_MP) return false // 【覚醒】でないとき(「200ダメージではなく400ダメージ」の、200のほう)
+  if (c.mpMax != null && state.mpMax[unit.team] < c.mpMax) return false // 自分のMP最大値が、これ以上のとき
   if (c.evolved != null && unit.evolved !== c.evolved) return false
   if (c.evolveTurn && state.round < EP_GRANT_ROUND) return false // 進化可能ターン: EPが配られたラウンドから戦闘終了まで
   if (c.crests != null && state.crests[unit.team].length < c.crests) return false
@@ -654,6 +656,7 @@ const TARGETS = {
   enemyFieldRandom: { side: 'enemy', scope: 'unit', pick: 'random' },
   enemyOne: { side: 'enemy', scope: 'auto', pick: 'chosenRandom', enemyAuto: true, cand: 'mainAmulet' },
   enemyFieldOne: { side: 'enemy', scope: 'unit', pick: 'chosenRandom', pool: 'enemyUnits' },
+  enemyFollowerOne: { side: 'enemy', scope: 'follower', pick: 'chosenRandom' }, // 相手の場のフォロワー(キャラ + 召喚物)から1体を選ぶ
   fieldOthers: { side: 'field', scope: 'main', pick: 'all', other: true },
   fieldSummons: { side: 'field', scope: 'follower', pick: 'all', only: 'summon' },
   fieldAll: { side: 'field', scope: 'unit', pick: 'all' },
