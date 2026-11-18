@@ -5,7 +5,7 @@ import oni from '../../../characters/witch/1/tokens/witch_token_06.js' // 召喚
 export default {
   id: 'witch_spell_08', name: '鬼呼びの術', class: 'ウィッチ/スペル', rarity: 'gold',
   cost: 7, // MP
-  desc: '【スペルブースト時】これのコストを-1する。『式神・暴鬼』1体を召喚する。',
+  desc: '【スペルブースト時】これのコストを-1する。\n『式神・暴鬼』1体を召喚する。',
   log: '『式神・暴鬼』1体を召喚する。', // スペルブースト時のログはなし
   onBoost: { noX: true, cost: -1, minCost: 0, maxCostUps: 7 },
   effects: [{ type: 'summon', count: 1, unit: oni }],

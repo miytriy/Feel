@@ -720,7 +720,7 @@ export default function JinjiScreen({ ownedMap = {}, sigMap = {}, enhMap = {}, o
   )
 
   const AbilityRow = ({ head, tag, desc }) => (
-    <div className="jp-row"><div className="hd"><i>○</i>{head}{tag && <span className="tg">{tag}</span>}</div>{desc && <p>{desc}</p>}</div>
+    <div className="jp-row"><div className="hd"><i>○</i>{head}{tag && <span className="tg">{tag}</span>}</div>{desc && <p style={{ whiteSpace: 'pre-line' }}>{desc}</p>}</div>
   )
   const modText = (m) => `${STAT_LABEL[m.stat] || m.stat}  ${m.pct != null ? `+${m.pct}%` : `+${m.flat}`}`
 

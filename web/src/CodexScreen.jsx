@@ -127,7 +127,7 @@ function AbilityRow({ head, tag, desc }) {
   return (
     <div style={{ margin: '0 0 8px', fontSize: 14, lineHeight: 1.6 }}>
       <div>{tag && <Tag>{tag}</Tag>}<b>{head}</b></div>
-      {desc && <div style={{ color: C.ink, opacity: 0.85 }}>{desc}</div>}
+      {desc && <div style={{ color: C.ink, opacity: 0.85, whiteSpace: 'pre-line' }}>{desc}</div>}
     </div>
   )
 }

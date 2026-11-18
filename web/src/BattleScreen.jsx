@@ -1594,7 +1594,7 @@ export default function BattleScreen({ settingsView = null, onExit, cpuDelay = 7
             >
               ✦{sp.name}(MP{sp.cost}){!usable ? ` ${why}` : ''}
             </button>
-            {showDesc && <span style={{ fontSize: 11, color: C.mute, ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> {sp.desc}</span>}
+            {showDesc && <span style={{ fontSize: 11, color: C.mute, whiteSpace: 'pre-line', ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> {sp.desc}</span>}
           </div>
         )
       })}
