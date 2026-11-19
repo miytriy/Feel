@@ -44,7 +44,7 @@ function checkEffects(effects, where, errs, depth = 0) {
       else if (e.unit && depth < 2) errs.push(...validateCharacter(e.unit, { summon: true }).map((m) => `${w} の召喚物 → ${m}`))
       else if (Array.isArray(e.randomUnits) && depth < 2) e.randomUnits.forEach((u) => errs.push(...validateCharacter(u, { summon: true }).map((m) => `${w} の召喚物 → ${m}`)))
     }
-    if (e.type === 'crest' && e.crest?.onEnter && !isStr(e.crest.onEnter.gainKeyword)) errs.push(`${w}: crest の onEnter には gainKeyword(例: 'dash')が必要です`)
+    if (e.type === 'crest' && e.crest?.onEnter && !isStr(e.crest.onEnter.gainKeyword) && e.crest.onEnter.atk == null && e.crest.onEnter.hp == null) errs.push(`${w}: crest の onEnter には gainKeyword(例: 'dash')が必要です`)
     if (e.type === 'gainKeyword' && !KEYWORDS[e.keyword]) errs.push(`${w}: gainKeyword の keyword「${e.keyword}」は知らないキーワードです`)
     if (e.type === 'enableTrait' && !(e.trait && isStr(e.trait.id) && isStr(e.trait.name) && Array.isArray(e.trait.effects))) errs.push(`${w}: enableTrait には id・name・effects を持つ trait が必要です`)
     if (e.type === 'enableTrait' && e.trait?.effects) checkEffects(e.trait.effects, `${w} の特性`, errs)

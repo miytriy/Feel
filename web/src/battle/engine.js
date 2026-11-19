@@ -66,7 +66,7 @@ export const bracket = (name) => { const m = /^(.+?)【(.+)】$/.exec(name); ret
 export const TRIGGER_LABELS = {
   fanfare: 'ファンファーレ', constant: '常時', active: 'アクティブ', lastWord: 'ラストワード',
   onAttack: '攻撃時', onEngage: '交戦時', combo: 'コンボ', onEvolve: '進化時', onEvolved: '進化したとき', turnEnd: 'ターン終了時', onLeave: '場を離れる場合', onEnter: '場に出たとき', enemyTurnEnd: '相手のターン終了時',
-  roundStart: 'ラウンド開始時', allyDeath: '味方が戦闘不能になったとき', allyEnter: '味方が場に出たとき', allyTurnStart: '味方のターン開始時', turnStart: '自分のターン開始時', allyTurnEnd: '味方のターン終了時', link: '連携', onBoost: 'スペルブースト時', allyHeal: '味方が回復したとき', allyAmuletAct: '味方がアミュレットをアクトしたとき',
+  roundStart: 'ラウンド開始時', allyDeath: '味方が戦闘不能になったとき', allyEnter: '味方が場に出たとき', allyTurnStart: '味方のターン開始時', turnStart: '自分のターン開始時', allyTurnEnd: '味方のターン終了時', link: '連携', onBoost: 'スペルブースト時', allyHeal: '味方が回復したとき', allyAmuletAct: '味方がアミュレットをアクトしたとき', enemyHpDown: '相手のフォロワーのHPが場で減らされたとき',
 }
 
 // ---------- 遺物(頭・胴・脚・靴のセットを装備したキャラに、セット効果がつく) ----------
@@ -560,6 +560,15 @@ function applyDamage(state, source, target, amount, isTrue = false, dmgType = 'p
   return amount
 }
 
+// 最大HP(と現在HP)を増減する。マイナスのときは「HPが場で減らされた」として、相手の【相手のフォロワーのHPが場で減らされたとき】が働く。0以下になったら倒れる
+function changeMaxHp(state, t, up, source) {
+  if (t.isAmulet || !t.alive || !up) return
+  t.maxHp = Math.max(1, t.maxHp + up)
+  t.hp = up > 0 ? t.hp + up : Math.min(t.hp + up, t.maxHp)
+  if (t.hp <= 0) { t.hp = 0; t.alive = false; t.killedBy = source?.uid }
+  if (up < 0) for (const a of state.units.filter((x) => x.alive && x.team !== t.team)) fire(state, 'enemyHpDown', a, { other: t })
+}
+
 function heal(state, unit, amount) {
   if (!unit.alive || unit.isAmulet) return
   const before = unit.hp
@@ -924,6 +933,12 @@ function afterEnter(state, u) {
   // クレストの onEnter: 自分のチームの(指定のタイプの)キャラが場に出たとき、キーワード能力(疾走など)を持つ
   for (const crest of state.crests[u.team]) {
     const oe = crest.onEnter
+    if (oe && (oe.atk || oe.hp) && !(oe.type && !hasType(u, oe.type))) { // atk / hp: 場に出たユニットの攻撃力・体力が増減する(マイナスは「-100/-100」)
+      if (oe.atk) u.buffs.push({ stat: 'atk', pct: 0, flat: oe.atk, turns: null })
+      state.log.push(`【${crest.name}】の効果で、${u.name}は${oe.atk >= 0 ? '+' : ''}${oe.atk || 0}/${(oe.hp || 0) >= 0 ? '+' : ''}${oe.hp || 0}する`)
+      if (oe.log) noteAbility(state, 'クレスト', `クレスト：${crest.name}`, '', crest.desc, crest.team, oe.log)
+      if (oe.hp) { changeMaxHp(state, u, oe.hp, null); if (!u.alive) resolveDeaths(state) }
+    }
     if (!oe || (oe.type && !hasType(u, oe.type)) || !oe.gainKeyword || u.keywords.includes(oe.gainKeyword)) continue
     u.keywords.push(oe.gainKeyword)
     state.log.push(`【${crest.name}】の効果で、${u.name}は【${KEYWORDS[oe.gainKeyword]?.label || oe.gainKeyword}】を持つ`)
@@ -1327,9 +1342,8 @@ function runEffects(state, source, effects, ctx = {}) {
         case 'maxHp': { // 最大HPを元のHPの+%だけ増やす(現在HPも同じだけ増える。アミュレットには体力がない)
           if (t.isAmulet) break
           const up = Math.round((t.baseMaxHp * (e.pct || 0)) / 100) + (e.flat || 0) + perAmount(state, source, e)
-          t.maxHp += up
-          t.hp += up
-          state.log.push(`${t.name}の最大HPが${up}増えた`)
+          changeMaxHp(state, t, up, source)
+          state.log.push(up >= 0 ? `${t.name}の最大HPが${up}増えた` : `${t.name}の最大HPが${-up}減った`)
           break
         }
         case 'armor':
