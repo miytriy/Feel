@@ -96,6 +96,7 @@
   { "id": "nemesis_05", "name": "レゾリューション・ミリアム", "class": "ネメシス", "rarity": "gold", "rotation": "1" },
   { "id": "nemesis_06", "name": "新たなる少女・エース", "class": "ネメシス", "rarity": "legend", "rotation": "1" },
   { "id": "nemesis_07", "name": "ストラグルリーダー・ルキナ", "class": "ネメシス", "rarity": "silver", "rotation": "1" },
+  { "id": "nemesis_amulet_01", "name": "ドールズシアター", "class": "ネメシス", "rarity": "silver", "rotation": "basic" },
   { "id": "nightmare_01", "name": "無名の悪魔", "class": "ナイトメア", "rarity": "bronze", "rotation": "1" },
   { "id": "nightmare_02", "name": "辣腕の死神・ミーノ", "class": "ナイトメア", "rarity": "silver", "rotation": "1" },
   { "id": "nightmare_03", "name": "ナイトメア・ヴェリィ", "class": "ナイトメア", "rarity": "silver", "rotation": "1" },
