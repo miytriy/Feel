@@ -68,6 +68,7 @@
   { "id": "bishop_amulet_04", "name": "セイクリッドインジェクション", "class": "ビショップ", "rarity": "silver", "rotation": "1" },
   { "id": "bishop_amulet_05", "name": "邪教の器", "class": "ビショップ", "rarity": "gold", "rotation": "1" },
   { "id": "bishop_amulet_06", "name": "有翼の石像", "class": "ビショップ", "rarity": "silver", "rotation": "basic" },
+  { "id": "bishop_amulet_07", "name": "投影の鳥像", "class": "ビショップ", "rarity": "bronze", "rotation": "basic" },
   { "id": "dragon_01", "name": "竜育の少女", "class": "ドラゴン", "rarity": "bronze", "rotation": "1" },
   { "id": "dragon_02", "name": "風を駆る者・エイファ", "class": "ドラゴン", "rarity": "silver", "rotation": "1" },
   { "id": "dragon_03", "name": "風を読む者・ゼル", "class": "ドラゴン", "rarity": "silver", "rotation": "1" },
