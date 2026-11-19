@@ -6,9 +6,9 @@ export default {
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     'stealth_3', // 【潜伏_3T】: 攻撃すると剥がれ、自分のターンが3回始まるたびに戻る
-    // 「-0/-200」= 攻撃力-0 / 体力-200(最大HPと現在HPが200減る。0以下になったら倒れる)
-    { name: 'ファンファーレ', trigger: 'fanfare', desc: '相手の場のフォロワーすべては-0/-200する。', log: '相手の場のフォロワーすべては-0/-200する。', effects: [{ type: 'maxHp', flat: -200, target: 'enemyFollowers' }] },
-    // enemyHpDown: 相手のフォロワーの体力が場で減らされたとき(-0/-200・クレストの-100/-100など)。oncePerTurn: ターンごとに1回
+    // 「HP」の減少 = 現在HPの減少(loseHp)。最大HPは変わらない。0以下になったら倒れる
+    { name: 'ファンファーレ', trigger: 'fanfare', desc: '相手の場のフォロワーすべては-0/-200する。', log: '相手の場のフォロワーすべては-0/-200する。', effects: [{ type: 'loseHp', amount: 200, target: 'enemyFollowers' }] },
+    // enemyHpDown: 相手のフォロワーの現在HPが場で減らされたとき(-0/-200・クレストの-100/-100など。ダメージは含まない)。oncePerTurn: ターンごとに1回
     { name: '常時', trigger: 'enemyHpDown', oncePerTurn: true, desc: '相手のフォロワーのHPが場で-されたとき、そのターンごとに1回、自分の場のフォロワーすべてに100のヒールを割り振る。', log: '自分の場のフォロワーすべてに100のヒールを割り振る。', effects: [{ type: 'heal', flat: 100, split: true, target: 'allyFollowers' }] },
     {
       name: '進化時', trigger: 'onEvolve',

@@ -560,13 +560,22 @@ function applyDamage(state, source, target, amount, isTrue = false, dmgType = 'p
   return amount
 }
 
-// 最大HP(と現在HP)を増減する。マイナスのときは「HPが場で減らされた」として、相手の【相手のフォロワーのHPが場で減らされたとき】が働く。0以下になったら倒れる
+// 最大HP(と現在HP)を増減する(「最大HP」の増減)。0以下になったら倒れる
 function changeMaxHp(state, t, up, source) {
   if (t.isAmulet || !t.alive || !up) return
   t.maxHp = Math.max(1, t.maxHp + up)
   t.hp = up > 0 ? t.hp + up : Math.min(t.hp + up, t.maxHp)
   if (t.hp <= 0) { t.hp = 0; t.alive = false; t.killedBy = source?.uid }
-  if (up < 0) for (const a of state.units.filter((x) => x.alive && x.team !== t.team)) fire(state, 'enemyHpDown', a, { other: t })
+}
+// 現在HPを直接減らす(「HP」の減少。ダメージではないので、防御・アーマー・バリアは関係ない)。減ったら、相手の【相手のフォロワーのHPが場で減らされたとき】が働く
+function loseHpOf(state, t, amount, source) {
+  if (t.isAmulet || !t.alive || !(amount > 0)) return 0
+  const before = t.hp
+  t.hp = Math.max(0, t.hp - amount)
+  const lost = before - t.hp
+  if (t.hp <= 0) { t.alive = false; t.killedBy = source?.uid }
+  if (lost > 0) for (const a of state.units.filter((x) => x.alive && x.team !== t.team)) fire(state, 'enemyHpDown', a, { other: t })
+  return lost
 }
 
 function heal(state, unit, amount) {
@@ -937,7 +946,7 @@ function afterEnter(state, u) {
       if (oe.atk) u.buffs.push({ stat: 'atk', pct: 0, flat: oe.atk, turns: null })
       state.log.push(`【${crest.name}】の効果で、${u.name}は${oe.atk >= 0 ? '+' : ''}${oe.atk || 0}/${(oe.hp || 0) >= 0 ? '+' : ''}${oe.hp || 0}する`)
       if (oe.log) noteAbility(state, 'クレスト', `クレスト：${crest.name}`, '', crest.desc, crest.team, oe.log)
-      if (oe.hp) { changeMaxHp(state, u, oe.hp, null); if (!u.alive) resolveDeaths(state) }
+      if (oe.hp) { if (oe.hp < 0) loseHpOf(state, u, -oe.hp, null); else changeMaxHp(state, u, oe.hp, null); if (!u.alive) resolveDeaths(state) } // hp: マイナスは現在HPの減少、プラスは最大HPの増加
     }
     if (!oe || (oe.type && !hasType(u, oe.type)) || !oe.gainKeyword || u.keywords.includes(oe.gainKeyword)) continue
     u.keywords.push(oe.gainKeyword)
@@ -1334,9 +1343,8 @@ function runEffects(state, source, effects, ctx = {}) {
           if (t.isAmulet || !t.alive) break
           const before = t.hp
           // to を書くと「現在体力が to になる」(いまの体力が to 以下なら、変わらない = 回復はしない)。amount を書くと、その分だけ減る
-          t.hp = e.to != null ? Math.min(t.hp, Math.max(0, e.to)) : Math.max(0, t.hp - (e.amount || 0))
-          state.log.push(`${t.name}の現在体力が${Math.round(before - t.hp)}減った`)
-          if (t.hp <= 0) { t.alive = false; t.killedBy = source.uid }
+          const lost = loseHpOf(state, t, e.to != null ? Math.max(0, t.hp - Math.max(0, e.to)) : (e.amount || 0), source)
+          state.log.push(`${t.name}の現在体力が${Math.round(lost)}減った`)
           break
         }
         case 'maxHp': { // 最大HPを元のHPの+%だけ増やす(現在HPも同じだけ増える。アミュレットには体力がない)
