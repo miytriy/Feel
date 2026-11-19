@@ -703,6 +703,7 @@ function resolveTargets(state, source, key, ctx) {
   const keep = (u) => matchUnit(u, onlyFilter)
   const randomOf = (list0) => { const list = list0.filter(keep); return list.length ? [list[Math.floor(rng() * list.length)]] : [] }
   const T = TARGETS[key]
+  const chosenId = ctx.chosenMap ? ctx.chosenMap[key] : ctx.chosen // 選ぶ効果が2つ以上あるときは、対象ごとに選んだものを覚えている(chosenMap)
   if (T) {
     const eff = { followers: ctx.followers, units: ctx.units }
     let scope = T.scope
@@ -715,15 +716,15 @@ function resolveTargets(state, source, key, ctx) {
       case 'random': return randomOf(pool)
       case 'topAtk': { const l = pool.filter(keep); const top = Math.max(...l.map((u) => u.atk)); return randomOf(l.filter((u) => u.atk === top)) }
       case 'weakest': {
-        if (ctx.chosen) return [getUnit(state, ctx.chosen)].filter((u) => u?.alive) // 破壊されたユニットは対象にしない
+        if (chosenId) return [getUnit(state, chosenId)].filter((u) => u?.alive) // 破壊されたユニットは対象にしない
         return [[...pool].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0]].filter(Boolean)
       }
       case 'chosenRandom':
-        return ctx.chosen ? [getUnit(state, ctx.chosen)].filter((u) => u?.alive) : randomOf(pool)
+        return chosenId ? [getUnit(state, chosenId)].filter((u) => u?.alive) : randomOf(pool)
       case 'chosen': {
-        if (ctx.chosen) { // 選ぶ段階で候補が決まっている。召喚物・アミュレットも選べるので、広い範囲から探す
+        if (chosenId) { // 選ぶ段階で候補が決まっている。召喚物・アミュレットも選べるので、広い範囲から探す
           const wide = T.scope === 'auto' ? poolOf(state, source, T.side, 'unit', eff) : pool
-          return wide.filter((u) => u.alive && (u.uid === ctx.chosen && u.uid !== source.uid || (!T.other && u.uid === ctx.chosen))) // wide は生存しているものだけだが、念のため
+          return wide.filter((u) => u.alive && (u.uid === chosenId && u.uid !== source.uid || (!T.other && u.uid === chosenId))) // wide は生存しているものだけだが、念のため
         }
         return pool.slice(0, 1) // 選ばれなかった(CPUの読み・テストなど)ときは先頭の1体
       }
@@ -954,6 +955,7 @@ function candidatesOf(state, source, e) {
 function runEffects(state, source, effects, ctx = {}) {
   // repeat: n … 同じ効果を n 回行う(COSTS のコスト(土の印・墓場)は、最初の1回だけ払う。対象は毎回選び直す)
   if (effects.some((x) => x.repeat > 1)) effects = effects.flatMap((x, gi) => (x.repeat > 1 ? Array.from({ length: x.repeat }, (_, i) => ({ ...x, repeat: undefined, repGroup: `${gi}`, ...(i > 0 ? Object.fromEntries(COST_KEYS.map((k) => [k, undefined])) : null) })) : [x]))
+  if (ctx.multi === undefined) ctx = { ...ctx, multi: effects.filter((x) => x.choose).length > 1 } // 「味方1体と相手1体を選ぶ」のように、選ぶ効果が2つ以上あるとき
   let skipGroup = null // コストが払えなかった repeat の組は、残りも行わない
   for (let idx = 0; idx < effects.length; idx++) {
     const e = effects[idx]
@@ -988,17 +990,18 @@ function runEffects(state, source, effects, ctx = {}) {
         if (ans === 'no') continue
       }
     }
-    if (e.choose && !ctx.chosen && ctx.allowPending) {
+    const chosenNow = ctx.multi ? ctx.chosenMap?.[e.target] : ctx.chosen
+    if (e.choose && !chosenNow && ctx.allowPending) {
       const cands = candidatesOf(state, source, e)
       if (cands.length === 0) { state.log.push(`${source.name}の効果の対象がいなかった`); continue }
       if (cands.length > 1) {
         // 選んでもらうために止まる(残りの効果と、あとに続くパッシブは、選ばれたあとに続けて行う)
-        state.pending = { uid: source.uid, effects: effects.slice(idx), candidates: cands.map((u) => u.uid), trigger: ctx.trigger || null, nextPassive: ctx.nextPassive ?? null, spell: !!ctx.spell, spellName: ctx.spellName || state.casting || null }
+        state.pending = { uid: source.uid, effects: effects.slice(idx), candidates: cands.map((u) => u.uid), key: e.target, multi: !!ctx.multi, chosenMap: ctx.chosenMap || null, trigger: ctx.trigger || null, nextPassive: ctx.nextPassive ?? null, spell: !!ctx.spell, spellName: ctx.spellName || state.casting || null }
         state.log.push(`${source.name}の効果: 対象を選んでください`)
         recalc(state)
         return
       }
-      ctx = { ...ctx, chosen: cands[0].uid } // 1体だけなら自動で選ぶ
+      ctx = { ...ctx, chosen: cands[0].uid, ...(ctx.multi ? { chosenMap: { ...ctx.chosenMap, [e.target]: cands[0].uid } } : {}) } // 1体だけなら自動で選ぶ
     }
 
     if (e.type === 'pick') continue // 対象を選ぶだけ(選んだものは、このあとの効果の target が、そのまま使う)。選ぶ範囲に絞り込みがかからないよう、絞り込み(onlyType など)は、あとの効果に書く
@@ -2142,7 +2145,7 @@ export function applyAction(prev, action, opts = {}) {
       if (p.spell && !state.pending) countCombos(state, actor, opts)
     } else {
       state.log.push(`${getUnit(state, action.target).name}を選んだ`)
-      runEffects(state, actor, p.effects, { opts, chosen: action.target, trigger: p.trigger, spell: p.spell, spellName: p.spellName, allowPending: !!p.spell })
+      runEffects(state, actor, p.effects, { opts, chosen: action.target, ...(p.multi ? { multi: true, chosenMap: { ...p.chosenMap, [p.key]: action.target } } : {}), trigger: p.trigger, spell: p.spell, spellName: p.spellName, allowPending: !!p.spell })
       if (p.spell && !state.pending) countCombos(state, actor, opts)
     }
     if (p.trigger && p.nextPassive != null) fire(state, p.trigger, actor, { opts, allowPending: true }, p.nextPassive) // 続きのパッシブ
