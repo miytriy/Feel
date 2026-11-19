@@ -656,6 +656,7 @@ const TARGETS = {
   enemyFieldRandom: { side: 'enemy', scope: 'unit', pick: 'random' },
   enemyOne: { side: 'enemy', scope: 'auto', pick: 'chosenRandom', enemyAuto: true, cand: 'mainAmulet' },
   enemyFieldOne: { side: 'enemy', scope: 'unit', pick: 'chosenRandom', pool: 'enemyUnits' },
+  allyFollowerOne: { side: 'ally', scope: 'follower', pick: 'chosenRandom' }, // 自分の場のフォロワー(キャラ + 召喚物)から1体を選ぶ
   enemyFollowerOne: { side: 'enemy', scope: 'follower', pick: 'chosenRandom' }, // 相手の場のフォロワー(キャラ + 召喚物)から1体を選ぶ
   fieldOthers: { side: 'field', scope: 'main', pick: 'all', other: true },
   fieldSummons: { side: 'field', scope: 'follower', pick: 'all', only: 'summon' },
