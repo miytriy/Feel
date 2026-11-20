@@ -10,7 +10,7 @@ export default {
     {
       name: '進化時', trigger: 'onEvolve',
       desc: '『クレイゴーレム』1体を召喚する。相手の場のフォロワーすべてにX×50ダメージ。Xは自分の場のゴーレム・フォロワーの数である。',
-      log: '『クレイゴーレム』1体を召喚する。相手の場のキャラクターすべてにXダメージ。',
+      log: '『クレイゴーレム』1体を召喚する。相手の場のフォロワーすべてにXダメージ。',
       effects: [
         { type: 'summon', count: 1, unit: golem },
         { type: 'damage', stat: 'atk', mult: 0, add: 0, perType: 'ゴーレム', perTypeFlat: 50, dmgType: 'magic', target: 'enemyFollowers' },
