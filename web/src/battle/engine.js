@@ -674,6 +674,8 @@ const TARGETS = {
   enemyTopAtk: { side: 'enemy', scope: 'main', pick: 'topAtk' }, // 相手の場のキャラクターのうち、攻撃力が最大のものからランダム1体
   enemyRandom: { side: 'enemy', scope: 'auto', pick: 'random', enemyAuto: true },
   enemyCharRandom: { side: 'enemy', scope: 'main', pick: 'random' }, // 相手の場のキャラクター(召喚物・アミュレットは除く)からランダム1体
+  enemyCharOne2: { side: 'enemy', scope: 'main', pick: 'chosenRandom', exclude: 'enemyCharOne' }, // 「相手のキャラクター2体を選ぶ」の2体目(enemyCharOne で選んだ1体は選べない。効果は enemyCharOne → enemyCharOne2 の順に書く)
+  enemySummons: { side: 'enemy', scope: 'follower', pick: 'all', only: 'summon' }, // 相手の場の召喚物すべて(アミュレットは含まない)
   enemyCharOne: { side: 'enemy', scope: 'main', pick: 'chosenRandom' }, // 相手の場のキャラクター1体を選ぶ
   enemyFieldRandom: { side: 'enemy', scope: 'unit', pick: 'random' },
   enemyOne: { side: 'enemy', scope: 'auto', pick: 'chosenRandom', enemyAuto: true, cand: 'mainAmulet' },
@@ -733,6 +735,7 @@ function resolveTargets(state, source, key, ctx) {
     let pool = poolOf(state, source, T.side, T.pool || scope, eff)
     if (T.only === 'summon') pool = pool.filter((u) => u.field === 'summon')
     if (T.other) pool = pool.filter((u) => u !== source && u.uid !== source.uid)
+    if (T.exclude && ctx.chosenMap?.[T.exclude]) pool = pool.filter((u) => u.uid !== ctx.chosenMap[T.exclude]) // 1体目に選んだものは、2体目には選べない
     switch (T.pick) {
       case 'all': return pool
       case 'random': return randomOf(pool)
@@ -964,7 +967,7 @@ function afterEnter(state, u) {
 }
 
 // 選択が必要な効果(choose: true)の、選べる対象の一覧
-function candidatesOf(state, source, e) {
+function candidatesOf(state, source, e, ctx = {}) {
   const key = e.target || 'self'
   const T = TARGETS[key]
   let list
@@ -974,6 +977,7 @@ function candidatesOf(state, source, e) {
     list = poolOf(state, source, T.side, cand, e)
     if (T.pool && !T.cand) list = poolOf(state, source, T.side, T.pool, e)
     if (T.other) list = list.filter((u) => u.uid !== source.uid)
+    if (T.exclude && ctx.chosenMap?.[T.exclude]) list = list.filter((u) => u.uid !== ctx.chosenMap[T.exclude])
   } else list = resolveTargets(state, source, key, { followers: e.followers, units: e.units })
   const f = filterOf(e, EFFECT_FILTER_KEYS)
   return hasFilter(f) ? list.filter((u) => matchUnit(u, f)) : list
@@ -1020,7 +1024,7 @@ function runEffects(state, source, effects, ctx = {}) {
     }
     const chosenNow = ctx.multi ? ctx.chosenMap?.[e.target] : ctx.chosen
     if (e.choose && !chosenNow && ctx.allowPending) {
-      const cands = candidatesOf(state, source, e)
+      const cands = candidatesOf(state, source, e, ctx)
       if (cands.length === 0) { state.log.push(`${source.name}の効果の対象がいなかった`); continue }
       if (cands.length > 1) {
         // 選んでもらうために止まる(残りの効果と、あとに続くパッシブは、選ばれたあとに続けて行う)
