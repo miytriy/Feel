@@ -7,6 +7,7 @@ import {
 import { MAX_PARTIES, partyToSlots, partyToSpells, partyCount } from './battle/parties.js'
 import { RARITY } from './CodexScreen.jsx'
 import WikiScreen from './WikiScreen.jsx'
+import FormationGuide from './FormationGuide.jsx'
 import { CLASS_ORDER } from './battle/characters/validate.js'
 import { StatIcon } from './icons.jsx'
 import { CLASS_TRAITS, classTraitOf } from './battle/engine.js'
@@ -297,6 +298,7 @@ const Svg = (p) => <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"
 const IconCheck = (p) => <Svg {...p}><path d="M5 12.5l4.5 4.5L19 7.5" /></Svg>
 const IconX = (p) => <Svg {...p}><path d="M6 6l12 12M18 6L6 18" /></Svg>
 const IconQuick = (p) => <Svg {...p}><path d="M13 3L5 14h6l-1 7 8-11h-6z" /></Svg>
+const IconGuide = (p) => <Svg {...p}><path d="M4 4h12a3 3 0 013 3v13H7a3 3 0 01-3-3zM8 8h7M8 12h7" /></Svg>
 const IconSave = (p) => <Svg {...p}><path d="M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6" /></Svg>
 const IconSword = (p) => <Svg {...p}><path d="M5 19l9-9M14 10l5-5V3h-2l-5 5M7 15l2 2M4 20l2-2" /></Svg>
 const Tri = ({ dir }) => <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d={dir === 'l' ? 'M17 4v16L5 12z' : 'M7 4v16l12-8z'} /></svg>
@@ -353,7 +355,7 @@ function useStage(W, H) {
   return { scale, sw: size.w / scale, sh: size.h / scale } // 舞台は、画面いっぱいに広げる(左右・上下に隙間や切れ目ができない)
 }
 
-export default function FormationScreen({ allChars, allSpells = [], defaultIds = [], onStart, onExit, title = '編成', parties = null, partyIdxInit = null, onSaveParty = null, onPartyChange = null }) {
+export default function FormationScreen({ guideFormat = 'rotation', allChars, allSpells = [], defaultIds = [], onStart, onExit, title = '編成', parties = null, partyIdxInit = null, onSaveParty = null, onPartyChange = null }) {
   useArtStatus() // 絵が読み込めないと分かったら、描き直す
   const desktop = useIsDesktop() // PCは横長(16:9)、スマホは縦長(9:16)の舞台
   // 閉じる: すぐ消さずに、閉じる動き(出てきたときの逆向き)を見せてから、onExit を呼ぶ
@@ -385,6 +387,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
   const [wikiFocus, setWikiFocus] = useState(null) // { id, spell? }: そのユニット(スペル)のWikiを、この上に重ねて出す(編成の途中の状態は、そのまま残る)
   const [spellInfo, setSpellInfo] = useState(null) // 一覧でタップして、説明を出しているスペル
   const [confirm, setConfirm] = useState(false) // 「対戦へ」の確認
+  const [guideOpen, setGuideOpen] = useState(false) // 編成ガイド(おすすめの環境編成)を開いているか
 
   const ids = JSON.stringify(slots.map((c) => c?.id ?? null))
   const spellIds = JSON.stringify(spellSet.map((sp) => sp.id))
@@ -396,6 +399,20 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
   const check = checkChars.ok ? checkSpells : checkChars
 
   const apply = (next) => { setSlots(next); setMessage('') }
+  // 編成ガイドのおすすめを、この編成に入れる(いま使えないキャラ・スペルは飛ばす)
+  const applyGuide = (g) => {
+    const byId = new Map(allChars.map((c) => [c.id, c]))
+    let next = Array(MAX_SLOTS + MAX_AMULET_SLOTS).fill(null)
+    let m = 0, a = 0
+    for (const id of g.ids) {
+      const c = byId.get(id)
+      if (!c) continue
+      next = placeChar(next, c.amulet ? MAX_SLOTS + a++ : m++, c)
+    }
+    const sp = g.spells.map((id) => allSpells.find((x) => x.id === id)).filter(Boolean)
+    setSlots(next); setSpellSet(validateSpellSet(sp, next).ok ? sp : []); setGuideOpen(false)
+    setMessage(g.ids.every((id) => byId.has(id)) ? 'おすすめの編成を入れました' : '使えないキャラは飛ばして入れました')
+  }
 
   const handleSlot = (i) => {
     if (quick) return
@@ -696,6 +713,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
           ) : (
             <>
               <button type="button" className="fm-btn" data-testid="fm-quick" onClick={toggleQuick}>簡易編成<span className="ic"><IconQuick /></span></button>
+              <button type="button" className="fm-btn" data-testid="fm-guide-open" onClick={() => setGuideOpen(true)}>編成ガイド<span className="ic"><IconGuide /></span></button>
               <button type="button" className={`fm-btn${onStart ? '' : ' hot'}`} data-testid="fm-save" onClick={handleSave} disabled={saveDisabled}>保存<span className="ic"><IconSave /></span></button>
               {onStart && <button type="button" className="fm-btn hot" data-testid="fm-start" onClick={() => setConfirm(true)} disabled={!check.ok}>対戦へ<span className="ic"><IconSword /></span></button>}
             </>
@@ -704,6 +722,7 @@ export default function FormationScreen({ allChars, allSpells = [], defaultIds =
 
         </div>
 
+        {guideOpen && <FormationGuide allChars={allChars} allSpells={allSpells} format={guideFormat} toneOf={tone} onApply={applyGuide} onClose={() => setGuideOpen(false)} />}
         {confirm && (
           <div className="fm-back" onClick={() => setConfirm(false)}>
             <div className="fm-band" role="dialog" aria-label="対戦の確認" onClick={(e) => e.stopPropagation()}>

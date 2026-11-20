@@ -485,6 +485,7 @@ export default function App() {
       <ErrorBoundary onExit={() => setScreen('cpu')}>
         <FormationScreen
           title="チーム"
+          guideFormat={cpuFormat}
           allChars={ALL_CHARACTERS.filter((c) => c.rotation == null || rotationAllowed(cpuFormat, c.rotation, c.id))}
           defaultIds={DEFAULT_PLAYER_IDS}
           allSpells={ALL_SPELLS.filter((sp) => !sp.token && (sp.rotation == null || rotationAllowed(cpuFormat, sp.rotation, sp.id)))}

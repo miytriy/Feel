@@ -1,0 +1,1271 @@
+{
+ "generatedAt": "2026-11-20T11:21:18.788Z",
+ "level": 3,
+ "perClass": 30,
+ "games": 10,
+ "formats": {
+  "rotation": {
+   "name": "ローテーション",
+   "classes": {
+    "ビショップ": [
+     {
+      "rate": 0.875,
+      "games": 24,
+      "ids": [
+       "neutral_04",
+       "neutral_basic_04",
+       "neutral_06",
+       "neutral_03",
+       "neutral_basic_05",
+       "bishop_amulet_03",
+       "bishop_amulet_07"
+      ],
+      "spells": [
+       "neutral_spell_03",
+       "bishop_spell_01",
+       "neutral_spell_01"
+      ]
+     },
+     {
+      "rate": 0.833,
+      "games": 24,
+      "ids": [
+       "bishop_07",
+       "bishop_12",
+       "bishop_09",
+       "bishop_08",
+       "bishop_11",
+       "bishop_amulet_02"
+      ],
+      "spells": [
+       "neutral_spell_02",
+       "bishop_spell_01",
+       "neutral_spell_03"
+      ]
+     },
+     {
+      "rate": 0.833,
+      "games": 24,
+      "ids": [
+       "neutral_06",
+       "neutral_basic_02",
+       "neutral_basic_04",
+       "bishop_05",
+       "bishop_13",
+       "bishop_amulet_03",
+       "bishop_amulet_07"
+      ],
+      "spells": [
+       "neutral_spell_01",
+       "neutral_spell_03",
+       "bishop_spell_01"
+      ]
+     }
+    ],
+    "ドラゴン": [
+     {
+      "rate": 1,
+      "games": 24,
+      "ids": [
+       "dragon_07",
+       "neutral_basic_04",
+       "neutral_06",
+       "dragon_11",
+       "dragon_01"
+      ],
+      "spells": [
+       "neutral_spell_01",
+       "neutral_spell_02",
+       "dragon_spell_04"
+      ]
+     },
+     {
+      "rate": 1,
+      "games": 24,
+      "ids": [
+       "neutral_01",
+       "neutral_basic_01",
+       "neutral_02",
+       "dragon_09",
+       "dragon_11"
+      ],
+      "spells": [
+       "dragon_spell_03",
+       "dragon_spell_04",
+       "neutral_spell_02"
+      ]
+     },
+     {
+      "rate": 1,
+      "games": 24,
+      "ids": [
+       "dragon_08",
+       "dragon_16",
+       "neutral_04",
+       "neutral_06",
+       "dragon_15",
+       "dragon_amulet_01"
+      ],
+      "spells": [
+       "dragon_spell_03",
+       "dragon_spell_01",
+       "neutral_spell_03"
+      ]
+     }
+    ],
+    "エルフ": [
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "elf_19",
+       "neutral_basic_03",
+       "neutral_basic_02",
+       "elf_18",
+       "elf_11"
+      ],
+      "spells": [
+       "neutral_spell_03",
+       "neutral_spell_01",
+       "elf_spell_01"
+      ]
+     },
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "elf_17",
+       "neutral_basic_02",
+       "elf_12",
+       "elf_19",
+       "elf_18",
+       "elf_amulet_01",
+       "elf_amulet_02"
+      ],
+      "spells": [
+       "elf_spell_01",
+       "elf_spell_05",
+       "neutral_spell_01"
+      ]
+     },
+     {
+      "rate": 0.917,
+      "games": 24,
+      "ids": [
+       "elf_12",
+       "neutral_basic_04",
+       "elf_19",
+       "neutral_02",
+       "elf_01",
+       "elf_amulet_02",
+       "elf_amulet_01"
+      ],
+      "spells": [
+       "elf_spell_05",
+       "neutral_spell_03",
+       "elf_spell_01"
+      ]
+     }
+    ],
+    "クロノス": [
+     {
+      "rate": 0.708,
+      "games": 24,
+      "ids": [
+       "neutral_03",
+       "neutral_basic_02",
+       "neutral_02",
+       "neutral_01",
+       "neutral_basic_01"
+      ],
+      "spells": [
+       "neutral_spell_02",
+       "neutral_spell_01",
+       "neutral_spell_03"
+      ]
+     },
+     {
+      "rate": 0.625,
+      "games": 24,
+      "ids": [
+       "neutral_03",
+       "neutral_basic_04",
+       "neutral_basic_02",
+       "neutral_basic_03",
+       "neutral_01"
+      ],
+      "spells": [
+       "neutral_spell_01",
+       "neutral_spell_03",
+       "neutral_spell_02"
+      ]
+     },
+     {
+      "rate": 0.542,
+      "games": 24,
+      "ids": [
+       "neutral_basic_04",
+       "neutral_basic_05",
+       "neutral_basic_01",
+       "neutral_basic_03",
+       "neutral_04"
+      ],
+      "spells": [
+       "neutral_spell_01",
+       "neutral_spell_02",
+       "neutral_spell_03"
+      ]
+     }
+    ],
+    "ネメシス": [
+     {
+      "rate": 0.792,
+      "games": 24,
+      "ids": [
+       "neutral_02",
+       "nemesis_03",
+       "nemesis_07",
+       "neutral_basic_03",
+       "nemesis_06",
+       "nemesis_amulet_01"
+      ],
+      "spells": [
+       "neutral_spell_02",
+       "nemesis_spell_02",
+       "nemesis_spell_01"
+      ]
+     },
+     {
+      "rate": 0.75,
+      "games": 24,
+      "ids": [
+       "nemesis_02",
+       "neutral_basic_02",
+       "neutral_03",
+       "neutral_basic_04",
+       "neutral_02",
+       "nemesis_amulet_01"
+      ],
+      "spells": [
+       "nemesis_spell_02",
+       "neutral_spell_01",
+       "nemesis_spell_01"
+      ]
+     },
+     {
+      "rate": 0.708,
+      "games": 24,
+      "ids": [
+       "nemesis_03",
+       "nemesis_02",
+       "neutral_basic_04",
+       "neutral_02",
+       "neutral_basic_02",
+       "nemesis_amulet_01"
+      ],
+      "spells": [
+       "nemesis_spell_05",
+       "nemesis_spell_01",
+       "nemesis_spell_02"
+      ]
+     }
+    ],
+    "ナイトメア": [
+     {
+      "rate": 1,
+      "games": 24,
+      "ids": [
+       "neutral_basic_02",
+       "nightmare_08",
+       "neutral_basic_05",
+       "nightmare_09",
+       "nightmare_14",
+       "nightmare_amulet_01"
+      ],
+      "spells": [
+       "neutral_spell_03",
+       "nightmare_spell_04",
+       "nightmare_spell_02"
+      ]
+     },
+     {
+      "rate": 0.917,
+      "games": 24,
+      "ids": [
+       "nightmare_04",
+       "nightmare_08",
+       "nightmare_14",
+       "neutral_basic_05",
+       "nightmare_03",
+       "nightmare_amulet_01"
+      ],
+      "spells": [
+       "neutral_spell_02",
+       "nightmare_spell_03",
+       "nightmare_spell_01"
+      ]
+     },
+     {
+      "rate": 0.833,
+      "games": 24,
+      "ids": [
+       "neutral_03",
+       "neutral_basic_02",
+       "nightmare_14",
+       "neutral_basic_03",
+       "neutral_04"
+      ],
+      "spells": [
+       "neutral_spell_01",
+       "neutral_spell_03",
+       "nightmare_spell_04"
+      ]
+     }
+    ],
+    "ロイヤル": [
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "royal_08",
+       "royal_17",
+       "royal_03",
+       "royal_15",
+       "royal_06",
+       "royal_amulet_01"
+      ],
+      "spells": [
+       "neutral_spell_03",
+       "royal_spell_02",
+       "neutral_spell_02"
+      ]
+     },
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "royal_12",
+       "royal_02",
+       "royal_01",
+       "royal_14",
+       "royal_15"
+      ],
+      "spells": [
+       "royal_spell_02",
+       "neutral_spell_01",
+       "royal_spell_01"
+      ]
+     },
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "royal_17",
+       "royal_12",
+       "neutral_basic_01",
+       "neutral_basic_04",
+       "neutral_04"
+      ],
+      "spells": [
+       "royal_spell_04",
+       "neutral_spell_01",
+       "neutral_spell_03"
+      ]
+     }
+    ],
+    "ウィッチ": [
+     {
+      "rate": 0.792,
+      "games": 24,
+      "ids": [
+       "witch_12",
+       "witch_10",
+       "witch_08",
+       "witch_07",
+       "witch_11"
+      ],
+      "spells": [
+       "witch_spell_10",
+       "witch_spell_02",
+       "witch_spell_04"
+      ]
+     },
+     {
+      "rate": 0.75,
+      "games": 24,
+      "ids": [
+       "witch_08",
+       "witch_03",
+       "neutral_04",
+       "witch_12",
+       "witch_10"
+      ],
+      "spells": [
+       "neutral_spell_03",
+       "neutral_spell_02",
+       "witch_spell_09"
+      ]
+     },
+     {
+      "rate": 0.708,
+      "games": 24,
+      "ids": [
+       "neutral_basic_03",
+       "neutral_basic_04",
+       "neutral_basic_01",
+       "witch_08",
+       "witch_12"
+      ],
+      "spells": [
+       "neutral_spell_03",
+       "neutral_spell_02",
+       "witch_spell_06"
+      ]
+     }
+    ]
+   }
+  },
+  "unlimited": {
+   "name": "アンリミテッド",
+   "classes": {
+    "ビショップ": [
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "neutral_2_04",
+       "bishop_03",
+       "bishop_13",
+       "bishop_12",
+       "neutral_2_06",
+       "bishop_amulet_01",
+       "bishop_amulet_07"
+      ],
+      "spells": [
+       "bishop_spell_01",
+       "neutral_spell_01",
+       "neutral_spell_02"
+      ]
+     },
+     {
+      "rate": 0.875,
+      "games": 24,
+      "ids": [
+       "bishop_07",
+       "bishop_09",
+       "neutral_basic_05",
+       "bishop_06",
+       "bishop_05",
+       "bishop_amulet_07",
+       "bishop_amulet_03"
+      ],
+      "spells": [
+       "neutral_spell_03",
+       "neutral_spell_02",
+       "bishop_spell_01"
+      ]
+     },
+     {
+      "rate": 0.708,
+      "games": 24,
+      "ids": [
+       "neutral_04",
+       "bishop_03",
+       "bishop_07",
+       "neutral_02",
+       "bishop_12",
+       "bishop_amulet_05",
+       "bishop_amulet_02"
+      ],
+      "spells": [
+       "neutral_spell_01",
+       "neutral_spell_02",
+       "neutral_spell_03"
+      ]
+     }
+    ],
+    "ドラゴン": [
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "dragon_16",
+       "dragon_14",
+       "neutral_06",
+       "dragon_04",
+       "neutral_2_04",
+       "dragon_amulet_01"
+      ],
+      "spells": [
+       "neutral_spell_03",
+       "dragon_spell_02",
+       "dragon_spell_03"
+      ]
+     },
+     {
+      "rate": 0.917,
+      "games": 24,
+      "ids": [
+       "dragon_16",
+       "dragon_10",
+       "dragon_15",
+       "neutral_06",
+       "neutral_basic_03"
+      ],
+      "spells": [
+       "dragon_spell_04",
+       "neutral_spell_03",
+       "dragon_spell_01"
+      ]
+     },
+     {
+      "rate": 0.875,
+      "games": 24,
+      "ids": [
+       "neutral_basic_01",
+       "dragon_01",
+       "dragon_02",
+       "dragon_16",
+       "neutral_basic_03",
+       "dragon_amulet_01"
+      ],
+      "spells": [
+       "dragon_spell_03",
+       "neutral_spell_02",
+       "dragon_spell_01"
+      ]
+     }
+    ],
+    "エルフ": [
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "neutral_basic_04",
+       "neutral_2_04",
+       "elf_2_07",
+       "elf_09",
+       "neutral_2_06",
+       "elf_amulet_03"
+      ],
+      "spells": [
+       "neutral_spell_02",
+       "neutral_spell_03",
+       "elf_spell_03"
+      ]
+     },
+     {
+      "rate": 0.875,
+      "games": 24,
+      "ids": [
+       "neutral_2_04",
+       "elf_12",
+       "elf_19",
+       "elf_3_01",
+       "elf_08",
+       "elf_amulet_03"
+      ],
+      "spells": [
+       "elf_spell_03",
+       "elf_spell_05",
+       "neutral_spell_03"
+      ]
+     },
+     {
+      "rate": 0.833,
+      "games": 24,
+      "ids": [
+       "neutral_2_04",
+       "neutral_04",
+       "neutral_basic_01",
+       "elf_3_01",
+       "neutral_2_06"
+      ],
+      "spells": [
+       "elf_spell_05",
+       "neutral_spell_01",
+       "neutral_spell_02"
+      ]
+     }
+    ],
+    "クロノス": [
+     {
+      "rate": 1,
+      "games": 24,
+      "ids": [
+       "kronos_02",
+       "neutral_06",
+       "neutral_basic_05",
+       "neutral_2_06",
+       "neutral_02"
+      ],
+      "spells": [
+       "neutral_spell_02",
+       "neutral_spell_01",
+       "neutral_spell_03"
+      ]
+     },
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "neutral_06",
+       "neutral_2_06",
+       "neutral_2_04",
+       "kronos_02",
+       "neutral_04"
+      ],
+      "spells": [
+       "neutral_spell_01",
+       "neutral_spell_03",
+       "neutral_spell_02"
+      ]
+     },
+     {
+      "rate": 0.917,
+      "games": 24,
+      "ids": [
+       "neutral_basic_04",
+       "neutral_05",
+       "neutral_2_06",
+       "neutral_2_04",
+       "kronos_02"
+      ],
+      "spells": [
+       "neutral_spell_02",
+       "neutral_spell_03",
+       "neutral_spell_01"
+      ]
+     }
+    ],
+    "ネメシス": [
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "nemesis_01",
+       "neutral_basic_02",
+       "neutral_2_06",
+       "neutral_03",
+       "nemesis_04",
+       "nemesis_amulet_01"
+      ],
+      "spells": [
+       "nemesis_spell_02",
+       "nemesis_spell_05",
+       "nemesis_spell_03"
+      ]
+     },
+     {
+      "rate": 0.875,
+      "games": 24,
+      "ids": [
+       "neutral_01",
+       "neutral_2_06",
+       "nemesis_06",
+       "nemesis_03",
+       "nemesis_01",
+       "nemesis_amulet_01"
+      ],
+      "spells": [
+       "nemesis_spell_02",
+       "neutral_spell_01",
+       "nemesis_spell_01"
+      ]
+     },
+     {
+      "rate": 0.875,
+      "games": 24,
+      "ids": [
+       "neutral_2_06",
+       "neutral_basic_03",
+       "nemesis_02",
+       "nemesis_07",
+       "nemesis_06",
+       "nemesis_amulet_01"
+      ],
+      "spells": [
+       "neutral_spell_01",
+       "nemesis_spell_02",
+       "nemesis_spell_03"
+      ]
+     }
+    ],
+    "ナイトメア": [
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "nightmare_08",
+       "nightmare_2_08",
+       "nightmare_16",
+       "neutral_2_06",
+       "nightmare_03",
+       "nightmare_amulet_01"
+      ],
+      "spells": [
+       "neutral_spell_03",
+       "nightmare_spell_02",
+       "neutral_spell_02"
+      ]
+     },
+     {
+      "rate": 0.875,
+      "games": 24,
+      "ids": [
+       "nightmare_05",
+       "neutral_basic_04",
+       "nightmare_10",
+       "nightmare_06",
+       "neutral_2_06",
+       "nightmare_amulet_01"
+      ],
+      "spells": [
+       "neutral_spell_01",
+       "nightmare_spell_04",
+       "nightmare_spell_02"
+      ]
+     },
+     {
+      "rate": 0.833,
+      "games": 24,
+      "ids": [
+       "neutral_2_04",
+       "nightmare_15",
+       "nightmare_08",
+       "nightmare_14",
+       "nightmare_16",
+       "nightmare_amulet_01"
+      ],
+      "spells": [
+       "nightmare_spell_04",
+       "nightmare_spell_01",
+       "neutral_spell_03"
+      ]
+     }
+    ],
+    "ロイヤル": [
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "royal_13",
+       "royal_10",
+       "royal_15",
+       "royal_11",
+       "royal_12",
+       "royal_amulet_01"
+      ],
+      "spells": [
+       "royal_spell_03",
+       "neutral_spell_01",
+       "royal_spell_01"
+      ]
+     },
+     {
+      "rate": 0.875,
+      "games": 24,
+      "ids": [
+       "royal_14",
+       "neutral_06",
+       "neutral_2_06",
+       "royal_02",
+       "neutral_01",
+       "royal_amulet_01"
+      ],
+      "spells": [
+       "neutral_spell_03",
+       "royal_spell_04",
+       "neutral_spell_01"
+      ]
+     },
+     {
+      "rate": 0.792,
+      "games": 24,
+      "ids": [
+       "neutral_basic_04",
+       "royal_11",
+       "royal_04",
+       "neutral_2_06",
+       "royal_05"
+      ],
+      "spells": [
+       "royal_spell_02",
+       "royal_spell_03",
+       "royal_spell_04"
+      ]
+     }
+    ],
+    "ウィッチ": [
+     {
+      "rate": 0.833,
+      "games": 24,
+      "ids": [
+       "neutral_06",
+       "witch_06",
+       "neutral_2_06",
+       "neutral_05",
+       "neutral_01"
+      ],
+      "spells": [
+       "witch_spell_05",
+       "witch_spell_04",
+       "witch_spell_08"
+      ]
+     },
+     {
+      "rate": 0.792,
+      "games": 24,
+      "ids": [
+       "neutral_02",
+       "neutral_basic_04",
+       "witch_11",
+       "neutral_2_06",
+       "neutral_04"
+      ],
+      "spells": [
+       "witch_spell_05",
+       "witch_spell_01",
+       "neutral_spell_01"
+      ]
+     },
+     {
+      "rate": 0.75,
+      "games": 24,
+      "ids": [
+       "witch_11",
+       "witch_06",
+       "witch_05",
+       "neutral_2_06",
+       "neutral_02"
+      ],
+      "spells": [
+       "witch_spell_03",
+       "witch_spell_06",
+       "neutral_spell_02"
+      ]
+     }
+    ]
+   }
+  },
+  "infinity": {
+   "name": "インフィニティ",
+   "classes": {
+    "ビショップ": [
+     {
+      "rate": 0.833,
+      "games": 24,
+      "ids": [
+       "bishop_11",
+       "neutral_basic_01",
+       "neutral_2_06",
+       "neutral_05",
+       "neutral_2_04",
+       "bishop_amulet_01",
+       "bishop_amulet_04"
+      ],
+      "spells": [
+       "neutral_spell_01",
+       "neutral_spell_03",
+       "neutral_spell_02"
+      ]
+     },
+     {
+      "rate": 0.833,
+      "games": 24,
+      "ids": [
+       "bishop_05",
+       "neutral_basic_04",
+       "neutral_basic_01",
+       "bishop_02",
+       "neutral_2_06"
+      ],
+      "spells": [
+       "neutral_spell_03",
+       "neutral_spell_02",
+       "bishop_spell_01"
+      ]
+     },
+     {
+      "rate": 0.792,
+      "games": 24,
+      "ids": [
+       "bishop_04",
+       "neutral_basic_03",
+       "bishop_06",
+       "bishop_12",
+       "bishop_07",
+       "bishop_amulet_05"
+      ],
+      "spells": [
+       "bishop_spell_01",
+       "neutral_spell_03",
+       "neutral_spell_02"
+      ]
+     }
+    ],
+    "ドラゴン": [
+     {
+      "rate": 1,
+      "games": 24,
+      "ids": [
+       "neutral_2_06",
+       "dragon_11",
+       "dragon_07",
+       "neutral_basic_03",
+       "neutral_01"
+      ],
+      "spells": [
+       "dragon_spell_04",
+       "dragon_spell_01",
+       "neutral_spell_01"
+      ]
+     },
+     {
+      "rate": 1,
+      "games": 24,
+      "ids": [
+       "neutral_2_04",
+       "neutral_04",
+       "dragon_11",
+       "neutral_02",
+       "neutral_basic_04",
+       "dragon_amulet_01"
+      ],
+      "spells": [
+       "neutral_spell_01",
+       "neutral_spell_02",
+       "neutral_spell_03"
+      ]
+     },
+     {
+      "rate": 0.875,
+      "games": 24,
+      "ids": [
+       "dragon_09",
+       "dragon_08",
+       "neutral_basic_05",
+       "neutral_basic_01",
+       "dragon_11",
+       "dragon_amulet_01"
+      ],
+      "spells": [
+       "dragon_spell_01",
+       "neutral_spell_02",
+       "dragon_spell_03"
+      ]
+     }
+    ],
+    "エルフ": [
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "elf_08",
+       "elf_10",
+       "neutral_2_06",
+       "elf_19",
+       "elf_06",
+       "elf_amulet_03"
+      ],
+      "spells": [
+       "elf_spell_05",
+       "elf_spell_03",
+       "elf_spell_01"
+      ]
+     },
+     {
+      "rate": 0.875,
+      "games": 24,
+      "ids": [
+       "elf_13",
+       "neutral_2_04",
+       "elf_18",
+       "elf_10",
+       "elf_19"
+      ],
+      "spells": [
+       "neutral_spell_01",
+       "neutral_spell_03",
+       "elf_spell_05"
+      ]
+     },
+     {
+      "rate": 0.792,
+      "games": 24,
+      "ids": [
+       "elf_10",
+       "elf_2_04",
+       "neutral_2_04",
+       "neutral_2_06",
+       "elf_03"
+      ],
+      "spells": [
+       "neutral_spell_02",
+       "elf_spell_05",
+       "elf_spell_03"
+      ]
+     }
+    ],
+    "クロノス": [
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "neutral_basic_03",
+       "neutral_06",
+       "neutral_04",
+       "neutral_2_06",
+       "kronos_02"
+      ],
+      "spells": [
+       "neutral_spell_03",
+       "neutral_spell_01",
+       "neutral_spell_02"
+      ]
+     },
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "neutral_basic_02",
+       "neutral_06",
+       "kronos_02",
+       "neutral_basic_01",
+       "neutral_2_06"
+      ],
+      "spells": [
+       "neutral_spell_03",
+       "neutral_spell_01",
+       "neutral_spell_02"
+      ]
+     },
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "neutral_2_04",
+       "neutral_03",
+       "kronos_02",
+       "neutral_basic_04",
+       "neutral_2_06"
+      ],
+      "spells": [
+       "neutral_spell_01",
+       "neutral_spell_03",
+       "neutral_spell_02"
+      ]
+     }
+    ],
+    "ネメシス": [
+     {
+      "rate": 0.917,
+      "games": 24,
+      "ids": [
+       "neutral_basic_04",
+       "neutral_2_06",
+       "nemesis_01",
+       "neutral_2_04",
+       "neutral_06",
+       "nemesis_amulet_01"
+      ],
+      "spells": [
+       "nemesis_spell_03",
+       "neutral_spell_03",
+       "nemesis_spell_01"
+      ]
+     },
+     {
+      "rate": 0.917,
+      "games": 24,
+      "ids": [
+       "nemesis_07",
+       "neutral_basic_01",
+       "neutral_02",
+       "neutral_2_06",
+       "nemesis_02",
+       "nemesis_amulet_01"
+      ],
+      "spells": [
+       "nemesis_spell_05",
+       "nemesis_spell_02",
+       "neutral_spell_01"
+      ]
+     },
+     {
+      "rate": 0.875,
+      "games": 24,
+      "ids": [
+       "neutral_02",
+       "neutral_basic_01",
+       "nemesis_07",
+       "nemesis_06",
+       "neutral_2_06",
+       "nemesis_amulet_01"
+      ],
+      "spells": [
+       "nemesis_spell_03",
+       "nemesis_spell_02",
+       "nemesis_spell_04"
+      ]
+     }
+    ],
+    "ナイトメア": [
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "nightmare_12",
+       "nightmare_14",
+       "nightmare_13",
+       "nightmare_2_06",
+       "nightmare_01",
+       "nightmare_amulet_01"
+      ],
+      "spells": [
+       "neutral_spell_03",
+       "nightmare_spell_02",
+       "nightmare_spell_03"
+      ]
+     },
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "nightmare_15",
+       "nightmare_14",
+       "nightmare_2_08",
+       "nightmare_2_06",
+       "nightmare_9_01",
+       "nightmare_amulet_01"
+      ],
+      "spells": [
+       "neutral_spell_01",
+       "nightmare_spell_04",
+       "nightmare_spell_02"
+      ]
+     },
+     {
+      "rate": 0.875,
+      "games": 24,
+      "ids": [
+       "nightmare_14",
+       "neutral_05",
+       "neutral_basic_03",
+       "nightmare_09",
+       "nightmare_13",
+       "nightmare_amulet_01"
+      ],
+      "spells": [
+       "neutral_spell_01",
+       "nightmare_spell_04",
+       "neutral_spell_03"
+      ]
+     }
+    ],
+    "ロイヤル": [
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "royal_14",
+       "royal_16",
+       "neutral_03",
+       "royal_11",
+       "neutral_2_06",
+       "royal_amulet_01"
+      ],
+      "spells": [
+       "royal_spell_03",
+       "neutral_spell_02",
+       "royal_spell_02"
+      ]
+     },
+     {
+      "rate": 0.875,
+      "games": 24,
+      "ids": [
+       "royal_08",
+       "neutral_01",
+       "neutral_basic_01",
+       "royal_13",
+       "neutral_2_06",
+       "royal_amulet_01"
+      ],
+      "spells": [
+       "royal_spell_02",
+       "royal_spell_01",
+       "neutral_spell_02"
+      ]
+     },
+     {
+      "rate": 0.75,
+      "games": 24,
+      "ids": [
+       "neutral_2_06",
+       "neutral_04",
+       "neutral_05",
+       "royal_10",
+       "royal_15"
+      ],
+      "spells": [
+       "royal_spell_01",
+       "royal_spell_03",
+       "royal_spell_04"
+      ]
+     }
+    ],
+    "ウィッチ": [
+     {
+      "rate": 0.958,
+      "games": 24,
+      "ids": [
+       "neutral_2_04",
+       "witch_12",
+       "neutral_basic_04",
+       "neutral_2_06",
+       "witch_10"
+      ],
+      "spells": [
+       "witch_spell_04",
+       "neutral_spell_02",
+       "witch_spell_03"
+      ]
+     },
+     {
+      "rate": 0.875,
+      "games": 24,
+      "ids": [
+       "neutral_03",
+       "neutral_05",
+       "neutral_2_06",
+       "witch_04",
+       "witch_12"
+      ],
+      "spells": [
+       "witch_spell_01",
+       "witch_spell_03",
+       "witch_spell_06"
+      ]
+     },
+     {
+      "rate": 0.875,
+      "games": 24,
+      "ids": [
+       "neutral_2_06",
+       "witch_03",
+       "witch_11",
+       "neutral_basic_04",
+       "witch_10"
+      ],
+      "spells": [
+       "witch_spell_01",
+       "witch_spell_04",
+       "witch_spell_05"
+      ]
+     }
+    ]
+   }
+  }
+ }
+}
