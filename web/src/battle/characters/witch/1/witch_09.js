@@ -8,9 +8,9 @@ export default {
   passives: [
     {
       name: 'ファンファーレ', trigger: 'fanfare',
-      desc: '相手の場のキャラクター1体を選ぶ。それにX×50ダメージ。Xは自分の場の土の印の数である。',
+      desc: '相手の場のフォロワー1体を選ぶ。それにX×90ダメージ。Xは自分の場の土の印の数である。',
       log: '相手の場のキャラクター1体を選ぶ。それにXダメージ。Xは自分の場の土の印の数である。',
-      effects: [{ type: 'damage', stat: 'atk', mult: 0, add: 0, perEarth: 50, dmgType: 'magic', target: 'enemyOne', choose: true }],
+      effects: [{ type: 'damage', stat: 'atk', mult: 0, add: 0, perEarth: 90, dmgType: 'magic', target: 'enemyFollowerOne', choose: true }],
     },
     {
       name: '進化時', trigger: 'onEvolve',
