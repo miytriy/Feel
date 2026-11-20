@@ -283,6 +283,7 @@ export default function WikiScreen({ onExit, focus = null }) {
   const [exiting, setExiting] = useState(false) // Wiki自体を閉じるアニメーション中
   const [back, setBack] = useState(false) // 詳細から一覧へ戻ったとき(カードは順番に出さず、左右からそのまま入る)
   const timer = useRef(null)
+  const hist = useRef([])
   useEffect(() => () => clearTimeout(timer.current), [])
   // 一覧からホームへ戻るとき・カードを開くときは、左の分類は左へ、右のカード部分は右へ出ていってから切り替える
   const leaveToRoot = (after) => {
@@ -304,9 +305,12 @@ export default function WikiScreen({ onExit, focus = null }) {
     const key = key0 === 'chars' && AMULET_IDS.has(id) ? 'amulets' : key0 // アミュレットへのリンクは、アミュレットの項目で開く
     if (fromList) { setBack(false); leaveToRoot(() => setNav({ section: key, sub: key === nav.section ? nav.sub : firstSub(key), itemId: id })); return }
     setBack(false)
+    if (focus && selected) hist.current.push(nav) // 編成などから飛んできたときは、関連から開いたページを辿って戻れるようにする
     setNav({ section: key, sub: firstSub(key), itemId: id }); setQuery(''); setRarity('all')
   }
   const up = () => {
+    if (focus && selected && hist.current.length) { setBack(true); setNav(hist.current.pop()); return } // 直前に見ていたページへ
+    if (focus && selected) { exitWiki(); return } // 飛んできた元の画面(編成など)へ戻る
     if (selected) { setBack(true); setNav({ ...nav, itemId: null }) }
     else if (searching) setQuery('')
     else goRoot()
