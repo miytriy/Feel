@@ -31,7 +31,7 @@ export function validateSpell(def, opts = {}) {
     checkBad(def.effects, '')
     def.effects.forEach((e, i) => {
       if (e && e.type === 'enableSpell' && e.spell && depth < 2) errs.push(...validateSpell(e.spell, { depth: depth + 1 }).map((m) => `${label}の有効化するスペル → ${m}`))
-      if (e && e.choose && !['enemyOne', 'enemyFieldOne', 'enemyFollowerOne', 'allyFollowerOne', 'allyFieldOne'].includes(e.target)) add(`効果${i + 1}: スペルでは「対象を選ぶ(choose)」は、相手1体(enemyOne)・相手の場1体(enemyFieldOne)・相手のフォロワー1体(enemyFollowerOne)・自分のフォロワー1体(allyFollowerOne)・自分の場1体(allyFieldOne)のときだけ使えます`)
+      if (e && e.choose && !['enemyOne', 'enemyFieldOne', 'enemyFollowerOne', 'enemyCharOne', 'allyFollowerOne', 'allyFieldOne'].includes(e.target)) add(`効果${i + 1}: スペルでは「対象を選ぶ(choose)」は、相手1体(enemyOne)・相手の場1体(enemyFieldOne)・相手のフォロワー1体(enemyFollowerOne)・自分のフォロワー1体(allyFollowerOne)・自分の場1体(allyFieldOne)のときだけ使えます`)
     })
   }
   return errs

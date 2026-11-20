@@ -671,6 +671,8 @@ const TARGETS = {
   enemyField: { side: 'enemy', scope: 'unit', pick: 'all' },
   enemyTopAtk: { side: 'enemy', scope: 'main', pick: 'topAtk' }, // 相手の場のキャラクターのうち、攻撃力が最大のものからランダム1体
   enemyRandom: { side: 'enemy', scope: 'auto', pick: 'random', enemyAuto: true },
+  enemyCharRandom: { side: 'enemy', scope: 'main', pick: 'random' }, // 相手の場のキャラクター(召喚物・アミュレットは除く)からランダム1体
+  enemyCharOne: { side: 'enemy', scope: 'main', pick: 'chosenRandom' }, // 相手の場のキャラクター1体を選ぶ
   enemyFieldRandom: { side: 'enemy', scope: 'unit', pick: 'random' },
   enemyOne: { side: 'enemy', scope: 'auto', pick: 'chosenRandom', enemyAuto: true, cand: 'mainAmulet' },
   enemyFieldOne: { side: 'enemy', scope: 'unit', pick: 'chosenRandom', pool: 'enemyUnits' },
