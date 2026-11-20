@@ -392,6 +392,7 @@ function checkCond(state, unit, c) {
   if (c.mpMax != null && state.mpMax[unit.team] < c.mpMax) return false // 自分のMP最大値が、これ以上のとき
   if (c.acted && !unit.hasActed) return false // 自身が行動したあと(自分のターンを1度終えたあと)
   if (c.evolved != null && unit.evolved !== c.evolved) return false
+  if (c.allyEvolved && !state.units.some((x) => x.alive && !x.isAmulet && x.team === unit.team && x.evolved)) return false // 自分の場に、進化後のフォロワー(キャラ・召喚物)がある
   if (c.evolveTurn && state.round < EP_GRANT_ROUND) return false // 進化可能ターン: EPが配られたラウンドから戦闘終了まで
   if (c.crests != null && state.crests[unit.team].length < c.crests) return false
   if (c.combo != null && comboOf(state, unit) < c.combo) return false // コンボ: 味方の特性が使われた回数
