@@ -54,6 +54,7 @@ export const KEYWORDS = {
   finisher: { label: '必殺', desc: 'スキルでダメージを与えるとき、ターゲットに対象の最大HP15%分の確定ダメージを与える。そのターゲットが召喚物だったとき、それを破壊する' },
   drain: { label: 'ドレイン', desc: 'スキルで与えたダメージと同じだけ自身を回復' },
   barrier: { label: 'バリア', desc: '攻撃を一回0ダメージにして壊れる' },
+  noAttackFollower: { label: 'フォロワーを攻撃できない', desc: 'スキルでフォロワー(キャラ・召喚物)を攻撃できない(攻撃できる相手がいないので、スキルを発動できない)' },
   silence: { label: 'スキル発動不可', desc: 'スキルを発動できない' },
   earthSign: { label: '土の印', desc: '自分の場の土の印の数は合算される。土の印は土の秘術によって消費される。これは能力で破壊できず、相手の能力で選ばれない' },
 }
@@ -675,6 +676,7 @@ const TARGETS = {
   enemyTopAtk: { side: 'enemy', scope: 'main', pick: 'topAtk' }, // 相手の場のキャラクターのうち、攻撃力が最大のものからランダム1体
   enemyRandom: { side: 'enemy', scope: 'auto', pick: 'random', enemyAuto: true },
   enemyCharRandom: { side: 'enemy', scope: 'main', pick: 'random' }, // 相手の場のキャラクター(召喚物・アミュレットは除く)からランダム1体
+  enemyFollowerOne2: { side: 'enemy', scope: 'follower', pick: 'chosenRandom', exclude: 'enemyFollowerOne' }, // 「相手のフォロワー2体を選ぶ」の2体目(enemyFollowerOne で選んだ1体は選べない)
   enemyCharOne2: { side: 'enemy', scope: 'main', pick: 'chosenRandom', exclude: 'enemyCharOne' }, // 「相手のキャラクター2体を選ぶ」の2体目(enemyCharOne で選んだ1体は選べない。効果は enemyCharOne → enemyCharOne2 の順に書く)
   enemySummonTopAtk: { side: 'enemy', scope: 'follower', pick: 'topAtk', only: 'summon' }, // 相手の場の召喚物のうち、攻撃力が最大のものからランダム1体
   enemySummons: { side: 'enemy', scope: 'follower', pick: 'all', only: 'summon' }, // 相手の場の召喚物すべて(アミュレットは含まない)
@@ -1463,6 +1465,11 @@ function runEffects(state, source, effects, ctx = {}) {
           }
           break
         }
+        case 'gainPassive': { // 能力(パッシブ)を得る。e.passive は、キャラのパッシブと同じ書き方(戦闘中ずっと持つ)
+          t.passiveObjs = [...(t.passiveObjs || []), JSON.parse(JSON.stringify(e.passive))]
+          state.log.push(`${t.name}は「${e.passive.desc || e.passive.name}」を持つ`)
+          break
+        }
         case 'loseKeyword': { // キーワード能力(守護など)を失わせる
           const k = e.keyword || 'guard'
           if (t.keywords.includes(k)) {
@@ -1643,6 +1650,7 @@ function resolveDeaths(state, opts) {
 // ---------- 行動の一覧 ----------
 
 export function attackableTargets(state, actor) {
+  if (hasKw(actor, 'noAttackFollower')) return [] // 「フォロワーを攻撃できない」: 攻撃できる相手(キャラ・召喚物はみなフォロワー)がいない
   // スキル攻撃は、相手の場のキャラと召喚物を選べる(アミュレットは選べない)
   const candidates = state.units.filter(
     (u) => u.alive && u.team !== actor.team && !u.isAmulet && !u.stealth && !hasKw(u, 'intimidate')
