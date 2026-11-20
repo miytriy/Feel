@@ -1,4 +1,4 @@
-import featureCore from '../../../artifact/nemesis/tokens/nemesis_feature_core.js' // 付与する『フィーチャー・コア』
+import featureCore from '../../../artifact/nemesis/tokens/nemesis_feature_core.js' // 付与する『フューチャー・コア』
 import pastCore from '../../../artifact/nemesis/tokens/nemesis_past_core.js' // 付与する『パスト・コア』
 
 // レゾリューション・ミリアム(ローテーション: 伝説の幕開け = フォルダ 1)。タイプなし(ー)・パッシブなし(ー)
@@ -12,7 +12,7 @@ export default {
   tags: ['展開'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
-    { name: 'ファンファーレ', trigger: 'fanfare', desc: '『フィーチャー・コア』1つと『パスト・コア』1つを自分に付与する。', effects: giveCores },
-    { name: '進化時', trigger: 'onEvolve', desc: '【ファンファーレ】と同じ能力が働く。', log: '『フィーチャー・コア』1つと『パスト・コア』1つを自分に付与する。', effects: giveCores },
+    { name: 'ファンファーレ', trigger: 'fanfare', desc: '『フューチャー・コア』1つと『パスト・コア』1つを自分に付与する。', effects: giveCores },
+    { name: '進化時', trigger: 'onEvolve', desc: '【ファンファーレ】と同じ能力が働く。', log: '『フューチャー・コア』1つと『パスト・コア』1つを自分に付与する。', effects: giveCores },
   ],
 }

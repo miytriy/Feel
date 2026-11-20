@@ -6,6 +6,6 @@ export default {
   passives: [
     'rush', // 【突進】
     // 召喚されてから、相手にターンがまわり、そのターンが終わるとき自分を破壊する
-    { name: '相手のターン終了時', trigger: 'enemyTurnEnd', desc: 'これを破壊する。', effects: [{ type: 'destroy', target: 'self' }] },
+    { name: '相手のターン終了時', trigger: 'enemyTurnEnd', desc: '自身の行動終了後の相手のターン終了時、これを破壊。', effects: [{ type: 'destroy', target: 'self' }] },
   ],
 }

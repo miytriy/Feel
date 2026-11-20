@@ -63,7 +63,7 @@ assert.deepEqual(f3.map((a) => a.materials.join()), ['af1']) // 「アーティ�
 s3 = E.applyAction(s3, f3[0])
 assert.equal(s3.artifacts.A[0].name, '上位')
 assert.deepEqual(s3.artifacts.A.map((x) => x.name), ['上位', 'y']) // 素材にした x は無くなる
-// ネメシスの実カード: フィーチャー・コア + アーティファクト・アミュレット → アタックアーティファクト。ユニットのコスト合計で次の段階が決まる
+// ネメシスの実カード: フューチャー・コア + アーティファクト・アミュレット → アタックアーティファクト。ユニットのコスト合計で次の段階が決まる
 const fc = (await import('../../web/src/battle/artifact/nemesis/tokens/nemesis_feature_core.js')).default
 const at = (await import('../../web/src/battle/artifact/nemesis/tokens/nemesis_attack_artifact.js')).default
 const ca = (await import('../../web/src/battle/artifact/nemesis/tokens/nemesis_castle_artifact.js')).default

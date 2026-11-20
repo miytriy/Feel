@@ -1,4 +1,4 @@
-import featureCore from '../../../artifact/nemesis/tokens/nemesis_feature_core.js' // 付与する『フィーチャー・コア』
+import featureCore from '../../../artifact/nemesis/tokens/nemesis_feature_core.js' // 付与する『フューチャー・コア』
 
 // アンストッパブルガンナー(ローテーション: 伝説の幕開け = フォルダ 1)。タイプなし(ー)・パッシブなし(ー)
 export default {
@@ -9,7 +9,7 @@ export default {
   passives: [
     {
       name: 'ファンファーレ', trigger: 'fanfare',
-      desc: '『フィーチャー・コア』1つを自分に付与する。',
+      desc: '『フューチャー・コア』1つを自分に付与する。',
       effects: [{ type: 'giveArtifact', artifact: featureCore, count: 1 }], // 手持ちのアーティファクトに加わる
     },
     {
