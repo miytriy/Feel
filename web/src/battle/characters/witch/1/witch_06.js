@@ -8,10 +8,10 @@ export default {
     { name: 'ファンファーレ', trigger: 'fanfare', desc: '【土の秘術_2】これは進化する。', log: '【土の秘術_2】これは進化する。', effects: [{ type: 'evolve', earthCost: 2 }] },
     {
       name: '進化したとき', trigger: 'onEvolved', plain: true, // これが進化したとき(EPを使わない進化でも働く。【進化時】はEP進化のときだけ)
-      desc: 'これが進化したとき、相手の場のキャラクターからランダム1体に140の魔法ダメージ。自分のMPを2回復。',
-      log: 'これが進化したとき、相手の場のキャラクターからランダム1体に140の魔法ダメージ。自分のMPを2回復。',
+      desc: 'これが進化したとき、相手の場のフォロワーからランダム1体に400の魔法ダメージ。自分のMPを2回復。',
+      log: 'これが進化したとき、相手の場のフォロワーからランダム1体に400の魔法ダメージ。自分のMPを2回復。',
       effects: [
-        { type: 'damage', stat: 'mag', mult: 0, add: 140, dmgType: 'magic', target: 'enemyRandom' },
+        { type: 'damage', stat: 'mag', mult: 0, add: 400, dmgType: 'magic', target: 'enemyFollowerRandom' },
         { type: 'mp', amount: 2 },
       ],
     },
