@@ -8,6 +8,7 @@
   { "id": "neutral_basic_02", "name": "ベルエンジェル・リア", "class": "ニュートラル", "rarity": "bronze", "rotation": "basic" },
   { "id": "neutral_basic_03", "name": "煌響の使者・アンリエット", "class": "ニュートラル", "rarity": "silver", "rotation": "basic" },
   { "id": "neutral_basic_04", "name": "激震のゴリアテ", "class": "ニュートラル", "rarity": "bronze", "rotation": "basic" },
+  { "id": "neutral_basic_05", "name": "キャラバン・マンモス", "class": "ニュートラル", "rarity": "bronze", "rotation": "basic" },
   { "id": "elf_01", "name": "純粋なるウォーターフェアリー", "class": "エルフ", "rarity": "silver", "rotation": "1" },
   { "id": "elf_02", "name": "舞い踊る妖精", "class": "エルフ", "rarity": "bronze", "rotation": "1" },
   { "id": "elf_03", "name": "ベビーカーバンクル", "class": "エルフ", "rarity": "silver", "rotation": "1" },
