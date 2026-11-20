@@ -2,7 +2,7 @@
 export default {
   id: 'nemesis_attack_artifact', name: 'アタックアーティファクト', class: 'ネメシス', rarity: 'silver', type: 'アーティファクト', token: true,
   cost: 3, // 場に出すときのMP
-  fuse: { accept: { type: 'アーティファクト', amulet: false } }, // 【融合】アーティファクト・ユニット
+  fuse: { accept: { type: 'アーティファクト' } }, // 【融合】アーティファクト・ユニット(「ユニット」はアミュレットも含む。コアも素材にできる)
   stats: { hp: 100, atk: 500, def: 400, spd: 70 },
   tags: [],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
