@@ -5,7 +5,7 @@ export default {
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     'rush', // 【突進】
-    // 召喚されてから、相手にターンがまわり、そのターンが終わるとき自分を破壊する
-    { name: '相手のターン終了時', trigger: 'enemyTurnEnd', desc: '自身の行動終了後の相手のターン終了時、これを破壊。', effects: [{ type: 'destroy', target: 'self' }] },
+    // 自身が行動したあと(condition: acted)の、相手のターン終了時に自分を破壊する
+    { name: '相手のターン終了時', trigger: 'enemyTurnEnd', condition: { acted: true }, desc: '自身の行動終了後の相手のターン終了時、これを破壊。', effects: [{ type: 'destroy', target: 'self' }] },
   ],
 }

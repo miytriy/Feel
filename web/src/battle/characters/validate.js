@@ -9,11 +9,11 @@ export const CLASSES = ['エルフ', 'ロイヤル', 'ウィッチ', 'ドラゴ�
 export const RARITIES = ['legend', 'gold', 'silver', 'bronze']
 const SKILL_STATS = ['atk', 'mag']
 const DMG_TYPES = ['physical', 'magic', 'true']
-const EFFECT_TYPES = ['giveArtifact', 'pick', 'copyAmulet', 'damage', 'heal', 'buff', 'armor', 'shield', 'barrier', 'advance', 'delay', 'mp', 'ep', 'faith', 'earth', 'earthSummon', 'reanimate', 'clearCrests', 'boost', 'boostPick', 'graveyard', 'crest', 'summon', 'reenter', 'loseKeyword', 'destroy', 'vanish', 'maxHp', 'loseHp', 'enableTrait', 'gainKeyword', 'gainDoubleSkill', 'setBaseSpd', 'gainCombo', 'extraSkill', 'enableSpell', 'mode', 'evolve', 'growByDead', 'mpMax', 'spendMp', 'countdown', 'setHp', 'refreshSpells', 'mpFull']
+const EFFECT_TYPES = ['giveArtifact', 'copyPick', 'pick', 'copyAmulet', 'damage', 'heal', 'buff', 'armor', 'shield', 'barrier', 'advance', 'delay', 'mp', 'ep', 'faith', 'earth', 'earthSummon', 'reanimate', 'clearCrests', 'boost', 'boostPick', 'graveyard', 'crest', 'summon', 'reenter', 'loseKeyword', 'destroy', 'vanish', 'maxHp', 'loseHp', 'enableTrait', 'gainKeyword', 'gainDoubleSkill', 'setBaseSpd', 'gainCombo', 'extraSkill', 'enableSpell', 'mode', 'evolve', 'growByDead', 'mpMax', 'spendMp', 'countdown', 'setHp', 'refreshSpells', 'mpFull']
 const EFFECT_TARGETS = ['allyFollowerOne', 'enemyFollowerOne', 'enemyCharRandom', 'enemyCharOne', 'enemyTopAtk', 'allyAmulets', 'enemyFollowers', 'fieldFollowers', 'enemyFollowerRandom', 'allyFollowerRandom', 'allyFollowers', 'allyAmuletOne', 'self', 'opponent', 'allies', 'otherAllies', 'allyOne', 'enemies', 'enemyOne', 'enemyFieldOne', 'enemyRandom', 'enemyFieldRandom', 'summons', 'otherAllyOne', 'allyField', 'allyFieldOne', 'allyFieldRandom', 'enemyField', 'otherAllyField', 'entered', 'nearestAlly', 'fieldOthers', 'fieldSummons', 'fieldAll', 'fieldAmulets']
 const TRAIT_TARGETS = ['self', 'allies', 'otherAllies', 'allyOne', 'allyFieldOne', 'otherAllyOne', 'enemies', 'enemyOne', 'enemyRandom', 'summons']
 const BUFF_STATS = ['atk', 'mag', 'def', 'spd', 'critRate', 'critDmg', 'dmgResist', 'dmgUp']
-const CONDITION_KEYS = ['link', 'gauge', 'ultimate', 'liberation', 'faith', 'earth', 'boost', 'graveyard', 'hpBelow', 'hpAbove', 'hpAtMost', 'evolved', 'crests', 'combo', 'evolveTurn', 'awaken', 'notAwaken', 'mpMax', 'fieldCharsBelow', 'fieldCharsAtLeast']
+const CONDITION_KEYS = ['link', 'gauge', 'ultimate', 'liberation', 'faith', 'earth', 'boost', 'graveyard', 'hpBelow', 'hpAbove', 'hpAtMost', 'evolved', 'crests', 'combo', 'evolveTurn', 'awaken', 'notAwaken', 'acted', 'mpMax', 'fieldCharsBelow', 'fieldCharsAtLeast']
 
 const isNum = (x) => typeof x === 'number' && Number.isFinite(x)
 const isStr = (x) => typeof x === 'string' && x.length > 0

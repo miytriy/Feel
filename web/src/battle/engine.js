@@ -389,6 +389,7 @@ function checkCond(state, unit, c) {
   if (c.awaken && state.mpMax[unit.team] < AWAKEN_MP) return false // 【覚醒】
   if (c.notAwaken && state.mpMax[unit.team] >= AWAKEN_MP) return false // 【覚醒】でないとき(「200ダメージではなく400ダメージ」の、200のほう)
   if (c.mpMax != null && state.mpMax[unit.team] < c.mpMax) return false // 自分のMP最大値が、これ以上のとき
+  if (c.acted && !unit.hasActed) return false // 自身が行動したあと(自分のターンを1度終えたあと)
   if (c.evolved != null && unit.evolved !== c.evolved) return false
   if (c.evolveTurn && state.round < EP_GRANT_ROUND) return false // 進化可能ターン: EPが配られたラウンドから戦闘終了まで
   if (c.crests != null && state.crests[unit.team].length < c.crests) return false
@@ -1051,6 +1052,32 @@ function runEffects(state, source, effects, ctx = {}) {
       state.mp[source.team] -= x
       state.log.push(`MPを${x}消費した`)
       ctx = { ...ctx, mpSpent: x }
+      continue
+    }
+    if (e.type === 'copyPick') { // 手持ちのアーティファクト・自分の場のフォロワーから、合わせて max 体まで選び、そのコピーを召喚する
+      const team = source.team
+      const taken = ctx.copyTaken || []
+      const opts = []
+      for (const a of state.artifacts[team]) if (!a.def.noField && a.cost <= (e.maxCost ?? 99)) opts.push({ key: `art:${a.slot}`, name: `[手持ち] ${a.name}`, def: a.def })
+      for (const u of state.units) if (u.alive && u.team === team && !u.isAmulet) opts.push({ key: `unit:${u.uid}`, name: `[場] ${u.name}`, def: u.charDef })
+      const left = opts.filter((o) => !taken.includes(o.key))
+      if (!ctx.copyStop && taken.length < (e.max ?? 2) && left.length && ctx.allowPending) {
+        state.pending = {
+          uid: source.uid, effects: effects.slice(idx), candidates: [...left.map((_, i) => `mode${i}`), `mode${left.length}`],
+          modes: [...left.map((o) => ({ name: o.name, desc: '' })), { name: 'やめる', desc: '選ぶのをここまでにする' }], prompt: `コピーするものを選んでください(あと${(e.max ?? 2) - taken.length}体まで)`,
+          copy: { taken, keys: left.map((o) => o.key) }, trigger: ctx.trigger || null, nextPassive: ctx.nextPassive ?? null, spell: !!ctx.spell, spellName: ctx.spellName || state.casting || null,
+        }
+        state.log.push(`${source.name}の効果: コピーするものを選んでください`)
+        recalc(state)
+        return
+      }
+      for (const key of taken) { // 選んだものを、1体ずつコピーして召喚する(コピーは「自身の行動終了後の相手のターン終了時、これを破壊。」を持つ)
+        const o = opts.find((x) => x.key === key)
+        if (!o) continue
+        const def = { ...o.def, token: true, passives: [...(o.def.passives || []), ...(e.grant || [])] }
+        summon(state, source, def)
+      }
+      ctx = { ...ctx, copyTaken: undefined, copyStop: undefined }
       continue
     }
     if (e.type === 'mode') { // 【モード】1つ選んで、その能力が働く(選ぶまで待つ。選べない場面では先頭のモード)
@@ -2158,7 +2185,14 @@ export function applyAction(prev, action, opts = {}) {
   if (action.type === 'choose') {
     const p = state.pending
     state.pending = null
-    if (p.modes) {
+    if (p.copy) { // コピーするものを1つ選んだ(「やめる」なら、そこまでで召喚する)
+      const idx = Number(String(action.target).replace('mode', ''))
+      const stop = idx >= p.copy.keys.length
+      state.log.push(stop ? 'コピーを選ぶのをやめた' : `${p.modes[idx]?.name}を選んだ`)
+      const taken = stop ? [...p.copy.taken, '__stop'] : [...p.copy.taken, p.copy.keys[idx]]
+      runEffects(state, actor, p.effects, { opts, copyTaken: taken.filter((k) => k !== '__stop'), copyStop: stop, trigger: p.trigger, spell: p.spell, spellName: p.spellName, allowPending: !!p.spell })
+      if (p.spell && !state.pending) countCombos(state, actor, opts)
+    } else if (p.modes) {
       const idx = Number(String(action.target).replace('mode', ''))
       state.log.push(p.mpPick ? `MPを${idx}消費することにした` : `モード【${p.modes[idx]?.name}】を選んだ`)
       runEffects(state, actor, p.effects, { opts, mode: p.mpPick ? undefined : idx, mpSpent: p.mpPick ? idx : undefined, trigger: p.trigger, spell: p.spell, spellName: p.spellName })
