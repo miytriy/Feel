@@ -1479,6 +1479,14 @@ function runEffects(state, source, effects, ctx = {}) {
           if (t.alive) { t.hp = 0; t.alive = false; nDestroyed++; state.log.push(`${t.name}は破壊された`) }
           if (e.settle) resolveDeaths(state, ctx.opts) // settle: 破壊の処理(ラストワード・倒された記録)を、次の効果より先に済ませる
           break
+        case 'transform': { // 変身: 対象は、unit(キャラのデータ)に変わる。ステータス・HP・状態は新しいキャラのものになる(いる場所・チーム・uid はそのまま)。入場の能力は働かない
+          const { ct } = t
+          const from = t.name
+          Object.assign(t, makeUnit(e.unit, t.team, 0, t.field, t.uid), { ct })
+          recalc(state)
+          state.log.push(`${from}は${t.name}に変身した`)
+          break
+        }
         case 'reenter': // 入場し直す: 入場直後の状態に戻る(次の自分のターン開始時にファンファーレがもう一度働き、そのターンはスキル攻撃ができない)
           { // 再出場: ステータス・HP・行動値・バフ・状態(進化など)がすべて初期値に戻る(いる場所・チーム・uid・クラス特性はそのまま)
             const { ct } = t
@@ -1566,6 +1574,12 @@ function fireCrests(state, team, trigger, subject, opts) {
       if (p.trigger !== trigger) continue
       const source = CREST_SUBJECT_TRIGGERS.includes(trigger) ? subject : crestSource(state, crest)
       if (!source || !checkCond(state, source, p.condition) || earthShort(state, crest.team, p.effects)) continue
+      if (p.everyTurns > 1) { // 「Nターンに1回有効」: 条件に合った回数を、クレストごとに数えて、N回に1回だけ働く(最初の1回目から)
+        crest.everyCnt = crest.everyCnt || {}
+        const n = crest.everyCnt[p.name] || 0
+        crest.everyCnt[p.name] = n + 1
+        if (n % p.everyTurns !== 0) continue
+      }
       runCrestPassive(state, crest, p, source, { opts })
     }
   }
