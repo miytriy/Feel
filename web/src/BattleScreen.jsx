@@ -550,7 +550,7 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
       )}
       <NameFit text={unit.name} style={{ height: big ? 36 : 26, fontWeight: big ? 700 : 400, ...(vanishing ? { animation: 'feel-d-fade2 0.03s ease-in 0.04s forwards', willChange: 'opacity' } : {}) }} /> {/* 消滅: 名前も、青い光の円が広がりきる0.07秒までに消す */}
       {!unit.isAmulet && (
-        <div style={{ background: '#1b3a43', height: big ? 9 : 6, borderRadius: 3, marginTop: 3, position: 'relative' }}>
+        <div style={{ background: '#1b3a43', height: big ? 9 : 6, borderRadius: 3, marginTop: 3, position: 'relative', ...(vanishing ? { animation: 'feel-d-fade2 0.03s ease-in 0.04s forwards', willChange: 'opacity' } : {}) }}> {/* 消滅: 名前・数字と同じく、すぐ消す(青い光の中で体力バーだけが目立たないように) */}
           <div style={{ width: '100%', height: '100%', borderRadius: 3, background: hpColor, transformOrigin: '0 50%', transform: `scaleX(${ratio})`, transition: 'transform 0.3s' }} />
           <LossBlink unit={unit} loss={loss} />
         </div>
