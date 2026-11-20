@@ -495,7 +495,7 @@ export default function App() {
           onPartyChange={partyApi ? partyApi.setActive : null}
           onStart={(chars, spells) => {
             if (cpuSel === 'test' && unlockLv >= 1) { setTestMine({ team: chars, spells: spells || [] }); setScreen('testopp'); return }
-            setCpuRun({ id: Date.now(), level: cpuLevel, team: chars, spells: spells || [] }); setScreen('loading')
+            setCpuRun({ id: Date.now(), level: cpuLevel, team: chars, spells: spells || [], format: cpuFormat }); setScreen('loading')
           }}
           onExit={() => setScreen('cpu')}
         />
@@ -534,6 +534,7 @@ export default function App() {
         <BattleScreen
           settingsView={battleSettings}
           key={cpuRun.id}
+          format={cpuRun.format || 'rotation'}
           levelInit={cpuRun.level}
           teamInit={cpuRun.team}
           spellsInit={cpuRun.spells}

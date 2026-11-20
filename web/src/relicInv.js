@@ -36,8 +36,8 @@ export function ownerMap(s = state) {
   return m
 }
 // バトルに出す自分のキャラ定義へ、装備している遺物を反映する(CPU戦・テスト戦。対人戦はサーバーが、保存してある装備を使う)
-export const withRelicPieces = (def) => {
-  if (!RELICS_USABLE) { const { relic: _r, ...rest } = def; return rest }
+export const withRelicPieces = (def, format = DEFAULT_FORMAT) => {
+  if (!relicAllowedIn(format)) { const { relic: _r, ...rest } = def; return rest }
   const p = equippedOf(def.id).map(({ id: _id, ...r }) => r)
   return p.length ? { ...def, relicPieces: p } : def
 }
