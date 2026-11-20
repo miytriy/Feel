@@ -2205,11 +2205,11 @@ export function applyAction(prev, action, opts = {}) {
       if (p.spell && !state.pending) countCombos(state, actor, opts) // スペルは特性として数える
     } else if (p.confirm) {
       state.log.push(action.target === 'yes' ? '使うことにした' : '使わないことにした')
-      runEffects(state, actor, p.effects, { opts, answer: action.target, trigger: p.trigger, spell: p.spell, allowPending: !!p.spell })
+      runEffects(state, actor, p.effects, { opts, answer: action.target, trigger: p.trigger, spell: p.spell, allowPending: true })
       if (p.spell && !state.pending) countCombos(state, actor, opts)
     } else {
       state.log.push(`${getUnit(state, action.target).name}を選んだ`)
-      runEffects(state, actor, p.effects, { opts, chosen: action.target, ...(p.multi ? { multi: true, chosenMap: { ...p.chosenMap, [p.key]: action.target } } : {}), trigger: p.trigger, spell: p.spell, spellName: p.spellName, allowPending: !!p.spell })
+      runEffects(state, actor, p.effects, { opts, chosen: action.target, ...(p.multi ? { multi: true, chosenMap: { ...p.chosenMap, [p.key]: action.target } } : {}), trigger: p.trigger, spell: p.spell, spellName: p.spellName, allowPending: true })
       if (p.spell && !state.pending) countCombos(state, actor, opts)
     }
     if (p.trigger && p.nextPassive != null) fire(state, p.trigger, actor, { opts, allowPending: true }, p.nextPassive) // 続きのパッシブ
