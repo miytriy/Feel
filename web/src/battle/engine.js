@@ -675,6 +675,7 @@ const TARGETS = {
   enemyRandom: { side: 'enemy', scope: 'auto', pick: 'random', enemyAuto: true },
   enemyCharRandom: { side: 'enemy', scope: 'main', pick: 'random' }, // 相手の場のキャラクター(召喚物・アミュレットは除く)からランダム1体
   enemyCharOne2: { side: 'enemy', scope: 'main', pick: 'chosenRandom', exclude: 'enemyCharOne' }, // 「相手のキャラクター2体を選ぶ」の2体目(enemyCharOne で選んだ1体は選べない。効果は enemyCharOne → enemyCharOne2 の順に書く)
+  enemySummonTopAtk: { side: 'enemy', scope: 'follower', pick: 'topAtk', only: 'summon' }, // 相手の場の召喚物のうち、攻撃力が最大のものからランダム1体
   enemySummons: { side: 'enemy', scope: 'follower', pick: 'all', only: 'summon' }, // 相手の場の召喚物すべて(アミュレットは含まない)
   enemyCharOne: { side: 'enemy', scope: 'main', pick: 'chosenRandom' }, // 相手の場のキャラクター1体を選ぶ
   enemyFieldRandom: { side: 'enemy', scope: 'unit', pick: 'random' },
