@@ -1,7 +1,7 @@
 import fairy from '../1/tokens/elf_token_01.js' // 召喚・変身先の「フェアリー」
 
 export default {
-  id: 'elf_2_01', name: '翅の女王・ティターニア', class: 'エルフ', rarity: 'legend',
+  id: 'elf_2_04', name: '翅の女王・ティターニア', class: 'エルフ', rarity: 'legend',
   stats: { hp: 222, atk: 203, def: 90, spd: 74 },
   tags: ['展開', 'メインアタッカー'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 相手単体に攻撃力100%分の物理ダメージ
