@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useIsDesktop, C, FONT, DISPLAY } from './ui.js'
 import { IconClose, IconGem, StatIcon } from './icons.jsx'
+import RotationMark from './RotationMark.jsx'
+import UnlimitedMark from './UnlimitedMark.jsx'
+import InfinityMark from './InfinityMark.jsx'
 
 // CPU戦のレベル選択画面。参考: エンドフィールドの「協約空間」(案内所 → 周回)
 //   左: レベルの一覧(Lv.1〜)。選ぶと、右に詳細(ステージ名・推奨・説明・ステージ説明・敵情報・報酬)が出る
@@ -74,6 +77,14 @@ const CSS = `
 .cb-hint b { padding: 0 14px; background: #e23b3b; color: #fff; font-family: ${DISPLAY}; font-size: 26px; letter-spacing: 0.04em; }
 .cb-desc { margin: 12px 0 0; font-size: 26px; line-height: 1.75; color: #d6d6dc; }
 .cb-sec { margin-top: 24px; }
+.cb-rules { display: grid; gap: 10px; max-width: 640px; }
+.cb-rule { display: flex; align-items: center; justify-content: space-between; padding: 14px 22px; border-radius: 10px; font-weight: 800; font-size: 28px; border: 1px solid transparent; }
+.cb-rule span { display: flex; align-items: center; gap: 14px; }
+.cb-rule.on { background: linear-gradient(90deg, #1f4d9a, #153269); border-color: #4d86e0; color: #fff; }
+.cb-rule.off { background: #1b1814; border-color: #3a3328; color: ${C.mute}; opacity: .8; }
+.cb-rule .dot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #8fb4ff; background: #0b0b0e; }
+.cb-rule.on .dot { background: #32d2ff; border-color: #fff; }
+.cb-rule small { font-size: 20px; font-weight: 700; color: ${C.mute}; }
 .cb-sec h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; padding: 6px 16px; background: rgba(255,255,255,0.12); border-left: 6px solid ${C.player}; font-size: 26px; font-weight: 700; letter-spacing: 0.06em; }
 .cb-sec p { margin: 0; padding: 14px 18px; background: rgba(0,0,0,0.45); font-size: 26px; line-height: 1.75; color: #e6e6ea; white-space: pre-line; }
 .cb-enemies { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
@@ -121,6 +132,8 @@ const CSS = `
 .cb.p .cb-area, .cb.p .cb-hint, .cb.p .cb-hint b { font-size: 32px; }
 .cb.p .cb-desc, .cb.p .cb-sec p { font-size: 32px; line-height: 1.7; }
 .cb.p .cb-sec h3 { font-size: 32px; }
+.cb.p .cb-rule { font-size: 34px; }
+.cb.p .cb-rule small { font-size: 26px; }
 .cb.p .cb-enemies { grid-template-columns: repeat(2, 1fr); }
 .cb.p .cb-en { height: 132px; }
 .cb.p .cb-en .th { width: 112px; }
@@ -282,6 +295,15 @@ export default function CpuBattleScreen({ levels = [], title = 'CPU戦', gems = 
               )}
               {level.desc && <p className="cb-desc">{level.desc}</p>}
               {level.rule && <div className="cb-sec"><h3>/ステージ説明</h3><p>{level.rule}</p></div>}
+              {/* ルール(フォーマット): ランダムマッチと同じ表示。いまはローテーションだけ遊べる */}
+              <div className="cb-sec">
+                <h3>/ルール</h3>
+                <div className="cb-rules" data-testid="cb-rules">
+                  <div className="cb-rule on" data-testid="cb-rule-rotation"><span><RotationMark size={40} />ローテーション</span><i className="dot" /></div>
+                  <div className="cb-rule off"><span><UnlimitedMark size={40} />アンリミテッド</span><small>準備中</small></div>
+                  <div className="cb-rule off"><span><InfinityMark size={40} />インフィニティ</span><small>準備中</small></div>
+                </div>
+              </div>
               {level.enemies && level.enemies.length > 0 && (
                 <div className="cb-sec">
                   <h3>/敵情報</h3>
