@@ -6,7 +6,5 @@ export default {
   passives: [
     'guard', // 【守護】
     'rush', // 【突進】
-    // 召喚されてから、相手にターンがまわり、そのターンが終わるとき自分を破壊する
-    { name: '相手のターン終了時', trigger: 'enemyTurnEnd', desc: 'これを破壊する。', effects: [{ type: 'destroy', target: 'self' }] },
   ],
 }
