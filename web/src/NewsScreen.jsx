@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { C, FONT, DISPLAY, useRemembered } from './ui.js'
 import { ScreenHeader, PillTabs } from './chrome.jsx'
-import { NEWS, NEWS_CATS, isUnread, markRead } from './news.js'
+import { allNews, loadNews, subscribeNews, NEWS_CATS, isUnread, markRead } from './news.js'
 
 // ニュース。カテゴリのタブ → 記事の一覧(タップで本文が開く)。
 // タブと開いている記事は、画面を出て戻ってきても、最後のまま(useRemembered)。
@@ -36,7 +36,8 @@ export default function NewsScreen({ onExit }) {
   const [cat, setCat] = useRemembered('news.cat', 'all')
   const [open, setOpen] = useRemembered('news.open', null)
   const [, bump] = useState(0)
-  const list = NEWS.filter((n) => cat === 'all' || n.cat === cat)
+  useEffect(() => { loadNews(true); return subscribeNews(() => bump((x) => x + 1)) }, [])
+  const list = allNews().filter((n) => cat === 'all' || n.cat === cat)
   // 画面を開いたとき、開いたままの記事は既読にする。タップで開いたときも既読にする
   if (open) markRead(open)
   const toggle = (id) => { const next = open === id ? null : id; if (next) markRead(next); setOpen(next); bump((x) => x + 1) }

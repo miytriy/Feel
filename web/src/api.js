@@ -60,6 +60,7 @@ export const fetchCareer = () => request('/api/career')
 export const recordMatch = (match) => request('/api/career', { method: 'POST', body: JSON.stringify({ match }) })
 export const clearCareer = (kind) => request(kind === 'pvp' ? '/api/career?kind=pvp' : '/api/career', { method: 'DELETE' })
 export const fetchGifts = () => request('/api/gifts')
+export const fetchNews = () => plain('/api/news') // ログインしていなくても読める
 export const markMailRead = (giftId) => request('/api/mail/read', { method: 'POST', body: JSON.stringify({ giftId }) })
 export const setMailStar = (giftId, star) => request('/api/mail/star', { method: 'POST', body: JSON.stringify({ giftId, star }) })
 export const deleteMail = (giftId) => request('/api/mail/delete', { method: 'POST', body: JSON.stringify({ giftId }) })

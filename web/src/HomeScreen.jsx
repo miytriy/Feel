@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { C, FONT, DISPLAY } from './ui.js'
 import { ScreenHeader } from './chrome.jsx'
 import { IconPlay, IconCareer, IconCollection, IconAgents, IconParty, IconStore, IconLock, IconRules, IconGem, IconEvent, IconGacha, IconGear, IconMail, IconPower, IconPlus, IconNews } from './icons.jsx'
-import { unreadCount } from './news.js'
+import { unreadCount, loadNews, subscribeNews } from './news.js'
 
 // ホーム画面(参考: エンドフィールドのホーム)
 //   上の行: 設定・メールボックス / 左の列: 人事・イベント・ガチャ・購買部 / 右の列: 足跡・Wiki・編成… / 中央: 輪と PLAY
@@ -211,6 +211,8 @@ function Panel({ item, locked, badge, onPress }) {
 export default function HomeScreen({ user, me, giftCount = 0, lockedKey, unlockLevel = 0, onSelect, onLogin, onLogout }) {
   const isLocked = (it) => !!(it.account && !user && !canOpen(it.key, unlockLevel))
   const [soon, setSoon] = useState('') // 「準備中」のお知らせ
+  const [, bumpNews] = useState(0)
+  useEffect(() => { loadNews(); return subscribeNews(() => bumpNews((x) => x + 1)) }, []) // Firestore のニュースが届いたら、未読の印も更新する
   const lockedLabel = ALL.find((i) => i.key === lockedKey)?.label
   const claimable = !!(user && me && me.loginBonus && me.loginBonus.canClaim)
   const left = HOME_ITEMS.filter((i) => i.side === 'left')

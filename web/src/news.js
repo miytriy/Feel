@@ -3,6 +3,7 @@
 //   date  : 'YYYY-MM-DD'
 //   cat   : 'お知らせ' | 'アップデート' | 'イベント'
 //   title : 見出し    body : 本文(段落は配列。1行ずつ)
+import { fetchNews } from './api.js'
 export const NEWS_CATS = ['お知らせ', 'アップデート', 'イベント']
 export const NEWS = [
   {
@@ -34,5 +35,24 @@ export const NEWS = [
 const SEEN = 'feel.news.seen'
 const read = () => { try { return JSON.parse(localStorage.getItem(SEEN) || '[]') } catch { return [] } }
 export const isUnread = (id) => !read().includes(id)
-export const unreadCount = () => { const s = read(); return NEWS.filter((n) => !s.includes(n.id)).length }
+export const unreadCount = () => { const s = read(); return allNews().filter((n) => !s.includes(n.id)).length }
+
+// ---- Firebase(Firestore の news コレクション)から届くニュース ----
+// コンソールで文書を足すだけで、アプリを作り直さなくても、ニュースが増える。同じ id は、Firestore のほうが優先(あとから直せる)
+let remote = [], loadedAt = 0
+const listeners = new Set()
+export const allNews = () => {
+  const ids = new Set(remote.map((n) => n.id))
+  return [...remote, ...NEWS.filter((n) => !ids.has(n.id))].sort((a, b) => String(b.date).localeCompare(String(a.date)))
+}
+export const subscribeNews = (f) => { listeners.add(f); return () => listeners.delete(f) }
+export async function loadNews(force = false) {
+  if (!force && Date.now() - loadedAt < 60000) return
+  loadedAt = Date.now()
+  try {
+    const { news } = await fetchNews()
+    remote = Array.isArray(news) ? news : []
+    listeners.forEach((f) => f())
+  } catch { /* 読めないときは、コードに書いたニュースだけ出す */ }
+}
 export const markRead = (id) => { try { const s = read(); if (!s.includes(id)) localStorage.setItem(SEEN, JSON.stringify([...s, id])) } catch { /* 保存できなくても、画面は動く */ } }

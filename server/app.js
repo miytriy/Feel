@@ -481,6 +481,23 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
     }
   })
 
+  // ---------- ニュース(Firestore の news コレクション。コンソールで文書を足すと、アプリに出る) ----------
+  // 文書ID = 記事のid / date: 'YYYY-MM-DD' / cat: 'お知らせ'|'アップデート'|'イベント' / title / body: 文字列(改行で段落を分ける)か、文字列の配列 / published: false で非表示
+  app.get('/api/news', async (req, res) => {
+    try {
+      const snap = await db.collection('news').get()
+      const news = []
+      for (const d of snap.docs) {
+        const g = d.data()
+        if (g.published === false || !g.title) continue
+        const body = Array.isArray(g.body) ? g.body.map(String) : String(g.body || '').split(/\r?\n/).filter((x) => x.trim())
+        news.push({ id: d.id, date: String(g.date || '').slice(0, 10), cat: ['お知らせ', 'アップデート', 'イベント'].includes(g.cat) ? g.cat : 'お知らせ', title: String(g.title).slice(0, 120), body: body.slice(0, 40).map((x) => x.slice(0, 1000)) })
+      }
+      news.sort((a, b) => b.date.localeCompare(a.date))
+      res.set('Cache-Control', 'public, max-age=30').json({ news: news.slice(0, 100) })
+    } catch (e) { handleError(res, e) }
+  })
+
   // ---------- 運営からのプレゼント(メールボックス) ----------
   // メールの一覧: 全員向け + 自分宛て。受け取れるもの(期限内・未受け取り)と、受け取り済みで、まだ消していないもの。
   //   claimed: 受け取り済み / read: 既読 / star: ★(「既読削除」で消えない)。消したメール(deleted)は出さない
