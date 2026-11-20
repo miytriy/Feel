@@ -80,7 +80,8 @@ for (const [mats, want] of [[[U('u1', 1)], 'α'], [[U('u2', 2)], 'β'], [[U('u1'
   n = E.applyAction(n, f)
   assert.equal(n.artifacts.A[0].name, 'デストロイアーティファクト' + want)
 }
-assert.ok(!act(mkN([at], [A('amu', 'アーティファクト', true)], cat2)).some((a) => a.type === 'fuse')) // アミュレットは「ユニット」の素材にできない
+assert.ok(act(mkN([at], [A('amu', 'アーティファクト', true)], cat2)).some((a) => a.type === 'fuse')) // 場に出せないアミュレット(コアなど)は、実質アミュレットではないので「ユニット」の素材にできる
+assert.ok(!act(mkN([at], [M('amu2', 1, { type: 'アーティファクト', amulet: true, noField: false })], cat2)).some((a) => a.type === 'fuse')) // 場に出せるアミュレットは、「ユニット」の素材にできない
 // CPUは、アーティファクトを使わない(行動を選んでもエラーにならない)
 const AI = await import('../../web/src/battle/ai.js')
 let s2 = mk([base], [M('m_a', 2), M('m_b', 3)])

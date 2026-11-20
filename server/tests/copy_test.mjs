@@ -42,3 +42,18 @@ console.log('copy ok')
   assert.notEqual(diedActed, false, '行動前に壊れてはいけない')
   console.log('puppet ok', diedActed)
 }
+// アタック・キャッスルは、場に出せないアミュレット(コア)も素材にできる。素材のコスト合計 1→α / 2→β / 3→γ。コア同士の融合も、そのまま
+{
+  const fs = await import('node:fs')
+  const dir = new URL('../../web/src/battle/artifact/nemesis/tokens/', import.meta.url)
+  const cat = []
+  for (const f of fs.readdirSync(dir)) cat.push((await import(new URL(f, dir))).default)
+  const by = (id) => cat.find((a) => a.id === id)
+  const art = (id, i) => ({ slot: 'x' + i, id, name: by(id).name, cost: by(id).cost, type: by(id).type, amulet: !!by(id).amulet, noField: !!by(id).noField, def: by(id) })
+  const f = (a, m) => E.fusionFor(art(a, 0), m.map((x, i) => art(x, i + 1)), cat)?.name
+  assert.equal(f('nemesis_feature_core', ['nemesis_past_core']), 'アタックアーティファクト')
+  assert.equal(f('nemesis_attack_artifact', ['nemesis_feature_core']), 'デストロイアーティファクトα')
+  assert.equal(f('nemesis_castle_artifact', ['nemesis_feature_core', 'nemesis_past_core']), 'デストロイアーティファクトβ')
+  assert.equal(f('nemesis_attack_artifact', ['nemesis_feature_core', 'nemesis_past_core', 'nemesis_past_core']), 'デストロイアーティファクトγ')
+  console.log('fusion chain ok')
+}

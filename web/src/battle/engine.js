@@ -189,12 +189,12 @@ export const MAX_HAND = 9 // 手持ち(アーティファクトの手持ちは�
 export const MAX_FUSE_MATERIALS = 3 // 1回の融合に使える素材の最大数(アーティファクトの fuse.max で変えられる)
 function makeArtifact(def, i) {
   markFollowers(def)
-  return { slot: `af${i}`, id: def.id, name: def.name, cost: def.cost ?? 0, desc: def.desc ?? '', type: def.type ?? null, amulet: !!def.amulet, def }
+  return { slot: `af${i}`, id: def.id, name: def.name, cost: def.cost ?? 0, desc: def.desc ?? '', type: def.type ?? null, amulet: !!def.amulet, noField: !!def.noField, def }
 }
 // 素材の組み合わせに合う変身先(なければ null)
 export function fusionFor(art, mats, catalog = []) {
   const fuse = art.def.fuse || {}
-  if (fuse.accept && !mats.every((m) => (fuse.accept.type == null || m.type === fuse.accept.type) && (fuse.accept.amulet == null || m.amulet === fuse.accept.amulet) && (!fuse.accept.ids || fuse.accept.ids.includes(m.id)))) return null // 融合できる素材の種類(例: タイプ「アーティファクト」のアミュレット)
+  if (fuse.accept && !mats.every((m) => (fuse.accept.type == null || m.type === fuse.accept.type) && (fuse.accept.amulet == null || (fuse.accept.amulet ? m.amulet : (!m.amulet || m.noField))) && (!fuse.accept.ids || fuse.accept.ids.includes(m.id)))) return null // 融合できる素材の種類(例: タイプ「アーティファクト」のアミュレット)
   const max = fuse.max ?? MAX_FUSE_MATERIALS
   if (!mats.length || mats.length > max) return null
   const cost = mats.reduce((a, m) => a + m.cost, 0)
@@ -206,6 +206,7 @@ export function fusionFor(art, mats, catalog = []) {
   if (!hit) return null
   return typeof hit.into === 'string' ? (catalog.find((c) => c.id === hit.into || c.name === hit.into) || null) : hit.into // into は、定義そのもの / 変身先のidか名前(まだ無いカードは、できあがるまで融合できない)
 }
+// 融合の素材: amulet:true =「アミュレット」/ amulet:false =「ユニット」。場に出せないアミュレット(コアなど)は、実質アミュレットではないので、どちらの素材にもなれる
 function artifactActions(state, actor) {
   const team = actor.team
   const mp = state.mp[team]
