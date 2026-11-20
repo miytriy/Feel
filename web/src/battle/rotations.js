@@ -17,7 +17,7 @@ export const ROTATIONS = {
 }
 // ルール(対戦の形式)。ユニット・スペル・アミュレット・遺物で、同じ表を使う。
 //   rotation  : ローテーション = 「ローテーション対象」のピックアップだけ使える
-//   unlimited : アンリミテッド = これまでに登場したすべてのピックアップが使える(一部のユニットは使用禁止になることがある)
+//   unlimited : アンリミテッド = これまでに登場したすべてのピックアップが使える(一部のユニットは使用禁止になることがある)。ローテーション以外が使えないので、解放済み
 //   infinity  : インフィニティ = これまでに登場したすべてのピックアップが使える(使用禁止ユニットが指定されてからの登場。指定までは未公開)
 // ローテーション対象のピックアップは、ここの ROTATION_TARGETS に書く(期が変わったら書き換える)。
 // 今期: 伝説の幕開け(1)。ベーシックは、毎期いつでも使える扱いにしている(仮定)
@@ -27,7 +27,7 @@ export const BANNED = { rotation: [], unlimited: [], infinity: [] }
 export const FORMATS = {
   rotation: { name: 'ローテーション', rotations: ROTATION_TARGETS },
   unlimited: { name: 'アンリミテッド', rotations: 'all' },
-  infinity: { name: 'インフィニティ', rotations: 'all', open: false }, // open:false = まだ遊べない(使用禁止ユニットの指定待ち)
+  infinity: { name: 'インフィニティ', rotations: 'all' }, // open:false を付けると、まだ遊べない扱い(使用禁止ユニットの指定待ち)。遺物がローテーション・アンリミテッドで使用禁止になったので、解放済み
 }
 // 遺物(セット遺物・部位つき遺物)は、ローテーション・アンリミテッドでは使用禁止。インフィニティだけで使える
 export const RELIC_FORMATS = ['infinity']

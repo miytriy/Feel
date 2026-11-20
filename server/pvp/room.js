@@ -41,6 +41,8 @@ export function buildTeam(reg, team, { owned = null, enh = {}, format = reg.rota
     const c = reg.charById.get(id)
     if (!c || id.startsWith('test_')) return { error: `使えないキャラです(${String(id).slice(0, 40)})` }
     if (owned && !c.amulet && !(owned[id] > 0)) return { error: `所持していないキャラです(${c.name})` }
+    // 形式で使えるローテーションか(ローテーション = 今期のピックアップ(+ベーシック)だけ)。ローテーションの無いもの(トークンなど)は、ここでは見ない
+    if (c.rotation != null && !reg.rotations.rotationAllowed(format, c.rotation, c.id)) return { error: `${c.name}は、${reg.rotations.FORMATS[format]?.name || format}では使えません(${c.rotation})` }
     chars.push(c)
   }
   const v = reg.formation.validateFormation(chars)
@@ -49,6 +51,7 @@ export function buildTeam(reg, team, { owned = null, enh = {}, format = reg.rota
   for (const id of spellIds) {
     const s = reg.spellById.get(id)
     if (!s) return { error: `使えないスペルです(${String(id).slice(0, 40)})` }
+    if (s.rotation != null && !reg.rotations.rotationAllowed(format, s.rotation, s.id)) return { error: `${s.name}は、${reg.rotations.FORMATS[format]?.name || format}では使えません(${s.rotation})` }
     spells.push(s)
   }
   const sv = reg.formation.validateSpellSet(spells, chars)
@@ -59,8 +62,8 @@ export function buildTeam(reg, team, { owned = null, enh = {}, format = reg.rota
 }
 
 export class Room {
-  constructor({ code, reg, send, now = () => Date.now(), setTimer = setTimeout, clearTimer = clearTimeout, rng = Math.random, onClose = () => {}, onEnd = null, ranked = false, config = CONFIG }) {
-    Object.assign(this, { code, reg, send, now, setTimer, clearTimer, rng, onClose, onEnd, ranked, cfg: config })
+  constructor({ code, reg, send, now = () => Date.now(), setTimer = setTimeout, clearTimer = clearTimeout, rng = Math.random, onClose = () => {}, onEnd = null, ranked = false, format = reg.rotations.DEFAULT_FORMAT, config = CONFIG }) {
+    Object.assign(this, { code, reg, send, now, setTimer, clearTimer, rng, onClose, onEnd, ranked, format, cfg: config }) // format: 対戦の形式(rotation / unlimited / infinity)
     this.players = { A: null, B: null } // { uid, name, team, online, offlineSince }
     this.phase = 'waiting' // waiting → battle → done
     this.state = null

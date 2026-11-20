@@ -79,6 +79,7 @@ const CSS = `
 .cb-sec { margin-top: 24px; }
 .cb-rules { display: grid; gap: 10px; max-width: 640px; }
 .cb-rule { display: flex; align-items: center; justify-content: space-between; padding: 14px 22px; border-radius: 10px; font-weight: 800; font-size: 28px; border: 1px solid transparent; }
+.cb-rule { width: 100%; font-family: inherit; text-align: left; cursor: pointer; color: inherit; }
 .cb-rule span { display: flex; align-items: center; gap: 14px; }
 .cb-rule.on { background: linear-gradient(90deg, #1f4d9a, #153269); border-color: #4d86e0; color: #fff; }
 .cb-rule.off { background: #1b1814; border-color: #3a3328; color: ${C.mute}; opacity: .8; }
@@ -207,7 +208,7 @@ function useStage(W, H) {
 
 const firstOpen = (levels) => levels.find((l) => !l.locked && !l.cleared) || [...levels].reverse().find((l) => !l.locked) || levels[0]
 
-export default function CpuBattleScreen({ levels = [], title = 'CPU戦', gems = null, levelIdInit = null, onChallenge, onSelect = null, onExit }) {
+export default function CpuBattleScreen({ levels = [], title = 'CPU戦', gems = null, levelIdInit = null, format = 'rotation', onFormat = null, onChallenge, onSelect = null, onExit }) {
   const desktop = useIsDesktop() // PCは横長(16:9)、スマホは縦長(9:16)の舞台
   const W = desktop ? 2560 : 1440 // 舞台の基本の大きさ(部品が小さく見えるよう、大きめの舞台を縮めて映す)
   const H = desktop ? 1440 : 2560
@@ -295,13 +296,15 @@ export default function CpuBattleScreen({ levels = [], title = 'CPU戦', gems = 
               )}
               {level.desc && <p className="cb-desc">{level.desc}</p>}
               {level.rule && <div className="cb-sec"><h3>/ステージ説明</h3><p>{level.rule}</p></div>}
-              {/* ルール(フォーマット): ランダムマッチと同じ表示。いまはローテーションだけ遊べる */}
+              {/* ルール(フォーマット): ランダムマッチと同じ表示。選んだルールで使えるキャラ・スペルだけ、チームに選べる */}
               <div className="cb-sec">
                 <h3>/ルール</h3>
                 <div className="cb-rules" data-testid="cb-rules">
-                  <div className="cb-rule on" data-testid="cb-rule-rotation"><span><RotationMark size={40} />ローテーション</span><i className="dot" /></div>
-                  <div className="cb-rule off"><span><UnlimitedMark size={40} />アンリミテッド</span><small>準備中</small></div>
-                  <div className="cb-rule off"><span><InfinityMark size={40} />インフィニティ</span><small>準備中</small></div>
+                  {[['rotation', RotationMark, 'ローテーション'], ['unlimited', UnlimitedMark, 'アンリミテッド'], ['infinity', InfinityMark, 'インフィニティ']].map(([k, Mark, label]) => (
+                    <button type="button" key={k} role="radio" aria-checked={format === k} className={`cb-rule ${format === k ? 'on' : 'off'}`} onClick={() => onFormat && onFormat(k)} data-testid={`cb-rule-${k}`}>
+                      <span><Mark size={40} />{label}</span>{format === k ? <i className="dot" /> : <small />}
+                    </button>
+                  ))}
                 </div>
               </div>
               {level.enemies && level.enemies.length > 0 && (

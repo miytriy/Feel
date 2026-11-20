@@ -20,6 +20,8 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
   // マスターパスワードの機能「カジュアルで全キャラを使う」: 端末が持っている通行証を、サーバーが確かめる(ランクでは使えない)
   const allCharsOk = (m, ranked) => { try { return !ranked && !!masterPassword && typeof m.unlock === 'string' && m.unlock.length > 0 && checkToken(m.unlock, masterPassword) } catch { return false } }
   const ownErr = (msg, guest) => (guest && msg.startsWith('所持していないキャラ') ? 'アカウントがないため、使えるキャラがありません。ログインするか、設定のマスターパスワードで「カジュアルで全キャラを使う」をオンにしてください' : msg)
+  // 対戦ルール(形式)の指定。省略はローテーション。遊べないルールなら null
+  const formatOf = (reg, f) => { const k = f == null ? reg.rotations.DEFAULT_FORMAT : String(f); const F = reg.rotations.FORMATS[k]; return F && F.open !== false ? k : null }
   const queue = new Map() // uid → { uid, name, built, bp, since }(ランクマッチの待ち行列)
   const QUEUE_MAX_MS = 10 * 60 * 1000
 
@@ -68,7 +70,7 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
       if (used.has(a.uid)) continue
       let best = null
       for (const b of list) {
-        if (b.uid === a.uid || used.has(b.uid) || b.ranked !== a.ranked) continue // ランクはランク同士、カジュアルはカジュアル同士
+        if (b.uid === a.uid || used.has(b.uid) || b.ranked !== a.ranked || b.format !== a.format) continue // ランクはランク同士、カジュアルはカジュアル同士。対戦ルール(形式)も同じ人と
         const w = Math.max(matchWindow((now - a.since) / 1000), matchWindow((now - b.since) / 1000))
         const d = a.ranked ? Math.abs(a.bp - b.bp) : 0 // カジュアルは、早く組み合わせる(BPは見ない)
         if (d <= w && (!best || d < best.d)) best = { b, d }
@@ -77,7 +79,7 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
       used.add(a.uid); used.add(best.b.uid)
       queue.delete(a.uid); queue.delete(best.b.uid)
       let code; do { code = makeCode() } while (rooms.has(code))
-      const room = new Room({ code, reg: a.reg, send: null, config, onClose: dropRoom, onEnd: roomEnd, ranked: a.ranked })
+      const room = new Room({ code, reg: a.reg, send: null, config, onClose: dropRoom, onEnd: roomEnd, ranked: a.ranked, format: a.format })
       room.random = true // 待ち行列で組まれた(=ランダムマッチ)。ルームコードで入る対戦は足跡に残さない
       room.send = roomSend(room)
       rooms.set(code, room)
@@ -137,15 +139,17 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
           if (roomOfUid.has(uid)) return fail('すでに対戦ルームにいます')
           if (queue.has(uid)) return fail('すでに相手を探しています')
           const ranked = m.ranked === true
+          const format = formatOf(reg, m.format)
+          if (!format) return fail('その対戦ルールは、いまは遊べません')
           if (ranked && guest) return fail('ランクマッチには、ログインが必要です')
           const data = guest ? {} : await userData(uid)
           const own = requireOwned && !allCharsOk(m, ranked) // 持っているキャラだけ(匿名プレイヤーは、持ちキャラなし)。マスターパスワードの機能がオンのカジュアルだけ、全キャラ
-          const built = buildTeam(reg, m.team, { owned: own ? (data.owned || {}) : null, enh: data.enh || {}, relicData: data })
+          const built = buildTeam(reg, m.team, { owned: own ? (data.owned || {}) : null, enh: data.enh || {}, relicData: data, format })
           if (built.error) return fail(ownErr(built.error, guest))
           built.owned = own ? (data.owned || {}) : null
           const bp = ({ ...emptyRank(), ...(data.rank || {}) }).bp
-          queue.set(uid, { uid, name, built, bp, ranked, since: Date.now(), reg })
-          reply({ type: 'queued', bp: ranked ? bp : null, ranked, count: queue.size })
+          queue.set(uid, { uid, name, built, bp, ranked, format, since: Date.now(), reg })
+          reply({ type: 'queued', bp: ranked ? bp : null, ranked, format, count: queue.size })
           return
         }
         if (m.type === 'create' || m.type === 'join') {
@@ -153,13 +157,17 @@ export function attachPvp({ server, auth, db, allowedOrigins = [], config, requi
           if (roomOfUid.has(uid)) return fail('すでに対戦ルームにいます')
           const data = guest ? {} : await userData(uid)
           const own = requireOwned && !allCharsOk(m, false)
-          const built = buildTeam(reg, m.team, { owned: own ? (data.owned || {}) : null, enh: data.enh || {}, relicData: data })
+          const joining = m.type === 'join' ? rooms.get(String(m.code || '').toUpperCase().trim()) : null
+          if (m.type === 'join' && !joining) return fail('ルームが見つかりません')
+          const format = joining ? joining.format : formatOf(reg, m.format) // 入る人は、部屋の対戦ルールで編成を確かめる
+          if (!format) return fail('その対戦ルールは、いまは遊べません')
+          const built = buildTeam(reg, m.team, { owned: own ? (data.owned || {}) : null, enh: data.enh || {}, relicData: data, format })
           if (built.error) return fail(ownErr(built.error, guest))
           built.owned = own ? (data.owned || {}) : null
           let room
           if (m.type === 'create') {
             let code; do { code = makeCode() } while (rooms.has(code))
-            room = new Room({ code, reg, send: null, config, onClose: dropRoom, onEnd: roomEnd })
+            room = new Room({ code, reg, send: null, config, onClose: dropRoom, onEnd: roomEnd, format })
             room.send = roomSend(room)
             rooms.set(code, room)
           } else {

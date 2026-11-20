@@ -3,7 +3,7 @@ import { loadRegistry } from '../pvp/registry.js'
 import { Room, buildTeam, CONFIG } from '../pvp/room.js'
 const reg = await loadRegistry()
 const mains = reg.chars.filter((c) => !c.amulet && !c.id.startsWith('test_') && c.class === 'ニュートラル')
-const mk = (a, b) => buildTeam(reg, { ids: mains.slice(a, b).map((c) => c.id), spells: [] })
+const mk = (a, b) => buildTeam(reg, { ids: mains.slice(a, b).map((c) => c.id), spells: [] }, { format: 'unlimited' })
 let t = 0; const timers = []
 const setTimer = (fn, ms) => { const h = { fn, at: t + ms, dead: false }; timers.push(h); return h }
 const clearTimer = (h) => { if (h) h.dead = true }
@@ -41,5 +41,5 @@ const mkRoom = () => { const log = []; const r = new Room({ code: 'TEST22', reg,
   ok(buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: '鬼の形相' } }).error, 'ローテーションに入らない遺物は断る')
   ok(!buildTeam(reg, { ids, spells: [], relics: { [ids[0]]: '鬼の形相' } }, { format: 'infinity' }).error, '…でもインフィニティなら使える')
   reg.engine.RELICS['鬼の形相'].rotation = saved
-  ok(!buildTeam(reg, { ids, spells: [] }).error, '遺物の指定がなくても、今までどおり通る') }
+  ok(!buildTeam(reg, { ids, spells: [] }, { format: 'unlimited' }).error, '遺物の指定がなくても、今までどおり通る') }
 console.log(failed ? `失敗 ${failed}` : '全部OK'); process.exit(failed ? 1 : 0)

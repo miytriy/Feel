@@ -123,6 +123,8 @@ const CSS = `
 .rk-desc { margin: 0; font-size: 14px; line-height: 1.6; color: #d8d3c0 }
 .rk-rules { display: grid; gap: 8px; max-width: 360px }
 .rk-rule { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 8px; font-weight: 800; font-size: 15px; border: 1px solid transparent }
+.rk-rule { width: 100%; font-family: inherit; text-align: left; cursor: pointer; color: inherit }
+.rk-rule:disabled { cursor: default }
 .rk-rule.on { background: linear-gradient(90deg, #1f4d9a, #153269); border-color: #4d86e0; color: #fff }
 .rk-rule.off { background: #1b1814; border-color: #3a3328; color: ${C.mute}; opacity: .8 }
 .rk-rule .dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #8fb4ff; background: #0b0b0e }
@@ -270,6 +272,8 @@ export default function RandomMatchScreen({ settingsView = null, team, spells, o
   const desktop = useIsDesktop()
   const clientRef = useRef(null)
   const [modeSel, setMode] = useRemembered('random.mode', 'rank')
+  const [formatSel, setFormat] = useRemembered('random.format', 'rotation') // 対戦ルール(形式): rotation / unlimited / infinity
+  const format = ['rotation', 'unlimited', 'infinity'].includes(formatSel) ? formatSel : 'rotation'
   const mode = loggedIn ? modeSel : 'casual' // ログインしていなければ、カジュアルだけ
   const ranked = mode === 'rank'
   const [rank, setRank] = useState(null)
@@ -303,7 +307,7 @@ export default function RandomMatchScreen({ settingsView = null, team, spells, o
       else if (m.type === 'offline') back('対戦サーバーにつながりませんでした。サーバーが起動中の可能性があります。少し待って、もう一度お試しください。')
     })
     setPhase('connecting')
-    client.queue({ ids: chars.map((c) => c.id), spells: (spells || []).map((s) => s.id) }, ranked)
+    client.queue({ ids: chars.map((c) => c.id), spells: (spells || []).map((s) => s.id) }, ranked, format)
   }
   const cancel = () => { if (clientRef.current) { clientRef.current.cancelQueue(); clientRef.current.close(); clientRef.current = null } setPhase('menu') }
   const leaveBattle = () => { setOnline(null); setPhase('menu'); load() } // 対戦のあと: 最新の BP を読み直す
@@ -346,10 +350,12 @@ export default function RandomMatchScreen({ settingsView = null, team, spells, o
           <p className="rk-desc">{ranked
             ? 'ランクをかけて争う、ランダムマッチング戦です。勝つとバトルポイント(BP)が増え、一定のBPで段位が上がります。負けるとBPが減りますが、段位(エメラルド・トパーズ…)そのものは下がりません。'
             : 'ランクに影響しない、気軽なランダムマッチング戦です。BPは増減せず、すぐに相手が見つかります。ログインしていなくても、匿名プレイヤーとして遊べます。'}</p>
-          <div className="rk-rules">
-            <div className="rk-rule on rk-in" style={{ '--i': '120ms' }} data-testid="rule-rotation"><span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><RotationMark size={30} />ローテーション</span><span className="dot" /></div>
-            <div className="rk-rule off rk-in" style={{ '--i': '200ms' }}><span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><UnlimitedMark size={30} />アンリミテッド</span><small>準備中</small></div>
-            <div className="rk-rule off rk-in" style={{ '--i': '280ms' }}><span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><InfinityMark size={30} />インフィニティ</span><small>準備中</small></div>
+          <div className="rk-rules" role="radiogroup" aria-label="対戦ルール">
+            {[['rotation', RotationMark, 'ローテーション'], ['unlimited', UnlimitedMark, 'アンリミテッド'], ['infinity', InfinityMark, 'インフィニティ']].map(([k, Mark, label], n) => (
+              <button type="button" key={k} role="radio" aria-checked={format === k} className={`rk-rule ${format === k ? 'on' : 'off'} rk-in`} style={{ '--i': `${120 + n * 80}ms` }} onClick={() => setFormat(k)} disabled={busy} data-testid={`rule-${k}`}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Mark size={30} />{label}</span>{format === k ? <span className="dot" /> : <small />}
+              </button>
+            ))}
           </div>
           <div className="rk-deck">
             <h3>使用デッキ<button type="button" className="rk-btn" onClick={onChangeTeam} disabled={busy} data-testid="rank-deck">確認・変更</button></h3>

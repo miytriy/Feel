@@ -64,9 +64,9 @@ export function createPvpClient() {
 
   return {
     on(f) { subs.add(f); return () => subs.delete(f) },
-    create(team) { pendingFirst = { type: 'create', team, unlock: getAllCharsToken() }; closedByUs = false; open() },
+    create(team, format) { pendingFirst = { type: 'create', team, format, unlock: getAllCharsToken() }; closedByUs = false; open() },
     join(code, team) { pendingFirst = { type: 'join', code, team, unlock: getAllCharsToken() }; closedByUs = false; open() },
-    queue(team, ranked = false) { pendingFirst = { type: 'queue', team, ranked, unlock: ranked ? '' : getAllCharsToken() }; closedByUs = false; open() }, // ランダムマッチの待ち行列に入る(ranked=true がランク)
+    queue(team, ranked = false, format) { pendingFirst = { type: 'queue', team, ranked, format, unlock: ranked ? '' : getAllCharsToken() }; closedByUs = false; open() }, // ランダムマッチの待ち行列に入る(ranked=true がランク)
     cancelQueue() { raw({ type: 'queue-cancel' }) },
     action(action) { raw({ type: 'action', action }) },
     surrender() { raw({ type: 'surrender' }) },

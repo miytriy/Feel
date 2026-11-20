@@ -24,6 +24,7 @@ import { installKeys, applyRemoteKeys, setKeysSaver, customKeys } from './keys.j
 import { loadRelics, clearRelics } from './relicInv.js'
 import GuideScreen from './GuideScreen.jsx'
 import CpuBattleScreen from './CpuBattleScreen.jsx'
+import { rotationAllowed } from './battle/rotations.js'
 import PvpScreen from './PvpScreen.jsx'
 import RandomMatchScreen from './RandomMatchScreen.jsx'
 import { loadFormation, defaultFormation, loadSpellSet } from './battle/formation.js'
@@ -104,6 +105,8 @@ export default function App() {
   const [rulesBack, setRulesBack] = useState('play') // ルールを閉じたときに戻る画面
   // PLAY → 案内所(play) → CPU戦のレベル(cpu) → チーム(team) → 読み込み(loading) → 対戦(battle)
   const [cpuLevel, setCpuLevel] = useState(2) // 選んだCPUのレベル
+  const [cpuFormatSel, setCpuFormat] = useRemembered('cpu.format', 'rotation') // CPU戦の対戦ルール(形式)。そのルールで使えるキャラ・スペルだけを、チームに選べる
+  const cpuFormat = ['rotation', 'unlimited', 'infinity'].includes(cpuFormatSel) ? cpuFormatSel : 'rotation'
   const [cpuSel, setCpuSel] = useRemembered('cpu.level', 'lv2') // CPU戦で最後に選んでいた項目(レベル / テスト戦)
   const [testMine, setTestMine] = useState(null) // テスト戦: 自分のチームを決めたあと、相手のチームを選ぶ間、ここに置いておく { team, spells }
   const [cpuRun, setCpuRun] = useState(null) // 対戦の準備 { id, level, team, spells }
@@ -465,6 +468,8 @@ export default function App() {
       <ErrorBoundary onExit={() => setScreen('play')}>
         <CpuBattleScreen
           levels={unlockLv >= 1 ? [...CPU_LEVEL_LIST, TEST_ENTRY] : CPU_LEVEL_LIST}
+          format={cpuFormat}
+          onFormat={setCpuFormat}
           levelIdInit={unlockLv >= 1 || cpuSel !== 'test' ? cpuSel : `lv${cpuLevel}`}
           onSelect={(l) => { setCpuSel(l.id); if (!l.test) setCpuLevel(l.num) }}
           onChallenge={(l) => { setCpuSel(l.id); if (!l.test) setCpuLevel(l.num); setScreen('team') }}
@@ -480,9 +485,9 @@ export default function App() {
       <ErrorBoundary onExit={() => setScreen('cpu')}>
         <FormationScreen
           title="チーム"
-          allChars={ALL_CHARACTERS}
+          allChars={ALL_CHARACTERS.filter((c) => c.rotation == null || rotationAllowed(cpuFormat, c.rotation, c.id))}
           defaultIds={DEFAULT_PLAYER_IDS}
-          allSpells={ALL_SPELLS.filter((sp) => !sp.token)}
+          allSpells={ALL_SPELLS.filter((sp) => !sp.token && (sp.rotation == null || rotationAllowed(cpuFormat, sp.rotation, sp.id)))}
           parties={partyApi ? partyApi.parties : null}
           partyIdxInit={partyApi ? partyApi.activeIdx : null}
           onSaveParty={partyApi ? partyApi.save : null}

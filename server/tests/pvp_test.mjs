@@ -25,7 +25,7 @@ function client(token) {
 }
 
 const a = await client('u1'), b = await client('u2')
-a.send({ type: 'create', team: { ids: ids1, spells: [] } })
+a.send({ type: 'create', format: 'unlimited', team: { ids: ids1, spells: [] } })
 const created = await a.next('created'); ok(/^[A-Z2-9]{6}$/.test(created.code), 'ルームコードが発行される ' + created.code)
 // 所持していないキャラ・存在しないルーム
 const c = await client('u3'); c.send({ type: 'join', code: created.code, team: { ids: ids2, spells: [] } })
