@@ -4,7 +4,7 @@ import { Room, buildTeam } from '../pvp/room.js'
 import { saveRecords } from '../pvp/record.js'
 const reg = await loadRegistry()
 const mains = reg.chars.filter((c) => !c.amulet && !c.id.startsWith('test_') && c.class === 'ニュートラル')
-const mk = (a, b) => buildTeam(reg, { ids: mains.slice(a, b).map((c) => c.id), spells: [] })
+const mk = (a, b) => buildTeam(reg, { ids: mains.slice(a, b).map((c) => c.id), spells: [] }, { format: 'unlimited' })
 let failed = 0; const ok = (c, m) => { if (!c) { failed++; console.log('NG', m) } else console.log('ok', m) }
 const store = {}
 const db = { collection: (n) => ({ doc: (id) => ({ _k: `${n}/${id}` }) }), runTransaction: async (fn) => fn({ get: async (r) => ({ exists: !!store[r._k], data: () => store[r._k] }), set: (r, d, o) => { store[r._k] = o?.merge ? { ...(store[r._k] || {}), ...d } : d } }) }
