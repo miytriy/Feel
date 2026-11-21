@@ -1498,6 +1498,7 @@ function runEffects(state, source, effects, ctx = {}) {
           { // 再出場: ステータス・HP・行動値・バフ・状態(進化など)がすべて初期値に戻る(いる場所・チーム・uid・クラス特性はそのまま)
             const { ct } = t
             Object.assign(t, makeUnit(t.charDef, t.team, 0, t.field, t.uid), { ct })
+            if (state.active === t.uid || state.active?.uid === t.uid) t.reenteredNow = true // 自分のターン中に再出場した: 場を離れて入場し直したので、そのターンはここで終わる(ファンファーレは次の自分のターン開始時)
             recalc(state)
           }
           state.log.push(`${t.name}は再出場した`)
@@ -2180,6 +2181,20 @@ function doEvolve(state, actor, opts, free = false) { // free: 能力の効果�
 // 行動を実行して、次の行動待ちの状態を返す(元の状態は書き換えない)
 //  特性・進化を使った場合は、同じユニットのターンが続く
 export function applyAction(prev, action, opts = {}) {
+  const state = applyActionInner(prev, action, opts)
+  if (state !== prev && state.active && !state.pending && !state.winner) { // 自分のターン中に自分が再出場したら、スキルを使わせずにターンを終える
+    const actor = getActiveUnit(state)
+    if (actor?.reenteredNow) {
+      actor.reenteredNow = false
+      state.log.push(`${actor.name}は入場し直したので、ターンが終わった`)
+      endTurn(state, actor)
+      actor.hasActed = false // 入場し直したので、まだ行動していない扱い(次の自分のターン開始時に、ファンファーレがもう一度働く)
+      return advance(state, opts)
+    }
+  }
+  return state
+}
+function applyActionInner(prev, action, opts = {}) {
   if (prev.winner || !prev.active) return prev
   const state = structuredClone(prev)
   state.events = [] // 今回の行動で起きたことだけを記録する
