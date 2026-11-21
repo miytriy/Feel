@@ -1886,10 +1886,16 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   const errBox = cpuError && <div style={{ marginTop: 6, padding: 6, borderRadius: 6, background: C.dangerBg, color: C.hpLow, fontSize: 12 }}>{cpuError}</div>
 
   // ---- PC: 画面全体を使う(左=盤面、右=詳細・ログ・操作) ----
+  const wikiOverlay = wikiSpell && (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 60, overflowY: 'auto', background: '#050506' }} data-testid="bt-wiki">
+      <WikiScreen focus={{ id: wikiSpell, spell: true }} onExit={() => setWikiSpell(null)} />
+    </div>
+  )
   if (desktop) {
     return (
       <div onClick={dismissInfo} style={{ height: '100vh', display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 24px 16px', background: C.paper, color: C.ink, fontFamily: FONT, boxSizing: 'border-box', overflow: 'hidden' }}>
         <SideLog items={sideLog} big onGone={dropSideLog} />
+        {wikiOverlay}
         {hud}
         {overlays}
         {speedBar}
@@ -1944,11 +1950,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
       </div>
 
       <div style={{ flex: 1, minHeight: 10 }} />
-      {wikiSpell && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 60, overflowY: 'auto', background: '#050506' }} data-testid="bt-wiki">
-          <WikiScreen focus={{ id: wikiSpell, spell: true }} onExit={() => setWikiSpell(null)} />
-        </div>
-      )}
+      {wikiOverlay}
       <div ref={panelRef} data-keep="1" className="no-sb" style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '0 -12px', padding: '6px 12px calc(6px + env(safe-area-inset-bottom))', height: 'min(168px, 30vh)', boxSizing: 'border-box', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
         {panelInner}
       </div>
