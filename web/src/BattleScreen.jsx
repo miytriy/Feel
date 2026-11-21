@@ -635,7 +635,7 @@ function RecentFeed({ feed, big }) {
 export function AbilityNote({ unit, title, text, big = false }) {
   const col = TEAM_COLOR[unit.team]
   return (
-    <div data-testid="ability-note" aria-live="polite" style={{ position: 'fixed', zIndex: 12, pointerEvents: 'none', left: big ? 16 : 6, ...(big ? { bottom: 200 } : { top: 160 }), width: big ? 340 : 'min(260px, 62vw)', maxHeight: big ? '42vh' : '34vh', overflow: 'hidden', borderRadius: 8, background: `color-mix(in srgb, ${col} 9%, ${C.card})`, border: `2px solid ${col}`, boxShadow: `0 0 0 1px ${alpha(col, 35)}, 0 6px 18px ${alpha('#000000', 40)}`, fontSize: big ? 14 : 12, lineHeight: 1.6, animation: 'feel-note-in 0.22s ease-out backwards' }}>
+    <div data-testid="ability-note" aria-live="polite" style={{ position: 'fixed', zIndex: 12, pointerEvents: 'none', left: big ? 16 : 6, bottom: big ? 200 : 'calc(190px + env(safe-area-inset-bottom, 0px))', width: big ? 340 : 'min(260px, 62vw)', maxHeight: big ? '42vh' : '34vh', overflow: 'hidden', borderRadius: 8, background: `color-mix(in srgb, ${col} 9%, ${C.card})`, border: `2px solid ${col}`, boxShadow: `0 0 0 1px ${alpha(col, 35)}, 0 6px 18px ${alpha('#000000', 40)}`, fontSize: big ? 14 : 12, lineHeight: 1.6, animation: 'feel-note-in 0.22s ease-out backwards' }}>
       <div style={{ padding: big ? '6px 12px' : '5px 10px', fontWeight: 800, background: `linear-gradient(90deg, ${alpha(col, 34)}, ${alpha(col, 8)})`, overflowWrap: 'anywhere' }}>{title || unit.name}</div>
       <div style={{ padding: big ? '8px 12px 10px' : '6px 10px 8px', overflowWrap: 'anywhere' }}>{text}</div>
     </div>
