@@ -693,7 +693,7 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
               <span className="nm">{partyIdx != null ? `パーティー${partyIdx + 1}` : title}</span>
               {format && onFormat && (
                 <div className="fm-fmts" role="radiogroup" aria-label="フォーマット">
-                  {Object.entries(FORMATS).map(([k, f]) => <button key={k} type="button" role="radio" aria-checked={format === k} className={format === k ? 'on' : ''} onClick={() => format !== k && onFormat(k)}>{f.name}</button>)}
+                  {Object.entries(FORMATS).map(([k, f]) => <button key={k} type="button" role="radio" aria-checked={format === k} className={format === k ? 'on' : ''} onClick={() => { if (format === k) return; if (dirty && !window.confirm('未保存の変更があります。破棄してフォーマットを切り替えますか?')) return; onFormat(k) }}>{f.name}</button>)}
                 </div>
               )}
             </div>
