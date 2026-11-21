@@ -2,17 +2,25 @@
 // いまは、この端末のブラウザに保存する(アカウントのIDごとに分ける)。あとでサーバーに変えやすいよう、画面とは切り離してある。
 import { MAX_SLOTS, TOTAL_SLOTS, arrangeSlots } from './formation.js'
 import { MAX_SPELL_SLOTS } from './engine.js'
+import { FORMATS } from './rotations.js'
 
-export const MAX_PARTIES = 5
+// パーティーは、フォーマット(ローテーション・アンリミテッド・インフィニティ)ごとに MAX_PARTIES 個ずつ持つ。
+// 保存は1本の一覧で、番号 = フォーマットの順番 × MAX_PARTIES + 枠の番号(これまでの5個は、ローテーションの0〜4番にそのまま入る)
+export const MAX_PARTIES = 12
+export const PARTY_FORMATS = Object.keys(FORMATS)
+export const TOTAL_PARTIES = MAX_PARTIES * PARTY_FORMATS.length
+export const flatIndex = (format, i) => Math.max(0, PARTY_FORMATS.indexOf(format)) * MAX_PARTIES + i
+export const partiesOf = (all, format) => { const b = flatIndex(format, 0); return normalize(all).slice(b, b + MAX_PARTIES) } // そのフォーマットのパーティー(MAX_PARTIES個)
+export const localIndex = (format, flat) => { const b = flatIndex(format, 0); return Number.isInteger(flat) && flat >= b && flat < b + MAX_PARTIES ? flat - b : null } // 全体の番号 → そのフォーマットの中の番号(別のフォーマットなら null)
 const partiesKey = (uid) => `feel.parties.v1.${uid}`
 const activeKey = (uid) => `feel.parties.active.v1.${uid}`
 
 export const emptyParty = () => ({ ids: Array(TOTAL_SLOTS).fill(null), spellIds: [] })
 
-// 保存データの形を整える(壊れたデータでも、必ず MAX_PARTIES 個の正しい形にする)
+// 保存データの形を整える(壊れたデータでも、必ず TOTAL_PARTIES 個の正しい形にする)
 export function normalize(raw) {
   const list = Array.isArray(raw) ? raw : []
-  return Array.from({ length: MAX_PARTIES }, (_, i) => {
+  return Array.from({ length: TOTAL_PARTIES }, (_, i) => {
     const p = list[i]
     if (!p || !Array.isArray(p.ids)) return emptyParty()
     const ids = p.ids.slice(0, TOTAL_SLOTS).map((x) => (typeof x === 'string' ? x : null))
@@ -32,7 +40,7 @@ export function loadParties(uid, storage = globalThis.localStorage) {
 
 // index番目だけを入れ替えた、新しいパーティー一覧を返す(保存はしない)。形が正しくないときは null
 export function putParty(all, index, slots, spellSet) {
-  if (!Number.isInteger(index) || index < 0 || index >= MAX_PARTIES) return null
+  if (!Number.isInteger(index) || index < 0 || index >= TOTAL_PARTIES) return null
   const next = normalize(all)
   next[index] = { ids: slots.map((c) => (c ? c.id : null)), spellIds: spellSet.map((sp) => sp.id) }
   return next
@@ -45,7 +53,7 @@ export const hasAnyParty = (all) => normalize(all).some((p) => p.ids.some(Boolea
 
 // index番目のパーティーを保存する。成功したら、保存後の全パーティーを返す(失敗したら null)
 export function saveParty(uid, index, slots, spellSet, storage = globalThis.localStorage) {
-  if (!Number.isInteger(index) || index < 0 || index >= MAX_PARTIES) return null
+  if (!Number.isInteger(index) || index < 0 || index >= TOTAL_PARTIES) return null
   try {
     const all = loadParties(uid, storage)
     all[index] = { ids: slots.map((c) => (c ? c.id : null)), spellIds: spellSet.map((sp) => sp.id) }
@@ -60,7 +68,7 @@ export function saveParty(uid, index, slots, spellSet, storage = globalThis.loca
 export function getActiveParty(uid, storage = globalThis.localStorage) {
   try {
     const n = JSON.parse(storage.getItem(activeKey(uid)) || 'null')
-    return Number.isInteger(n) && n >= 0 && n < MAX_PARTIES ? n : null
+    return Number.isInteger(n) && n >= 0 && n < TOTAL_PARTIES ? n : null
   } catch {
     return null
   }

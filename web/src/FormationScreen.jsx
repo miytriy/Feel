@@ -4,6 +4,7 @@ import {
   MAX_SLOTS, MAX_AMULET_SLOTS, validateFormation, canPlace, placeChar, removeChar, swapSlots, quickFill,
   saveFormation, loadFormation, defaultFormation, MAX_SPELL_SLOTS, saveSpellSet, loadSpellSet, validateSpellSet, canUseSpell, spellClassOf, teamClassOf,
 } from './battle/formation.js'
+import { FORMATS } from './battle/rotations.js'
 import { MAX_PARTIES, partyToSlots, partyToSpells, partyCount } from './battle/parties.js'
 import { RARITY } from './CodexScreen.jsx'
 import WikiScreen from './WikiScreen.jsx'
@@ -22,6 +23,7 @@ import { artOf, ArtImg, useArtStatus } from './charArt.jsx'
 //
 // props は、これまでの FormationScreen と同じ
 //   parties: アカウントのパーティー(最大 MAX_PARTIES。なければ null)。partyIdxInit: 最初に開くパーティーの番号
+//   format / onFormat: 渡すと、チップの右にフォーマット(ローテーション・アンリミテッド・インフィニティ)の切り替えが出る(パーティーはフォーマットごとに持つ)。切り替えたら、画面は作り直される(key を format にする)
 //   onSaveParty(番号, スロット, スペル): 保存して、成功なら true
 //   onStart がないときは「保存するだけの編成画面」(PARTY)になる
 
@@ -118,8 +120,12 @@ const CSS = `
 .fm-chip { display: flex; align-items: center; margin-bottom: 14px; }
 .fm-chip .ic { width: 78px; height: 52px; border-radius: 26px 0 0 26px; background: #f2f2f3; color: #1c1c1f; font-size: 28px; display: grid; place-items: center; }
 .fm-chip .nm { min-width: 240px; height: 52px; padding: 0 20px; display: flex; align-items: center; background: rgba(0,0,0,0.55); border-left: 4px solid ${C.player}; font-size: 28px; font-weight: 700; letter-spacing: 0.04em; }
-.fm-tabs { display: flex; gap: 6px; }
-.fm-tabs button { width: 96px; height: 62px; padding: 0; min-height: 0; border: 0; background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.65); cursor: pointer; transition: background 0.15s; line-height: 1.15; }
+.fm-tabs { display: flex; flex-wrap: wrap; gap: 6px; width: 1074px; }
+.fm-fmts { display: flex; gap: 6px; margin-left: 12px; }
+.fm-fmts button { height: 52px; padding: 0 20px; border: 0; background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.65); font-size: 24px; font-weight: 700; cursor: pointer; }
+.fm-fmts button:hover, .fm-fmts button:focus-visible { background: rgba(255,255,255,0.28); outline: none; }
+.fm-fmts button.on { background: ${C.player}; color: ${C.onAccent}; }
+.fm-tabs button { width: 84px; height: 62px; padding: 0; min-height: 0; border: 0; background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.65); cursor: pointer; transition: background 0.15s; line-height: 1.15; }
 .fm-tabs button b { display: block; font-family: ${DISPLAY}; font-weight: 700; font-size: 26px; letter-spacing: 0.06em; }
 .fm-tabs button small { display: block; font-size: 17px; font-weight: 600; opacity: 0.85; }
 .fm-tabs button:hover, .fm-tabs button:focus-visible { background: rgba(255,255,255,0.28); outline: none; }
@@ -265,9 +271,11 @@ const CSS = `
 .fm.p .fm-sinfo .nm { font-size: 22px; }
 .fm.p .fm-sinfo .ds { font-size: 18px; }
 .fm.p .fm-sinfo .add { height: 60px; padding: 0 20px; font-size: 22px; }
-.fm.p .fm-team { left: 48px; bottom: auto; top: 1566px; }
+.fm.p .fm-team { left: 48px; bottom: auto; top: 1534px; }
 .fm.p .fm-chip { margin-bottom: 10px; }
 .fm.p .fm-chip .nm { min-width: 220px; font-size: 26px; }
+.fm.p .fm-tabs { width: 762px; }
+.fm.p .fm-fmts button { height: 48px; padding: 0 14px; font-size: 22px; }
 .fm.p .fm-tabs button { width: 122px; height: 64px; }
 .fm.p .fm-btns { left: 48px; right: 48px; bottom: 64px; gap: 14px; }
 .fm.p .fm-btn { flex: 1; min-width: 0; height: 100px; padding-left: 22px; font-size: 27px; gap: 8px; }
@@ -355,7 +363,7 @@ function useStage(W, H) {
   return { scale, sw: size.w / scale, sh: size.h / scale } // 舞台は、画面いっぱいに広げる(左右・上下に隙間や切れ目ができない)
 }
 
-export default function FormationScreen({ guideFormat = 'rotation', allChars, allSpells = [], defaultIds = [], onStart, onExit, title = '編成', parties = null, partyIdxInit = null, onSaveParty = null, onPartyChange = null }) {
+export default function FormationScreen({ format = null, onFormat = null, guideFormat = 'rotation', allChars, allSpells = [], defaultIds = [], onStart, onExit, title = '編成', parties = null, partyIdxInit = null, onSaveParty = null, onPartyChange = null }) {
   useArtStatus() // 絵が読み込めないと分かったら、描き直す
   const desktop = useIsDesktop() // PCは横長(16:9)、スマホは縦長(9:16)の舞台
   // 閉じる: すぐ消さずに、閉じる動き(出てきたときの逆向き)を見せてから、onExit を呼ぶ
@@ -683,6 +691,11 @@ export default function FormationScreen({ guideFormat = 'rotation', allChars, al
             <div className="fm-chip">
               <span className="ic"><IconFormation /></span>
               <span className="nm">{partyIdx != null ? `パーティー${partyIdx + 1}` : title}</span>
+              {format && onFormat && (
+                <div className="fm-fmts" role="radiogroup" aria-label="フォーマット">
+                  {Object.entries(FORMATS).map(([k, f]) => <button key={k} type="button" role="radio" aria-checked={format === k} className={format === k ? 'on' : ''} onClick={() => format !== k && onFormat(k)}>{f.name}</button>)}
+                </div>
+              )}
             </div>
             <div className="fm-tabs" role="tablist" aria-label="パーティー">
               {Array.from({ length: MAX_PARTIES }, (_, i) => {

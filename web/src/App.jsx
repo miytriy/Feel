@@ -36,7 +36,7 @@ import { loadSettings, saveSettings, cpuDelayOf } from './settings.js'
 import { ALL_CHARACTERS } from './battle/characters/index.js'
 import { setEnhanceLevels } from './enhance.js'
 import { ALL_SPELLS } from './battle/spells/index.js'
-import { loadParties, saveParty, getActiveParty, setActiveParty, partyToSlots, partyToSpells, partyCount, putParty, cacheParties, hasAnyParty, normalize as normalizeParties } from './battle/parties.js'
+import { loadParties, saveParty, getActiveParty, setActiveParty, partyToSlots, partyToSpells, partyCount, putParty, cacheParties, hasAnyParty, normalize as normalizeParties, partiesOf, flatIndex, localIndex } from './battle/parties.js'
 import ErrorBoundary from './ErrorBoundary.jsx'
 import GateScreen from './GateScreen.jsx'
 import { useIsDesktop, useRemembered, C, FONT } from './ui.js'
@@ -106,6 +106,8 @@ export default function App() {
   // PLAY → 案内所(play) → CPU戦のレベル(cpu) → チーム(team) → 読み込み(loading) → 対戦(battle)
   const [cpuLevel, setCpuLevel] = useState(2) // 選んだCPUのレベル
   const [cpuFormatSel, setCpuFormat] = useRemembered('cpu.format', 'rotation') // CPU戦の対戦ルール(形式)。そのルールで使えるキャラ・スペルだけを、チームに選べる
+  const [partyFormatSel, setPartyFormat] = useRemembered('party.format', 'rotation') // 編成画面で開いているフォーマット(出入りしても、最後に選んだものに戻る)
+  const partyFormat = ['rotation', 'unlimited', 'infinity'].includes(partyFormatSel) ? partyFormatSel : 'rotation'
   const cpuFormat = ['rotation', 'unlimited', 'infinity'].includes(cpuFormatSel) ? cpuFormatSel : 'rotation'
   const [cpuSel, setCpuSel] = useRemembered('cpu.level', 'lv2') // CPU戦で最後に選んでいた項目(レベル / テスト戦)
   const [testMine, setTestMine] = useState(null) // テスト戦: 自分のチームを決めたあと、相手のチームを選ぶ間、ここに置いておく { team, spells }
@@ -376,21 +378,25 @@ export default function App() {
   const current = ACCOUNT_SCREENS.includes(screen) && !canUse(screen) ? 'home' : screen
   const goHome = () => setScreen('home')
 
-  const partyApi = partyUid && parties
+  // パーティーは、フォーマットごとに持つ(アカウントには、全フォーマット分を1本の一覧で保存する)。fmt のぶんだけを、画面に渡す
+  const partyApiFor = (fmt) => partyUid && parties
     ? {
-        parties,
-        activeIdx,
+        parties: partiesOf(parties, fmt),
+        activeIdx: localIndex(fmt, activeIdx),
         save: (i, slots, spellSet) => {
-          const all = user ? putParty(parties, i, slots, spellSet) : saveParty(partyUid, i, slots, spellSet)
+          const flat = flatIndex(fmt, i)
+          const all = user ? putParty(parties, flat, slots, spellSet) : saveParty(partyUid, flat, slots, spellSet)
           if (!all) return false
-          if (user) { cacheParties(partyUid, all); saveParties(all, i).catch(() => {}) } // アカウントに保存する
+          if (user) { cacheParties(partyUid, all); saveParties(all, flat).catch(() => {}) } // アカウントに保存する
           setParties(all)
-          if (user) setActiveIdx(i)
+          if (user) setActiveIdx(flat)
           return true
         },
-        setActive: (i) => { setActiveIdx(i); setActiveParty(partyUid, i); if (user) saveParties(parties, i).catch(() => {}) },
+        setActive: (i) => { const flat = flatIndex(fmt, i); setActiveIdx(flat); setActiveParty(partyUid, flat); if (user) saveParties(parties, flat).catch(() => {}) },
       }
     : null
+  const partyApi = partyApiFor(cpuFormat) // CPU戦: 選んだ対戦ルールのパーティー
+  const randomPartyApi = partyApiFor('rotation') // ランダムマッチ・ルーム対戦は、いまはローテーションだけ
 
   if (current === 'play') {
     return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onRandom={() => setScreen('random')} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
@@ -414,7 +420,7 @@ export default function App() {
 
   // ランダムマッチ(ランク/カジュアル): 画面 → (使用デッキの確認・変更で)チームを選ぶ → 画面にもどる
   if (current === 'random') {
-    const activeP = partyApi && partyApi.parties ? partyApi.parties[partyApi.activeIdx] : null // 編成画面で選んでいるパーティ
+    const activeP = randomPartyApi && randomPartyApi.parties && randomPartyApi.activeIdx != null ? randomPartyApi.parties[randomPartyApi.activeIdx] : null // 編成画面で選んでいるパーティ
     const saved = rankRun || (activeP && partyCount(activeP) > 0
       ? { team: partyToSlots(activeP, ALL_CHARACTERS).filter(Boolean), spells: partyToSpells(activeP, ALL_SPELLS) }
       : { team: (loadFormation(ALL_CHARACTERS) || defaultFormation(ALL_CHARACTERS, DEFAULT_PLAYER_IDS)).filter(Boolean), spells: loadSpellSet(ALL_SPELLS) })
@@ -441,10 +447,10 @@ export default function App() {
           allChars={ALL_CHARACTERS}
           defaultIds={DEFAULT_PLAYER_IDS}
           allSpells={ALL_SPELLS.filter((sp) => !sp.token)}
-          parties={partyApi ? partyApi.parties : null}
-          partyIdxInit={partyApi ? partyApi.activeIdx : null}
-          onSaveParty={partyApi ? partyApi.save : null}
-          onPartyChange={partyApi ? partyApi.setActive : null}
+          parties={randomPartyApi ? randomPartyApi.parties : null}
+          partyIdxInit={randomPartyApi ? randomPartyApi.activeIdx : null}
+          onSaveParty={randomPartyApi ? randomPartyApi.save : null}
+          onPartyChange={randomPartyApi ? randomPartyApi.setActive : null}
           onStart={(chars, spells) => { setRankRun({ team: chars.filter(Boolean), spells: spells || [] }); setScreen('random') }}
           onExit={() => setScreen('random')}
         />
@@ -543,7 +549,7 @@ export default function App() {
           onBackLevel={() => setScreen('cpu')}
           onBackTeam={() => setScreen('team')}
           rewardApi={rewardApi}
-          partyApi={partyApi}
+          partyApi={partyApiFor(cpuRun.format || 'rotation')}
           cpuDelay={cpuDelayOf(settings)}
         />
       </ErrorBoundary>
@@ -558,17 +564,22 @@ export default function App() {
   }
 
   if (current === 'party') {
-    if (!partyApi) return null // パーティーは、この端末から一瞬で読み込まれる(ロード画面を一瞬だけ出すと、ちらつくため、何も出さない)
+    const pApi = partyApiFor(partyFormat)
+    if (!pApi) return null // パーティーは、この端末から一瞬で読み込まれる(ロード画面を一瞬だけ出すと、ちらつくため、何も出さない)
     return (
       <ErrorBoundary onExit={goHome}>
         <FormationScreen
+          key={partyFormat}
           title="編成"
-          allChars={ALL_CHARACTERS}
-          allSpells={ALL_SPELLS.filter((sp) => !sp.token)}
-          parties={partyApi.parties}
-          partyIdxInit={activeIdx ?? 0}
-          onSaveParty={partyApi.save}
-          onPartyChange={partyApi.setActive}
+          format={partyFormat}
+          onFormat={setPartyFormat}
+          guideFormat={partyFormat}
+          allChars={ALL_CHARACTERS.filter((c) => c.rotation == null || rotationAllowed(partyFormat, c.rotation, c.id))}
+          allSpells={ALL_SPELLS.filter((sp) => !sp.token && (sp.rotation == null || rotationAllowed(partyFormat, sp.rotation, sp.id)))}
+          parties={pApi.parties}
+          partyIdxInit={pApi.activeIdx ?? 0}
+          onSaveParty={pApi.save}
+          onPartyChange={pApi.setActive}
           onExit={goHome}
         />
       </ErrorBoundary>

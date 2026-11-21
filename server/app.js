@@ -292,20 +292,21 @@ export function createApp({ db, auth, FieldValue, masterPassword = '', allowedOr
     }
   })
 
-  // パーティー(編成の保存枠)。アカウントに保存する(本人だけが読み書きできる)。形: { list: [{ ids: [キャラid|null ×7], spellIds: [...] } ×最大5], active: 番号|null }
+  // パーティー(編成の保存枠)。アカウントに保存する(本人だけが読み書きできる)。形: { list: [{ ids: [キャラid|null ×7], spellIds: [...] } ×最大36(フォーマット3つ×12)], active: 番号|null }
+  const PARTY_TOTAL = 36 // パーティーの数: フォーマット3つ(ローテーション・アンリミテッド・インフィニティ)×12(web/src/battle/parties.js と同じ数)
   app.post('/api/parties', requireAuth, async (req, res) => {
     try {
       const src = req.body?.list
-      if (!Array.isArray(src) || src.length > 5) throw new HttpError(400, 'パーティーの形がちがいます')
+      if (!Array.isArray(src) || src.length > PARTY_TOTAL) throw new HttpError(400, 'パーティーの形がちがいます')
       const idOk = (x) => typeof x === 'string' && x.length > 0 && x.length <= 64
-      const list = Array.from({ length: 5 }, (_, i) => {
+      const list = Array.from({ length: PARTY_TOTAL }, (_, i) => {
         const p = src[i]
         if (!p || !Array.isArray(p.ids)) return { ids: Array(7).fill(null), spellIds: [] }
         const ids = p.ids.slice(0, 7).map((x) => (idOk(x) ? x : null))
         while (ids.length < 7) ids.push(null)
         return { ids, spellIds: Array.isArray(p.spellIds) ? p.spellIds.filter(idOk).slice(0, 3) : [] }
       })
-      const active = Number.isInteger(req.body?.active) && req.body.active >= 0 && req.body.active < 5 ? req.body.active : null
+      const active = Number.isInteger(req.body?.active) && req.body.active >= 0 && req.body.active < PARTY_TOTAL ? req.body.active : null
       await userRefOf(req.user.uid).set({ parties: { list, active }, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
       res.json({ parties: { list, active } })
     } catch (e) {
