@@ -297,8 +297,8 @@ function useSummonSlide() {
 
 const EVO_IMG = (n) => `url(${import.meta.env?.BASE_URL || '/'}fx/evolve/${n}.webp)`
 const EVO_L = { position: 'absolute', inset: 0, backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', willChange: 'transform, opacity' }
-const EVO_RB = [[0, 0.9], [0.13, 0.7]]
-const EVO_SPARK = Array.from({ length: 16 }, (_, n) => { const a = n * 2.39996; const rr = 30 + (n % 5) * 9; return { x: 50 + Math.cos(a) * rr * 0.8, y: 50 + Math.sin(a) * rr * 0.9, s: 2 + (n % 3) * 1.5, dx: Math.round(Math.cos(a) * 14), dy: -10 - (n % 4) * 6, d: 0.74 + (n % 6) * 0.06, dur: 0.5 + (n % 4) * 0.1 } })
+const EVO_RB = [[0.03, 0.9], [0.1, 0.7]]
+const EVO_SPARK = Array.from({ length: 24 }, (_, n) => { const a = n * 2.39996; const ring = 54 + (n % 4) * 7; return { x: 50 + Math.cos(a) * ring, y: 50 + Math.sin(a) * ring * 1.05, s: 2 + (n % 3) * 1.6, dx: Math.round(Math.cos(a) * (14 + (n % 3) * 6)), dy: -8 - (n % 4) * 7, d: 0.42 + (n % 8) * 0.03, dur: 0.38 + (n % 4) * 0.08 } }) // 鎖がほどけて砕け、青白い破片になって外へ散る(動画: 鎖が絞られ → ほどけ → 破片)
 // 名前が枠に入り切らないときは、2行にせず、1行に収まるまで文字を小さくする(動かさない)。
 // 小さくしすぎて読めなくならないよう、下限(元の約55%)で止め、それでも入らない分は「…」で省く
 const NAME_MIN_RATIO = 0.55
@@ -488,18 +488,18 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
         // → ③縁が金色に光る → ④白い光の球がユニットを包む → ⑤白い鎖状の輪が回って消える。質感は web/tools/bake-evolve.py で画像に焼き込み済み(動かすのは transform と opacity だけ)
         <span key={`evo-${tick}`} aria-hidden="true" data-testid="fx-evolve" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 8 }}>
           <span style={{ position: 'absolute', left: '50%', top: '50%', height: '280%', aspectRatio: '1', transform: 'translate(-50%, -50%)' }}>
-            {EVO_RB.map(([d, o], n) => <span key={`rb${n}`} style={{ ...EVO_L, backgroundImage: EVO_IMG('rainbow'), opacity: 0, animation: `feel-ev2-rb 0.6s ease-out ${d}s both`, '--o': o }} />)}
-            <span style={{ ...EVO_L, backgroundImage: EVO_IMG('rays'), opacity: 0, animation: 'feel-ev2-ray 0.5s ease-out 0.04s both' }} />
-            <span style={{ ...EVO_L, backgroundImage: EVO_IMG('rays'), opacity: 0, animation: 'feel-ev2-burst 0.34s ease-out 0.26s both' }} />
+            {EVO_RB.map(([d, o], n) => <span key={`rb${n}`} style={{ ...EVO_L, backgroundImage: EVO_IMG('rainbow'), opacity: 0, animation: `feel-ev2-rb 0.42s ease-out ${d}s both`, '--o': o }} />)}
+            <span style={{ ...EVO_L, backgroundImage: EVO_IMG('rays'), opacity: 0, animation: 'feel-ev2-ray 0.42s ease-out 0s both' }} />
+            <span style={{ ...EVO_L, backgroundImage: EVO_IMG('rays'), opacity: 0, animation: 'feel-ev2-burst 0.3s ease-out 0.04s both' }} />
           </span>
-          <span style={{ position: 'absolute', inset: 0, borderRadius: 8, background: '#fff', opacity: 0, animation: 'feel-ev2-flash 0.36s ease-out 0.26s both' }} />
-          <span style={{ position: 'absolute', inset: -2, borderRadius: 10, boxShadow: '0 0 16px 5px rgba(255,236,150,0.95), inset 0 0 14px 2px rgba(255,244,190,0.8)', opacity: 0, animation: 'feel-ev2-rim 1.15s ease-in-out 0.3s both', willChange: 'opacity' }} />
-          <span style={{ position: 'absolute', left: '50%', top: '50%', height: '122%', aspectRatio: '1', transform: 'translate(-50%, -50%)' }}><span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.98) 0%, rgba(255,235,250,0.95) 45%, rgba(255,214,240,0.75) 72%, rgba(255,255,255,0) 100%)', opacity: 0, animation: 'feel-ev2-orb 0.34s ease-in-out 0.58s both', willChange: 'transform, opacity' }} /></span>
+          <span style={{ position: 'absolute', inset: 0, borderRadius: 8, background: '#fff', opacity: 0, animation: 'feel-ev2-flash 0.24s ease-out 0s both' }} />
+          <span style={{ position: 'absolute', inset: -2, borderRadius: 10, boxShadow: '0 0 16px 5px rgba(255,236,150,0.95), inset 0 0 14px 2px rgba(255,244,190,0.8)', opacity: 0, animation: 'feel-ev2-rim 0.8s ease-in-out 0.1s both', willChange: 'opacity' }} />
+          <span style={{ position: 'absolute', left: '50%', top: '50%', height: '122%', aspectRatio: '1', transform: 'translate(-50%, -50%)' }}><span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.98) 0%, rgba(255,235,250,0.95) 45%, rgba(255,214,240,0.75) 72%, rgba(255,255,255,0) 100%)', opacity: 0, animation: 'feel-ev2-orb 0.34s ease-out 0.02s both', willChange: 'transform, opacity' }} /></span>
           <span style={{ position: 'absolute', left: '50%', top: '50%', height: '210%', aspectRatio: '1', transform: 'translate(-50%, -50%)' }}>
-            <span style={{ ...EVO_L, backgroundImage: EVO_IMG('chain'), opacity: 0, animation: 'feel-ev2-chain 0.72s ease-out 0.7s both' }} />
-            <span style={{ ...EVO_L, backgroundImage: EVO_IMG('chain'), opacity: 0, animation: 'feel-ev2-chain2 0.72s ease-out 0.78s both' }} />
+            <span style={{ ...EVO_L, backgroundImage: EVO_IMG('chain'), opacity: 0, animation: 'feel-ev2-chain 0.62s ease-in-out 0.03s both' }} />
+            <span style={{ ...EVO_L, backgroundImage: EVO_IMG('chain'), opacity: 0, animation: 'feel-ev2-chain2 0.62s ease-in-out 0.08s both' }} />
           </span>
-          {EVO_SPARK.map((q, n) => <span key={`sp${n}`} style={{ position: 'absolute', left: `${q.x}%`, top: `${q.y}%`, width: q.s, height: q.s, marginLeft: -q.s / 2, marginTop: -q.s / 2, borderRadius: '50%', background: '#fff', boxShadow: '0 0 5px 1px rgba(255,240,190,0.95)', opacity: 0, '--dx': `${q.dx}px`, '--dy': `${q.dy}px`, animation: `feel-ev2-spark ${q.dur}s ease-out ${q.d}s both`, willChange: 'transform, opacity' }} />)}
+          {EVO_SPARK.map((q, n) => <span key={`sp${n}`} style={{ position: 'absolute', left: `${q.x}%`, top: `${q.y}%`, width: q.s, height: q.s, marginLeft: -q.s / 2, marginTop: -q.s / 2, borderRadius: '50%', background: '#fff', boxShadow: '0 0 5px 1px rgba(170,238,255,0.95)', opacity: 0, '--dx': `${q.dx}px`, '--dy': `${q.dy}px`, animation: `feel-ev2-spark ${q.dur}s ease-out ${q.d}s both`, willChange: 'transform, opacity' }} />)}
         </span>
       )}
       {unit.alive && unit.barrier > 0 && !(fx && fx.kind === 'block') && (
@@ -986,7 +986,7 @@ function reorderBoost(evs) {
   return out
 }
 export const VANISH_SLOW = 1 // 消滅エフェクトの長さの倍率。1 = 0.9秒(ルール画面と同じ基準・56コマで約62fps)。EFFECTS.mdの基準値。
-const EVENT_MS = { turn: 700, ability: 300, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1500, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 300, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1050, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ format = 'rotation', settingsView = null, onExit, cpuDelay = 700, rewardApi: rewardApiProp = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null, online = null, testInit = null }) {

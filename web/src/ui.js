@@ -113,14 +113,14 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-bar-out { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-22px); } }
     @keyframes feel-av-band { 0% { opacity: 0; transform: scaleX(0.4); } 15% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0; transform: scaleX(1.2); } }
     @keyframes feel-av-chev { 0% { opacity: 0; } 15% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; } }
-    @keyframes feel-ev2-rb { 0% { opacity: 0; transform: scale(0.45); } 25% { opacity: var(--o, 0.9); } 100% { opacity: 0; transform: scale(1.5); } }
-    @keyframes feel-ev2-ray { 0% { opacity: 0; transform: scale(0.5) rotate(0deg); } 45% { opacity: 0.8; } 100% { opacity: 0; transform: scale(1.15) rotate(8deg); } }
+    @keyframes feel-ev2-rb { 0% { opacity: 0; transform: scale(0.55); } 30% { opacity: var(--o, 0.9); } 100% { opacity: 0; transform: scale(1.3); } }
+    @keyframes feel-ev2-ray { 0% { opacity: 0; transform: scale(0.55) rotate(0deg); } 25% { opacity: 0.9; } 100% { opacity: 0; transform: scale(1.2) rotate(6deg); } }
     @keyframes feel-ev2-burst { 0% { opacity: 0; transform: scale(0.7); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.5); } }
-    @keyframes feel-ev2-flash { 0% { opacity: 0; } 30% { opacity: 0.55; } 100% { opacity: 0; } }
-    @keyframes feel-ev2-rim { 0% { opacity: 0; } 25% { opacity: 0.95; } 60% { opacity: 0.8; } 100% { opacity: 0; } }
-    @keyframes feel-ev2-orb { 0% { opacity: 0; transform: scale(0.5); } 40% { opacity: 0.95; transform: scale(1); } 100% { opacity: 0; transform: scale(1.25); } }
-    @keyframes feel-ev2-chain { 0% { opacity: 0; transform: scale(0.8) rotate(-30deg); } 22% { opacity: 1; } 100% { opacity: 0; transform: scale(1.12) rotate(30deg); } }
-    @keyframes feel-ev2-chain2 { 0% { opacity: 0; transform: scale(0.9) rotate(30deg); } 22% { opacity: 0.8; } 100% { opacity: 0; transform: scale(1.2) rotate(-30deg); } }
+    @keyframes feel-ev2-flash { 0% { opacity: 0; } 22% { opacity: 1; } 55% { opacity: 0.45; } 100% { opacity: 0; } }
+    @keyframes feel-ev2-rim { 0% { opacity: 0; } 20% { opacity: 0.95; } 55% { opacity: 0.7; } 100% { opacity: 0; } }
+    @keyframes feel-ev2-orb { 0% { opacity: 0; transform: scale(0.6); } 30% { opacity: 0.85; transform: scale(1); } 100% { opacity: 0; transform: scale(1.35); } }
+    @keyframes feel-ev2-chain { 0% { opacity: 0; transform: scale(1.12) rotate(-12deg); } 16% { opacity: 1; } 48% { opacity: 1; transform: scale(0.9) rotate(14deg); } 100% { opacity: 0; transform: scale(1.22) rotate(42deg); } }
+    @keyframes feel-ev2-chain2 { 0% { opacity: 0; transform: scale(1.16) rotate(12deg); } 16% { opacity: 0.9; } 48% { opacity: 0.9; transform: scale(0.94) rotate(-14deg); } 100% { opacity: 0; transform: scale(1.26) rotate(-42deg); } }
     @keyframes feel-ev2-spark { 0% { opacity: 0; transform: translate(0, 0) scale(0.5); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); } }
     @keyframes feel-d-haze { 0% { opacity: 0; transform: scale(0.5); } 15% { opacity: 0.9; transform: scale(0.9); } 100% { opacity: 0; transform: scale(1.5); } }
     @keyframes feel-d-gold { 0%, 8% { opacity: 0; transform: translate(0, 0) scale(0.4); } 22% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); } }
