@@ -126,6 +126,8 @@ const CSS = `
 @keyframes wk-out-bl { to { opacity: 0; transform: translate(-90px, 90px); } }
 @keyframes wk-out-br { to { opacity: 0; transform: translate(90px, 90px); } }
 @keyframes wk-down { to { opacity: 0; transform: translateY(34px); } }
+.wk.exiting.quick { animation: wk-fadeout 0.12s ease-out forwards; }
+.wk.exiting.quick .wk-corner, .wk.exiting.quick .wk-tile, .wk.exiting.quick .wk-bar { animation: none; }
 .wk.exiting { pointer-events: none; animation: wk-fadeout 0.2s 0.34s ease-in forwards; }
 .wk.exiting .wk-corner.tl { animation: wk-out-tl 0.4s cubic-bezier(0.5, 0, 0.8, 0.4) forwards; }
 .wk.exiting .wk-corner.tr { animation: wk-out-tr 0.4s cubic-bezier(0.5, 0, 0.8, 0.4) forwards; }
@@ -295,7 +297,7 @@ export default function WikiScreen({ onExit, focus = null }) {
   const exitWiki = () => {
     if (exiting) return
     setExiting(true)
-    timer.current = setTimeout(onExit, 540)
+    timer.current = setTimeout(onExit, focus ? 140 : 540) // 編成・戦闘の上に重ねているとき(focus)は、すぐ消す(長い退場の演出は、Wikiのホーム用)
   }
   const goRootNow = () => { setBack(false); setNav({ section: null, sub: 'all', itemId: null }); setQuery(''); setRarity('all') }
   const goRoot = () => { setBack(false); leaveToRoot(goRootNow) }
@@ -374,7 +376,7 @@ export default function WikiScreen({ onExit, focus = null }) {
   // ---- ホーム: 項目のタイル ----
   if (isRoot) {
     return (
-      <div className={`wk theme-light${exiting ? ' exiting' : ''}`} style={{ background: undefined }}>
+      <div className={`wk theme-light${exiting ? (focus ? ' exiting quick' : ' exiting') : ''}`} style={{ background: undefined }}>
         <style>{CSS}</style>
         {[['tl', { left: 110, top: 150 }], ['tr', { right: 110, top: 150 }], ['bl', { left: 110, bottom: 36 }], ['br', { right: 110, bottom: 36 }]].map(([k, p]) => <i key={k} className={`wk-corner ${k}`} style={p} />)}
         {topBar}
