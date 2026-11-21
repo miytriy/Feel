@@ -8,7 +8,7 @@ export default {
     {
       name: '進化時', trigger: 'onEvolve',
       desc: '相手の場のフォロワー1体を選ぶ。それは「再出場」する。',
-      effects: [{ type: 'reenter', target: 'enemyOne', choose: true }],
+      effects: [{ type: 'reenter', target: 'enemyFieldOne', choose: true, filter: { follower: true } }],
     },
   ],
 }

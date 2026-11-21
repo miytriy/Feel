@@ -1180,7 +1180,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
       const e = play.events[k]
       if (e.type === 'ability') {
         if (e.kind !== '進化' && !e.nolog) pendingLog.current.push({ k: `sl${sideSeq.current++}`, name: e.kind === 'スペル' ? e.name : e.owner, text: e.log || e.desc || `【${e.kind}】${e.name ?? ''}`, team: e.team })
-      } else hasEffect = true
+      } else if (e.type !== 'sync') hasEffect = true // sync(盤面の同期だけ)は効果ではない。選択待ちのとき、選ぶ前にログが出てしまうため
     }
     const logs = hasEffect || (gEnd >= play.events.length - 1 && !(state && state.pending)) ? pendingLog.current.splice(0) : [] // 対象を選ぶ能力(選択式)は、選んで効果が働くまで、ログを保留したままにする
     if (logs.length) setSideLog((l) => [...l, ...logs].slice(-SIDE_LOG_MAX))
