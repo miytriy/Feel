@@ -193,6 +193,8 @@ const CSS = `
 .fm-spell.ng { border-left-color: ${C.warn}; }
 .fm-spell .tx { flex: 1; min-width: 0; }
 .fm-spell .nm { font-size: 24px; font-weight: 700; }
+.fm-spell .wk { flex: none; width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,0.55); border: 2px solid rgba(255,255,255,0.55); color: #fff; font-size: 26px; font-weight: 700; cursor: pointer; display: grid; place-items: center; padding: 0; min-height: 0; }
+.fm-spell .wk:hover, .fm-spell .wk:focus-visible { background: #fff; color: #111; outline: none; }
 .fm-spell .ds { font-size: 17px; line-height: 1.45; color: ${C.mute}; }
 .fm-spell .ng-t { font-size: 17px; color: ${C.warn}; }
 .fm-spell button { flex: none; width: 46px; height: 46px; padding: 0; min-height: 0; border: 0; background: rgba(255,255,255,0.16); color: ${C.bad}; font-size: 22px; display: grid; place-items: center; cursor: pointer; }
@@ -561,9 +563,10 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
                 <div key={i} className={`fm-spell${ok ? '' : ' ng'}`}>
                   <div className="tx">
                     <div className="nm">✦{sp.name}(MP{sp.cost})</div>
-                    <div className="ds">{sp.class} ・ {sp.desc}</div>
+                    <div className="ds">{sp.class}</div>{/* 説明は長いので出さない。「?」でWikiへ */}
                     {!ok && <div className="ng-t">この編成では使えません</div>}
                   </div>
+                  <button type="button" className="wk sw" aria-label="Wikiで見る" onClick={() => setWikiFocus({ id: sp.id, spell: true })}>?</button>
                   <button type="button" aria-label="外す" onClick={() => setSpellSet(spellSet.filter((_, k) => k !== i))}><IconX /></button>
                 </div>
               )

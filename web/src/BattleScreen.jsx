@@ -17,6 +17,7 @@ import { withRelicPieces } from './relicInv.js'
 import { ME, OPP, setMe, winnerView } from './perspective.js'
 import { VanishFx, VANISH_BASE_MS } from './VanishFx.jsx'
 import { useHotkey } from './keys.js'
+import WikiScreen from './WikiScreen.jsx'
 import { loadSettings } from './settings.js'
 import { TABLE, ROW_OTHER, rowOf, groupOfRow } from './battle/abilityOrder.js'
 // 強化のエフェクトで、文字ではなくアイコンで見せるステータス
@@ -1072,6 +1073,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     ? accelActs.map((a) => a.target).filter(Boolean)
     : mode ? traitActions(mode).map((a) => a.target).filter(Boolean) : skillTargets
 
+  const [wikiSpell, setWikiSpell] = useState(null) // スペルの「?」: そのスペルのWikiを、戦闘画面の上に重ねて出す(戦闘はそのまま残る)
   const [feed, setFeed] = useState([]) // 「いま起きたこと」の履歴(再生に合わせて増える)
   const [sideLog, setSideLog] = useState([]) // 左側のログ({ k, name, text, team })。最大 SIDE_LOG_MAX 個
   const pendingLog = useRef([]) // 能力の表示のあと、盤面に働くまで保留している左のログ
@@ -1599,7 +1601,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
             >
               ✦{sp.name}(MP{sp.cost}){!usable ? ` ${why}` : ''}
             </button>
-            {showDesc && <span style={{ fontSize: 11, color: C.mute, whiteSpace: 'pre-line', ...(desktop ? null : { display: 'block', marginTop: 2 }) }}> {sp.desc}</span>}
+            <button type="button" aria-label="Wikiで見る" title="Wikiで見る" onClick={() => setWikiSpell(sp.id)} style={{ ...buttonStyle(false, false), marginLeft: 6, padding: '2px 9px', fontSize: 13, borderRadius: 999 }}>?</button>{/* 説明は長いので出さず、Wikiへ */}
           </div>
         )
       })}
@@ -1942,6 +1944,11 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
       </div>
 
       <div style={{ flex: 1, minHeight: 10 }} />
+      {wikiSpell && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 60, overflowY: 'auto', background: '#050506' }} data-testid="bt-wiki">
+          <WikiScreen focus={{ id: wikiSpell, spell: true }} onExit={() => setWikiSpell(null)} />
+        </div>
+      )}
       <div ref={panelRef} data-keep="1" className="no-sb" style={{ position: 'sticky', bottom: 0, zIndex: 9, margin: '0 -12px', padding: '6px 12px calc(6px + env(safe-area-inset-bottom))', height: 'min(168px, 30vh)', boxSizing: 'border-box', overflowY: 'auto', background: C.card, borderTop: `2px solid ${C.line}`, boxShadow: '0 -4px 12px rgba(31,42,68,0.12)' }}>
         {panelInner}
       </div>
