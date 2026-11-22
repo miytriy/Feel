@@ -479,6 +479,12 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
         </span>
       )}
       {fx && fx.kind === 'finisher' && <FinisherA key={`fa-${tick}`} />}
+      {fx && fx.kind === 'finisher' && fx.finAmount > 0 && (
+        // 必殺の数字は、鎌の演出の途中(鎌が止まるころ)に出し始める。後半に、同じ場所からそのままつながって浮き上がる
+        <span key={`fn-${tick}`} aria-hidden="true" style={{ position: 'absolute', left: '50%', top: `calc(22% + ${fx.hasMain ? Math.round((big ? 30 : 22) * 1.1) : 0}px)`, zIndex: 10, pointerEvents: 'none', transform: 'translateX(-50%)', whiteSpace: 'nowrap' }}>
+          <span style={{ display: 'block', opacity: 0, animation: 'feel-fin-num 0.22s ease-out 0.2s both' }}><DmgNum part={{ text: String(fx.finAmount), dmgType: 'finisher' }} big={big} /></span>
+        </span>
+      )}
       {fx && fx.kind === 'damage' && fx.finisher && <FinisherB key={`fb-${tick}`} />}
       {fx && (fx.kind === 'buff' || fx.kind === 'keyword') && (
         // 強化・能力付与のエフェクト: カードの周りに光(強化=金 / 付与=水色)が広がり、記号(▲ / ✦)が昇る
@@ -541,12 +547,17 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
       )}
       {fx && (
         fx.kind === 'damage' && fx.parts ? (
-          // ダメージの数字: 物理=白 / 魔法=青 / 確定=虹。大きく太く出す
-          <span key={tick} style={{ position: 'absolute', left: '50%', top: '22%', zIndex: 9, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, whiteSpace: 'nowrap', animation: `${fx.parts.some((pt) => pt.dmgType === 'finisher') ? 'feel-float 1.7s' : 'feel-float 1.3s'} ease-out forwards` }}>
-            {fx.parts.map((pt, n) => pt.dmgType === 'finisher'
-              ? <span key={n} style={{ display: 'block', opacity: 0, animation: 'feel-fin-num 0.3s ease-out 0.12s both' }}><DmgNum part={pt} big={big} /></span> // 必殺の数字は、後半(閃光・破片)が始まってすぐ、スキルの数字のあとに出す
-              : <DmgNum key={n} part={pt} crit={fx.crit && n === 0} big={big} />)}
-          </span>
+          // ダメージの数字: 物理=白 / 魔法=青 / 確定=虹 / 必殺=紫。大きく太く出す。必殺の紫の数字は、前半(鎌の演出)の途中から出ていて、ここへそのままつながる
+          <>
+            {fx.parts.some((pt) => pt.dmgType !== 'finisher') && (
+              <span key={tick} style={{ position: 'absolute', left: '50%', top: '22%', zIndex: 9, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, whiteSpace: 'nowrap', animation: 'feel-float 1.3s ease-out forwards' }}>
+                {fx.parts.filter((pt) => pt.dmgType !== 'finisher').map((pt, n) => <DmgNum key={n} part={pt} crit={fx.crit && n === 0} big={big} />)}
+              </span>
+            )}
+            {fx.parts.filter((pt) => pt.dmgType === 'finisher').map((pt, n) => (
+              <span key={`f${tick}-${n}`} style={{ position: 'absolute', left: '50%', top: `calc(22% + ${fx.parts.some((q) => q.dmgType !== 'finisher') ? Math.round((big ? 30 : 22) * 1.1) : 0}px)`, zIndex: 10, pointerEvents: 'none', whiteSpace: 'nowrap', animation: 'feel-float-c 1.5s ease-out forwards' }}><DmgNum part={pt} big={big} /></span>
+            ))}
+          </>
         ) : (
         <span key={tick} style={{ position: 'absolute', left: '50%', top: '30%', zIndex: 5, pointerEvents: 'none', fontWeight: 800, fontSize: fx.crit ? (big ? 26 : 20) : (big ? 22 : 17), color: fx.kind === 'heal' ? '#3ddc97' : fx.kind === 'damage' ? '#ff5a5a' : fx.kind === 'buff' ? '#ffd24a' : fx.kind === 'keyword' ? '#66e0ff' : C.player, textShadow: '0 0 3px #000, 0 0 3px #000, 0 0 3px #000', whiteSpace: 'nowrap', animation: 'feel-float 1.2s ease-out forwards' }}>
           {fx.kind === 'buff' && fx.buffs ? fx.buffs.map((b, n) => (
@@ -979,7 +990,7 @@ function insertFinisher(evs) {
       const tgts = [...new Set(evs.slice(s, t).filter((x) => x.means === '必殺').map((x) => x.target))]
       const at = out.length - (i - s)
       const base = at > 0 ? out[at - 1] : evs[s]
-      out.splice(at, 0, ...tgts.map((target) => ({ type: 'finisher', target, units: base.units, logLen: base.logLen, mp: base.mp, ep: base.ep })))
+      out.splice(at, 0, ...tgts.map((target) => ({ type: 'finisher', target, units: base.units, logLen: base.logLen, mp: base.mp, ep: base.ep, amount: evs.slice(s, t).filter((x) => x.means === '必殺' && x.target === target).reduce((a, x) => a + x.amount, 0), hasMain: evs.slice(s, t).some((x) => x.means !== '必殺' && x.target === target) })))
     }
     out.push(e)
   }
@@ -1528,7 +1539,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     const dieEv = mine.find((x) => x.type === 'destroy' || x.type === 'vanish') // 倒れる・消える演出は、ダメージの表示と重ねる
     const ev = [...mine].reverse().find((x) => x.type !== 'destroy' && x.type !== 'vanish') || mine[mine.length - 1]
     if (!ev) return null
-    if (ev.type === 'finisher') return { kind: 'finisher', text: '' } // 必殺の前半: 黒紫の球・鎌・白い雲
+    if (ev.type === 'finisher') return { kind: 'finisher', text: '', finAmount: ev.amount, hasMain: !!ev.hasMain } // 必殺の前半: 黒紫の球・鎌・白い雲
     if (ev.type === 'damage') {
       // スキルのダメージと、【必殺】の追加ダメージは、数字を2段に分けて1回で見せる(種類で色が変わる: 物理=白 / 魔法=青 / 確定=虹)
       const dmgs = mine.filter((x) => x.type === 'damage')
@@ -1538,7 +1549,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
       const parts = []
       if (main.length) parts.push({ text: `${main.reduce((a, x) => a + x.amount, 0)}${crit ? '!!' : ''}`, dmgType: main[0].dmgType || 'physical' })
       if (fin.length) parts.push({ text: `${fin.reduce((a, x) => a + x.amount, 0)}`, dmgType: 'finisher' }) // 必殺の数字: 「必殺」の文字は付けない(紫で分かる)
-      return { kind: 'damage', text: parts.map((x) => x.text).join(' '), crit, parts, finisher: fin.length > 0 }
+      return { kind: 'damage', text: parts.map((x) => x.text).join(' '), crit, parts, finisher: fin.length > 0, hasMain: main.length > 0 }
     }
     if (ev.type === 'buff') { // 強化: ステータスは文字ではなくアイコンで見せる(アイコンがないステータスだけ、文字のまま)
       const bs = mine.filter((x) => x.type === 'buff')
