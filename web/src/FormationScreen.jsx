@@ -456,7 +456,7 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
   }
   const toggleQuick = () => {
     if (quick) { setQuick(false); setPicks([]); return }
-    setQuick(true); setPicks([]); setActiveSlot(null); setSpellPick(false); setMessage('')
+    setQuick(true); setPicks(slots.slice(0, MAX_SLOTS).filter(Boolean)); setActiveSlot(null); setSpellPick(false); setMessage('') // いま編成されているキャラを、選んだ状態から始める(消したいキャラをタップで外し、足したいキャラをタップで後ろに足す)
   }
   const handleSave = () => {
     if (partyIdx != null && onSaveParty) { // パーティーに保存する
@@ -608,7 +608,7 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
             </div>
             {quick && (
               <div className="fm-quick">
-                入れたい順にキャラをタップしてください(最大{MAX_SLOTS}体)。選んだ順に1番目のスロットから入ります。<br />
+                入れたい順にキャラをタップしてください(最大{MAX_SLOTS}体)。選んだ順に1番目のスロットから入ります。いまの編成は、選んだ状態から始まります(外すキャラをタップ)。<br />
                 選択中: <b>{picks.length ? picks.map((p, i) => `${i + 1}.${p.name}`).join(' → ') : 'まだありません'}</b>
               </div>
             )}
