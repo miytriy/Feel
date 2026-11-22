@@ -444,11 +444,11 @@ export default function App() {
       <ErrorBoundary onExit={() => setScreen('random')}>
         <FormationScreen
           title="使用デッキ"
-          allChars={ALL_CHARACTERS}
+          allChars={ALL_CHARACTERS.filter((c) => c.rotation == null || rotationAllowed('rotation', c.rotation, c.id))}
           defaultIds={DEFAULT_PLAYER_IDS}
           allSpells={ALL_SPELLS.filter((sp) => !sp.token)}
           parties={randomPartyApi ? randomPartyApi.parties : null}
-          partyIdxInit={randomPartyApi ? randomPartyApi.activeIdx : null}
+          partyIdxInit={randomPartyApi ? (randomPartyApi.activeIdx ?? 0) : null}
           onSaveParty={randomPartyApi ? randomPartyApi.save : null}
           onPartyChange={randomPartyApi ? randomPartyApi.setActive : null}
           onStart={(chars, spells) => { setRankRun({ team: chars.filter(Boolean), spells: spells || [] }); setScreen('random') }}
@@ -496,7 +496,7 @@ export default function App() {
           defaultIds={DEFAULT_PLAYER_IDS}
           allSpells={ALL_SPELLS.filter((sp) => !sp.token && (sp.rotation == null || rotationAllowed(cpuFormat, sp.rotation, sp.id)))}
           parties={partyApi ? partyApi.parties : null}
-          partyIdxInit={partyApi ? partyApi.activeIdx : null}
+          partyIdxInit={partyApi ? (partyApi.activeIdx ?? 0) : null}
           onSaveParty={partyApi ? partyApi.save : null}
           onPartyChange={partyApi ? partyApi.setActive : null}
           onStart={(chars, spells) => {
@@ -520,7 +520,7 @@ export default function App() {
           defaultIds={DEFAULT_PLAYER_IDS}
           allSpells={ALL_SPELLS.filter((sp) => !sp.token)}
           parties={partyApi ? partyApi.parties : null} // 事前に準備したパーティーを、相手のチームにも使える(ここでは保存も、使用中パーティーの切り替えもしない)
-          partyIdxInit={partyApi ? partyApi.activeIdx : null}
+          partyIdxInit={partyApi ? (partyApi.activeIdx ?? 0) : null}
           onStart={(chars, spells) => {
             setCpuRun({ id: Date.now(), level: 1, team: testMine.team, spells: testMine.spells, test: { team: chars.filter(Boolean), spells: spells || [] } })
             setScreen('loading')
