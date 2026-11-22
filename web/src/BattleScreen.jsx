@@ -479,12 +479,6 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
         </span>
       )}
       {fx && fx.kind === 'finisher' && <FinisherA key={`fa-${tick}`} />}
-      {fx && fx.kind === 'finisher' && fx.finAmount > 0 && (
-        // 必殺の数字は、鎌の演出の途中(鎌が止まるころ)に出し始める。後半に、同じ場所からそのままつながって浮き上がる
-        <span key={`fn-${tick}`} aria-hidden="true" style={{ position: 'absolute', left: '50%', top: `calc(22% + ${fx.hasMain ? Math.round((big ? 30 : 22) * 1.1) : 0}px)`, zIndex: 10, pointerEvents: 'none', transform: 'translateX(-50%)', whiteSpace: 'nowrap' }}>
-          <span style={{ display: 'block', opacity: 0, animation: 'feel-fin-num 0.22s ease-out 0.2s both' }}><DmgNum part={{ text: String(fx.finAmount), dmgType: 'finisher' }} big={big} /></span>
-        </span>
-      )}
       {fx && fx.kind === 'damage' && fx.finisher && <FinisherB key={`fb-${tick}`} />}
       {fx && (fx.kind === 'buff' || fx.kind === 'keyword') && (
         // 強化・能力付与のエフェクト: カードの周りに光(強化=金 / 付与=水色)が広がり、記号(▲ / ✦)が昇る
@@ -547,16 +541,11 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
       )}
       {fx && (
         fx.kind === 'damage' && fx.parts ? (
-          // ダメージの数字: 物理=白 / 魔法=青 / 確定=虹 / 必殺=紫。大きく太く出す。必殺の紫の数字は、前半(鎌の演出)の途中から出ていて、ここへそのままつながる
+          // ダメージの数字: 物理=白 / 魔法=青 / 確定=虹 / 必殺=紫。大きく太く出す。必殺の紫の数字は、鎌が回りきって光った瞬間に、スキルのダメージと同時に出す
           <>
-            {fx.parts.some((pt) => pt.dmgType !== 'finisher') && (
-              <span key={tick} style={{ position: 'absolute', left: '50%', top: '22%', zIndex: 9, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, whiteSpace: 'nowrap', animation: 'feel-float 1.3s ease-out forwards' }}>
-                {fx.parts.filter((pt) => pt.dmgType !== 'finisher').map((pt, n) => <DmgNum key={n} part={pt} crit={fx.crit && n === 0} big={big} />)}
-              </span>
-            )}
-            {fx.parts.filter((pt) => pt.dmgType === 'finisher').map((pt, n) => (
-              <span key={`f${tick}-${n}`} style={{ position: 'absolute', left: '50%', top: `calc(22% + ${fx.parts.some((q) => q.dmgType !== 'finisher') ? Math.round((big ? 30 : 22) * 1.1) : 0}px)`, zIndex: 10, pointerEvents: 'none', whiteSpace: 'nowrap', animation: 'feel-float-c 1.5s ease-out forwards' }}><DmgNum part={pt} big={big} /></span>
-            ))}
+            <span key={tick} style={{ position: 'absolute', left: '50%', top: '22%', zIndex: 9, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, whiteSpace: 'nowrap', animation: 'feel-float 1.3s ease-out forwards' }}>
+              {fx.parts.map((pt, n) => <DmgNum key={n} part={pt} crit={fx.crit && n === 0 && pt.dmgType !== 'finisher'} big={big} />)}
+            </span>
           </>
         ) : (
         <span key={tick} style={{ position: 'absolute', left: '50%', top: '30%', zIndex: 5, pointerEvents: 'none', fontWeight: 800, fontSize: fx.crit ? (big ? 26 : 20) : (big ? 22 : 17), color: fx.kind === 'heal' ? '#3ddc97' : fx.kind === 'damage' ? '#ff5a5a' : fx.kind === 'buff' ? '#ffd24a' : fx.kind === 'keyword' ? '#66e0ff' : C.player, textShadow: '0 0 3px #000, 0 0 3px #000, 0 0 3px #000', whiteSpace: 'nowrap', animation: 'feel-float 1.2s ease-out forwards' }}>
