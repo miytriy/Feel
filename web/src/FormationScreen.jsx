@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
-import { useIsDesktop, useRemembered, C, FONT, DISPLAY } from './ui.js'
+import { useIsDesktop, C, FONT, DISPLAY } from './ui.js'
 import {
   MAX_SLOTS, MAX_AMULET_SLOTS, validateFormation, canPlace, placeChar, removeChar, swapSlots, quickFill,
   saveFormation, loadFormation, defaultFormation, MAX_SPELL_SLOTS, saveSpellSet, loadSpellSet, validateSpellSet, canUseSpell, spellClassOf, teamClassOf,
@@ -147,6 +147,8 @@ const CSS = `
 .fm-ph { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; font-size: 26px; font-weight: 700; letter-spacing: 0.04em; color: #e6e6ea; min-height: 54px; }
 .fm-ph span { flex: 1; }
 .fm-cls { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.fm-cls .lb { align-self: center; margin-right: 6px; font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.6); }
+.fm-cls button:disabled { opacity: 0.35; cursor: default; }
 .fm-cls button { height: 46px; min-height: 0; padding: 0 16px; border: 0; background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.7); font-size: 21px; font-weight: 700; cursor: pointer; }
 .fm-cls button:hover, .fm-cls button:focus-visible { background: rgba(255,255,255,0.28); outline: none; }
 .fm-cls button.on { background: ${C.player}; color: ${C.onAccent}; }
@@ -392,7 +394,7 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
   const [slots, setSlots] = useState(() => (startParty ? partyToSlots(startParty, allChars) : loadFormation(allChars) || defaultFormation(allChars, defaultIds)))
   const [savedIds, setSavedIds] = useState(() => JSON.stringify(slots.map((c) => c?.id ?? null)))
   const [activeSlot, setActiveSlot] = useState(null) // 選択中のスロット(キャラを選ぶ)
-  const [clsSel, setClsSel] = useRemembered('fm.class', 'all') // キャラ選択のクラス絞り込み(選ぶと、そのクラスとニュートラル以外は出さない。出入りしても、最後に選んだものに戻る)
+  const [clsSel, setClsSel] = useState('all') // この編成で使うクラス(選ぶと、そのクラスとニュートラル以外は出さない)。編成にそのクラスのキャラがいるあいだは、そのクラスに固定される
   const [quick, setQuick] = useState(false) // 簡易編成(旧: クイック編成): 選んだ順に1番目から詰める
   const [picks, setPicks] = useState([])
   const [message, setMessage] = useState('')
@@ -494,6 +496,7 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
   const targetSlot = activeSlot !== null ? activeSlot : slots.slice(0, MAX_SLOTS).findIndex((x) => !x)
   const amuletPick = activeSlot !== null && activeSlot >= MAX_SLOTS // アミュレットの枠を選んでいる(一覧には、アミュレットだけ出る)
   const mainCount = slots.slice(0, MAX_SLOTS).filter(Boolean).length
+  const usedClass = ((quick ? picks : slots.slice(0, MAX_SLOTS)).find((c) => c && c.class !== 'ニュートラル') || {}).class || null // いま編成(簡易編成の選択中)にいる、ニュートラル以外のクラス
   const panel = quick || activeSlot !== null ? 'chars' : spellPick ? 'spells' : null
 
   useEffect(() => {
@@ -619,18 +622,22 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
               </div>
             )}
             {(() => {
-              const present = CLASS_ORDER.filter((k) => k !== 'ニュートラル' && allChars.some((c) => !c.token && c.class === k && (quick ? !c.amulet : amuletPick ? c.amulet : !c.amulet)))
+              const present = CLASS_ORDER.filter((k) => k !== 'ニュートラル' && allChars.some((c) => !c.token && c.class === k))
               if (present.length < 2) return null
-              const cur = present.includes(clsSel) ? clsSel : 'all'
+              const cur = usedClass || (present.includes(clsSel) ? clsSel : 'all')
               return (
-                <div className="fm-cls" role="radiogroup" aria-label="クラス" data-testid="fm-cls">
-                  {['all', ...present].map((k) => <button key={k} type="button" role="radio" aria-checked={cur === k} className={cur === k ? 'on' : ''} onClick={() => setClsSel(k)}>{k === 'all' ? 'すべて' : k}</button>)}
+                <div className="fm-cls" role="radiogroup" aria-label="使用クラス" data-testid="fm-cls">
+                  <span className="lb">使用クラス</span>
+                  {['all', ...present].map((k) => {
+                    const locked = !!usedClass && k !== usedClass // 編成にいるキャラのクラスで決まる(変えるには、そのキャラを外す)
+                    return <button key={k} type="button" role="radio" aria-checked={cur === k} disabled={locked} title={locked ? '編成にいるキャラのクラスで決まっています' : undefined} className={cur === k ? 'on' : ''} onClick={() => setClsSel(k)}>{k === 'all' ? 'すべて' : k}</button>
+                  })}
                 </div>
               )
             })()}
             <div className="fm-grid">
               {(() => {
-                const clsNow = CLASS_ORDER.includes(clsSel) && clsSel !== 'ニュートラル' ? clsSel : null // 選んだクラス(なければ全部)。ニュートラルは、いつも出す
+                const clsNow = usedClass || (CLASS_ORDER.includes(clsSel) && clsSel !== 'ニュートラル' ? clsSel : null) // この編成の使用クラス(なければ全部)。ニュートラルは、いつも出す
                 const list = allChars.filter((c) => !c.token && (quick ? !c.amulet : amuletPick ? c.amulet : !c.amulet) && (!clsNow || c.class === clsNow || c.class === 'ニュートラル'))
                 const ord = (c) => { if (clsNow && c.class === clsNow) return -1; const i = CLASS_ORDER.indexOf(c.class); return i === -1 ? CLASS_ORDER.length : i } // 選んだクラスを先頭に、そのあとにニュートラル
                 const sorted = list.map((c, i) => [c, i]).sort((x, y) => ord(x[0]) - ord(y[0]) || x[1] - y[1]).map((x) => x[0]) // クラス順(同じクラスの中は、もとの順)
