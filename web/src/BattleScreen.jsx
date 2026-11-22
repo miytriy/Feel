@@ -9,6 +9,7 @@ import { ALL_SPELLS } from './battle/spells/index.js'
 import { ARTIFACT_CATALOG } from './battle/artifact/index.js'
 import FormationScreen from './FormationScreen.jsx'
 import { createPortal } from 'react-dom'
+import { FinisherA, FinisherB } from './FinisherFx.jsx'
 import { BattleHud, StageIntro, ExitConfirm, ResultBanner, BattleMenu } from './BattleHud.jsx'
 import { CommentaryOverlay, collectHistory, addHistory, emptyHistory } from './BattleLog.jsx'
 import { useIsDesktop, C as BASE, alpha, DISPLAY, useRemembered } from './ui.js'
@@ -16,7 +17,6 @@ import { StatIcon } from './icons.jsx'
 import { withRelicPieces } from './relicInv.js'
 import { ME, OPP, setMe, winnerView } from './perspective.js'
 import { VanishFx, VANISH_BASE_MS } from './VanishFx.jsx'
-import { FinisherFx } from './FinisherFx.jsx'
 import { useHotkey } from './keys.js'
 import WikiScreen from './WikiScreen.jsx'
 import { loadSettings } from './settings.js'
@@ -478,6 +478,8 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
           )}
         </span>
       )}
+      {fx && fx.kind === 'finisher' && <FinisherA key={`fa-${tick}`} />}
+      {fx && fx.kind === 'damage' && fx.finisher && <FinisherB key={`fb-${tick}`} />}
       {fx && (fx.kind === 'buff' || fx.kind === 'keyword') && (
         // 強化・能力付与のエフェクト: カードの周りに光(強化=金 / 付与=水色)が広がり、記号(▲ / ✦)が昇る
         <span key={`aura-${tick}`} aria-hidden="true" data-testid={`fx-${fx.kind}`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 7 }}>
@@ -518,7 +520,6 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
           <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(from 0deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 8%, rgba(255,255,255,0) 20%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.32) 58%, rgba(255,255,255,0) 70%)', WebkitMaskImage: 'radial-gradient(circle, transparent 62%, #000 74%, #000 96%, transparent 100%)', maskImage: 'radial-gradient(circle, transparent 62%, #000 74%, #000 96%, transparent 100%)', animation: 'feel-earth-spin 6s linear infinite' }} />
         </span>
       )}
-      {fx && fx.kind === 'damage' && fx.parts && fx.parts.some((pt) => pt.dmgType === 'finisher') && <FinisherFx key={`fin-${tick}`} />}
       {fx && fx.kind === 'block' && (
         // バリアが壊れるエフェクト: 泡の中が白く発光 → 放射状の光が走る → 泡ごとサッと消散していく
         <span key={`bb-${tick}`} aria-hidden="true" data-testid="fx-barrier-break" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 8 }}>
@@ -941,7 +942,7 @@ const buttonStyle = (primary, disabled) => ({
 // ---- 再生(起きたことを、1つずつ順番に見せる。速さは、設定の「CPUの行動の待ち時間」に合わせる) ----
 // 連続する同じ種類の出来事(複数の召喚・複数への攻撃・複数のヒール)は、1つにまとめて一気に見せる。
 // 返す値は、まとめの最後の番号(まとまらなければ i のまま)。攻撃は、同じ攻撃元・同じ手段のものだけ。同じ相手が2回出たら、そこで区切る
-const GROUP_TYPES = ['damage', 'heal', 'summon', 'buff', 'keyword', 'destroy', 'vanish', 'av']
+const GROUP_TYPES = ['damage', 'heal', 'summon', 'buff', 'keyword', 'destroy', 'vanish', 'av', 'finisher']
 function groupEnd(events, i) {
   const e = events[i]
   if (!e || !GROUP_TYPES.includes(e.type)) return i
@@ -963,6 +964,27 @@ function groupEnd(events, i) {
 }
 // 召喚のあとに、1体ずつ「能力の表示 → 強化 → 能力付与」が交互に起きる(例: 3体召喚 → 1体ごとに強化と付与)場合は、見せる順を
 // 「(能力の表示)→ 全員に強化 → (能力の表示)→ 全員に能力付与」に並べ替える。同じ能力の表示は、1回にまとめる
+// 【必殺】の追加ダメージがあるとき、スキルのダメージの直前に、必殺の演出の前半(黒紫の球 → 鎌 → 白い雲)を挟む。後半(閃光・破片・光の筋)は、そのあとのダメージの再生と一緒に出る
+function insertFinisher(evs) {
+  const out = []
+  const done = new Set()
+  for (let i = 0; i < evs.length; i++) {
+    const e = evs[i]
+    if (e.type === 'damage' && e.means === '必殺' && !done.has(i)) {
+      let s = i
+      while (s > 0 && evs[s - 1].type === 'damage' && evs[s - 1].src === e.src) s--
+      // この必殺のまとまり(同じ攻撃元の連続したダメージ)の、必殺を受ける相手ぶんを、先頭の前に挟む
+      let t = s
+      while (t < evs.length && evs[t].type === 'damage' && evs[t].src === e.src) { if (evs[t].means === '必殺') done.add(t); t++ }
+      const tgts = [...new Set(evs.slice(s, t).filter((x) => x.means === '必殺').map((x) => x.target))]
+      const at = out.length - (i - s)
+      const base = at > 0 ? out[at - 1] : evs[s]
+      out.splice(at, 0, ...tgts.map((target) => ({ type: 'finisher', target, units: base.units, logLen: base.logLen, mp: base.mp, ep: base.ep })))
+    }
+    out.push(e)
+  }
+  return out
+}
 function reorderBoost(evs) {
   const isB = (e) => e.type === 'buff' || e.type === 'keyword'
   const out = []
@@ -997,7 +1019,7 @@ function reorderBoost(evs) {
   return out
 }
 export const VANISH_SLOW = 1 // 消滅エフェクトの長さの倍率。1 = 0.9秒(ルール画面と同じ基準・56コマで約62fps)。EFFECTS.mdの基準値。
-const EVENT_MS = { turn: 700, ability: 300, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1000, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 300, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1000, finisher: 500, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ format = 'rotation', settingsView = null, onExit, cpuDelay = 700, rewardApi: rewardApiProp = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null, online = null, testInit = null }) {
@@ -1244,7 +1266,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   const commit = (next) => {
     try { const d = collectHistory(state, next); setHist((h) => addHistory(h, d)) } catch (e) { console.error('バトルログの集計に失敗', e) } // 失敗しても、対戦は止めない
     try { addEvents(statsRef.current, next.events || [], (uid) => next.units.find((u) => u.uid === uid)) } catch (e) { console.error('キャリアの集計に失敗', e) } // 記録が失敗しても、対戦は止めない
-    const evs = reorderBoost(next.events || [])
+    const evs = insertFinisher(reorderBoost(next.events || []))
     setPlay(evs.length ? { events: evs, i: 0, prevActive: state?.active ?? null, prevAbility: state?.lastAbility ?? null } : null)
     setState(next)
   }
@@ -1506,6 +1528,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     const dieEv = mine.find((x) => x.type === 'destroy' || x.type === 'vanish') // 倒れる・消える演出は、ダメージの表示と重ねる
     const ev = [...mine].reverse().find((x) => x.type !== 'destroy' && x.type !== 'vanish') || mine[mine.length - 1]
     if (!ev) return null
+    if (ev.type === 'finisher') return { kind: 'finisher', text: '' } // 必殺の前半: 黒紫の球・鎌・白い雲
     if (ev.type === 'damage') {
       // スキルのダメージと、【必殺】の追加ダメージは、数字を2段に分けて1回で見せる(種類で色が変わる: 物理=白 / 魔法=青 / 確定=虹)
       const dmgs = mine.filter((x) => x.type === 'damage')
@@ -1515,7 +1538,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
       const parts = []
       if (main.length) parts.push({ text: `${main.reduce((a, x) => a + x.amount, 0)}${crit ? '!!' : ''}`, dmgType: main[0].dmgType || 'physical' })
       if (fin.length) parts.push({ text: `必殺 ${fin.reduce((a, x) => a + x.amount, 0)}`, dmgType: 'finisher' })
-      return { kind: 'damage', text: parts.map((x) => x.text).join(' '), crit, parts }
+      return { kind: 'damage', text: parts.map((x) => x.text).join(' '), crit, parts, finisher: fin.length > 0 }
     }
     if (ev.type === 'buff') { // 強化: ステータスは文字ではなくアイコンで見せる(アイコンがないステータスだけ、文字のまま)
       const bs = mine.filter((x) => x.type === 'buff')
@@ -1534,6 +1557,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     const mine = groupEvs.filter((x) => x.target === uid)
     const dieEv = mine.find((x) => x.type === 'destroy' || x.type === 'vanish')
     const f = fxFor0(uid)
+    if (f && f.finisher) return f // 必殺を受けた相手は、動画のとおり、白い閃光と破片で消える(ふつうの破壊の演出は重ねない)
     return dieEv ? { ...(f && f.kind !== 'destroy' && f.kind !== 'vanish' ? f : { kind: 'none', text: '' }), die: dieEv.type, grave: !!dieEv.grave, lw: !!dieEv.lw } : f
   }
   // 攻撃した側・受けた側の印(まとまった出来事の全員ぶん)。全体攻撃なら、攻撃側1体と、受ける側が全員
