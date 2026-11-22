@@ -343,8 +343,19 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
   // 破壊・消滅の演出中は、まだ生きているときの見た目のまま(演出のあと、暗い半透明の「戦闘不能」の札に変わって残らないように)。演出が終わったら、そっと消す
   const dying = !!(fx && fx.die)
   const gone = !unit.alive && !dying
+  // ダメージの数字は、カードの外(body)に出す。カードは、倒れるとき暗く・透明になるが、数字までは暗くしないため。カードの位置と大きさに合わせて重ねる
+  const rootRef = useRef(null)
+  const [numBox, setNumBox] = useState(null)
+  const showNums = !!(fx && fx.kind === 'damage' && fx.parts)
+  useLayoutEffect(() => {
+    const el = rootRef.current
+    if (!showNums || !el) return
+    const r = el.getBoundingClientRect()
+    setNumBox({ tick, l: r.left, t: r.top, w: el.offsetWidth, h: el.offsetHeight, s: el.offsetWidth ? r.width / el.offsetWidth : 1 })
+  }, [tick, showNums])
   return (
     <div
+      ref={rootRef}
       data-uid={unit.uid}
       data-field={unit.field}
       data-alive={unit.alive ? 'true' : 'false'}
@@ -542,11 +553,12 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
       {fx && (
         fx.kind === 'damage' && fx.parts ? (
           // ダメージの数字: 物理=白 / 魔法=青 / 確定=虹 / 必殺=紫。大きく太く出す。必殺の紫の数字は、鎌が回りきって光った瞬間に、スキルのダメージと同時に出す
-          <>
-            <span key={tick} style={{ position: 'absolute', left: '50%', top: '22%', zIndex: 9, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, whiteSpace: 'nowrap', animation: 'feel-float 1.3s ease-out forwards' }}>
-              {fx.parts.map((pt, n) => <DmgNum key={n} part={pt} crit={fx.crit && n === 0 && pt.dmgType !== 'finisher'} big={big} />)}
-            </span>
-          </>
+          numBox && numBox.tick === tick && typeof document !== 'undefined' ? createPortal(
+            <div aria-hidden="true" style={{ position: 'fixed', left: numBox.l, top: numBox.t, width: numBox.w, height: numBox.h, transform: `scale(${numBox.s})`, transformOrigin: '0 0', pointerEvents: 'none', zIndex: 60 }}>
+              <span key={tick} style={{ position: 'absolute', left: '50%', top: '22%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, whiteSpace: 'nowrap', animation: 'feel-float 1.3s ease-out forwards' }}>
+                {fx.parts.map((pt, n) => <DmgNum key={n} part={pt} crit={fx.crit && n === 0 && pt.dmgType !== 'finisher'} big={big} />)}
+              </span>
+            </div>, document.body) : null
         ) : (
         <span key={tick} style={{ position: 'absolute', left: '50%', top: '30%', zIndex: 5, pointerEvents: 'none', fontWeight: 800, fontSize: fx.crit ? (big ? 26 : 20) : (big ? 22 : 17), color: fx.kind === 'heal' ? '#3ddc97' : fx.kind === 'damage' ? '#ff5a5a' : fx.kind === 'buff' ? '#ffd24a' : fx.kind === 'keyword' ? '#66e0ff' : C.player, textShadow: '0 0 3px #000, 0 0 3px #000, 0 0 3px #000', whiteSpace: 'nowrap', animation: 'feel-float 1.2s ease-out forwards' }}>
           {fx.kind === 'buff' && fx.buffs ? fx.buffs.map((b, n) => (
