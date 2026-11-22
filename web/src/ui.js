@@ -68,6 +68,13 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     input::placeholder { color: ${C.mute}; }
     button { font-family: inherit; touch-action: manipulation; }
     input { font-family: inherit; }
+    @keyframes feel-fin-glow { 0% { opacity: 0; transform: scale(0.2); } 40% { opacity: 1; } 100% { opacity: 0; transform: scale(1.1); } }
+    @keyframes feel-fin-orb { 0% { opacity: 0; transform: scale(0.1); } 30% { opacity: 1; transform: scale(1); } 62% { opacity: 0.95; transform: scale(1.04); } 80% { opacity: 0.9; transform: scale(1.06); } 100% { opacity: 0; transform: scale(1.12); } }
+    @keyframes feel-fin-scythe { 0% { opacity: 0; transform: rotate(-70deg) scale(0.5); } 25% { opacity: 1; } 80% { opacity: 1; transform: rotate(38deg) scale(1); } 100% { opacity: 1; transform: rotate(44deg) scale(1.02); } }
+    @keyframes feel-fin-flash { 0% { opacity: 0; transform: scale(0.6); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(1.3); } }
+    @keyframes feel-fin-rays { 0% { opacity: 0; transform: scale(0.6) rotate(0deg); } 25% { opacity: 0.9; } 100% { opacity: 0; transform: scale(1.1) rotate(14deg); } }
+    @keyframes feel-fin-shard { 0% { opacity: 0; transform: translate(0, 0) rotate(0deg) scale(0.6); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(1); } }
+    @keyframes feel-fin-num { 0% { opacity: 0; transform: scale(0.6); } 40% { opacity: 1; transform: scale(1.18); } 100% { opacity: 1; transform: scale(1); } }
     @keyframes feel-float { 0% { opacity: 0; transform: translate(-50%, 8px) scale(0.8); } 15% { opacity: 1; transform: translate(-50%, 0) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -38px) scale(1); } }
     .fit-board [data-field-card] { zoom: var(--fit, 1); }
     @keyframes feel-shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }

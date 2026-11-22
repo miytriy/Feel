@@ -16,6 +16,7 @@ import { StatIcon } from './icons.jsx'
 import { withRelicPieces } from './relicInv.js'
 import { ME, OPP, setMe, winnerView } from './perspective.js'
 import { VanishFx, VANISH_BASE_MS } from './VanishFx.jsx'
+import { FinisherFx } from './FinisherFx.jsx'
 import { useHotkey } from './keys.js'
 import WikiScreen from './WikiScreen.jsx'
 import { loadSettings } from './settings.js'
@@ -517,6 +518,7 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
           <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(from 0deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 8%, rgba(255,255,255,0) 20%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.32) 58%, rgba(255,255,255,0) 70%)', WebkitMaskImage: 'radial-gradient(circle, transparent 62%, #000 74%, #000 96%, transparent 100%)', maskImage: 'radial-gradient(circle, transparent 62%, #000 74%, #000 96%, transparent 100%)', animation: 'feel-earth-spin 6s linear infinite' }} />
         </span>
       )}
+      {fx && fx.kind === 'damage' && fx.parts && fx.parts.some((pt) => pt.dmgType === 'finisher') && <FinisherFx key={`fin-${tick}`} />}
       {fx && fx.kind === 'block' && (
         // バリアが壊れるエフェクト: 泡の中が白く発光 → 放射状の光が走る → 泡ごとサッと消散していく
         <span key={`bb-${tick}`} aria-hidden="true" data-testid="fx-barrier-break" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 8 }}>
@@ -539,8 +541,10 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
       {fx && (
         fx.kind === 'damage' && fx.parts ? (
           // ダメージの数字: 物理=白 / 魔法=青 / 確定=虹。大きく太く出す
-          <span key={tick} style={{ position: 'absolute', left: '50%', top: '22%', zIndex: 9, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, whiteSpace: 'nowrap', animation: 'feel-float 1.3s ease-out forwards' }}>
-            {fx.parts.map((pt, n) => <DmgNum key={n} part={pt} crit={fx.crit && n === 0} big={big} />)}
+          <span key={tick} style={{ position: 'absolute', left: '50%', top: '22%', zIndex: 9, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, whiteSpace: 'nowrap', animation: `${fx.parts.some((pt) => pt.dmgType === 'finisher') ? 'feel-float 1.7s' : 'feel-float 1.3s'} ease-out forwards` }}>
+            {fx.parts.map((pt, n) => pt.dmgType === 'finisher'
+              ? <span key={n} style={{ display: 'block', opacity: 0, animation: 'feel-fin-num 0.35s ease-out 0.56s both' }}><DmgNum part={pt} big={big} /></span> // 必殺の数字は、球が砕ける瞬間に出す
+              : <DmgNum key={n} part={pt} crit={fx.crit && n === 0} big={big} />)}
           </span>
         ) : (
         <span key={tick} style={{ position: 'absolute', left: '50%', top: '30%', zIndex: 5, pointerEvents: 'none', fontWeight: 800, fontSize: fx.crit ? (big ? 26 : 20) : (big ? 22 : 17), color: fx.kind === 'heal' ? '#3ddc97' : fx.kind === 'damage' ? '#ff5a5a' : fx.kind === 'buff' ? '#ffd24a' : fx.kind === 'keyword' ? '#66e0ff' : C.player, textShadow: '0 0 3px #000, 0 0 3px #000, 0 0 3px #000', whiteSpace: 'nowrap', animation: 'feel-float 1.2s ease-out forwards' }}>
@@ -1200,7 +1204,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     if (!play || logOpen) return // 戦闘実況を開いている間は、再生を止める
     if (play.i >= play.events.length) { setPlay(null); return }
     const grp = play.events.slice(play.i, groupEnd(play.events, play.i) + 1)
-    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), Math.max(...grp.map((x) => (x.type === 'vanish' ? EVENT_MS.vanish : (EVENT_MS[x.type] ?? 500) * mult))))
+    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), Math.max(...grp.map((x) => (x.type === 'vanish' ? EVENT_MS.vanish : x.type === 'damage' && x.means === '必殺' ? 1150 * mult : (EVENT_MS[x.type] ?? 500) * mult))))
     return () => clearTimeout(t)
   }, [play, mult, logOpen])
 
