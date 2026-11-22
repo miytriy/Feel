@@ -126,18 +126,17 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-ev2-shard2 { 0% { opacity: 0; transform: scaleX(-1) scale(0.98) rotate(0deg); } 20% { opacity: 0.8; } 100% { opacity: 0; transform: scaleX(-1) scale(1.3) rotate(-26deg) translateY(-4%); } }
     @keyframes feel-ev2-coin { 0% { opacity: 0; transform: scale(0.6); } 25% { opacity: 1; transform: scale(1); } 60% { opacity: 0.9; transform: scale(1.15); } 100% { opacity: 0; transform: scale(1.5); } }
     @keyframes feel-ev2-tw { 0% { opacity: 0; transform: scale(0.3); } 35% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.6) translateY(-6px); } }
-    @keyframes feel-fin-sphere { 0% { opacity: 0; transform: scale(0.45); } 7% { opacity: 1; transform: scale(0.62); } 14% { transform: scale(0.98); } 24% { transform: scale(1.05); } 60% { opacity: 0.96; transform: scale(1.02); } 82% { opacity: 0.8; transform: scale(1); } 100% { opacity: 0; transform: scale(0.98); } }
+    @keyframes feel-fin-sphere { 0% { opacity: 0; transform: scale(0.5); } 8% { opacity: 1; transform: scale(0.78); } 16% { transform: scale(1); } 30% { transform: scale(1.03); } 70% { opacity: 0.96; transform: scale(1.01); } 86% { opacity: 0.85; } 100% { opacity: 0; transform: scale(1); } }
     @keyframes feel-fin-rim { 0% { opacity: 0; transform: scale(0.5); } 8% { opacity: 1; transform: scale(0.64); } 20% { opacity: 1; transform: scale(1.0); } 100% { opacity: 0; transform: scale(1.04); } }
     @keyframes feel-fin-star { 0% { opacity: 0; transform: scale(0.3); } 40% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.5) translateY(-4px); } }
-    @keyframes feel-fin-scythe { 0% { opacity: 0; transform: rotate(-230deg) scale(0.6); } 8% { opacity: 1; } 55% { transform: rotate(-20deg) scale(1.02); } 100% { opacity: 1; transform: rotate(0deg) scale(1); } }
-    @keyframes feel-fin-cloud { 0%, 78% { opacity: 0; transform: scale(0.85); } 100% { opacity: 1; transform: scale(1.04); } }
+    @keyframes feel-fin-scythe { 0% { opacity: 0; transform: rotate(100deg) scale(0.7); } 8% { opacity: 1; } 62% { transform: rotate(-4deg) scale(1.02); } 100% { opacity: 1; transform: rotate(-8deg) scale(1); } }
+    @keyframes feel-fin-cloud { 0%, 74% { opacity: 0; transform: scale(0.86); } 100% { opacity: 1; transform: scale(1.04); } }
     @keyframes feel-fin-burst { 0% { opacity: 1; transform: scale(0.8); } 100% { opacity: 0; transform: scale(1.3); } }
     @keyframes feel-fin-dust { 0% { opacity: 0; transform: scale(0.5); } 25% { opacity: 0.95; } 100% { opacity: 0; transform: scale(1.7); } }
     @keyframes feel-fin-ring { 0% { opacity: 1; transform: scale(0.55); } 100% { opacity: 0; transform: scale(1.55); } }
     @keyframes feel-fin-rays { 0% { opacity: 0; transform: scale(0.5) rotate(0deg); } 20% { opacity: 0.95; } 100% { opacity: 0; transform: scale(1.3) rotate(8deg); } }
     @keyframes feel-fin-ghost { 0% { opacity: 0.9; transform: rotate(0deg) scale(1); } 100% { opacity: 0; transform: rotate(14deg) scale(1.18); } }
     @keyframes feel-fin-shard { 0% { opacity: 0; transform: translate(0, 0) rotate(0deg) scale(0.6); } 10% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(1); } }
-    @keyframes feel-fin-streak { 0% { opacity: 0; transform: rotate(-34deg) translateX(-70%); } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: rotate(-34deg) translateX(70%); } }
     @keyframes feel-ev2-spark { 0% { opacity: 0; transform: translate(0, 0) scale(0.5); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); } }
     @keyframes feel-d-haze { 0% { opacity: 0; transform: scale(0.5); } 15% { opacity: 0.9; transform: scale(0.9); } 100% { opacity: 0; transform: scale(1.5); } }
     @keyframes feel-d-gold { 0%, 8% { opacity: 0; transform: translate(0, 0) scale(0.4); } 22% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); } }
