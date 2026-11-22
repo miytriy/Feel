@@ -114,6 +114,8 @@ export function loadFormation(allChars, storage = globalThis.localStorage) {
     const ids = JSON.parse(storage.getItem(STORAGE_KEY) || 'null')
     if (!Array.isArray(ids)) return null
     const slots = arrangeSlots(ids.slice(0, TOTAL_SLOTS).map((id) => allChars.find((c) => c.id === id) || null))
+    // 使えるキャラが1体もいなくなった(ローテーション外など)ときも、テストキャラの既定編成には戻さず、空の編成を返す
+    if (!slots.some(Boolean)) return slots
     return validateFormation(slots).ok ? slots : null // 壊れた保存データは使わない
   } catch {
     return null
@@ -121,8 +123,8 @@ export function loadFormation(allChars, storage = globalThis.localStorage) {
 }
 
 // 初期の編成(保存がないとき)
-export const defaultFormation = (allChars, ids) =>
-  quickFill(ids.map((id) => allChars.find((c) => c.id === id)).filter(Boolean))
+// 保存がないときは、空の編成(テストキャラなどの既定の編成は出さない。自分で選ぶ)
+export const defaultFormation = () => Array(TOTAL_SLOTS).fill(null)
 
 // ---- スペルセット(キャラ編成とは別)。最大 MAX_SPELL_SLOTS 回分を有効化できる。同じスペルを何回入れてもよい ----
 export const isTokenSpell = (sp) => sp?.token === true // token: true のスペルは、他のスペルから有効化されるだけで、編成(スペルセット)には入れられない
