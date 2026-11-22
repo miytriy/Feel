@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
-import { useIsDesktop, C, FONT, DISPLAY } from './ui.js'
+import { useIsDesktop, useRemembered, C, FONT, DISPLAY } from './ui.js'
 import {
   MAX_SLOTS, MAX_AMULET_SLOTS, validateFormation, canPlace, placeChar, removeChar, swapSlots, quickFill,
   saveFormation, loadFormation, defaultFormation, MAX_SPELL_SLOTS, saveSpellSet, loadSpellSet, validateSpellSet, canUseSpell, spellClassOf, teamClassOf,
@@ -146,6 +146,10 @@ const CSS = `
 .fm-panel { position: absolute; left: 56px; top: 140px; z-index: 11; width: 660px; height: 800px; display: flex; flex-direction: column; animation: fm-panel 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .fm-ph { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; font-size: 26px; font-weight: 700; letter-spacing: 0.04em; color: #e6e6ea; min-height: 54px; }
 .fm-ph span { flex: 1; }
+.fm-cls { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.fm-cls button { height: 46px; min-height: 0; padding: 0 16px; border: 0; background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.7); font-size: 21px; font-weight: 700; cursor: pointer; }
+.fm-cls button:hover, .fm-cls button:focus-visible { background: rgba(255,255,255,0.28); outline: none; }
+.fm-cls button.on { background: ${C.player}; color: ${C.onAccent}; }
 .fm-ph button { height: 54px; padding: 0 26px; min-height: 0; border: 0; background: #f2f2f3; color: #1c1c1f; font-size: 24px; font-weight: 700; cursor: pointer; }
 .fm-ph button:hover, .fm-ph button:focus-visible { background: ${C.player}; outline: none; }
 .fm-grid { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: max-content; gap: 10px; align-content: start; padding: 8px; background: rgba(0,0,0,0.4); }
@@ -258,6 +262,7 @@ const CSS = `
 .fm.p .fm-panel { left: 48px; top: 940px; width: 984px; height: 600px; }
 .fm.p .fm-ph { margin-bottom: 10px; min-height: 52px; font-size: 24px; }
 .fm.p .fm-ph button { height: 52px; padding: 0 22px; font-size: 22px; }
+.fm.p .fm-cls button { height: 44px; padding: 0 12px; font-size: 20px; }
 .fm.p .fm-quick { margin-bottom: 8px; padding: 8px 14px; font-size: 19px; line-height: 1.5; }
 .fm-grid > .fm-card:not(.sp) { height: 132px; }
 .fm.p .fm-grid > .fm-card:not(.sp) { height: 124px; }
@@ -387,6 +392,7 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
   const [slots, setSlots] = useState(() => (startParty ? partyToSlots(startParty, allChars) : loadFormation(allChars) || defaultFormation(allChars, defaultIds)))
   const [savedIds, setSavedIds] = useState(() => JSON.stringify(slots.map((c) => c?.id ?? null)))
   const [activeSlot, setActiveSlot] = useState(null) // 選択中のスロット(キャラを選ぶ)
+  const [clsSel, setClsSel] = useRemembered('fm.class', 'all') // キャラ選択のクラス絞り込み(選ぶと、そのクラスとニュートラル以外は出さない。出入りしても、最後に選んだものに戻る)
   const [quick, setQuick] = useState(false) // 簡易編成(旧: クイック編成): 選んだ順に1番目から詰める
   const [picks, setPicks] = useState([])
   const [message, setMessage] = useState('')
@@ -608,14 +614,25 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
             </div>
             {quick && (
               <div className="fm-quick">
-                入れたい順にキャラをタップしてください(最大{MAX_SLOTS}体)。選んだ順に1番目のスロットから入ります。いまの編成は、選んだ状態から始まります(外すキャラをタップ)。<br />
+                入れたい順にタップ(最大{MAX_SLOTS}体)。いまの編成は選択済み。タップで外せます。<br />
                 選択中: <b>{picks.length ? picks.map((p, i) => `${i + 1}.${p.name}`).join(' → ') : 'まだありません'}</b>
               </div>
             )}
+            {(() => {
+              const present = CLASS_ORDER.filter((k) => k !== 'ニュートラル' && allChars.some((c) => !c.token && c.class === k && (quick ? !c.amulet : amuletPick ? c.amulet : !c.amulet)))
+              if (present.length < 2) return null
+              const cur = present.includes(clsSel) ? clsSel : 'all'
+              return (
+                <div className="fm-cls" role="radiogroup" aria-label="クラス" data-testid="fm-cls">
+                  {['all', ...present].map((k) => <button key={k} type="button" role="radio" aria-checked={cur === k} className={cur === k ? 'on' : ''} onClick={() => setClsSel(k)}>{k === 'all' ? 'すべて' : k}</button>)}
+                </div>
+              )
+            })()}
             <div className="fm-grid">
               {(() => {
-                const list = allChars.filter((c) => !c.token && (quick ? !c.amulet : amuletPick ? c.amulet : !c.amulet))
-                const ord = (c) => { const i = CLASS_ORDER.indexOf(c.class); return i === -1 ? CLASS_ORDER.length : i }
+                const clsNow = CLASS_ORDER.includes(clsSel) && clsSel !== 'ニュートラル' ? clsSel : null // 選んだクラス(なければ全部)。ニュートラルは、いつも出す
+                const list = allChars.filter((c) => !c.token && (quick ? !c.amulet : amuletPick ? c.amulet : !c.amulet) && (!clsNow || c.class === clsNow || c.class === 'ニュートラル'))
+                const ord = (c) => { if (clsNow && c.class === clsNow) return -1; const i = CLASS_ORDER.indexOf(c.class); return i === -1 ? CLASS_ORDER.length : i } // 選んだクラスを先頭に、そのあとにニュートラル
                 const sorted = list.map((c, i) => [c, i]).sort((x, y) => ord(x[0]) - ord(y[0]) || x[1] - y[1]).map((x) => x[0]) // クラス順(同じクラスの中は、もとの順)
                 return sorted.map((c, idx) => (idx === 0 || sorted[idx - 1].class !== c.class ? [c, true] : [c, false]))
               })().map(([c, head]) => {
