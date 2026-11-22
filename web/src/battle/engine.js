@@ -51,7 +51,7 @@ export const KEYWORDS = {
   intimidate: { label: '威圧', desc: '相手のスキルで選ばれない' },
   rush: { label: '突進', desc: '場に出たターンでもスキルを発動できる' },
   dash: { label: '疾走', desc: '場に出たターンでもスキルを発動できる。ラウンド開始時に行動順100%アップ' },
-  finisher: { label: '必殺', desc: 'スキルでダメージを与えるとき、ターゲットに対象の最大HP15%分の確定ダメージを与える。そのターゲットが召喚物だったとき、それを破壊する' },
+  finisher: { label: '必殺', desc: 'スキルでダメージを与えるとき、ターゲットに対象の最大HP15%分の必殺ダメージを与える。そのターゲットが召喚物だったとき、それを破壊する' },
   drain: { label: 'ドレイン', desc: 'スキルで与えたダメージと同じだけ自身を回復' },
   barrier: { label: 'バリア', desc: '攻撃を一回0ダメージにして壊れる' },
   noAttackFollower: { label: 'フォロワーを攻撃できない', desc: 'スキルでフォロワー(キャラ・召喚物)を攻撃できない(攻撃できる相手がいないので、スキルを発動できない)' },
@@ -2047,11 +2047,11 @@ function doSkill(state, actor, targetUid, opts) {
     if (hasKw(actor, 'finisher') && target.alive) {
       const fixed = Math.floor(target.maxHp * FINISHER_RATE)
       if (fixed > 0) {
-        dealDamage(target, fixed, true) // 必殺の固定ダメージは確定ダメージ
-        emit(state, 'damage', { src: actor.uid, target: target.uid, amount: fixed, means: '必殺', dmgType: 'true' })
+        dealDamage(target, fixed, true) // 必殺の追加ダメージ(防御は無視。ダメージ属性は「必殺」)
+        emit(state, 'damage', { src: actor.uid, target: target.uid, amount: fixed, means: '必殺', dmgType: 'finisher' })
         if (!target.alive) target.killedBy = actor.uid
         total += fixed
-        state.log.push(`【必殺】${target.name}に追加で${fixed}の確定ダメージ`)
+        state.log.push(`【必殺】${target.name}に追加で${fixed}の必殺ダメージ`)
       }
       // 召喚物(アミュレットではない)がターゲットなら、そのまま破壊する
       if (target.alive && target.field === 'summon' && !target.isAmulet) {

@@ -22,6 +22,7 @@ const LIST = [
   ['ダメージ(物理)', '白い数字。', 900, (p) => ({ unit: { ...baseUnit, hp: p ? 70 : 100 }, fx: p ? dmg('30', 'physical') : null })],
   ['ダメージ(魔法)', '青い数字。', 900, (p) => ({ unit: { ...baseUnit, hp: p ? 70 : 100 }, fx: p ? dmg('30', 'magic') : null })],
   ['ダメージ(確定)', '虹色の数字。', 900, (p) => ({ unit: { ...baseUnit, hp: p ? 70 : 100 }, fx: p ? dmg('30', 'true') : null })],
+  ['ダメージ(必殺)', '紫の数字。', 900, (p) => ({ unit: { ...baseUnit, hp: p ? 70 : 100 }, fx: p ? dmg('必殺 30', 'finisher') : null })],
   ['クリティカル', '数字の後ろに「!!」が付く。', 900, (p) => ({ unit: { ...baseUnit, hp: p ? 40 : 100 }, fx: p ? dmg('60!!', 'physical', true) : null })],
   ['名前の縮小', '名前が枠に入り切らないときは、2行にせず、1行に収まるまで文字が小さくなる(動かない)。', 600, () => ({ unit: { ...baseUnit, name: 'アドベンチャーエルフ・メイ' }, fx: null })],
   ['回復', 'HPが戻る。', 800, (p) => ({ unit: { ...baseUnit, hp: 100 }, fx: p ? { kind: 'heal', text: '+30' } : null })],

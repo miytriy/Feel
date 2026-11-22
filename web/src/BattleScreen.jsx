@@ -240,7 +240,7 @@ function badgesOf(unit) {
   return badges
 }
 
-// ダメージの数字。物理=白 / 魔法=青 / 確定=虹(レジェンドのように、色が流れる)
+// ダメージの数字。物理=白 / 魔法=青 / 確定=虹 / 必殺=紫(レジェンドのように、色が流れる)
 function DmgNum({ part, crit, big }) {
   const size = (big ? 30 : 22) + (crit ? 6 : 0)
   const base = { fontWeight: 900, fontSize: size, lineHeight: 1.1, letterSpacing: '0.02em', fontFamily: DISPLAY }
@@ -250,8 +250,9 @@ function DmgNum({ part, crit, big }) {
     )
   }
   const magic = part.dmgType === 'magic'
-  const color = magic ? '#5cb8ff' : '#ffffff'
-  const glow = magic ? 'rgba(60,150,255,0.9)' : 'rgba(255,255,255,0.7)'
+  const fin = part.dmgType === 'finisher'
+  const color = fin ? '#b86bff' : magic ? '#5cb8ff' : '#ffffff'
+  const glow = fin ? 'rgba(150,60,255,0.95)' : magic ? 'rgba(60,150,255,0.9)' : 'rgba(255,255,255,0.7)'
   return <span style={{ ...base, color, textShadow: `0 0 2px #000, 0 0 2px #000, 0 0 3px #000, 0 2px 0 #000, 0 0 12px ${glow}` }}>{part.text}</span>
 }
 
@@ -1509,7 +1510,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
       const crit = main.some((x) => x.crit)
       const parts = []
       if (main.length) parts.push({ text: `${main.reduce((a, x) => a + x.amount, 0)}${crit ? '!!' : ''}`, dmgType: main[0].dmgType || 'physical' })
-      if (fin.length) parts.push({ text: `必殺 ${fin.reduce((a, x) => a + x.amount, 0)}`, dmgType: 'true' })
+      if (fin.length) parts.push({ text: `必殺 ${fin.reduce((a, x) => a + x.amount, 0)}`, dmgType: 'finisher' })
       return { kind: 'damage', text: parts.map((x) => x.text).join(' '), crit, parts }
     }
     if (ev.type === 'buff') { // 強化: ステータスは文字ではなくアイコンで見せる(アイコンがないステータスだけ、文字のまま)
