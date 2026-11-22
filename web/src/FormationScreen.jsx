@@ -165,7 +165,7 @@ const CSS = `
 .fm-grid { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: max-content; gap: 10px; align-content: start; padding: 8px; background: rgba(0,0,0,0.4); }
 .fm-cls { grid-column: 1 / -1; margin-top: 4px; padding: 4px 12px; background: rgba(255,255,255,0.12); border-left: 5px solid ${C.player}; font-size: 22px; font-weight: 700; letter-spacing: 0.06em; color: #f2f2f3; }
 .fm-grid > .fm-cls:first-child { margin-top: 0; }
-.fm.p .fm-cls { font-size: 20px; padding: 3px 10px; }
+.fm.p .fm-cls { font-size: 25px; padding: 3px 10px; }
 .fm-grid.one { grid-template-columns: 1fr; grid-auto-rows: max-content; }
 .fm-card { position: relative; display: flex; align-items: center; gap: 14px; padding: 0 16px 0 0; min-height: 0; overflow: hidden; border: 0; background: #1f2024; color: ${C.ink}; text-align: left; cursor: pointer; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.12); transition: transform 0.12s, box-shadow 0.12s; }
 .fm-card .th { position: relative; flex: none; width: 112px; align-self: stretch; border-bottom: 6px solid transparent; background: linear-gradient(165deg, color-mix(in srgb, var(--rc) 55%, #fff) 0%, var(--rc) 45%, #17171d 100%) padding-box, var(--rbg) border-box; }
@@ -238,69 +238,69 @@ const CSS = `
 .fm-band .b:hover, .fm-band .b:focus-visible { transform: translateY(-3px); filter: brightness(1.12); outline: none; }
 /* ---------- スマホ(縦 1080×1920)。上から: 床とキャラ → 状態 → スペル → パーティーのタブ → ボタン ---------- */
 .fm.p .fm-top { padding: 48px 44px; }
-.fm.p .fm-title { font-size: 40px; }
-.fm.p .fm-title svg { font-size: 52px; }
+.fm.p .fm-title { font-size: 50px; }
+.fm.p .fm-title svg { font-size: 65px; }
 .fm.p .fm-x { width: 88px; height: 88px; }
-.fm.p .fm-no { right: 50px; top: 150px; font-size: 300px; }
+.fm.p .fm-no { right: 50px; top: 150px; font-size: 375px; }
 .fm.p .fm-arrow { display: none; }
 .fm.p .fm-floor { transform-origin: 50% 0; top: var(--e0, 0px); } /* スマホ: 縦に余った高さは、床・各欄の位置に配る(--e: 余り / --e0: 床 / --e1: その下の欄) */
 .fm.p.open .fm-floor { transform: translate(0, 110px) scale(0.62); }
-.fm.p .fm-slot .no { left: -14px; bottom: -6px; font-size: 28px; }
-.fm.p .fm-slot .plus { font-size: 44px; }
-.fm.p .fm-plate .nm { font-size: 25px; }
-.fm.p .fm-plate .cl { font-size: 18px; padding: 0 10px; }
-.fm.p .fm-plate .st { font-size: 17px; line-height: 1.4; }
+.fm.p .fm-slot .no { left: -14px; bottom: -6px; font-size: 35px; }
+.fm.p .fm-slot .plus { font-size: 55px; }
+.fm.p .fm-plate .nm { font-size: 31px; }
+.fm.p .fm-plate .cl { font-size: 22px; padding: 0 10px; }
+.fm.p .fm-plate .st { font-size: 21px; line-height: 1.4; }
 .fm.p .fm-ctl { gap: 6px; margin-top: 8px; }
-.fm.p .fm-ctl button { width: 58px; height: 46px; font-size: 22px; }
+.fm.p .fm-ctl button { width: 58px; height: 46px; font-size: 28px; }
 .fm.p .fm-status { right: 48px; bottom: auto; top: calc(1010px + var(--e1, 0px)); width: 984px; }
 .fm.p.open .fm-status { top: calc(790px + var(--e0, 0px)); }
-.fm.p .fm-status > div { font-size: 22px; }
+.fm.p .fm-status > div { font-size: 28px; }
 .fm.p .fm-amulets { left: 48px; right: 48px; top: calc(1130px + var(--e1, 0px)); width: auto; display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; }
-.fm.p .fm-amulets .hd { flex: none; width: 100%; margin: 0 0 4px; font-size: 24px; }
+.fm.p .fm-amulets .hd { flex: none; width: 100%; margin: 0 0 4px; font-size: 30px; }
 .fm.p .fm-am { flex: 1; min-width: 0; margin: 0; }
-.fm.p .fm-am .nm { font-size: 22px; }
+.fm.p .fm-am .nm { font-size: 28px; }
 .fm.p .fm-spells { left: 48px; top: calc(1262px + var(--e1, 0px)); width: 984px; }
 .fm.p .fm-spells .fm-note { display: none; }
-.fm.p .fm-spells .hd { margin-bottom: 8px; font-size: 24px; }
+.fm.p .fm-spells .hd { margin-bottom: 8px; font-size: 30px; }
 .fm.p .fm-spell { margin-bottom: 8px; padding: 8px 14px; }
-.fm.p .fm-spell .nm { font-size: 24px; }
-.fm.p .fm-spell .ds { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fm.p .fm-spell .ng-t { font-size: 16px; }
+.fm.p .fm-spell .nm { font-size: 30px; }
+.fm.p .fm-spell .ds { font-size: 21px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fm.p .fm-spell .ng-t { font-size: 20px; }
 .fm.p .fm-spell button { width: 52px; height: 52px; }
-.fm.p .fm-add { height: 60px; font-size: 22px; }
-.fm.p .fm-note { margin-top: 8px; font-size: 16px; line-height: 1.5; }
+.fm.p .fm-add { height: 60px; font-size: 28px; }
+.fm.p .fm-note { margin-top: 8px; font-size: 20px; line-height: 1.5; }
 .fm.p .fm-panel { left: 48px; top: calc(940px + var(--e0, 0px)); width: 984px; height: calc(600px + var(--e, 0px) - var(--e0, 0px)); }
-.fm.p .fm-ph { margin-bottom: 10px; min-height: 52px; font-size: 24px; }
-.fm.p .fm-ph button { height: 52px; padding: 0 22px; font-size: 22px; }
-.fm.p .fm-clsbtn { height: 70px; padding: 0 20px; font-size: 28px; }
+.fm.p .fm-ph { margin-bottom: 10px; min-height: 52px; font-size: 30px; }
+.fm.p .fm-ph button { height: 52px; padding: 0 22px; font-size: 28px; }
+.fm.p .fm-clsbtn { height: 70px; padding: 0 20px; font-size: 35px; }
 .fm.p .fm-clslist { right: 44px; left: 44px; width: auto; top: 150px; }
-.fm.p .fm-quick { margin-bottom: 8px; padding: 8px 14px; font-size: 19px; line-height: 1.5; }
+.fm.p .fm-quick { margin-bottom: 8px; padding: 8px 14px; font-size: 24px; line-height: 1.5; }
 .fm-grid > .fm-card:not(.sp) { height: 132px; }
 .fm.p .fm-grid > .fm-card:not(.sp) { height: 124px; }
 .fm.p .fm-grid.one { grid-auto-rows: max-content; }
 .fm.p .fm-card .th { width: 100px; }
-.fm.p .fm-card .nm { font-size: 25px; }
-.fm.p .fm-card .cl { font-size: 19px; }
-.fm.p .fm-card .st { font-size: 16px; }
-.fm.p .fm-card .tag { font-size: 16px; }
+.fm.p .fm-card .nm { font-size: 28px; padding-right: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fm.p .fm-card .cl { font-size: 24px; }
+.fm.p .fm-card .st { font-size: 20px; }
+.fm.p .fm-card .tag { font-size: 20px; }
 .fm.p .fm-card.sp { min-height: 84px; padding: 10px 16px; }
-.fm.p .fm-card.sp .st { font-size: 18px; }
+.fm.p .fm-card.sp .st { font-size: 22px; }
 .fm.p .fm-sinfo { min-height: 110px; padding: 10px 14px; }
-.fm.p .fm-sinfo .nm { font-size: 22px; }
-.fm.p .fm-sinfo .ds { font-size: 18px; }
-.fm.p .fm-sinfo .add { height: 60px; padding: 0 20px; font-size: 22px; }
+.fm.p .fm-sinfo .nm { font-size: 28px; }
+.fm.p .fm-sinfo .ds { font-size: 22px; }
+.fm.p .fm-sinfo .add { height: 60px; padding: 0 20px; font-size: 28px; }
 .fm.p .fm-team { left: 48px; bottom: auto; top: calc(1534px + var(--e1, 0px)); }
 .fm.p .fm-chip { margin-bottom: 10px; }
-.fm.p .fm-chip .nm { min-width: 220px; font-size: 26px; }
+.fm.p .fm-chip .nm { min-width: 220px; font-size: 32px; }
 .fm.p .fm-tabs { width: 762px; }
-.fm.p .fm-fmts button { height: 48px; padding: 0 14px; font-size: 22px; }
+.fm.p .fm-fmts button { height: 48px; padding: 0 14px; font-size: 28px; }
 .fm.p .fm-tabs button { width: 122px; height: 64px; }
 .fm.p .fm-btns { left: 48px; right: 48px; bottom: 64px; gap: 14px; }
-.fm.p .fm-btn { flex: 1; min-width: 0; height: 100px; padding-left: 22px; font-size: 27px; gap: 8px; }
-.fm.p .fm-btn .ic { width: 76px; font-size: 32px; }
+.fm.p .fm-btn { flex: 1; min-width: 0; height: 100px; padding-left: 22px; font-size: 25px; white-space: nowrap; gap: 8px; }
+.fm.p .fm-btn .ic { width: 76px; font-size: 40px; }
 .fm.p .fm-band { padding: 64px 20px 70px; }
-.fm.p .fm-band .msg { font-size: 36px; }
-.fm.p .fm-band .b { min-width: 0; flex: 1; font-size: 28px; padding: 0 16px; }
+.fm.p .fm-band .msg { font-size: 45px; }
+.fm.p .fm-band .b { min-width: 0; flex: 1; font-size: 35px; padding: 0 16px; }
 .fm.p .fm-band .row { gap: 20px; padding: 0 40px; }
 /* 閉じる動き: 出てきたときの逆向き(キャラは沈む・数字は右へ・左の一覧は左へ・上の行は上へ・下のボタンは下へ)。
    translate プロパティを使うのは、もとの transform(位置あわせ)と、ぶつからないため */
