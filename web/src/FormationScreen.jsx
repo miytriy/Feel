@@ -243,7 +243,7 @@ const CSS = `
 .fm.p .fm-x { width: 88px; height: 88px; }
 .fm.p .fm-no { right: 50px; top: 150px; font-size: 300px; }
 .fm.p .fm-arrow { display: none; }
-.fm.p .fm-floor { transform-origin: 50% 0; }
+.fm.p .fm-floor { transform-origin: 50% 0; top: var(--e0, 0px); } /* スマホ: 縦に余った高さは、床・各欄の位置に配る(--e: 余り / --e0: 床 / --e1: その下の欄) */
 .fm.p.open .fm-floor { transform: translate(0, 110px) scale(0.62); }
 .fm.p .fm-slot .no { left: -14px; bottom: -6px; font-size: 28px; }
 .fm.p .fm-slot .plus { font-size: 44px; }
@@ -252,14 +252,14 @@ const CSS = `
 .fm.p .fm-plate .st { font-size: 17px; line-height: 1.4; }
 .fm.p .fm-ctl { gap: 6px; margin-top: 8px; }
 .fm.p .fm-ctl button { width: 58px; height: 46px; font-size: 22px; }
-.fm.p .fm-status { right: 48px; bottom: auto; top: 1010px; width: 984px; }
-.fm.p.open .fm-status { top: 790px; }
+.fm.p .fm-status { right: 48px; bottom: auto; top: calc(1010px + var(--e1, 0px)); width: 984px; }
+.fm.p.open .fm-status { top: calc(790px + var(--e0, 0px)); }
 .fm.p .fm-status > div { font-size: 22px; }
-.fm.p .fm-amulets { left: 48px; right: 48px; top: 1130px; width: auto; display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; }
+.fm.p .fm-amulets { left: 48px; right: 48px; top: calc(1130px + var(--e1, 0px)); width: auto; display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; }
 .fm.p .fm-amulets .hd { flex: none; width: 100%; margin: 0 0 4px; font-size: 24px; }
 .fm.p .fm-am { flex: 1; min-width: 0; margin: 0; }
 .fm.p .fm-am .nm { font-size: 22px; }
-.fm.p .fm-spells { left: 48px; top: 1262px; width: 984px; }
+.fm.p .fm-spells { left: 48px; top: calc(1262px + var(--e1, 0px)); width: 984px; }
 .fm.p .fm-spells .fm-note { display: none; }
 .fm.p .fm-spells .hd { margin-bottom: 8px; font-size: 24px; }
 .fm.p .fm-spell { margin-bottom: 8px; padding: 8px 14px; }
@@ -269,7 +269,7 @@ const CSS = `
 .fm.p .fm-spell button { width: 52px; height: 52px; }
 .fm.p .fm-add { height: 60px; font-size: 22px; }
 .fm.p .fm-note { margin-top: 8px; font-size: 16px; line-height: 1.5; }
-.fm.p .fm-panel { left: 48px; top: 940px; width: 984px; height: 600px; }
+.fm.p .fm-panel { left: 48px; top: calc(940px + var(--e0, 0px)); width: 984px; height: calc(600px + var(--e, 0px) - var(--e0, 0px)); }
 .fm.p .fm-ph { margin-bottom: 10px; min-height: 52px; font-size: 24px; }
 .fm.p .fm-ph button { height: 52px; padding: 0 22px; font-size: 22px; }
 .fm.p .fm-clsbtn { height: 70px; padding: 0 20px; font-size: 28px; }
@@ -289,7 +289,7 @@ const CSS = `
 .fm.p .fm-sinfo .nm { font-size: 22px; }
 .fm.p .fm-sinfo .ds { font-size: 18px; }
 .fm.p .fm-sinfo .add { height: 60px; padding: 0 20px; font-size: 22px; }
-.fm.p .fm-team { left: 48px; bottom: auto; top: 1534px; }
+.fm.p .fm-team { left: 48px; bottom: auto; top: calc(1534px + var(--e1, 0px)); }
 .fm.p .fm-chip { margin-bottom: 10px; }
 .fm.p .fm-chip .nm { min-width: 220px; font-size: 26px; }
 .fm.p .fm-tabs { width: 762px; }
@@ -533,7 +533,7 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
       <div className="fm-stage" style={{ width: sw, height: sh, transform: `translate(-50%, -50%) scale(${scale})` }}>
         <div className="fm-bg" aria-hidden="true"><i /><i /></div>
         {/* 部品の置き場: PCは左右いっぱい(端に寄せる部品は、画面の端に付く)。スマホは、まん中に決まった幅で置く */}
-        <div className="fm-ui" style={{ left: desktop ? 0 : (sw - L.W) / 2, top: (sh - L.H) / 2, width: desktop ? sw : L.W, height: L.H }}>
+        <div className="fm-ui" style={desktop ? { left: 0, top: (sh - L.H) / 2, width: sw, height: L.H } : { left: (sw - L.W) / 2, top: 0, width: L.W, height: sh, '--e': `${sh - L.H}px`, '--e0': `${(sh - L.H) * 0.35}px`, '--e1': `${(sh - L.H) * 0.75}px` }}>
         {parties && partyIdx != null && <div className="fm-no" key={partyIdx} aria-hidden="true">{pad(partyIdx + 1)}</div>}
 
         <div className="fm-top">
