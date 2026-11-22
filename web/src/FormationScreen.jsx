@@ -200,6 +200,7 @@ const CSS = `
 .fm-am .cl { font-size: 17px; font-weight: 700; color: color-mix(in srgb, var(--rc) 62%, #fff); }
 .fm-am .rm { flex: none; width: 46px; min-height: 0; padding: 0; border: 0; background: rgba(255,255,255,0.16); color: ${C.bad}; font-size: 22px; display: grid; place-items: center; cursor: pointer; }
 .fm-am .rm:hover, .fm-am .rm:focus-visible { background: ${C.bad}; color: #fff; outline: none; }
+.fm-low { display: contents; }
 .fm-spells { position: absolute; left: 56px; top: 140px; z-index: 6; width: 360px; }
 .fm-spells .hd { margin-bottom: 12px; font-size: 26px; font-weight: 700; color: #e6e6ea; }
 .fm-spells .hd b { font-family: ${DISPLAY}; font-size: 34px; color: ${C.player}; }
@@ -255,11 +256,12 @@ const CSS = `
 .fm.p .fm-status { right: 48px; bottom: auto; top: calc(1010px + var(--e2, 0px)); width: 984px; }
 .fm.p.open .fm-status { top: calc(790px + var(--e0, 0px)); }
 .fm.p .fm-status > div { font-size: 28px; }
-.fm.p .fm-amulets { left: 48px; right: 48px; top: calc(1130px + var(--e2, 0px)); width: auto; display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; }
+.fm.p .fm-low { display: flex; flex-direction: column; gap: 26px; position: absolute; left: 48px; width: 984px; top: calc(1130px + var(--e2, 0px)); z-index: 6; }
+.fm.p .fm-amulets { position: relative; left: auto; right: auto; top: auto; width: auto; order: 1; display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; }
+.fm.p .fm-spells { position: relative; left: auto; top: auto; width: auto; order: 2; }
 .fm.p .fm-amulets .hd { flex: none; width: 100%; margin: 0 0 4px; font-size: 30px; }
 .fm.p .fm-am { flex: 1; min-width: 0; margin: 0; }
 .fm.p .fm-am .nm { font-size: 28px; }
-.fm.p .fm-spells { left: 48px; top: calc(1262px + var(--e2, 0px)); width: 984px; }
 .fm.p .fm-spells .fm-note { display: none; }
 .fm.p .fm-spells .hd { margin-bottom: 8px; font-size: 30px; }
 .fm.p .fm-spell { margin-bottom: 8px; padding: 8px 14px; }
@@ -533,7 +535,7 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
       <div className="fm-stage" style={{ width: sw, height: sh, transform: `translate(-50%, -50%) scale(${scale})` }}>
         <div className="fm-bg" aria-hidden="true"><i /><i /></div>
         {/* 部品の置き場: PCは左右いっぱい(端に寄せる部品は、画面の端に付く)。スマホは、まん中に決まった幅で置く */}
-        <div className="fm-ui" style={desktop ? { left: 0, top: (sh - L.H) / 2, width: sw, height: L.H } : { left: (sw - L.W) / 2, top: 0, width: L.W, height: sh, '--e': `${sh - L.H}px`, '--e0': `${(sh - L.H) * 0.35}px`, '--e1': `${(sh - L.H) * 0.75}px`, '--e2': `${Math.max(0, Math.min((sh - L.H) * 0.75, (sh - L.H) - 90))}px` }}>
+        <div className="fm-ui" style={desktop ? { left: 0, top: (sh - L.H) / 2, width: sw, height: L.H } : { left: (sw - L.W) / 2, top: 0, width: L.W, height: sh, '--e': `${sh - L.H}px`, '--e0': `${(sh - L.H) * 0.35}px`, '--e1': `${(sh - L.H) * 0.75}px`, '--e2': `${Math.max(0, Math.min((sh - L.H) * 0.75, (sh - L.H) - 170))}px` }}>
         {parties && partyIdx != null && <div className="fm-no" key={partyIdx} aria-hidden="true">{pad(partyIdx + 1)}</div>}
 
         <div className="fm-top">
@@ -593,6 +595,7 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
           ))}
         </div>
 
+        <div className="fm-low">{/* PC: 中身はそのまま(display: contents)。スマホ: アミュレット → スペルの順に上から積む(高さが変わっても重ならない) */}
         {/* 左: スペルセット(一覧が開いていないとき) */}
         {!panel && allSpells.length > 0 && (
           <div className="fm-spells">
@@ -638,6 +641,7 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
             })}
           </div>
         )}
+        </div>
 
         {/* 左: キャラ一覧 */}
         {panel === 'chars' && (
