@@ -544,7 +544,7 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
           // ダメージの数字: 物理=白 / 魔法=青 / 確定=虹。大きく太く出す
           <span key={tick} style={{ position: 'absolute', left: '50%', top: '22%', zIndex: 9, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, whiteSpace: 'nowrap', animation: `${fx.parts.some((pt) => pt.dmgType === 'finisher') ? 'feel-float 1.7s' : 'feel-float 1.3s'} ease-out forwards` }}>
             {fx.parts.map((pt, n) => pt.dmgType === 'finisher'
-              ? <span key={n} style={{ display: 'block', opacity: 0, animation: 'feel-fin-num 0.35s ease-out 0.56s both' }}><DmgNum part={pt} big={big} /></span> // 必殺の数字は、球が砕ける瞬間に出す
+              ? <span key={n} style={{ display: 'block', opacity: 0, animation: 'feel-fin-num 0.3s ease-out 0.12s both' }}><DmgNum part={pt} big={big} /></span> // 必殺の数字は、後半(閃光・破片)が始まってすぐ、スキルの数字のあとに出す
               : <DmgNum key={n} part={pt} crit={fx.crit && n === 0} big={big} />)}
           </span>
         ) : (
@@ -1537,7 +1537,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
       const crit = main.some((x) => x.crit)
       const parts = []
       if (main.length) parts.push({ text: `${main.reduce((a, x) => a + x.amount, 0)}${crit ? '!!' : ''}`, dmgType: main[0].dmgType || 'physical' })
-      if (fin.length) parts.push({ text: `必殺 ${fin.reduce((a, x) => a + x.amount, 0)}`, dmgType: 'finisher' })
+      if (fin.length) parts.push({ text: `${fin.reduce((a, x) => a + x.amount, 0)}`, dmgType: 'finisher' }) // 必殺の数字: 「必殺」の文字は付けない(紫で分かる)
       return { kind: 'damage', text: parts.map((x) => x.text).join(' '), crit, parts, finisher: fin.length > 0 }
     }
     if (ev.type === 'buff') { // 強化: ステータスは文字ではなくアイコンで見せる(アイコンがないステータスだけ、文字のまま)
