@@ -146,12 +146,20 @@ const CSS = `
 .fm-panel { position: absolute; left: 56px; top: 140px; z-index: 11; width: 660px; height: 800px; display: flex; flex-direction: column; animation: fm-panel 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .fm-ph { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; font-size: 26px; font-weight: 700; letter-spacing: 0.04em; color: #e6e6ea; min-height: 54px; }
 .fm-ph span { flex: 1; }
-.fm-cls { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-.fm-cls .lb { align-self: center; margin-right: 6px; font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.6); }
-.fm-cls button:disabled { opacity: 0.35; cursor: default; }
-.fm-cls button { height: 46px; min-height: 0; padding: 0 16px; border: 0; background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.7); font-size: 21px; font-weight: 700; cursor: pointer; }
-.fm-cls button:hover, .fm-cls button:focus-visible { background: rgba(255,255,255,0.28); outline: none; }
-.fm-cls button.on { background: ${C.player}; color: ${C.onAccent}; }
+.fm-clsbtn { pointer-events: auto; margin-left: auto; display: flex; align-items: center; gap: 14px; height: 72px; min-height: 0; padding: 0 26px; border: 0; background: rgba(255,255,255,0.14); color: #fff; cursor: pointer; font-size: 30px; font-weight: 800; }
+.fm-clsbtn small { font-size: 19px; font-weight: 700; color: rgba(255,255,255,0.6); }
+.fm-clsbtn i { font-style: normal; font-size: 22px; color: ${C.player}; }
+.fm-clsbtn:hover, .fm-clsbtn:focus-visible { background: rgba(255,255,255,0.28); outline: none; }
+.fm-clsbtn + .fm-x { margin-left: 22px; }
+.fm-clslist { position: absolute; z-index: 40; right: 56px; top: 130px; width: 640px; padding: 20px; background: rgba(14,14,17,0.97); border: 1px solid rgba(255,255,255,0.18); box-shadow: 0 18px 50px rgba(0,0,0,0.6); }
+.fm-clslist .hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; font-size: 26px; font-weight: 700; }
+.fm-clslist .hd button { height: 50px; min-height: 0; padding: 0 22px; border: 0; background: #f2f2f3; color: #1c1c1f; font-size: 22px; font-weight: 700; cursor: pointer; }
+.fm-clslist .gr { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.fm-clslist .gr button { height: 64px; min-height: 0; border: 0; background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.85); font-size: 26px; font-weight: 700; cursor: pointer; }
+.fm-clslist .gr button:hover, .fm-clslist .gr button:focus-visible { background: rgba(255,255,255,0.28); outline: none; }
+.fm-clslist .gr button.on { background: ${C.player}; color: ${C.onAccent}; }
+.fm-clslist .gr button:disabled { opacity: 0.3; cursor: default; }
+.fm-clslist p { margin: 12px 0 0; font-size: 20px; line-height: 1.5; color: rgba(255,255,255,0.65); }
 .fm-ph button { height: 54px; padding: 0 26px; min-height: 0; border: 0; background: #f2f2f3; color: #1c1c1f; font-size: 24px; font-weight: 700; cursor: pointer; }
 .fm-ph button:hover, .fm-ph button:focus-visible { background: ${C.player}; outline: none; }
 .fm-grid { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: max-content; gap: 10px; align-content: start; padding: 8px; background: rgba(0,0,0,0.4); }
@@ -264,7 +272,8 @@ const CSS = `
 .fm.p .fm-panel { left: 48px; top: 940px; width: 984px; height: 600px; }
 .fm.p .fm-ph { margin-bottom: 10px; min-height: 52px; font-size: 24px; }
 .fm.p .fm-ph button { height: 52px; padding: 0 22px; font-size: 22px; }
-.fm.p .fm-cls button { height: 44px; padding: 0 12px; font-size: 20px; }
+.fm.p .fm-clsbtn { height: 70px; padding: 0 20px; font-size: 28px; }
+.fm.p .fm-clslist { right: 44px; left: 44px; width: auto; top: 150px; }
 .fm.p .fm-quick { margin-bottom: 8px; padding: 8px 14px; font-size: 19px; line-height: 1.5; }
 .fm-grid > .fm-card:not(.sp) { height: 132px; }
 .fm.p .fm-grid > .fm-card:not(.sp) { height: 124px; }
@@ -497,6 +506,10 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
   const amuletPick = activeSlot !== null && activeSlot >= MAX_SLOTS // アミュレットの枠を選んでいる(一覧には、アミュレットだけ出る)
   const mainCount = slots.slice(0, MAX_SLOTS).filter(Boolean).length
   const usedClass = ((quick ? picks : slots.slice(0, MAX_SLOTS)).find((c) => c && c.class !== 'ニュートラル') || {}).class || null // いま編成(簡易編成の選択中)にいる、ニュートラル以外のクラス
+  const classChoices = CLASS_ORDER.filter((k) => k !== 'ニュートラル' && allChars.some((c) => !c.token && c.class === k))
+  const classNow = usedClass || (classChoices.includes(clsSel) ? clsSel : null) // いま選ばれている使用クラス(なければ、すべて)
+  const [clsOpen, setClsOpen] = useState(false)
+  const pickClass = (k) => { setClsSel(k); setClsOpen(false) }
   const panel = quick || activeSlot !== null ? 'chars' : spellPick ? 'spells' : null
 
   useEffect(() => {
@@ -525,9 +538,27 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
 
         <div className="fm-top">
           <div className="fm-title"><IconFormation /><span>//<b>{title}</b></span></div>
+          {classChoices.length > 1 && (
+            <button type="button" className="fm-clsbtn" data-testid="fm-clsbtn" aria-haspopup="listbox" aria-expanded={clsOpen} onClick={() => setClsOpen((v) => !v)}>
+              <small>使用クラス</small><b>{classNow || 'すべて'}</b><i>▾</i>
+            </button>
+          )}
           <button type="button" className="fm-x" onClick={close} aria-label="戻る"><IconX /></button>
         </div>
 
+        {clsOpen && (
+          <div className="fm-clslist" role="listbox" aria-label="使用クラス" data-testid="fm-clslist">
+            <div className="hd"><span>使用クラスを選ぶ</span><button type="button" aria-label="閉じる" onClick={() => setClsOpen(false)}>閉じる</button></div>
+            <div className="gr">
+              {['all', ...classChoices].map((k) => {
+                const locked = !!usedClass && k !== usedClass // 編成にいるキャラのクラスで決まる(変えるには、そのキャラを外す)
+                const on = (classNow || 'all') === k
+                return <button key={k} type="button" role="option" aria-selected={on} disabled={locked} className={on ? 'on' : ''} onClick={() => pickClass(k === 'all' ? 'all' : k)}>{k === 'all' ? 'すべて' : k}</button>
+              })}
+            </div>
+            {usedClass && <p>編成にいるキャラのクラスで決まっています。変えるには、そのキャラを外してください。</p>}
+          </div>
+        )}
         {parties && <button type="button" className="fm-arrow l" onClick={() => stepParty(-1)} aria-label="前のパーティー"><Tri dir="l" /></button>}
         {parties && <button type="button" className="fm-arrow r" onClick={() => stepParty(1)} aria-label="次のパーティー"><Tri dir="r" /></button>}
 
@@ -621,20 +652,6 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
                 選択中: <b>{picks.length ? picks.map((p, i) => `${i + 1}.${p.name}`).join(' → ') : 'まだありません'}</b>
               </div>
             )}
-            {(() => {
-              const present = CLASS_ORDER.filter((k) => k !== 'ニュートラル' && allChars.some((c) => !c.token && c.class === k))
-              if (present.length < 2) return null
-              const cur = usedClass || (present.includes(clsSel) ? clsSel : 'all')
-              return (
-                <div className="fm-cls" role="radiogroup" aria-label="使用クラス" data-testid="fm-cls">
-                  <span className="lb">使用クラス</span>
-                  {['all', ...present].map((k) => {
-                    const locked = !!usedClass && k !== usedClass // 編成にいるキャラのクラスで決まる(変えるには、そのキャラを外す)
-                    return <button key={k} type="button" role="radio" aria-checked={cur === k} disabled={locked} title={locked ? '編成にいるキャラのクラスで決まっています' : undefined} className={cur === k ? 'on' : ''} onClick={() => setClsSel(k)}>{k === 'all' ? 'すべて' : k}</button>
-                  })}
-                </div>
-              )
-            })()}
             <div className="fm-grid">
               {(() => {
                 const clsNow = usedClass || (CLASS_ORDER.includes(clsSel) && clsSel !== 'ニュートラル' ? clsSel : null) // この編成の使用クラス(なければ全部)。ニュートラルは、いつも出す
