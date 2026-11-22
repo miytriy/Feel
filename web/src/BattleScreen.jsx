@@ -1226,7 +1226,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     if (!play || logOpen) return // 戦闘実況を開いている間は、再生を止める
     if (play.i >= play.events.length) { setPlay(null); return }
     const grp = play.events.slice(play.i, groupEnd(play.events, play.i) + 1)
-    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), Math.max(...grp.map((x) => (x.type === 'vanish' ? EVENT_MS.vanish : x.type === 'damage' && x.means === '必殺' ? 1150 * mult : (EVENT_MS[x.type] ?? 500) * mult))))
+    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), Math.max(...grp.map((x) => (x.type === 'vanish' ? EVENT_MS.vanish : (EVENT_MS[x.type] ?? 500) * mult))))
     return () => clearTimeout(t)
   }, [play, mult, logOpen])
 
