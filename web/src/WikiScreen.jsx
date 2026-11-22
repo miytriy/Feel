@@ -296,8 +296,9 @@ export default function WikiScreen({ onExit, focus = null }) {
   }
   const exitWiki = () => {
     if (exiting) return
+    if (focus) { onExit(); return } // 編成・戦闘の上に重ねているとき(focus)は、演出なしで、すぐ閉じる(全画面の透明度アニメーションを作らない。長い退場の演出は、Wikiのホーム用)
     setExiting(true)
-    timer.current = setTimeout(onExit, focus ? 140 : 540) // 編成・戦闘の上に重ねているとき(focus)は、すぐ消す(長い退場の演出は、Wikiのホーム用)
+    timer.current = setTimeout(onExit, 540)
   }
   const goRootNow = () => { setBack(false); setNav({ section: null, sub: 'all', itemId: null }); setQuery(''); setRarity('all') }
   const goRoot = () => { setBack(false); leaveToRoot(goRootNow) }
