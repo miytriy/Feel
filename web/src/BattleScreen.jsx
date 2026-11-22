@@ -1536,8 +1536,8 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
       const fin = dmgs.filter((x) => x.means === '必殺')
       const crit = main.some((x) => x.crit)
       const parts = []
-      if (main.length) parts.push({ text: `${main.reduce((a, x) => a + x.amount, 0)}${crit ? '!!' : ''}`, dmgType: main[0].dmgType || 'physical' })
       if (fin.length) parts.push({ text: `${fin.reduce((a, x) => a + x.amount, 0)}`, dmgType: 'finisher' }) // 必殺の数字: 「必殺」の文字は付けない(紫で分かる)
+      if (main.length) parts.push({ text: `${main.reduce((a, x) => a + x.amount, 0)}${crit ? '!!' : ''}`, dmgType: main[0].dmgType || 'physical' })
       return { kind: 'damage', text: parts.map((x) => x.text).join(' '), crit, parts, finisher: fin.length > 0, hasMain: main.length > 0 }
     }
     if (ev.type === 'buff') { // 強化: ステータスは文字ではなくアイコンで見せる(アイコンがないステータスだけ、文字のまま)

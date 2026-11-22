@@ -2039,27 +2039,34 @@ function doSkill(state, actor, targetUid, opts) {
   emit(state, 'attack', { src: actor.uid, target: target.uid, skill: skill.name })
   state.means = skill.name // これから与えるダメージの攻撃手段(攻撃時の能力が働いたあとに決める)
   const { damage, isCrit } = calcDamage(actor, target, skill, { ...opts, bySkill: true })
+  // 必殺は、スキルのダメージより先に入る(最大HPの15%。防御は無視)。バリア・アミュレット相手は、ダメージが入らないので必殺も働かない
+  let finDealt = 0
+  const willHit = damage > 0 && target.alive && !target.isAmulet && !(target.barrier > 0)
+  if (hasKw(actor, 'finisher') && willHit) {
+    const fixed = Math.floor(target.maxHp * FINISHER_RATE)
+    if (fixed > 0) {
+      dealDamage(target, fixed, true)
+      emit(state, 'damage', { src: actor.uid, target: target.uid, amount: fixed, means: '必殺', dmgType: 'finisher' })
+      if (!target.alive) target.killedBy = actor.uid
+      finDealt = fixed
+      state.log.push(`【必殺】${target.name}に${fixed}の必殺ダメージ`)
+    }
+  }
   const dealt = applyDamage(state, actor, target, damage, skill.type === 'true', skill.type)
-  if (dealt > 0) {
-    if (isCrit && state.rec) { const ev = [...state.events].reverse().find((e) => e.type === 'damage' && e.target === target.uid); if (ev) ev.crit = true }
-    state.log.push(`${actor.name}の「${skill.name}」! ${target.name}に${Math.round(dealt)}ダメージ${isCrit ? '(クリティカル!)' : ''}`)
-    let total = dealt
-    if (hasKw(actor, 'finisher') && target.alive) {
-      const fixed = Math.floor(target.maxHp * FINISHER_RATE)
-      if (fixed > 0) {
-        dealDamage(target, fixed, true) // 必殺の追加ダメージ(防御は無視。ダメージ属性は「必殺」)
-        emit(state, 'damage', { src: actor.uid, target: target.uid, amount: fixed, means: '必殺', dmgType: 'finisher' })
-        if (!target.alive) target.killedBy = actor.uid
-        total += fixed
-        state.log.push(`【必殺】${target.name}に追加で${fixed}の必殺ダメージ`)
-      }
-      // 召喚物(アミュレットではない)がターゲットなら、そのまま破壊する
-      if (target.alive && target.field === 'summon' && !target.isAmulet) {
-        target.hp = 0
-        target.alive = false
-        target.killedBy = actor.uid
-        state.log.push(`【必殺】${target.name}は破壊された`)
-      }
+  if (dealt > 0 || finDealt > 0) {
+    if (dealt > 0) {
+      if (isCrit && state.rec) { const ev = [...state.events].reverse().find((e) => e.type === 'damage' && e.target === target.uid && e.means !== '必殺'); if (ev) ev.crit = true }
+      state.log.push(`${actor.name}の「${skill.name}」! ${target.name}に${Math.round(dealt)}ダメージ${isCrit ? '(クリティカル!)' : ''}`)
+    } else {
+      state.log.push(`${actor.name}の「${skill.name}」!`)
+    }
+    const total = dealt + finDealt
+    // 召喚物(アミュレットではない)がターゲットなら、そのまま破壊する
+    if (hasKw(actor, 'finisher') && finDealt > 0 && target.alive && target.field === 'summon' && !target.isAmulet) {
+      target.hp = 0
+      target.alive = false
+      target.killedBy = actor.uid
+      state.log.push(`【必殺】${target.name}は破壊された`)
     }
     if (hasKw(actor, 'drain')) heal(state, actor, total)
   } else {
