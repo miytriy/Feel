@@ -953,7 +953,7 @@ function groupEnd(events, i) {
     const dying = (t) => t === 'destroy' || t === 'vanish'
     if (dying(n.type) && (e.type === 'damage' || dying(e.type))) { seen.add(n.target); j += 1; continue } // HPが0になった瞬間に、破壊・消滅の演出を、ダメージと一緒に出す
     if (n.type !== e.type) break
-    const finisher = e.type === 'damage' && n.means === '必殺' && n.src === e.src // 【必殺】の追加ダメージは、スキルのダメージと合わせて1回で見せる(同じ相手でもよい)
+    const finisher = e.type === 'damage' && (n.means === '必殺' || e.means === '必殺') && n.src === e.src // 必殺は、スキルのダメージより先に入る。 【必殺】の追加ダメージは、スキルのダメージと合わせて1回で見せる(同じ相手でもよい)
     const boostT = n.type === 'buff' || n.type === 'keyword' || n.type === 'av' // 強化・能力付与は、同じ相手に重なってもひとまとめ
     if (!finisher && !boostT && seen.has(n.target)) break
     if (e.type === 'damage' && !finisher && (n.src !== e.src || n.means !== e.means)) break
