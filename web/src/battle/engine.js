@@ -1373,6 +1373,7 @@ function runEffects(state, source, effects, ctx = {}) {
         case 'countdown': { // カウントダウンを amount(負の数で減らす)だけ動かす。0になったら破壊される(カウントダウンを持つものだけ)
           if (t.countdown == null) break
           t.countdown += e.amount ?? -1
+          emit(state, 'countdown', { target: t.uid, amount: e.amount ?? -1 })
           state.log.push(`${t.name}のカウントダウンが${t.countdown <= 0 ? 0 : t.countdown}になった`)
           if (t.countdown <= 0) { t.hp = 0; t.alive = false; t.killedBy = source.uid }
           break
@@ -1790,6 +1791,7 @@ function beginTurn(state, unit, opts) {
   // カウントダウン: 自分のターン開始時に1つ進み、0になったら破壊される
   if (unit.countdown != null) {
     unit.countdown -= 1
+    emit(state, 'countdown', { target: unit.uid, amount: -1 }) // 演出: 青い球と白い光(カウントダウンが進むたび)
     if (unit.countdown <= 0) {
       state.log.push(`${unit.name}のカウントダウンが0になり、破壊された`)
       unit.hp = 0

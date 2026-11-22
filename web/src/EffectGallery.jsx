@@ -32,6 +32,7 @@ const LIST = [
   ['召喚', 'ユニットが場に出る。', 800, (p) => ({ unit: baseUnit, fx: p ? { kind: 'summon', text: '登場!' } : null })],
   ['攻撃を防ぐ', 'バリアや回避で、ダメージが入らない。', 800, (p) => ({ unit: baseUnit, fx: p ? { kind: 'block', text: '' } : null })],
   ['進化', '虹色の波紋と光の筋、白い光の球、鎖状の輪(参考動画の再現。ユニットは回転しない)。', 1000, (p) => ({ unit: baseUnit, fx: p ? { kind: 'evolve', text: '' } : null })],
+  ['カウントダウン', '参考動画の再現。カウントダウンが進むたびに、カードを中心に半透明の水色の球が広がり、白い光の筋が放射状に走る。複数あるときは、順にずらして出す。', 560, (p) => ({ unit: { ...baseUnit, countdown: p ? 2 : 3 }, fx: p ? { kind: 'countdown', text: '', delay: 0 } : null })],
   ['ダメージ+破壊', '倒れるときも、ダメージの数字は暗くならず、そのまま見える。', 900, (p) => ({ unit: p ? { ...baseUnit, hp: 0, alive: false } : baseUnit, fx: p ? { kind: 'damage', text: '30', crit: false, parts: [{ text: '30', dmgType: 'physical' }], die: 'destroy', lw: false } : null })],
   ['破壊(ラストワードなし)', '金白の閃光から、金色の粒になって散る。', 800, (p) => ({ unit: p ? { ...baseUnit, hp: 0, alive: false } : baseUnit, fx: p ? { kind: 'none', text: '', die: 'destroy', lw: false } : null })],
   ['破壊(ラストワードあり)', '赤い円とドクロ。そのあと、ラストワードが発動する。', 800, (p) => ({ unit: p ? { ...baseUnit, hp: 0, alive: false } : baseUnit, fx: p ? { kind: 'none', text: '', die: 'destroy', lw: true } : null })],

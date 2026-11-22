@@ -10,6 +10,7 @@ import { ARTIFACT_CATALOG } from './battle/artifact/index.js'
 import FormationScreen from './FormationScreen.jsx'
 import { createPortal } from 'react-dom'
 import { FinisherA, FinisherB } from './FinisherFx.jsx'
+import { CountdownFx } from './CountdownFx.jsx'
 import { BattleHud, StageIntro, ExitConfirm, ResultBanner, BattleMenu } from './BattleHud.jsx'
 import { CommentaryOverlay, collectHistory, addHistory, emptyHistory } from './BattleLog.jsx'
 import { useIsDesktop, C as BASE, alpha, DISPLAY, useRemembered } from './ui.js'
@@ -490,6 +491,7 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
         </span>
       )}
       {fx && fx.kind === 'finisher' && <FinisherA key={`fa-${tick}`} />}
+      {fx && fx.kind === 'countdown' && <CountdownFx key={`cd-${tick}`} delay={fx.delay} />}
       {fx && fx.kind === 'damage' && fx.finisher && <FinisherB key={`fb-${tick}`} />}
       {fx && (fx.kind === 'buff' || fx.kind === 'keyword') && (
         // 強化・能力付与のエフェクト: カードの周りに光(強化=金 / 付与=水色)が広がり、記号(▲ / ✦)が昇る
@@ -954,7 +956,7 @@ const buttonStyle = (primary, disabled) => ({
 // ---- 再生(起きたことを、1つずつ順番に見せる。速さは、設定の「CPUの行動の待ち時間」に合わせる) ----
 // 連続する同じ種類の出来事(複数の召喚・複数への攻撃・複数のヒール)は、1つにまとめて一気に見せる。
 // 返す値は、まとめの最後の番号(まとまらなければ i のまま)。攻撃は、同じ攻撃元・同じ手段のものだけ。同じ相手が2回出たら、そこで区切る
-const GROUP_TYPES = ['damage', 'heal', 'summon', 'buff', 'keyword', 'destroy', 'vanish', 'av', 'finisher']
+const GROUP_TYPES = ['damage', 'heal', 'summon', 'buff', 'keyword', 'destroy', 'vanish', 'av', 'finisher', 'countdown']
 function groupEnd(events, i) {
   const e = events[i]
   if (!e || !GROUP_TYPES.includes(e.type)) return i
@@ -1031,7 +1033,7 @@ function reorderBoost(evs) {
   return out
 }
 export const VANISH_SLOW = 1 // 消滅エフェクトの長さの倍率。1 = 0.9秒(ルール画面と同じ基準・56コマで約62fps)。EFFECTS.mdの基準値。
-const EVENT_MS = { turn: 700, ability: 300, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1000, finisher: 440, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 300, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1000, finisher: 440, countdown: 640, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ format = 'rotation', settingsView = null, onExit, cpuDelay = 700, rewardApi: rewardApiProp = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null, online = null, testInit = null }) {
@@ -1540,6 +1542,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     const dieEv = mine.find((x) => x.type === 'destroy' || x.type === 'vanish') // 倒れる・消える演出は、ダメージの表示と重ねる
     const ev = [...mine].reverse().find((x) => x.type !== 'destroy' && x.type !== 'vanish') || mine[mine.length - 1]
     if (!ev) return null
+    if (ev.type === 'countdown') return { kind: 'countdown', text: '', delay: Math.max(0, groupEvs.filter((x) => x.type === 'countdown').findIndex((x) => x.target === uid)) * 0.14 } // カウントダウン: 青い球と白い光の筋(複数なら順にずらす)
     if (ev.type === 'finisher') return { kind: 'finisher', text: '', finAmount: ev.amount, hasMain: !!ev.hasMain } // 必殺の前半: 黒紫の球・鎌・白い雲
     if (ev.type === 'damage') {
       // スキルのダメージと、【必殺】の追加ダメージは、数字を2段に分けて1回で見せる(種類で色が変わる: 物理=白 / 魔法=青 / 確定=虹)
