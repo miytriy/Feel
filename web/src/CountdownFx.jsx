@@ -1,8 +1,7 @@
 // 【カウントダウン】の演出(参考動画の再現。60fps のコマを1つずつ見て合わせた)。transform と opacity だけで動かす(web/EFFECTS.md)
-//  ・水色の球(半透明・縁が明るい・時計の目盛りのような12本の短い線つき)が、カードの1.5倍の大きさで出て、終わりに少し縮みながら薄い水色になって消える
+//  ・水色の球(半透明・縁が明るい)が、カードの1.5倍の大きさで出て、終わりに少し縮みながら薄い水色になって消える
 //  ・白い光の筋: 長い10本・中くらい10本・短い10本(根元は細く、先は少しだけ細い)が、真上から時計回りに約0.1秒で出そろい、
 //    にじむ虹色の小さな破片が混ざり、そのあと中心へ縮みながら消える。中心の光はごく小さく、桃色がかった白
-//  ・目盛りも、時計回りに順に白く光る
 //  複数あるときは、順に少しずつずらして出す(delay)
 const BOX = { position: 'absolute', left: '50%', top: '50%', width: '150%', aspectRatio: '1', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 9 }
 const FILL = { position: 'absolute', inset: 0, borderRadius: '50%', willChange: 'transform, opacity' }
@@ -28,24 +27,12 @@ const PRISMS = Array.from({ length: 10 }, (_, n) => {
   const nx = -Math.sin(a) * 0.45, ny = Math.cos(a) * 0.45
   return { pts: `${(x1 + nx).toFixed(2)},${(y1 + ny).toFixed(2)} ${(x2 + nx).toFixed(2)},${(y2 + ny).toFixed(2)} ${(x2 - nx).toFixed(2)},${(y2 - ny).toFixed(2)} ${(x1 - nx).toFixed(2)},${(y1 - ny).toFixed(2)}`, phase: phaseOf(a), gx: [x1, y1, x2, y2] }
 })
-// 時計の目盛り: 球の縁の内側に12本
-const TICKS = Array.from({ length: 12 }, (_, n) => {
-  const a = (n / 12) * TAU - Math.PI / 2
-  return { x1: 50 + Math.cos(a) * 38, y1: 50 + Math.sin(a) * 38, x2: 50 + Math.cos(a) * 44.5, y2: 50 + Math.sin(a) * 44.5, phase: n / 12 }
-})
-
 export function CountdownFx({ delay = 0 }) {
   const d = `${delay}s`
   return (
     <span aria-hidden="true" data-testid="fx-countdown" style={BOX}>
       <span style={{ ...FILL, background: 'radial-gradient(circle at 50% 50%, rgba(40,130,230,0.40) 0%, rgba(45,140,235,0.46) 68%, rgba(100,195,255,0.62) 90%, rgba(190,235,255,0.0) 100%)', boxShadow: 'inset 0 0 14px 2px rgba(170,228,255,0.5), 0 0 14px 1px rgba(90,170,255,0.4)', opacity: 0, animation: `feel-cd-dome 0.4s cubic-bezier(.2,.7,.3,1) ${d} both` }} />
       <span style={{ ...FILL, background: 'radial-gradient(circle, rgba(150,240,235,0.0) 40%, rgba(150,240,235,0.5) 100%)', opacity: 0, animation: `feel-cd-lite 0.4s linear ${d} both` }} />
-      <svg viewBox="0 0 100 100" style={{ ...FILL, overflow: 'visible', opacity: 0, animation: `feel-cd-dome 0.4s cubic-bezier(.2,.7,.3,1) ${d} both` }}>
-        <g stroke="rgba(185,232,255,0.38)" strokeWidth="2.4" strokeLinecap="round">{TICKS.map((t, n) => <line key={n} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} />)}</g>
-      </svg>
-      <svg viewBox="0 0 100 100" style={{ ...FILL, overflow: 'visible' }}>
-        <g stroke="#e8f8ff" strokeOpacity="0.7" strokeWidth="2.4" strokeLinecap="round">{TICKS.map((t, n) => <line key={n} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} style={{ opacity: 0, animation: `feel-cd-tick 0.2s linear ${(delay + 0.05 + t.phase * 0.12).toFixed(3)}s both` }} />)}</g>
-      </svg>
       <svg viewBox="0 0 100 100" style={{ ...FILL, overflow: 'visible', animation: `feel-cd-rays 0.46s ease-in-out ${d} both` }}>
         <defs>
           {PRISMS.map((q, n) => (
