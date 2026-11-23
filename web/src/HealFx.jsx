@@ -25,7 +25,7 @@ export function HealFx({ children }) {
       <span style={C(150, 'sparkle', { animation: 'feel-hl-spark 0.55s ease-in-out 0.22s both' })} />
       <span style={C(150, 'sparkle', { transform: 'rotate(37deg) scale(0.92)', animation: 'feel-hl-spark2 0.6s ease-in-out 0.5s both' })} />
       {/* 緑の数字(ダメージ数字と同じ字。最後まで残る) */}
-      <span style={{ position: 'absolute', left: '50%', top: '-8%', transform: 'translateX(-50%)', zIndex: 2 }}>
+      <span style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 2 }}>
         <span style={{ display: 'block', opacity: 0, animation: 'feel-hl-num 1.3s ease-out 0.06s both', willChange: 'transform, opacity' }}>{children}</span>
       </span>
     </span>
