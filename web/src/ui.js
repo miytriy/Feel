@@ -81,12 +81,12 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-hl-beam { 0% { opacity: 0; transform: translateY(-14%); } 35% { opacity: 1; } 100% { opacity: 0; transform: translateY(10%); } }
     @keyframes feel-hl-wash { 0% { opacity: 0; } 22% { opacity: 1; } 45% { opacity: 0.85; } 100% { opacity: 0; } }
     @keyframes feel-hl-tint { 0% { opacity: 0; } 30% { opacity: 1; } 70% { opacity: 0.7; } 100% { opacity: 0; } }
-    @keyframes feel-hl-orb1 { 0% { opacity: 0; transform: scale(0.4); } 20% { opacity: 1; } 55% { opacity: 1; transform: scale(0.95); } 100% { opacity: 0; transform: scale(1.02); } }
-    @keyframes feel-hl-orb2 { 0% { opacity: 0; transform: scale(0.85); } 25% { opacity: 1; } 65% { opacity: 0.9; transform: scale(1.04); } 100% { opacity: 0; transform: scale(1.12); } }
-    @keyframes feel-hl-rays { 0% { opacity: 0; transform: scale(0.6) rotate(0deg); } 30% { opacity: 0.95; } 100% { opacity: 0; transform: scale(1.1) rotate(8deg); } }
-    @keyframes feel-hl-ring { 0% { opacity: 0; transform: scale(0.6); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(1.1); } }
-    @keyframes feel-hl-thin { 0% { opacity: 0; transform: scale(0.8); } 30% { opacity: 0.9; } 100% { opacity: 0; transform: scale(1.5); } }
-    @keyframes feel-hl-spark { 0% { opacity: 0; transform: scale(0.4); } 40% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.5); } }
+    @keyframes feel-hl-orb1 { 0% { opacity: 0; transform: scale(0.35); } 25% { opacity: 1; } 55% { opacity: 1; transform: scale(0.95); } 100% { opacity: 0; transform: scale(1.08); } }
+    @keyframes feel-hl-orb2 { 0% { opacity: 0; transform: scale(0.8); } 25% { opacity: 1; } 65% { opacity: 0.95; transform: scale(1.03); } 100% { opacity: 0; transform: scale(1.1); } }
+    @keyframes feel-hl-thin { 0% { opacity: 0; transform: scale(0.75) rotate(0deg); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.12) rotate(14deg); } }
+    @keyframes feel-hl-thin2 { 0% { opacity: 0; transform: scaleX(-1) scale(0.85) rotate(0deg); } 30% { opacity: 0.8; } 100% { opacity: 0; transform: scaleX(-1) scale(1.2) rotate(-12deg); } }
+    @keyframes feel-hl-spark { 0% { opacity: 0; transform: scale(0.8); } 35% { opacity: 1; } 100% { opacity: 0; transform: scale(1.05); } }
+    @keyframes feel-hl-spark2 { 0% { opacity: 0; transform: rotate(37deg) scale(0.85); } 35% { opacity: 1; } 100% { opacity: 0; transform: rotate(37deg) scale(1.05); } }
     @keyframes feel-hl-num { 0% { opacity: 0; transform: scale(0.5) translateY(8px); } 12% { opacity: 1; transform: scale(1.12); } 22% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: scale(1); } }
     @keyframes feel-float { 0% { opacity: 0; transform: translate(-50%, 8px) scale(0.8); } 15% { opacity: 1; transform: translate(-50%, 0) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -38px) scale(1); } }
     .fit-board [data-field-card] { zoom: var(--fit, 1); }
