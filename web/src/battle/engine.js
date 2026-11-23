@@ -60,7 +60,7 @@ export const KEYWORDS = {
 }
 // 能力名を【】でかこむ。『ファンファーレ【コンボ_3】』のように中に【】があるときは、【ファンファーレ】【コンボ_3】と分けて並べる
 // エンハンスは『【エンハンス_N】MPNを消費すると、』が説明の頭に入っている。表示ではタイトル【エンハンス_N】+中身だけにする
-export const isEnhance = (t) => t?.id === 'enhance'
+export const isEnhance = (t) => /^enhance(_\d+)?$/.test(t?.id || '') // id は 'enhance'、または 'enhance_7' のように、複数のエンハンスを区別したもの
 export const enhanceBody = (t) => (t.desc || '').replace(/^【エンハンス_?\d*】/, '').replace(/^MP\d+を消費すると、?/, '')
 export const bracket = (name) => { const m = /^(.+?)【(.+)】$/.exec(name); return m ? `【${m[1]}】【${m[2]}】` : `【${name}】` }
 
@@ -2129,6 +2129,14 @@ function doTrait(state, actor, action, opts) {
   recalc(state)
   state.log.push(`${actor.name}の特性【${trait.name}】(MP${trait.cost})`)
   noteAbility(state, '特性', actor.name, trait.name, trait.desc, actor.team, trait.log)
+  // 【エンハンス】は、上位を発動すると、下位(同じキャラの、コストが低いエンハンス)もすべて発動する(汎用の仕様)。下位 → 上位の順に効果を行い、下位も、このターンは使い済みにする
+  const lowers = isEnhance(trait) ? actor.traits.filter((t) => isEnhance(t) && t.id !== trait.id && t.cost < trait.cost).sort((a, b) => a.cost - b.cost) : []
+  for (const lo of lowers) {
+    if (!actor.usedTraits.includes(lo.id)) actor.usedTraits.push(lo.id)
+    state.log.push(`${actor.name}の特性【${lo.name}】(エンハンスの累積)`)
+    noteAbility(state, '特性', actor.name, lo.name, lo.desc, actor.team, lo.log)
+    runEffects(state, actor, lo.effects, { opts, chosen: action.target })
+  }
   runEffects(state, actor, trait.effects, { opts, chosen: action.target })
   // アミュレットの【アクト】をしたとき: 同じ側の場のキャラの【味方がアミュレットをアクトしたとき】が働く
   if (actor.isAmulet) for (const a of state.units.filter((x) => x.alive && x.team === actor.team && !x.isAmulet && x.field === 'main')) fire(state, 'allyAmuletAct', a, { other: actor, opts })

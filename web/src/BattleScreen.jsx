@@ -819,7 +819,7 @@ function abilityTable(unit, { full }) {
   for (const t of unit.traits) {
     const text = isEnhance(t) ? `【${t.name}】${enhanceBody(t)}` : `${tierPrefix(t.condition)}【特性 MP${t.cost}${t.repeatable ? ' 連続使用可' : ''}】${t.name}: ${t.desc ?? ''}`
     if (amulet) { crystal.act.push(text); continue }
-    const tier = t.condition?.liberation ? '解放奥義' : t.condition?.ultimate ? '奥義' : t.id === 'enhance' ? 'エンハンス' : 'アクティブ'
+    const tier = t.condition?.liberation ? '解放奥義' : t.condition?.ultimate ? '奥義' : isEnhance(t) ? 'エンハンス' : 'アクティブ'
     add(rowOf(tier), text)
   }
   items.sort((x, y) => x.row - y.row || x.order - y.order)
