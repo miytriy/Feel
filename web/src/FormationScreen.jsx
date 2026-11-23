@@ -187,6 +187,8 @@ const CSS = `
 .fm-card.sp .st { font-size: 20px; line-height: 1.5; }
 .fm-quick { margin-bottom: 12px; padding: 12px 18px; background: rgba(255,255,255,0.1); font-size: 22px; line-height: 1.6; }
 .fm-quick b { color: ${C.player}; }
+.fm-quick button { flex: none; padding: 8px 16px; border: 2px solid ${C.player}; background: rgba(0,0,0,0.35); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+.fm.p .fm-quick button { padding: 10px 18px; }
 
 .fm-amulets { position: absolute; left: 440px; top: 140px; z-index: 6; width: 300px; }
 .fm-amulets .hd { margin-bottom: 10px; font-size: 24px; font-weight: 700; color: #e6e6ea; }
@@ -414,6 +416,9 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
   const [savedSpellIds, setSavedSpellIds] = useState(() => JSON.stringify((startParty ? partyToSpells(startParty, allSpells) : loadSpellSet(allSpells)).map((sp) => sp.id)))
   const [spellPick, setSpellPick] = useState(false) // スペルの一覧を開いているか
   const [wikiFocus, setWikiFocus] = useState(null) // { id, spell? }: そのユニット(スペル)のWikiを、この上に重ねて出す(編成の途中の状態は、そのまま残る)
+  const [spellQuick, setSpellQuick] = useState(false) // スペルの簡易編成: 入れたい順にタップ(同じスペルは何回でも)
+  const [spellPicks, setSpellPicks] = useState([])
+  useEffect(() => { if (!spellPick) { setSpellQuick(false); setSpellPicks([]) } }, [spellPick]) // スペルの一覧を閉じたら、簡易編成も終える
   const [spellInfo, setSpellInfo] = useState(null) // 一覧でタップして、説明を出しているスペル
   const [confirm, setConfirm] = useState(false) // 「対戦へ」の確認
   const [guideOpen, setGuideOpen] = useState(false) // 編成ガイド(おすすめの環境編成)を開いているか
@@ -695,28 +700,59 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
           <div className="fm-panel" data-testid="fm-spells">
             <div className="fm-ph">
               <span>追加するスペルを選んでください</span>
-              <button type="button" onClick={() => setSpellPick(false)}>閉じる</button>
+              <button type="button" onClick={() => { setSpellPick(false); setSpellQuick(false); setSpellPicks([]) }}>閉じる</button>
+            </div>
+            <div className="fm-quick" style={{ display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>{spellQuick ? `簡易編成: 入れたい順にタップ(最大${MAX_SPELL_SLOTS}回・同じスペルも何回でも)` : '使用クラスのスペルだけ出ます(ニュートラルはいつも出ます)'}</span>
+              <button type="button" data-testid="fm-spell-quick" onClick={() => { if (spellQuick) { setSpellQuick(false); setSpellPicks([]) } else { setSpellQuick(true); setSpellPicks(spellSet.slice()); setSpellInfo(null); setMessage('') } }}>{spellQuick ? '簡易編成をやめる' : '簡易編成'}</button>
             </div>
             <div className="fm-grid one">
-              {allSpells.map((sp) => {
+              {(() => {
+                const clsS = classNow // 使用クラス(編成にいるキャラのクラス、または選んだクラス)。ニュートラルは、いつも出す
+                const list = allSpells.filter((sp) => !clsS || spellClassOf(sp) === clsS || spellClassOf(sp) === 'ニュートラル')
+                const ord = (sp) => { const k = spellClassOf(sp); if (clsS && k === clsS) return -1; const i = CLASS_ORDER.indexOf(k); return i === -1 ? CLASS_ORDER.length : i }
+                const sorted = list.map((sp, i) => [sp, i]).sort((x, y) => ord(x[0]) - ord(y[0]) || x[1] - y[1]).map((x) => x[0])
+                return sorted.map((sp, idx) => [sp, idx === 0 || spellClassOf(sorted[idx - 1]) !== spellClassOf(sp)])
+              })().map(([sp, head]) => {
                 const ok = canUseSpell(filled, sp)
+                const n = spellPicks.filter((x) => x.id === sp.id).length
                 return (
-                  <button
-                    key={sp.id}
-                    type="button"
-                    className={`fm-card sp${spellInfo && spellInfo.id === sp.id ? ' sel' : ''}`}
-                    data-testid={`fm-spell-${sp.id}`}
-                    style={{ opacity: ok ? 1 : 0.4 }}
-                    onClick={() => { setSpellInfo(sp); setMessage('') }}
-                  >
-                    <div className="nm">✦{sp.name}(MP{sp.cost}){!ok && <span style={{ fontSize: 20, color: C.warn }}> クラス違い</span>}</div>
-                    <div className="st">{sp.class}</div>
-                  </button>
+                  <Fragment key={sp.id}>
+                    {head && <div className="fm-cls">{spellClassOf(sp)}</div>}
+                    <button
+                      type="button"
+                      className={`fm-card sp${spellQuick ? (n ? ' sel' : '') : spellInfo && spellInfo.id === sp.id ? ' sel' : ''}`}
+                      data-testid={`fm-spell-${sp.id}`}
+                      style={{ opacity: ok ? 1 : 0.4 }}
+                      onClick={() => {
+                        if (!spellQuick) { setSpellInfo(sp); setMessage(''); return }
+                        if (!ok) { setMessage(`${spellClassOf(sp)}のスペルは、いまの編成では入れられません`); return }
+                        if (spellPicks.length >= MAX_SPELL_SLOTS) { setMessage(`スペルは最大${MAX_SPELL_SLOTS}回までです`); return }
+                        setMessage(''); setSpellPicks([...spellPicks, sp])
+                      }}
+                    >
+                      <div className="nm">✦{sp.name}(MP{sp.cost}){!ok && <span style={{ fontSize: 20, color: C.warn }}> クラス違い</span>}</div>
+                      <div className="st">{sp.class}</div>
+                      {spellQuick && n > 0 && <b className="bn">×{n}</b>}
+                    </button>
+                  </Fragment>
                 )
               })}
             </div>
             {/* 説明: タップしたスペルの説明を、ここに出す */}
-            {spellInfo ? (() => {
+            {spellQuick ? (
+              <div className="fm-sinfo" data-testid="fm-spell-quick-box">
+                <div className="tx">
+                  <div className="nm">選択中 {spellPicks.length}/{MAX_SPELL_SLOTS}回(タップで外す)</div>
+                  <div className="ds">
+                    {spellPicks.length ? spellPicks.map((sp, i) => (
+                      <button key={i} type="button" aria-label={`${sp.name}を外す`} onClick={() => setSpellPicks(spellPicks.filter((_, k) => k !== i))} style={{ marginRight: 8, background: 'none', border: 'none', color: 'inherit', font: 'inherit', textDecoration: 'underline', padding: 0 }}>{i + 1}.{sp.name}</button>
+                    )) : 'まだありません'}
+                  </div>
+                </div>
+                <button type="button" className="add" data-testid="fm-spell-quick-ok" onClick={() => { setSpellSet(spellPicks.slice(0, MAX_SPELL_SLOTS)); setSpellQuick(false); setSpellPicks([]); setSpellPick(false); setMessage('') }}>この順で編成する</button>
+              </div>
+            ) : spellInfo ? (() => {
               const ok = canUseSpell(filled, spellInfo)
               return (
                 <div className="fm-sinfo" data-testid="fm-spell-info">
