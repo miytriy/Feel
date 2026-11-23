@@ -69,7 +69,8 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     button { font-family: inherit; touch-action: manipulation; }
     input { font-family: inherit; }
     @keyframes feel-cd-dome { 0% { opacity: 0; transform: scale(0.45); } 22% { opacity: 1; transform: scale(0.82); } 70% { opacity: 0.85; transform: scale(1); } 100% { opacity: 0; transform: scale(1.08); } }
-    @keyframes feel-cd-rays { 0% { opacity: 0; transform: scale(0.35); } 20% { opacity: 1; transform: scale(0.8); } 60% { opacity: 0.9; transform: scale(1); } 100% { opacity: 0; transform: scale(1.12); } }
+    @keyframes feel-cd-rays { 0% { transform: scale(0.8); } 70% { transform: scale(1); } 100% { transform: scale(1.1); } }
+    @keyframes feel-cd-ray { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
     @keyframes feel-cd-flash { 0% { opacity: 0; transform: scale(0.3); } 18% { opacity: 1; transform: scale(1); } 60% { opacity: 0.35; transform: scale(1.5); } 100% { opacity: 0; transform: scale(1.9); } }
     @keyframes feel-fin-num { 0% { opacity: 0; transform: scale(0.6); } 40% { opacity: 1; transform: scale(1.18); } 100% { opacity: 1; transform: scale(1); } }
     @keyframes feel-float-c { 0% { opacity: 1; transform: translate(-50%, 0) scale(1); } 60% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -38px) scale(1); } }
