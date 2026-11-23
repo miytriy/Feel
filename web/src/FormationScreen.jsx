@@ -416,6 +416,8 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
   const [savedSpellIds, setSavedSpellIds] = useState(() => JSON.stringify((startParty ? partyToSpells(startParty, allSpells) : loadSpellSet(allSpells)).map((sp) => sp.id)))
   const [spellPick, setSpellPick] = useState(false) // スペルの一覧を開いているか
   const [wikiFocus, setWikiFocus] = useState(null) // { id, spell? }: そのユニット(スペル)のWikiを、この上に重ねて出す(編成の途中の状態は、そのまま残る)
+  const [aQuick, setAQuick] = useState(false) // アミュレットの簡易編成: 入れたい順にタップ
+  const [aPicks, setAPicks] = useState([])
   const [spellQuick, setSpellQuick] = useState(false) // スペルの簡易編成: 入れたい順にタップ(同じスペルは何回でも)
   const [spellPicks, setSpellPicks] = useState([])
   useEffect(() => { if (!spellPick) { setSpellQuick(false); setSpellPicks([]) } }, [spellPick]) // スペルの一覧を閉じたら、簡易編成も終える
@@ -472,6 +474,21 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
     apply(placeChar(slots, target, c))
     setActiveSlot(null)
   }
+  const handleAmuletQuick = (c) => {
+    const has = aPicks.some((p) => p.id === c.id)
+    if (has) { setAPicks(aPicks.filter((p) => p.id !== c.id)); setMessage(''); return }
+    if (aPicks.length >= MAX_AMULET_SLOTS) { setMessage(`アミュレットは${MAX_AMULET_SLOTS}つまでです`); return }
+    setMessage(''); setAPicks([...aPicks, c])
+  }
+  const finishAQuick = () => {
+    let next = slots.map((x, i) => (i >= MAX_SLOTS ? null : x))
+    for (let k = 0; k < aPicks.length; k++) {
+      const r = canPlace(next, MAX_SLOTS + k, aPicks[k])
+      if (!r.ok) { setMessage(r.reason); return }
+      next = placeChar(next, MAX_SLOTS + k, aPicks[k])
+    }
+    apply(next); setAQuick(false); setAPicks([]); setActiveSlot(null)
+  }
   const finishQuick = () => {
     if (picks.length) apply(quickFill(picks, slots.slice(MAX_SLOTS))) // アミュレットは、クラスが合えばそのまま残る
     setQuick(false)
@@ -511,6 +528,7 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
 
   const targetSlot = activeSlot !== null ? activeSlot : slots.slice(0, MAX_SLOTS).findIndex((x) => !x)
   const amuletPick = activeSlot !== null && activeSlot >= MAX_SLOTS // アミュレットの枠を選んでいる(一覧には、アミュレットだけ出る)
+  useEffect(() => { if (!amuletPick) { setAQuick(false); setAPicks([]) } }, [amuletPick]) // アミュレットの一覧を閉じたら、簡易編成も終える
   const mainCount = slots.slice(0, MAX_SLOTS).filter(Boolean).length
   const usedClass = ((quick ? picks : slots.slice(0, MAX_SLOTS)).find((c) => c && c.class !== 'ニュートラル') || {}).class || null // いま編成(簡易編成の選択中)にいる、ニュートラル以外のクラス
   const classChoices = CLASS_ORDER.filter((k) => k !== 'ニュートラル' && allChars.some((c) => !c.token && c.class === k))
@@ -653,8 +671,17 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
           <div className="fm-panel" data-testid="fm-chars">
             <div className="fm-ph">
               <span>{quick ? '簡易編成: 入れたい順にタップ' : amuletPick ? `アミュレット枠${activeSlot - MAX_SLOTS + 1}に入れるアミュレットを選んでください` : `スロット${activeSlot + 1}に入れるキャラを選んでください`}</span>
-              <button type="button" onClick={() => (quick ? toggleQuick() : setActiveSlot(null))}>閉じる</button>
+              <button type="button" aria-label="閉じる" onClick={() => { setAQuick(false); setAPicks([]); quick ? toggleQuick() : setActiveSlot(null) }}>閉じる</button>
             </div>
+            {amuletPick && !quick && (
+              <div className="fm-quick" style={{ display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>{aQuick ? <>簡易編成: 入れたい順にタップ(最大{MAX_AMULET_SLOTS}つ)。選択中: <b>{aPicks.length ? aPicks.map((p, i) => `${i + 1}.${p.name}`).join(' → ') : 'まだありません'}</b></> : '使用クラスのアミュレットだけ出ます(ニュートラルはいつも出ます)'}</span>
+                <span style={{ display: 'flex', gap: 8, flex: 'none' }}>
+                  {aQuick && <button type="button" data-testid="fm-amulet-quick-ok" onClick={finishAQuick}>この順で入れる</button>}
+                  <button type="button" data-testid="fm-amulet-quick" onClick={() => { if (aQuick) { setAQuick(false); setAPicks([]) } else { setAQuick(true); setAPicks(slots.slice(MAX_SLOTS).filter(Boolean)); setMessage('') } }}>{aQuick ? 'やめる' : '簡易編成'}</button>
+                </span>
+              </div>
+            )}
             {quick && (
               <div className="fm-quick">
                 入れたい順にタップ(最大{MAX_SLOTS}体)。いまの編成は選択済み。タップで外せます。<br />
@@ -671,12 +698,13 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
               })().map(([c, head]) => {
                 const inSlot = slots.findIndex((x) => x && x.id === c.id)
                 const pickIdx = picks.findIndex((p) => p.id === c.id)
-                const ok = quick ? true : targetSlot === -1 ? true : canPlace(slots, targetSlot, c).ok
-                const selected = quick ? pickIdx !== -1 : activeSlot !== null && inSlot === activeSlot
+                const ok = quick || (aQuick && amuletPick) ? true : targetSlot === -1 ? true : canPlace(slots, targetSlot, c).ok
+                const aIdx = aQuick && amuletPick ? aPicks.findIndex((p) => p.id === c.id) : -1
+                const selected = aQuick && amuletPick ? aIdx !== -1 : quick ? pickIdx !== -1 : activeSlot !== null && inSlot === activeSlot
                 return (
                   <Fragment key={c.id}>
                   {head && <div className="fm-cls" data-testid={`fm-cls-${c.class}`}>{c.class}</div>}
-                  <button type="button" className={`fm-card${selected ? ' sel' : ''}${isLeg(c) ? ' leg' : ''}`} style={{ '--rc': tone(c), '--rbg': rarityBg(c) }} disabled={!ok} onClick={() => handlePick(c)} aria-label={c.name}>
+                  <button type="button" className={`fm-card${selected ? ' sel' : ''}${isLeg(c) ? ' leg' : ''}`} style={{ '--rc': tone(c), '--rbg': rarityBg(c) }} disabled={!ok} onClick={() => (aQuick && amuletPick ? handleAmuletQuick(c) : handlePick(c))} aria-label={c.name}>
                     <span className="th"><Emblem seed={c.id} /></span>
                     <span className="tx">
                       <div className="nm">{c.name}</div>
@@ -685,8 +713,9 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
                     </span>
                     <span className="wk" role="button" tabIndex={0} aria-label="Wikiで見る" onClick={(e) => { e.stopPropagation(); setWikiFocus({ id: c.id }) }} onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); e.preventDefault(); setWikiFocus({ id: c.id }) } }}>?</span>
                     {quick && pickIdx !== -1 && <b className="bn">{pickIdx + 1}</b>}
-                    {!quick && inSlot !== -1 && inSlot !== activeSlot && <span className="tag">{inSlot >= MAX_SLOTS ? 'アミュレット枠' : 'スロット'}{inSlot >= MAX_SLOTS ? inSlot - MAX_SLOTS + 1 : inSlot + 1}</span>}
-                    {!quick && !ok && <span className="tag warn">クラス違い</span>}
+                    {aIdx !== -1 && <b className="bn">{aIdx + 1}</b>}
+                    {!quick && !aQuick && inSlot !== -1 && inSlot !== activeSlot && <span className="tag">{inSlot >= MAX_SLOTS ? 'アミュレット枠' : 'スロット'}{inSlot >= MAX_SLOTS ? inSlot - MAX_SLOTS + 1 : inSlot + 1}</span>}
+                    {!quick && !aQuick && !ok && <span className="tag warn">クラス違い</span>}
                   </button>
                   </Fragment>
                 )
