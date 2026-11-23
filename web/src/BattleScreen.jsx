@@ -989,7 +989,7 @@ function groupEnd(events, i) {
   while (j + 1 < events.length) {
     const n = events[j + 1]
     const dying = (t) => t === 'destroy' || t === 'vanish'
-    if (dying(n.type) && (e.type === 'damage' || dying(e.type))) { seen.add(n.target); j += 1; continue } // HPが0になった瞬間に、破壊・消滅の演出を、ダメージと一緒に出す
+    if (dying(n.type) && (e.type === 'damage' || dying(e.type) || seen.has(n.target))) { seen.add(n.target); j += 1; continue } // HPが0になった瞬間に、破壊・消滅の演出を、ダメージと一緒に出す
     if (n.type !== e.type && !(MIX_LIGHT && LIGHT_FX.has(e.type) && LIGHT_FX.has(n.type))) break
     const finisher = e.type === 'damage' && (n.means === '必殺' || e.means === '必殺') && n.src === e.src // 必殺は、スキルのダメージより先に入る。 【必殺】の追加ダメージは、スキルのダメージと合わせて1回で見せる(同じ相手でもよい)
     const boostT = n.type === 'buff' || n.type === 'keyword' || n.type === 'av' // 強化・能力付与は、同じ相手に重なってもひとまとめ
@@ -1003,6 +1003,28 @@ function groupEnd(events, i) {
 // 召喚のあとに、1体ずつ「能力の表示 → 強化 → 能力付与」が交互に起きる(例: 3体召喚 → 1体ごとに強化と付与)場合は、見せる順を
 // 「(能力の表示)→ 全員に強化 → (能力の表示)→ 全員に能力付与」に並べ替える。同じ能力の表示は、1回にまとめる
 // 【必殺】の追加ダメージがあるとき、スキルのダメージの直前に、必殺の演出の前半(黒紫の球 → 鎌 → 白い雲)を挟む。後半(閃光・破片・光の筋)は、そのあとのダメージの再生と一緒に出る
+// 倒れた相手の破壊・消滅の演出は、その相手に最後にダメージが入った直後に出す。間に別のダメージ・能力の表示がはさまると、
+// 「HPが0のまま、しばらく待ってから破壊の演出が出る」「破壊が別のタイミングで出直す」ように見えるため(盤面の状態は、ダメージの時点のものを使う)
+function pullDestroy(evs) {
+  const out = evs.slice()
+  const moves = []
+  for (let k = 0; k < evs.length; k++) {
+    const e = evs[k]
+    if (e.type !== 'destroy' && e.type !== 'vanish') continue
+    let j = k - 1
+    while (j >= 0 && evs[j].type !== 'turn' && evs[j].target !== e.target) j--
+    if (j < 0 || evs[j].type !== 'damage' || evs[j].target !== e.target || k - j <= 1) continue
+    if (evs.slice(j + 1, k).some((x) => x.type === 'summon' || x.type === 'turn')) continue
+    moves.push([j, k])
+  }
+  if (!moves.length) return evs
+  const drop = new Set(moves.map(([, k]) => k))
+  const after = new Map()
+  for (const [j, k] of moves) { const d = evs[j], v = evs[k]; if (!after.has(j)) after.set(j, []); after.get(j).push({ ...v, units: d.units, logLen: d.logLen, mp: d.mp, ep: d.ep }) }
+  const res = []
+  evs.forEach((e, i) => { if (drop.has(i)) return; res.push(e); if (after.has(i)) res.push(...after.get(i)) })
+  return res
+}
 function insertFinisher(evs) {
   const out = []
   const done = new Set()
@@ -1311,7 +1333,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   const commit = (next) => {
     try { const d = collectHistory(state, next); setHist((h) => addHistory(h, d)) } catch (e) { console.error('バトルログの集計に失敗', e) } // 失敗しても、対戦は止めない
     try { addEvents(statsRef.current, next.events || [], (uid) => next.units.find((u) => u.uid === uid)) } catch (e) { console.error('キャリアの集計に失敗', e) } // 記録が失敗しても、対戦は止めない
-    const evs = insertFinisher(reorderBoost(next.events || []))
+    const evs = insertFinisher(reorderBoost(pullDestroy(next.events || [])))
     setPlay(evs.length ? { events: evs, i: 0, prevActive: state?.active ?? null, prevAbility: state?.lastAbility ?? null } : null)
     setState(next)
   }
