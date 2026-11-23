@@ -340,7 +340,16 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
   const hpShown = vanishing && !unit.alive ? lastHp.current : unit.hp
   const ratio = Math.max(0, hpShown / unit.maxHp)
   const hpColor = ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow
-  const badges = unit.alive ? badgesOf(unit) : []
+  // カウントダウンの数字は、演出の途中(球と光が最も強いころ)で新しい数に切り替わる(動画のとおり)。それまでは、進む前の数を見せる
+  const [cdOld, setCdOld] = useState(false)
+  const cdFx = !!(fx && fx.kind === 'countdown')
+  useLayoutEffect(() => {
+    if (!cdFx) { setCdOld(false); return }
+    setCdOld(true)
+    const t = setTimeout(() => setCdOld(false), ((fx.delay || 0) + 0.2) * 1000)
+    return () => clearTimeout(t)
+  }, [tick, cdFx])
+  const badges = (unit.alive ? badgesOf(unit) : []).map((x) => (cdOld && cdFx && /^CD \d+$/.test(x) ? `CD ${unit.countdown + (fx.amount || 1)}` : x))
   // 破壊・消滅の演出中は、まだ生きているときの見た目のまま(演出のあと、暗い半透明の「戦闘不能」の札に変わって残らないように)。演出が終わったら、そっと消す
   const dying = !!(fx && fx.die)
   const gone = !unit.alive && !dying
@@ -1542,7 +1551,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     const dieEv = mine.find((x) => x.type === 'destroy' || x.type === 'vanish') // 倒れる・消える演出は、ダメージの表示と重ねる
     const ev = [...mine].reverse().find((x) => x.type !== 'destroy' && x.type !== 'vanish') || mine[mine.length - 1]
     if (!ev) return null
-    if (ev.type === 'countdown') return { kind: 'countdown', text: '', delay: Math.max(0, groupEvs.filter((x) => x.type === 'countdown').findIndex((x) => x.target === uid)) * 0.14 } // カウントダウン: 青い球と白い光の筋(複数なら順にずらす)
+    if (ev.type === 'countdown') return { kind: 'countdown', text: '', amount: -(ev.amount ?? -1), delay: Math.max(0, groupEvs.filter((x) => x.type === 'countdown').findIndex((x) => x.target === uid)) * 0.14 } // カウントダウン: 青い球と白い光の筋(複数なら順にずらす)
     if (ev.type === 'finisher') return { kind: 'finisher', text: '', finAmount: ev.amount, hasMain: !!ev.hasMain } // 必殺の前半: 黒紫の球・鎌・白い雲
     if (ev.type === 'damage') {
       // スキルのダメージと、【必殺】の追加ダメージは、数字を2段に分けて1回で見せる(種類で色が変わる: 物理=白 / 魔法=青 / 確定=虹)
