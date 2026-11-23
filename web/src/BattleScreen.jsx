@@ -349,7 +349,8 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
     const t = setTimeout(() => setCdOld(false), ((fx.delay || 0) + 0.2) * 1000)
     return () => clearTimeout(t)
   }, [tick, cdFx])
-  const badges = (unit.alive ? badgesOf(unit) : []).map((x) => (cdOld && cdFx && /^CD \d+$/.test(x) ? `CD ${unit.countdown + (fx.amount || 1)}` : x))
+  const cdShown = unit.countdown != null ? (cdOld && cdFx ? unit.countdown + (fx.amount || 1) : unit.countdown) : null // 大きな数字(動画のとおり、カードの右下)に出す。小さい「CD n」の札は出さない
+  const badges = (unit.alive ? badgesOf(unit) : []).filter((x) => !/^CD \d+$/.test(x))
   // 破壊・消滅の演出中は、まだ生きているときの見た目のまま(演出のあと、暗い半透明の「戦闘不能」の札に変わって残らないように)。演出が終わったら、そっと消す
   const dying = !!(fx && fx.die)
   const gone = !unit.alive && !dying
@@ -555,6 +556,9 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
             <span key={n} style={{ position: 'absolute', left: `${x}%`, top: `${y}%`, width: r, height: r, marginLeft: -r / 2, marginTop: -r / 2, borderRadius: '50%', background: 'radial-gradient(circle at 35% 30%, #fff, rgba(190,240,255,0.5))', '--dx': `${(x - 50) * 0.7}px`, '--dy': `${(y - 50) * 0.7}px`, opacity: 0, animation: `feel-bb-mote 0.55s ease-out ${0.2 + n * 0.02}s both` }} />
           ))}
         </span>
+      )}
+      {cdShown != null && unit.alive && cdShown > 0 && (
+        <span key={`cdn-${cdShown}`} aria-hidden="true" data-testid="cd-num" style={{ position: 'absolute', right: big ? -8 : -6, bottom: big ? 2 : 0, zIndex: 8, pointerEvents: 'none', fontFamily: 'Georgia, "Times New Roman", serif', fontWeight: 700, lineHeight: 1, fontSize: big ? 56 : 40, color: '#9ff5d0', textShadow: '0 0 6px rgba(80,230,190,0.85), 0 0 14px rgba(60,200,170,0.6), 0 2px 3px rgba(0,30,40,0.9)', WebkitTextStroke: '1px rgba(0,60,60,0.55)', animation: cdFx && !cdOld ? 'feel-cd-num 0.3s ease-out' : undefined }}>{cdShown}</span>
       )}
       {role && (
         <span aria-hidden="true" style={{ position: 'absolute', left: 6, top: -9, zIndex: 6, padding: '0 6px', borderRadius: 999, fontSize: big ? 11 : 9, fontWeight: 800, lineHeight: '16px', color: '#121212', background: role === 'attacker' ? TEAM_COLOR[unit.team] : role === 'guard' ? C.player : C.bad, whiteSpace: 'nowrap', pointerEvents: 'none' }}>

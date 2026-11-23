@@ -69,6 +69,7 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     button { font-family: inherit; touch-action: manipulation; }
     input { font-family: inherit; }
     @keyframes feel-cd-dome { 0% { opacity: 0; transform: scale(0.82); } 14% { opacity: 0.5; transform: scale(0.92); } 30% { opacity: 1; transform: scale(1); } 68% { opacity: 0.9; transform: scale(1.01); } 100% { opacity: 0; transform: scale(1.05); } }
+    @keyframes feel-cd-num { 0% { transform: scale(1.5); filter: brightness(1.8); } 100% { transform: scale(1); filter: brightness(1); } }
     @keyframes feel-cd-rim { 0% { opacity: 0; transform: scale(0.82); } 30% { opacity: 0.9; transform: scale(1); } 100% { opacity: 0; transform: scale(1.05); } }
     @keyframes feel-cd-rays { 0% { transform: scale(0.9); } 55% { transform: scale(1); } 100% { transform: scale(0.55); } }
     @keyframes feel-cd-ray { 0% { opacity: 0; } 8% { opacity: 1; } 58% { opacity: 1; } 100% { opacity: 0; } }
