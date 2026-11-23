@@ -482,6 +482,7 @@ function recalc(state) {
           flat += m.flat || 0
         }
       }
+      if (u.isAmulet && stat !== 'spd') { u[stat] = u.base[stat]; continue } // アミュレットは、速度以外のステータス(HP・攻撃・防御など)を持たない扱い。バフ・デバフ・クラス特性の影響を受けない
       u[stat] = Math.max(stat === 'spd' ? 1 : 0, (u.base[stat] + flat) * (1 + pct / 100))
     }
     // 速度が変わったら、行動までの進み具合は保ったまま行動値を調整する
@@ -1371,6 +1372,7 @@ function runEffects(state, source, effects, ctx = {}) {
           break
         }
         case 'buff':
+          if (t.isAmulet && e.stat !== 'spd') break // アミュレットは、速度以外のバフ・デバフを受けない(演出・ログも出さない)
           const bf = { stat: e.stat, pct: (e.pct || 0) + graveBonus(state, source, e), flat: (e.flat || 0) + perAmount(state, source, e, ['perGraveyard']), turns: e.turns ?? null, ...(e.turnsBy === 'source' ? { owner: source.uid } : {}) } // perCombo: コンボ1つにつき、flat がその分だけ増える
           t.buffs.push(bf)
           emit(state, 'buff', { target: t.uid, stat: e.stat, text: `${statLabel(e.stat)}${bf.flat ? ` ${bf.flat >= 0 ? '+' : ''}${bf.flat}${e.stat === 'dmgUp' ? '%' : ''}` : ''}${bf.pct ? ` ${bf.pct >= 0 ? '+' : ''}${bf.pct}%` : ''}`.replace(/\s+/g, ' ') })

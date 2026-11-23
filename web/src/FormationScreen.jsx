@@ -371,7 +371,7 @@ export const rarityBg = (c) => (c && c.rarity === 'legend' ? RAINBOW : `linear-g
 export const isLeg = (c) => !!(c && c.rarity === 'legend')
 const SI = ({ k }) => <StatIcon stat={k} style={{ fontSize: '1em', verticalAlign: '-0.14em', marginRight: 2 }} />
 const hasMag = (c) => c.skill?.stat === 'mag' || (c.stats.mag || 0) > 0
-const statLine = (c) => <><SI k="hp" />{c.stats.hp} <SI k="atk" />{c.stats.atk} <SI k="def" />{c.stats.def} <SI k="spd" />{c.stats.spd}{hasMag(c) && <> <SI k="mag" />{c.stats.mag || 0}</>}</>
+const statLine = (c) => c.amulet ? <><SI k="spd" />{c.stats.spd}{c.countdown != null && <> CD {c.countdown}</>}</> : <><SI k="hp" />{c.stats.hp} <SI k="atk" />{c.stats.atk} <SI k="def" />{c.stats.def} <SI k="spd" />{c.stats.spd}{hasMag(c) && <> <SI k="mag" />{c.stats.mag || 0}</>}</>
 
 // ---- 舞台(PC: 1920×1080 / スマホ: 1080×1920)を、画面に収まるように拡大・縮小する ----
 function useStage(W, H) {
