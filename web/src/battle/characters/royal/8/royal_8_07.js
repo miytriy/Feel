@@ -1,4 +1,4 @@
-import knight from './tokens/royal_8_token_01.js' // 召喚する「ナイト」
+import knight from '../1/tokens/royal_token_01.js' // 召喚する「ナイト」(既存のトークン。伝説の幕開けと共通)
 
 // 焦がれし炎将・マーズ(ローテーション: クロニクル・オブ・デスティニー = フォルダ 8)。ID: royal_8_07。タイプ: ー
 // 『兵士・フォロワー』= 「タイプ:兵士」のフォロワーと解釈(enterType: '兵士')
