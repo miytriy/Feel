@@ -595,6 +595,8 @@ function heal(state, unit, amount) {
     state.log.push(`${unit.name}は${gained}回復した`)
     emit(state, 'heal', { target: unit.uid, amount: gained })
     fireCrestsOnHeal(state, unit.team)
+  } else if (amount > 0) {
+    emit(state, 'heal', { target: unit.uid, amount: 0 }) // 体力が満タンで増えなくても、回復の演出は流す(ログ・クレストの「回復したとき」は働かない)
   }
 }
 

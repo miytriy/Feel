@@ -1234,7 +1234,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     if (e.type === 'turn') line = { team: e.team, text: `▶ ${e.team !== ME ? '相手の' : ''}${e.name}の番` }
     else if (e.type === 'damage') line = { team: tm(e.src), text: `${nm(e.src)}の${e.means || '攻撃'} → ${nm(e.target)}に ${e.amount} ダメージ${e.crit ? '(クリティカル!)' : ''}` }
     else if (e.type === 'block') line = { team: tm(e.src), text: `${nm(e.src)}の${e.means || '攻撃'} → ${nm(e.target)}のバリアが防いだ` }
-    else if (e.type === 'heal') line = { team: tm(e.target), text: `${nm(e.target)}が ${e.amount} 回復` }
+    else if (e.type === 'heal' && e.amount > 0) line = { team: tm(e.target), text: `${nm(e.target)}が ${e.amount} 回復` }
     else if (e.type === 'summon') line = { team: e.team, text: `${e.name}が登場` }
     else if (e.type === 'buff') line = { team: tm(e.target), text: `${nm(e.target)}の${e.text}` }
     else if (e.type === 'keyword') line = { team: tm(e.target), text: `${nm(e.target)}は【${e.label}】を得た` }

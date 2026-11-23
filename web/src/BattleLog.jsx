@@ -186,7 +186,7 @@ function ReadableLog({ events, units, empty }) {
     let body = null; let teamOf = e.team ?? tm(e.src) ?? tm(e.target)
     if (e.type === 'damage') body = <><b>{nm(e.src)}</b> → <b>{nm(e.target)}</b> <b style={{ color: '#ef4444', fontSize: 15 }}>{e.amount}</b> ダメージ{e.means && e.means !== '攻撃' ? `(${e.means})` : ''}{e.crit ? ' クリティカル!' : ''}</>
     else if (e.type === 'block') body = <><b>{nm(e.src)}</b> の攻撃を <b>{nm(e.target)}</b> のバリアが防いだ</>
-    else if (e.type === 'heal') body = <><b>{nm(e.target)}</b> が <b style={{ color: '#22c55e' }}>{e.amount}</b> 回復</>
+    else if (e.type === 'heal' && e.amount > 0) body = <><b>{nm(e.target)}</b> が <b style={{ color: '#22c55e' }}>{e.amount}</b> 回復</>
     else if (e.type === 'summon') body = <><b>{e.name}</b> が場に出た</>
     else if (e.type === 'buff') body = <><b>{nm(e.target)}</b> の {e.text}</>
     else if (e.type === 'keyword') body = <><b>{nm(e.target)}</b> が【{e.label}】を得た</>
