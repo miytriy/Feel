@@ -1,4 +1,4 @@
-import soldier from './tokens/royal_6_01.js' // 召喚する「勇烈の兵士」
+import soldier from './royal_6_01.js' // 召喚する「勇烈の兵士」
 
 // 凄烈の剣王・ロードノエル四世(ローテーション: アポカリプス・パクト = フォルダ 6)。タイプ: ー
 // 【エンハンス】は、上位を発動すると、下位もすべて発動する(汎用の仕様。engine の doTrait)
