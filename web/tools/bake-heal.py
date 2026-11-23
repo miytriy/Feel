@@ -49,11 +49,13 @@ def bubble():
     n = ang_noise(40, 5)
     R = 0.86 + 0.004 * n
     body = np.clip(1 - r / R, 0, 1) ** 0.6 * (r < R)
-    rim = np.exp(-(((r - R) / 0.055) ** 2))
-    rim_in = np.exp(-(((r - (R - 0.11)) / 0.09) ** 2)) * (r < R)
-    out = np.exp(-(((r - (R + 0.045)) / 0.03) ** 2))
-    a = 0.16 * (1 - body * 0) * (r < R) + 0.28 * rim_in + 0.78 * rim + 0.4 * out
-    a *= np.clip((1 - r) / 0.05, 0, 1)
+    # 縁をぼかす(境界線をくっきりさせない): 縁は広くやわらかい光、内側はなだらかに薄くなる
+    rim = np.exp(-(((r - (R - 0.06)) / 0.17) ** 2))
+    rim_in = np.exp(-(((r - (R - 0.24)) / 0.2) ** 2))
+    out = np.exp(-(((r - (R + 0.05)) / 0.09) ** 2))
+    soft = np.clip(1 - np.clip(r - (R - 0.02), 0, None) / 0.12, 0, 1)
+    a = (0.1 * np.clip((R - r) / 0.5, 0, 1) + 0.2 * rim_in + 0.36 * rim + 0.14 * out) * soft
+    a *= np.clip((1 - r) / 0.12, 0, 1)
     green = np.array([0.46, 0.93, 0.36]); lime = np.array([0.80, 1.0, 0.52]); teal = np.array([0.62, 1.0, 0.86])
     k1 = np.clip(rim, 0, 1)[..., None]; k2 = np.clip(out, 0, 1)[..., None]
     rgb = lime[None, None] * (1 - k1) + green[None, None] * k1
@@ -63,11 +65,11 @@ def bubble():
 # 3) 細い輪: 切れ切れの細い輪(緑〜水色)を数本、にじませて重ねる
 def rings():
     I = np.zeros_like(r); T = np.zeros_like(r)
-    for R, w, amp in [(0.97, 0.004, 0.9), (0.91, 0.003, 0.6), (0.83, 0.003, 0.5), (0.7, 0.0025, 0.35)]:
+    for R, w, amp in [(0.95, 0.009, 0.5), (0.88, 0.008, 0.35), (0.8, 0.008, 0.3), (0.68, 0.007, 0.2)]:
         gate = np.clip(np.sin(3 * ang + rng.uniform(0, 6)) * 1.6 + 0.5 + 0.5 * np.sin(7 * ang + rng.uniform(0, 6)), 0, 1)
         ring = np.exp(-(((r - R) / w) ** 2)) * (0.35 + 0.65 * gate) * amp
         I += ring; T += ring * rng.uniform(0.2, 1)
-    I = np.clip(I + 0.5 * blur(I, 2.5), 0, 1)
+    I = np.clip(0.5 * I + 0.9 * blur(I, 3.5), 0, 1)
     rgb = np.dstack([0.78 + 0.0 * I, 1.0 + 0 * I, 0.85 + 0.1 * T])
     save(rgb, I, 'rings.webp')
 

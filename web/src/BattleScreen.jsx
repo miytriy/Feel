@@ -254,8 +254,9 @@ function DmgNum({ part, crit, big }) {
   }
   const magic = part.dmgType === 'magic'
   const fin = part.dmgType === 'finisher'
-  const color = fin ? '#b86bff' : magic ? '#5cb8ff' : '#ffffff'
-  const glow = fin ? 'rgba(150,60,255,0.95)' : magic ? 'rgba(60,150,255,0.9)' : 'rgba(255,255,255,0.7)'
+  const heal = part.dmgType === 'heal'
+  const color = heal ? '#6dffa8' : fin ? '#b86bff' : magic ? '#5cb8ff' : '#ffffff'
+  const glow = heal ? 'rgba(40,220,110,0.95)' : fin ? 'rgba(150,60,255,0.95)' : magic ? 'rgba(60,150,255,0.9)' : 'rgba(255,255,255,0.7)'
   return <span style={{ ...base, color, textShadow: `0 0 2px #000, 0 0 2px #000, 0 0 3px #000, 0 2px 0 #000, 0 0 12px ${glow}` }}>{part.text}</span>
 }
 
@@ -566,7 +567,7 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
           {role === 'attacker' ? '攻撃' : role === 'guard' ? 'ガード' : '被弾'}
         </span>
       )}
-      {fx && fx.kind === 'heal' && <HealFx key={`heal-${tick}`} text={fx.text} big={big} />}
+      {fx && fx.kind === 'heal' && <HealFx key={`heal-${tick}`}><DmgNum part={{ text: String(fx.text).replace(/^\+/, ''), dmgType: 'heal' }} big={big} /></HealFx>}
       {fx && fx.kind !== 'heal' && (
         fx.kind === 'damage' && fx.parts ? (
           // ダメージの数字: 物理=白 / 魔法=青 / 確定=虹 / 必殺=紫。大きく太く出す。必殺の紫の数字は、鎌が回りきって光った瞬間に、スキルのダメージと同時に出す
