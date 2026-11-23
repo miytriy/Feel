@@ -509,7 +509,9 @@ export function calcDamage(attacker, defender, skill, opts = {}) {
   const critChance = Math.min(1, Math.max(0, attacker.critRate / 100))
   let critMul = 1
   let isCrit = false
-  if (opts.expected) {
+  if (skill.type === 'true') {
+    // 確定ダメージは、クリティカルが出ない
+  } else if (opts.expected) {
     critMul = 1 + critChance * (attacker.critDmg / 100)
   } else if (rng() < critChance) {
     isCrit = true
@@ -535,8 +537,9 @@ export function calcDamage(attacker, defender, skill, opts = {}) {
 //     アーマーが足りなければ、あふれた分は体力が受ける
 // 確定ダメージ(isTrue)は、アーマーに対するダメージが元の50%に減る
 const TRUE_VS_ARMOR = 0.5
-function dealDamage(target, dmg, isTrue = false) {
-  const mult = isTrue ? TRUE_VS_ARMOR : 1
+const MAGIC_VS_ARMOR = 1.15 // 魔法ダメージは、アーマーに通常より15%多くダメージを与える
+function dealDamage(target, dmg, isTrue = false, dmgType = 'physical') {
+  const mult = isTrue ? TRUE_VS_ARMOR : dmgType === 'magic' ? MAGIC_VS_ARMOR : 1
   const toArmor = dmg * target.armorRate // アーマーが受け持つ分
   const covered = Math.min(toArmor, target.armor / mult) // アーマーで止められるダメージ
   target.armor -= covered * mult
@@ -557,7 +560,7 @@ function applyDamage(state, source, target, amount, isTrue = false, dmgType = 'p
     emit(state, 'block', { src: source.uid, target: target.uid, means: state.means || '攻撃' })
     return 0
   }
-  dealDamage(target, amount, isTrue)
+  dealDamage(target, amount, isTrue, dmgType)
   if (!target.alive) target.killedBy = source.uid
   if (target.field === 'main') state.graveyard[target.team] += GRAVE_PER_HIT // 攻撃をされると墓場が溜まる
   emit(state, 'damage', { src: source.uid, target: target.uid, amount: Math.round(amount), means: state.means || '効果', dmgType: isTrue ? 'true' : dmgType })

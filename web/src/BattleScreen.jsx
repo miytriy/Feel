@@ -10,6 +10,7 @@ import { ARTIFACT_CATALOG } from './battle/artifact/index.js'
 import FormationScreen from './FormationScreen.jsx'
 import { createPortal } from 'react-dom'
 import { FinisherA, FinisherB } from './FinisherFx.jsx'
+import { HealFx } from './HealFx.jsx'
 import { CountdownFx } from './CountdownFx.jsx'
 import { BattleHud, StageIntro, ExitConfirm, ResultBanner, BattleMenu } from './BattleHud.jsx'
 import { CommentaryOverlay, collectHistory, addHistory, emptyHistory } from './BattleLog.jsx'
@@ -210,9 +211,9 @@ export function ActionBar({ state, big = false, avFx = null }) {
 }
 
 // 予想ダメージを受けたとき、体力がいくつ減るか(アーマーが先に受け持つ分と、バリアで防がれる分を考える)
-function hpLossOf(unit, dmg, isTrue) {
+function hpLossOf(unit, dmg, isTrue, isMagic = false) {
   if (dmg == null || unit.barrier > 0 || unit.isAmulet) return 0
-  const mult = isTrue ? 0.5 : 1
+  const mult = isTrue ? 0.5 : isMagic ? 1.15 : 1
   const covered = Math.min(dmg * unit.armorRate, unit.armor / mult)
   return Math.max(0, Math.min(unit.hp, dmg - covered))
 }
@@ -565,7 +566,8 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
           {role === 'attacker' ? '攻撃' : role === 'guard' ? 'ガード' : '被弾'}
         </span>
       )}
-      {fx && (
+      {fx && fx.kind === 'heal' && <HealFx key={`heal-${tick}`} text={fx.text} big={big} />}
+      {fx && fx.kind !== 'heal' && (
         fx.kind === 'damage' && fx.parts ? (
           // ダメージの数字: 物理=白 / 魔法=青 / 確定=虹 / 必殺=紫。大きく太く出す。必殺の紫の数字は、鎌が回りきって光った瞬間に、スキルのダメージと同時に出す
           numBox && numBox.tick === tick && typeof document !== 'undefined' ? createPortal(
@@ -1046,7 +1048,7 @@ function reorderBoost(evs) {
   return out
 }
 export const VANISH_SLOW = 1 // 消滅エフェクトの長さの倍率。1 = 0.9秒(ルール画面と同じ基準・56コマで約62fps)。EFFECTS.mdの基準値。
-const EVENT_MS = { turn: 700, ability: 300, attack: 300, damage: 900, heal: 800, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1000, finisher: 440, countdown: 780, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 300, attack: 300, damage: 900, heal: 1350, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1000, finisher: 440, countdown: 780, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ format = 'rotation', settingsView = null, onExit, cpuDelay = 700, rewardApi: rewardApiProp = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null, online = null, testInit = null }) {
@@ -1617,7 +1619,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     try { expectedDmg = calcDamage(actor, selectedUnit, actor.skill, { expected: true, bySkill: true }).damage } catch { expectedDmg = null }
   }
 
-  const lossShown = selectedUnit && expectedDmg != null ? hpLossOf(selectedUnit, expectedDmg, actor.skill.type === 'true') : 0
+  const lossShown = selectedUnit && expectedDmg != null ? hpLossOf(selectedUnit, expectedDmg, actor.skill.type === 'true', actor.skill.type === 'magic') : 0
 
   const card = (u) => (
     <UnitCard
