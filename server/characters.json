@@ -58,6 +58,7 @@
   { "id": "royal_2_01", "name": "静寂のアナテマ・ギルダリア", "class": "ロイヤル", "rarity": "legend", "rotation": "2" },
   { "id": "royal_6_01", "name": "勇烈の兵士", "class": "ロイヤル", "rarity": "bronze", "rotation": "6" },
   { "id": "royal_6_06", "name": "凄烈の剣王・ロードノエル四世", "class": "ロイヤル", "rarity": "legend", "rotation": "6" },
+  { "id": "royal_8_07", "name": "焦がれし炎将・マーズ", "class": "ロイヤル", "rarity": "legend", "rotation": "8" },
   { "id": "royal_amulet_01", "name": "王統なる王冠", "class": "ロイヤル", "rarity": "silver", "rotation": "basic" },
   { "id": "bishop_01", "name": "潜みしマイニュ", "class": "ビショップ", "rarity": "bronze", "rotation": "1" },
   { "id": "bishop_02", "name": "煌槍のアルミラージ・サリッサ", "class": "ビショップ", "rarity": "silver", "rotation": "1" },
