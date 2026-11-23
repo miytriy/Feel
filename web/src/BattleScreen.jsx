@@ -1081,6 +1081,8 @@ function reorderBoost(evs) {
 export const VANISH_SLOW = 1 // 消滅エフェクトの長さの倍率。1 = 0.9秒(ルール画面と同じ基準・56コマで約62fps)。EFFECTS.mdの基準値。
 const LIGHT_FX = new Set(['heal', 'buff', 'keyword', 'countdown']) // 重ねて流してよい軽い演出
 const LIGHT_RATIO = 0.4
+// 演出の長さが決まっている(参考動画の再現で、動きの長さが固定の)ものは、待ち時間の設定(速い・ゆっくり)で短く・長くしない。短くすると、演出が途中で切れる
+const FIXED_MS = new Set(['vanish', 'evolve', 'finisher', 'countdown'])
 const EVENT_MS = { turn: 700, ability: 300, attack: 300, damage: 900, heal: 1350, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1000, finisher: 440, countdown: 780, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
@@ -1291,7 +1293,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     if (!play || logOpen) return // 戦闘実況を開いている間は、再生を止める
     if (play.i >= play.events.length) { setPlay(null); return }
     const grp = play.events.slice(play.i, groupEnd(play.events, play.i) + 1)
-    const full = Math.max(...grp.map((x) => (x.type === 'vanish' ? EVENT_MS.vanish : (EVENT_MS[x.type] ?? 500) * mult)))
+    const full = Math.max(...grp.map((x) => (FIXED_MS.has(x.type) ? EVENT_MS[x.type] : (EVENT_MS[x.type] ?? 500) * mult)))
     const light = overlapOn && grp.every((x) => LIGHT_FX.has(x.type)) // 軽い演出だけのまとまりは、全部が終わるのを待たず、4割ほど進んだら次へ(演出は、そのまま最後まで続く)
     const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), light ? Math.round(full * LIGHT_RATIO) : full)
     return () => clearTimeout(t)
