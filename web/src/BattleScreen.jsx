@@ -344,14 +344,21 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
   const hpColor = ratio > 0.5 ? C.hp : ratio > 0.25 ? C.hpMid : C.hpLow
   // カウントダウンの数字は、演出の途中(球と光が最も強いころ)で新しい数に切り替わる(動画のとおり)。それまでは、進む前の数を見せる
   const [cdOld, setCdOld] = useState(false)
+  const [cdFrom, setCdFrom] = useState(null)
+  const cdShownRef = useRef(null) // 直前に画面に出していた数(これより小さい数へ進むときだけ、前の数から切り替える。出していた数より大きい数を出して、一瞬増えて見えるのを防ぐ)
   const cdFx = !!(fx && fx.kind === 'countdown')
   useLayoutEffect(() => {
     if (!cdFx) { setCdOld(false); return }
-    setCdOld(true)
+    const from = cdShownRef.current
+    const old = from != null && unit.countdown != null && from > unit.countdown
+    setCdFrom(old ? from : null)
+    setCdOld(old)
+    if (!old) return
     const t = setTimeout(() => setCdOld(false), ((fx.delay || 0) + 0.2) * 1000)
     return () => clearTimeout(t)
   }, [tick, cdFx])
-  const cdShown = unit.countdown != null ? (cdOld && cdFx ? unit.countdown + (fx.amount || 1) : unit.countdown) : null // 大きな数字(動画のとおり、カードの右下)に出す。小さい「CD n」の札は出さない
+  const cdShown = unit.countdown != null ? (cdOld && cdFx && cdFrom != null ? cdFrom : unit.countdown) : null // 大きな数字(動画のとおり、カードの右下)に出す。小さい「CD n」の札は出さない
+  useLayoutEffect(() => { cdShownRef.current = cdShown })
   const badges = (unit.alive ? badgesOf(unit) : []).filter((x) => !/^CD \d+$/.test(x))
   // 破壊・消滅の演出中は、まだ生きているときの見た目のまま(演出のあと、暗い半透明の「戦闘不能」の札に変わって残らないように)。演出が終わったら、そっと消す
   const dying = !!(fx && fx.die)
@@ -677,7 +684,7 @@ function RecentFeed({ feed, big }) {
 export function AbilityNote({ unit, title, text, big = false }) {
   const col = TEAM_COLOR[unit.team]
   return (
-    <div data-testid="ability-note" aria-live="polite" style={{ position: 'fixed', zIndex: 12, pointerEvents: 'none', left: big ? 16 : 6, bottom: big ? 200 : 'calc(190px + env(safe-area-inset-bottom, 0px))', width: big ? 340 : 'min(260px, 62vw)', maxHeight: big ? '42vh' : '34vh', overflow: 'hidden', borderRadius: 8, background: `color-mix(in srgb, ${col} 9%, ${C.card})`, border: `2px solid ${col}`, boxShadow: `0 0 0 1px ${alpha(col, 35)}, 0 6px 18px ${alpha('#000000', 40)}`, fontSize: big ? 14 : 12, lineHeight: 1.6, animation: 'feel-note-in 0.22s ease-out backwards' }}>
+    <div data-testid="ability-note" aria-live="polite" style={{ position: 'fixed', zIndex: 12, pointerEvents: 'none', left: big ? 16 : 6, bottom: big ? 200 : 'calc(190px + env(safe-area-inset-bottom, 0px))', width: big ? 340 : 'min(260px, 62vw)', maxHeight: big ? '42vh' : '34vh', overflow: 'hidden', borderRadius: 8, background: `color-mix(in srgb, color-mix(in srgb, ${col} 9%, ${C.card}) 68%, transparent)`, border: `2px solid ${col}`, boxShadow: `0 0 0 1px ${alpha(col, 35)}, 0 6px 18px ${alpha('#000000', 40)}`, fontSize: big ? 14 : 12, lineHeight: 1.6, animation: 'feel-note-in 0.22s ease-out backwards' }}>
       <div style={{ padding: big ? '6px 12px' : '5px 10px', fontWeight: 800, background: `linear-gradient(90deg, ${alpha(col, 34)}, ${alpha(col, 8)})`, overflowWrap: 'anywhere' }}>{title || unit.name}</div>
       <div style={{ padding: big ? '8px 12px 10px' : '6px 10px 8px', overflowWrap: 'anywhere' }}>{text}</div>
     </div>
@@ -908,7 +915,7 @@ function InfoCard({ testid, unit, accent, children, big = false, style }) {
   const kind = [unit.class, ...String(unit.type || '').split('/')].filter(Boolean).join('/')
   const mag = unit.skill?.stat === 'mag' || unit.mag > 0
   return (
-    <div data-testid={testid} style={{ borderRadius: 10, overflow: 'hidden', background: tint(edge, 9), border: `2px solid ${edge}`, boxShadow: `0 0 0 1px ${alpha(edge, 35)}, 0 4px 14px ${alpha('#000000', 28)}`, fontSize: big ? 13 : 12, lineHeight: 1.55, ...style }}>
+    <div data-testid={testid} style={{ borderRadius: 10, overflow: 'hidden', background: `color-mix(in srgb, ${tint(edge, 9)} 68%, transparent)`, border: `2px solid ${edge}`, boxShadow: `0 0 0 1px ${alpha(edge, 35)}, 0 4px 14px ${alpha('#000000', 28)}`, fontSize: big ? 13 : 12, lineHeight: 1.55, ...style }}>
       <div style={{ padding: big ? '8px 12px 6px' : '6px 10px 5px', background: `linear-gradient(90deg, ${alpha(edge, 30)}, ${alpha(edge, 6)})` }}>
         <div style={{ fontWeight: 800, fontSize: big ? 16 : 14, overflowWrap: 'anywhere' }}><SI k="spd" />{Math.round(unit.spd)}/{unit.name}{unit.evolved ? '(進化済)' : ''}{unit.field === 'summon' ? '(召喚物)' : ''}</div>
         {!unit.isAmulet && (
@@ -1333,7 +1340,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     setSideLog([])
     const cpuTeam = testInit ? testInit.team : buildCpuTeam(ALL_CHARACTERS, cpuChars, Math.random, level, ALL_SPELLS) // Lv.5以上は、シナジーのある編成。テスト戦は、自分で選んだ相手のチーム
     const cpuSpells = testInit ? testInit.spells : level >= SPELL_LEVEL ? buildCpuSpells(ALL_SPELLS, cpuTeam, Math.random, level) : [] // Lv.5以上のCPUは、編成に合う強いスペルを持つ
-    const first = createBattle(team.map((d) => enhanceDef(withRelicPieces(d, format))), cpuTeam, { catalog: ALL_CHARACTERS, artifactCatalog: ARTIFACT_CATALOG, pool: ownedPool(cpuChars), spells: { A: spellSet, B: cpuSpells } })
+    const first = createBattle(team.map((d) => enhanceDef(withRelicPieces(d, format))), cpuTeam, { catalog: ALL_CHARACTERS, artifactCatalog: ARTIFACT_CATALOG, pool: ownedPool(cpuChars), spells: { A: spellSet, B: cpuSpells }, keepTurn: { [ME]: loadSettings().autoEnd === false } })
     statsRef.current = newStats()
     const firstActor = first.units.find((u) => u.uid === first.active)
     if (firstActor) statsRef.current.turns[firstActor.team]++ // 最初のターンも数える

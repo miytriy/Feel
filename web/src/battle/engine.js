@@ -332,6 +332,7 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
     link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 }, summonSeq: Math.max(startSummons.A, startSummons.B), pending: null,
     active: null, activeKind: null, winner: null, log: ['バトル開始!'],
     comboReset: { A: null, B: null }, comboCount: { A: 0, B: 0 },
+    keepTurn: { A: !!opts.keepTurn?.A, B: !!opts.keepTurn?.B }, // 設定「行動手段が無いとき自動でターンを終了」をオフにしたチーム(true なら、行動できなくても自動では終わらず、自分で終える)
     catalog: opts.catalog || [], // 全カードの定義(「ビショップ・アミュレットの中から召喚」など、所持に関係なく全カードから選ぶ能力の候補)
     pool: { A: opts.pool?.A || [], B: opts.pool?.B || [] }, // 所持キャラクター(「所持キャラから召喚する」能力の候補)
     // スペル(プレイヤー能力): opts.spells = { A: [スペル定義...], B: [...] }(同じスペルを何回入れてもよい。最大 MAX_SPELL_SLOTS 回分)
@@ -2004,7 +2005,7 @@ function advance(state, opts) {
       continue
     }
     const actions = legalActions(state)
-    if (actions.length === 1 && actions[0].type === 'endTurn') {
+    if (actions.length === 1 && actions[0].type === 'endTurn' && !state.keepTurn?.[next.team]) {
       state.log.push(`${next.name}は様子を見ている(入場直後はスキルを使えない)`)
       endTurn(state, next)
       continue
