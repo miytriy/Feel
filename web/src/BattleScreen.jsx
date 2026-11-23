@@ -980,6 +980,7 @@ const buttonStyle = (primary, disabled) => ({
 // 連続する同じ種類の出来事(複数の召喚・複数への攻撃・複数のヒール)は、1つにまとめて一気に見せる。
 // 返す値は、まとめの最後の番号(まとまらなければ i のまま)。攻撃は、同じ攻撃元・同じ手段のものだけ。同じ相手が2回出たら、そこで区切る
 const GROUP_TYPES = ['damage', 'heal', 'summon', 'buff', 'keyword', 'destroy', 'vanish', 'av', 'finisher', 'countdown']
+let MIX_LIGHT = true // 軽い演出(回復・強化・能力付与・カウントダウン)は、種類がちがっても、続いていれば1つのまとまりにして、いっせいに流す(設定で切り替え)
 function groupEnd(events, i) {
   const e = events[i]
   if (!e || !GROUP_TYPES.includes(e.type)) return i
@@ -989,7 +990,7 @@ function groupEnd(events, i) {
     const n = events[j + 1]
     const dying = (t) => t === 'destroy' || t === 'vanish'
     if (dying(n.type) && (e.type === 'damage' || dying(e.type))) { seen.add(n.target); j += 1; continue } // HPが0になった瞬間に、破壊・消滅の演出を、ダメージと一緒に出す
-    if (n.type !== e.type) break
+    if (n.type !== e.type && !(MIX_LIGHT && LIGHT_FX.has(e.type) && LIGHT_FX.has(n.type))) break
     const finisher = e.type === 'damage' && (n.means === '必殺' || e.means === '必殺') && n.src === e.src // 必殺は、スキルのダメージより先に入る。 【必殺】の追加ダメージは、スキルのダメージと合わせて1回で見せる(同じ相手でもよい)
     const boostT = n.type === 'buff' || n.type === 'keyword' || n.type === 'av' // 強化・能力付与は、同じ相手に重なってもひとまとめ
     if (!finisher && !boostT && seen.has(n.target)) break
@@ -1155,7 +1156,8 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   // 操作パネルで盤面が隠れるときは、フィールドのユニット(カード)だけを小さくして、画面内に収める(スマホ・小さいPC。設定でオン・オフ。小さくするのは、最大で約半分まで)
   // 盤面ぜんたいを拡大縮小するのではなく、カードの大きさ(--fit)を変えるので、見出しや文字はそのまま。カードが小さくなったぶん、盤面の高さが縮む
   const fitOn = useRef(loadSettings().fitField !== false).current
-  const overlapOn = useRef(loadSettings().overlap !== false).current // 軽い演出は、終わるのを待たずに次を流す(試験)
+  const overlapOn = useRef(loadSettings().overlap !== false).current
+  MIX_LIGHT = overlapOn // 軽い演出は、終わるのを待たずに次を流す(試験)
   const lingerRef = useRef({}) // 次の演出へ進んだあとも、少しのあいだ続ける軽い演出: uid → { fx, tick, until }
   const FIT_MIN = 0.5
   const headRef = useRef(null), panelRef = useRef(null), boardRef = useRef(null)
