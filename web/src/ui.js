@@ -78,7 +78,6 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-cd-flash { 0% { opacity: 0; transform: scale(0.3); } 20% { opacity: 1; transform: scale(1); } 60% { opacity: 0.7; transform: scale(1); } 100% { opacity: 0; transform: scale(0.5); } }
     @keyframes feel-fin-num { 0% { opacity: 0; transform: scale(0.6); } 40% { opacity: 1; transform: scale(1.18); } 100% { opacity: 1; transform: scale(1); } }
     @keyframes feel-float-c { 0% { opacity: 1; transform: translate(-50%, 0) scale(1); } 60% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -38px) scale(1); } }
-    @keyframes feel-hl-beam { 0% { opacity: 0; transform: translateY(-14%); } 35% { opacity: 1; } 100% { opacity: 0; transform: translateY(10%); } }
     @keyframes feel-hl-wash { 0% { opacity: 0; } 22% { opacity: 1; } 45% { opacity: 0.85; } 100% { opacity: 0; } }
     @keyframes feel-hl-tint { 0% { opacity: 0; } 30% { opacity: 1; } 70% { opacity: 0.7; } 100% { opacity: 0; } }
     @keyframes feel-hl-orb1 { 0% { opacity: 0; transform: scale(0.35); } 25% { opacity: 1; } 55% { opacity: 1; transform: scale(0.95); } 100% { opacity: 0; transform: scale(1.08); } }
