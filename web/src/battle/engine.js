@@ -1,4 +1,5 @@
 import { applyRelics } from './relicRules.js'
+import { SEASON_BONUS, newSeason, seasonMods, seasonComboUp, seasonComboReset, seasonEnter, seasonBoost, seasonMpMax, seasonGrave, seasonDestroyed, seasonHealed } from './season.js'
 import ghostToken from './characters/nightmare/tokens/nightmare_token_02.js' // テスト戦の「ゴースト無限湧き」用
 import EARTH_SHARD from './amulet/witch/1/witch_amulet_01.js' // 土の印がないときに召喚される「大地の魔片」
 // Feel Battle - バトルの処理(段階4: アーマー・墓場・召喚物・アミュレット・遺物 を追加。段階3までの進化・EP・信仰値・カウントダウン・クレスト・連携・奥義・アクセラレートを含む)
@@ -283,6 +284,7 @@ function growSpell(state, team, sp, n) {
   return sp
 }
 function boostSpells(state, team, n, except = null) {
+  if (n > 0) seasonBoost(state, team, seasonRng) // シーズン補正(ウィッチ)
   for (const sp of [...state.spells[team]]) {
     if (!sp.onBoost || sp === except) continue
     growSpell(state, team, sp, n)
@@ -326,7 +328,7 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
   for (const u of units) applyClassTrait(u, classTrait[u.team])
   const startSummons = { A: units.filter((u) => u.team === 'A' && u.field === 'summon').length, B: units.filter((u) => u.team === 'B' && u.field === 'summon').length }
   const state = {
-    units, classTrait, ctCarry: { A: { boost: 0, earth: 0 }, B: { boost: 0, earth: 0 } }, totalAV: 0, round: 0, turns: 0, actionsThisTurn: 0,
+    units, classTrait, season: { A: newSeason(teamADefs), B: newSeason(teamBDefs) }, ctCarry: { A: { boost: 0, earth: 0 }, B: { boost: 0, earth: 0 } }, totalAV: 0, round: 0, turns: 0, actionsThisTurn: 0,
     mp: { A: 0, B: 0 }, mpMax: { A: 0, B: 0 }, ep: { A: 0, B: 0 },
     faith: { A: 0, B: 0 }, boost: { A: 0, B: 0 }, earth: { A: 0, B: 0 }, crests: { A: [], B: [] }, graveyard: { A: 0, B: 0 },
     link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 }, summonSeq: Math.max(startSummons.A, startSummons.B), pending: null,
@@ -344,6 +346,7 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
     casting: null, lastAbility: null, abilitySeq: 0, means: '', // means = いま働いている攻撃手段の名前(スキル名・特性名など。画面の「○○の△△!」用)
     events: [], rec: opts.record !== false, // events = 直近の行動で起きたことの記録(画面で1つずつ再生する用)
   }
+  for (const t of ['A', 'B']) for (const cls of state.season[t].classes) state.log.push(`${t === 'A' ? '自分' : '相手'}側にシーズン補正【${SEASON_BONUS[cls].name}】が付与された`)
   startRound(state)
   recalc(state)
   return advance(state)
@@ -466,6 +469,7 @@ function recalc(state) {
   }
   for (const u of state.units) {
     const mods = [...u.buffs, ...(crestMods.get(u.uid) || [])]
+    mods.push(...seasonMods(state, u)) // シーズン補正(異界の共鳴)
     if (u.ct === 'ビショップ') mods.push({ stat: 'def', pct: 18 }) // ビショップ(クラス特性): 自分の場すべての防御力+18%
     if (u.ct === 'ネメシス' && hasTypeName(u, '人形')) mods.push({ stat: 'spd', pct: 3 }) // ネメシス(クラス特性): 「人形」の速度+3%
     for (const p of u.passiveObjs) {
@@ -564,7 +568,7 @@ function applyDamage(state, source, target, amount, isTrue = false, dmgType = 'p
   }
   dealDamage(target, amount, isTrue, dmgType)
   if (!target.alive) target.killedBy = source.uid
-  if (target.field === 'main') state.graveyard[target.team] += GRAVE_PER_HIT // 攻撃をされると墓場が溜まる
+  if (target.field === 'main') { state.graveyard[target.team] += GRAVE_PER_HIT; if (seasonGrave(state, target.team, GRAVE_PER_HIT)) recalc(state) } // 攻撃をされると墓場が溜まる
   emit(state, 'damage', { src: source.uid, target: target.uid, amount: Math.round(amount), means: state.means || '効果', dmgType: isTrue ? 'true' : dmgType })
   return amount
 }
@@ -595,6 +599,7 @@ function heal(state, unit, amount) {
   if (gained > 0) {
     state.log.push(`${unit.name}は${gained}回復した`)
     emit(state, 'heal', { target: unit.uid, amount: gained })
+    seasonHealed(state, unit) // シーズン補正(ビショップ)
     fireCrestsOnHeal(state, unit.team)
   } else if (amount > 0) {
     emit(state, 'heal', { target: unit.uid, amount: 0 }) // 体力が満タンで増えなくても、回復の演出は流す(ログ・クレストの「回復したとき」は働かない)
@@ -933,6 +938,7 @@ function reanimate(state, source, speed, opts) {
   emit(state, 'summon', { target: u.uid, name: u.name, team: u.team })
   state.log.push(`【リアニメイト_${speed}】${u.name}が蘇生した`)
   for (const a of state.units.filter((x) => x.alive && x.team === u.team && x.uid !== u.uid)) fire(state, 'allyEnter', a, { other: u })
+  seasonEnter(state, u) // シーズン補正
   recalc(state)
   fire(state, 'onEnter', u, {})
   return u
@@ -973,6 +979,7 @@ function afterEnter(state, u) {
   }
   // 自分の場の「味方が場に出たとき」(enterType があれば、そのタイプのキャラが出たときだけ)
   for (const a of state.units.filter((x) => x.alive && x.team === u.team && x.uid !== u.uid)) fire(state, 'allyEnter', a, { other: u })
+  seasonEnter(state, u) // シーズン補正
   recalc(state)
   fire(state, 'onEnter', u, {}) // 【場に出たとき】: ファンファーレ(最初の自分のターン開始時)とは違い、出た瞬間に働く
 }
@@ -1299,7 +1306,9 @@ function runEffects(state, source, effects, ctx = {}) {
       continue
     }
     if (e.type === 'mpMax') { // 自分のMP最大値を増やす(上限 MP_CAP まで。いまのMPは変わらない)
+      const mm0 = state.mpMax[source.team]
       state.mpMax[source.team] = Math.min(MP_CAP, state.mpMax[source.team] + (e.amount ?? 1))
+      if (seasonMpMax(state, source.team, mm0, state.mpMax[source.team], AWAKEN_MP)) recalc(state)
       state.log.push(`MP最大値が${state.mpMax[source.team]}になった`)
       continue
     }
@@ -1454,7 +1463,9 @@ function runEffects(state, source, effects, ctx = {}) {
           break
         case 'gainCombo': { // 自分の【コンボ】を+amount する(βは味方チーム共有のカウント、従来は本人のカウント)
           const n = e.amount ?? 1
+          const cb = state.comboCount[source.team]
           state.comboCount[source.team] += n
+          if (seasonComboUp(state, source.team, cb, state.comboCount[source.team])) recalc(state)
           state.log.push(`${source.name}の【コンボ】が${n}増えた(いま${comboOf(state, source)})`)
           break
         }
@@ -1647,7 +1658,8 @@ function resolveDeaths(state, opts) {
       // このターン中に倒されたキャラの記録(元の攻撃力・体力つき)。【場に出たとき】の growByDead が使う。前のターンの記録は捨てる
       state.deaths = (state.deaths || []).filter((d) => d.turn === state.turns)
       state.deaths.push({ turn: state.turns, team: u.team, type: u.type, atk: u.charDef?.stats?.atk ?? u.base.atk, hp: u.charDef?.stats?.hp ?? u.baseMaxHp })
-      if (u.field === 'main') state.graveyard[u.team] += GRAVE_PER_DEATH // 倒されると墓場が大きく増える
+      if (u.field === 'main') { state.graveyard[u.team] += GRAVE_PER_DEATH; seasonGrave(state, u.team, GRAVE_PER_DEATH) } // 倒されると墓場が大きく増える
+      seasonDestroyed(state, u) // シーズン補正(ナイトメア)
       const killer = u.killedBy ? getUnit(state, u.killedBy) : null
       fire(state, 'lastWord', u, { other: killer, opts })
       // 場のキャラが倒れたら、同じチームの生き残り(自分以外)の「味方が戦闘不能になったとき」が働く
@@ -1767,7 +1779,9 @@ const sameAction = (a, b) =>
 function startRound(state, opts) {
   state.round += 1
   for (const team of ['A', 'B']) {
+    const mm1 = state.mpMax[team]
     state.mpMax[team] = Math.min(MP_CAP, state.mpMax[team] + 1 + (state.round === 1 && state.classTrait?.[team] === 'ドラゴン' ? 1 : 0)) // ドラゴン(クラス特性): ラウンド1の最大MP増加量+1
+    seasonMpMax(state, team, mm1, state.mpMax[team], AWAKEN_MP) // シーズン補正(ドラゴン)。この後の recalc で反映される
     state.mp[team] = state.mpMax[team]
     if (state.round === EP_GRANT_ROUND) state.ep[team] = Math.min(EP_MAX, state.ep[team] + EP_GRANT)
   }
@@ -1980,6 +1994,7 @@ function advance(state, opts) {
       const holders = comboHolders(state, slot.team)
       const before = state.comboCount[slot.team]
       state.comboCount[slot.team] = 0 // コンボカウントはチーム共有
+      if (seasonComboReset(state, slot.team)) recalc(state)
       state.log.push(`${slot.team === 'A' ? '自分' : '相手'}側のコンボリセット(コンボ${before}→0)`)
       const cr = state.comboReset[slot.team]
       cr.curAV = cr.baseAV
@@ -2105,7 +2120,9 @@ function countLink(state, actor, opts) {
 // 味方の特性が使われたとき、コンボを持つ味方のカウントを1つ進める
 // (コンボ持ちのターンが終わってから、次にそのキャラのターンが来るまでの間に使われた特性を数える)
 function countCombos(state, actor, opts) {
+  const cb0 = state.comboCount[actor.team]
   state.comboCount[actor.team] += 1 // コンボカウントはプレイヤー(チーム)に蓄積する(特性を使ったのが誰でも数える)
+  if (seasonComboUp(state, actor.team, cb0, cb0 + 1)) recalc(state)
   for (const u of state.units) {
     if (!u.alive || u.team !== actor.team) continue
     const combos = u.passiveObjs.filter((p) => p.trigger === 'combo')
@@ -2205,7 +2222,9 @@ function doEvolve(state, actor, opts, free = false) { // free: 能力の効果�
 
 // 行動を実行して、次の行動待ちの状態を返す(元の状態は書き換えない)
 //  特性・進化を使った場合は、同じユニットのターンが続く
+let seasonRng = Math.random // シーズン補正(ウィッチ)の確率用。applyAction の opts.rng を使う
 export function applyAction(prev, action, opts = {}) {
+  seasonRng = opts.rng || Math.random
   const state = applyActionInner(prev, action, opts)
   if (state !== prev && state.active && !state.pending && !state.winner) { // 自分のターン中に自分が再出場したら、スキルを使わせずにターンを終える
     const actor = getActiveUnit(state)

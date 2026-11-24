@@ -12,6 +12,7 @@ import FormationGuide from './FormationGuide.jsx'
 import { CLASS_ORDER } from './battle/characters/validate.js'
 import { StatIcon } from './icons.jsx'
 import { CLASS_TRAITS, classTraitOf } from './battle/engine.js'
+import { SEASON, SEASON_BONUS, seasonClassesOf } from './battle/season.js'
 import { artOf, ArtImg, useArtStatus } from './charArt.jsx'
 
 // 編成画面。参考: エンドフィールドの「編成」
@@ -825,6 +826,7 @@ export default function FormationScreen({ format = null, onFormat = null, guideF
 
         <div className="fm-status">
           {traitCls && <div className="fm-trait">クラス特性発動中（{traitCls}）: {CLASS_TRAITS[traitCls].name}</div>}
+          {seasonClassesOf(filled).map((c) => <div className="fm-trait" key={c} title={SEASON_BONUS[c].desc}>シーズン補正（{c}）: {SEASON_BONUS[c].name}</div>)}
           {dirty && <div>● 未保存の変更があります</div>}
           {!check.ok && <div>{check.reason}</div>}
           {message && <div style={savedMsg ? { borderRightColor: C.ok, color: C.ok } : undefined}>{message}</div>}
