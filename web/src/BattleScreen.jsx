@@ -358,16 +358,34 @@ function DrainIcon() {
     </svg>
   )
 }
-const KW_ICONS = { lastWord: { Icon: LwIcon, label: 'ラストワード' }, drain: { Icon: DrainIcon, label: 'ドレイン' } }
+// 緑旗: 暗い丸に、黄緑のふち、緑の旗(動画のとおり)
+function FlagIcon() {
+  return (
+    <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', display: 'block' }}>
+      <defs>
+        <radialGradient id="kwd-fl" cx="50%" cy="45%" r="60%"><stop offset="0%" stopColor="#1d3326" /><stop offset="100%" stopColor="#0c1612" /></radialGradient>
+        <linearGradient id="kwd-flg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8fe04a" /><stop offset="1" stopColor="#4fb02c" /></linearGradient>
+      </defs>
+      <circle cx="50" cy="50" r="45" fill="url(#kwd-fl)" stroke="#a7cf4f" strokeWidth="5" />
+      <circle cx="50" cy="50" r="40" fill="none" stroke="#06100b" strokeWidth="2.5" opacity="0.7" />
+      <g transform="translate(50 50) scale(0.95) translate(-50 -50)">
+        <path fill="url(#kwd-flg)" stroke="#bff07a" strokeWidth="1.6" strokeLinejoin="round" d="M30 25 H72 L61 38 L72 51 H37 V76 H30 Z" />
+      </g>
+    </svg>
+  )
+}
+const KW_ICONS = { flag: { Icon: FlagIcon, label: '緑旗' }, lastWord: { Icon: LwIcon, label: 'ラストワード' }, drain: { Icon: DrainIcon, label: 'ドレイン' } }
 // 持っている能力のアイコンの一覧(ラストワード → ドレインの順)
 function iconKeysOf(unit) {
   const out = []
+  if (unit.flag) out.push('flag')
   if ((unit.passiveObjs || []).some((p) => p.trigger === 'lastWord')) out.push('lastWord')
   if ((unit.keywords || []).includes('drain')) out.push('drain')
   return out
 }
-function KeywordIcons({ keys, big }) {
+function KeywordIcons({ keys, big, flagTick = 0 }) {
   const n = keys.length
+  const mountTick = useRef(flagTick) // 出した時点の回数は、もう光らせない(作り直しで光り直さないように)
   const size = big ? 28 : 22
   const total = KW_ICON_MS * n
   // どのカードも同じ位相で切り替わるよう、いまの時刻から開始位置をそろえる
@@ -380,11 +398,22 @@ function KeywordIcons({ keys, big }) {
           <span key={k} data-kw={k} style={{ position: 'absolute', inset: 0, opacity: n === 1 ? 1 : 0, willChange: n === 1 ? undefined : 'opacity', animation: n === 1 ? undefined : `feel-kw-cycle-${n} ${total}ms linear ${i * KW_ICON_MS - total - phase * 1000}ms infinite` }}><Icon /></span>
         )
       })}
+      {keys.includes('flag') && flagTick !== mountTick.current && <FlagBurst key={flagTick} />}
     </span>
   )
 }
+// 緑旗が光る: 旗が黄緑に光り、黄緑の球がふくらんで、しばらく漂って、消える(動画: 約0.75秒)。transform と opacity だけで動かす
+const FLAG_BUBBLE = `${(import.meta.env && import.meta.env.BASE_URL) || '/'}fx/flag/bubble.webp`
+function FlagBurst() {
+  return (
+    <>
+      <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, #f4ffb0 0%, #9be63a 70%, #6cc12a 100%)', opacity: 0, willChange: 'opacity', animation: 'feel-flag-pulse 800ms ease-in-out both', zIndex: 1 }} />
+      <img src={FLAG_BUBBLE} alt="" draggable={false} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0, transformOrigin: '50% 50%', willChange: 'transform, opacity', animation: 'feel-flag-bubble 800ms cubic-bezier(0.2, 0.7, 0.2, 1) both', zIndex: -1 }} />
+    </>
+  )
+}
 
-export function UnitCard({ unit, active, selected, selectable, lift = true, inspected, onClick, onFocusCard, big = false, fx = null, hl = false, tick = 0, loss = 0, role = null }) {
+export function UnitCard({ unit, active, selected, selectable, lift = true, inspected, onClick, onFocusCard, big = false, fx = null, hl = false, tick = 0, loss = 0, role = null, flagTick = 0 }) {
   // 破壊: HPの数字とバーが、同じ速さで0へ減っていく。消滅: HPは減らないので、消える直前の値のまま(0にしない)
   const lastHp = useRef(unit.hp)
   if (unit.alive) lastHp.current = unit.hp
@@ -493,7 +522,7 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
         </span>
       )}
       {fx && fx.die === 'vanish' && <VanishFx key={`van-${tick}`} ms={VANISH_BASE_MS * VANISH_SLOW} />}
-      {unit.alive && iconKeysOf(unit).length > 0 && <KeywordIcons key={iconKeysOf(unit).join()} keys={iconKeysOf(unit)} big={big} />}
+      {unit.alive && iconKeysOf(unit).length > 0 && <KeywordIcons key={iconKeysOf(unit).join()} keys={iconKeysOf(unit)} big={big} flagTick={flagTick} />}
       {unit.alive && (unit.keywords || []).includes('guard') && (
         // 【守護】の盤面エフェクト: 縦長の盾(カードに収まる比率)の輪郭が、内側から現れて外側へ広がりながら消える。2枚が半周期ずらして繰り返す
         <span aria-hidden="true" data-testid="fx-guard-idle" style={{ position: 'absolute', left: '50%', top: '50%', height: '94%', aspectRatio: '0.78', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 4 }}>
@@ -764,29 +793,40 @@ function SelInfoPanel({ uid, big = false, children }) {
   )
 }
 
-// 左側のログ(最大 SIDE_LOG_MAX 個。超えると古いものから消える。出てから SIDE_LOG_LIFE_MS 経つとフェードアウトして消える)。表示: 「名前 / 内容」
+// 左側のログ(動画のとおり)。最大 SIDE_LOG_MAX 個。表示: 「名前(青い見出し=味方 / 赤い見出し=相手) / 内容」
+//   出るとき: 画面の左から、すっと滑り込む(約0.16秒)。常に一番新しいものが一番下で、出るたびに古いものが上へ押される(約0.18秒)
+//   消えるとき: 最大数を超えたいちばん古いものは、上へ押されながら、すっと透明になる(約0.2秒)。出てから SIDE_LOG_LIFE_MS 経ったものも、同じように消える
 const SIDE_LOG_MAX = 3
-const SIDE_LOG_LIFE_MS = 3000
-const SIDE_LOG_FADE_MS = 400
-function SideLogItem({ it, big, onGone, setRef }) {
+const SIDE_LOG_LIFE_MS = 4000
+const SIDE_LOG_FADE_MS = 200
+const SIDE_LOG_SLIDE_MS = 180
+const SERIF = "'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', 'Times New Roman', serif"
+const LOG_HEAD = { ally: 'linear-gradient(90deg, #3585d6 0%, #1f5399 38%, #15264a 100%)', foe: 'linear-gradient(90deg, #d24f43 0%, #96302f 38%, #3a1722 100%)', none: 'linear-gradient(90deg, #6a7384 0%, #3d4558 38%, #1d2230 100%)' }
+function SideLogItem({ it, big, leaving, onGone, setRef }) {
   const [fading, setFading] = useState(false)
   useEffect(() => {
     const t1 = setTimeout(() => setFading(true), SIDE_LOG_LIFE_MS)
     const t2 = setTimeout(() => onGone(it.k), SIDE_LOG_LIFE_MS + SIDE_LOG_FADE_MS)
     return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [it.k]) // eslint-disable-line react-hooks/exhaustive-deps
-  const col = it.team ? TEAM_COLOR[it.team] : C.active
+  useEffect(() => { // 最大数を超えたら、すぐに消えはじめる
+    if (!leaving) return undefined
+    const t = setTimeout(() => onGone(it.k), SIDE_LOG_FADE_MS)
+    return () => clearTimeout(t)
+  }, [leaving]) // eslint-disable-line react-hooks/exhaustive-deps
+  const head = it.team === 'A' ? LOG_HEAD.ally : it.team === 'B' ? LOG_HEAD.foe : LOG_HEAD.none
+  const out = fading || leaving
   return (
     <div ref={(el) => setRef(it.k, el)} style={{ willChange: 'transform, opacity' }}>
-      <div style={{ animation: fading ? `feel-log-out ${SIDE_LOG_FADE_MS}ms ease-in forwards` : 'feel-log-in 0.22s ease-out both', borderRadius: '0 8px 8px 0', overflow: 'hidden', background: alpha(C.card, 94), border: `1px solid ${alpha(col, 60)}`, borderLeft: 'none', boxShadow: `0 3px 10px ${alpha('#000000', 30)}`, fontSize: big ? 13 : 12, lineHeight: 1.5 }}>
-        <div style={{ padding: big ? '5px 12px' : '4px 10px', fontWeight: 800, color: C.ink, background: `linear-gradient(90deg, ${alpha(col, 38)}, ${alpha(col, 8)})`, overflowWrap: 'anywhere' }}>{it.name}</div>
-        <div style={{ padding: big ? '5px 12px 7px' : '4px 10px 6px', color: C.ink, overflowWrap: 'anywhere' }}>{it.text}</div>
+      <div style={{ animation: out ? `feel-log-out ${SIDE_LOG_FADE_MS}ms ease-in forwards` : `feel-log-in ${SIDE_LOG_SLIDE_MS - 20}ms cubic-bezier(0.2, 0.8, 0.2, 1) both`, overflow: 'hidden', boxShadow: '0 3px 10px rgba(0,0,0,0.4)', fontFamily: SERIF, fontSize: big ? 14 : 12, lineHeight: 1.5 }}>
+        <div data-team={it.team || ''} style={{ padding: big ? '5px 12px' : '4px 10px', color: '#fff', background: head, borderBottom: '1px solid rgba(255,255,255,0.28)', overflowWrap: 'anywhere', letterSpacing: '0.02em' }}>{it.name}</div>
+        <div style={{ padding: big ? '6px 12px 8px' : '5px 10px 7px', color: '#f4f6fb', background: 'rgba(14, 22, 40, 0.88)', overflowWrap: 'anywhere' }}>{it.text}</div>
       </div>
     </div>
   )
 }
 // 常に一番新しいログが一番下。新しいログが出ると、古いログは下から上へ滑って移動する(位置は下端を基準に固定。transform だけで動かす)
-function SideLog({ items, big = false, onGone }) {
+export function SideLog({ items, big = false, onGone }) {
   const els = useRef(new Map())
   const tops = useRef(new Map())
   const setRef = (k, el) => { if (el) els.current.set(k, el); else els.current.delete(k) }
@@ -800,16 +840,17 @@ function SideLog({ items, big = false, onGone }) {
         el.style.transition = 'none'
         el.style.transform = `translateY(${prev - top}px)`
         el.getBoundingClientRect() // 反映してから、元の位置へ滑らせる
-        el.style.transition = 'transform 0.25s ease-out'
+        el.style.transition = `transform ${SIDE_LOG_SLIDE_MS}ms cubic-bezier(0.2, 0.8, 0.2, 1)`
         el.style.transform = 'translateY(0)'
       }
     }
     tops.current = next
   }, [items])
   if (!items.length) return null
+  const over = Math.max(0, items.length - SIDE_LOG_MAX) // 最大数を超えた、古いもの(消えている最中)
   return (
-    <div data-testid="side-log" aria-live="polite" style={{ position: 'fixed', left: 0, bottom: big ? '38%' : 'calc(min(168px, 30vh) + 8px + env(safe-area-inset-bottom))', zIndex: 8, width: big ? 320 : 'min(230px, 56vw)', display: 'flex', flexDirection: 'column', gap: 6, pointerEvents: 'none' }}>
-      {items.map((it) => <SideLogItem key={it.k} it={it} big={big} onGone={onGone} setRef={setRef} />)}
+    <div data-testid="side-log" aria-live="polite" style={{ position: 'fixed', left: big ? 18 : 6, bottom: big ? '38%' : 'calc(min(168px, 30vh) + 8px + env(safe-area-inset-bottom))', zIndex: 8, width: big ? 320 : 'min(230px, 56vw)', display: 'flex', flexDirection: 'column', gap: 6, pointerEvents: 'none' }}>
+      {items.map((it, i) => <SideLogItem key={it.k} it={it} big={big} leaving={i < over} onGone={onGone} setRef={setRef} />)}
     </div>
   )
 }
@@ -1255,8 +1296,10 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
 
   const [wikiSpell, setWikiSpell] = useState(null) // スペルの「?」: そのスペルのWikiを、戦闘画面の上に重ねて出す(戦闘はそのまま残る)
   const [feed, setFeed] = useState([]) // 「いま起きたこと」の履歴(再生に合わせて増える)
+  const [flagFx, setFlagFx] = useState({}) // 緑旗が光った回数 { uid: 回数 }。増えるたびに、そのキャラの緑旗が光る
   const [sideLog, setSideLog] = useState([]) // 左側のログ({ k, name, text, team })。最大 SIDE_LOG_MAX 個
-  const pendingLog = useRef([]) // 能力の表示のあと、盤面に働くまで保留している左のログ
+  const pendingLog = useRef([])
+  const pendingFlash = useRef([]) // 同じく保留している、緑旗を光らせるキャラ
   const sideSeq = useRef(0)
   const dropSideLog = (k) => setSideLog((l) => l.filter((x) => x.k !== k))
   const [showDesc, setShowDesc] = useState(() => { try { return localStorage.getItem('feel-show-desc') === '1' } catch { return false } }) // 操作パネルの説明文を出すか
@@ -1369,11 +1412,19 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     for (let k = play.i; k <= gEnd; k++) {
       const e = play.events[k]
       if (e.type === 'ability') {
-        if (e.kind !== '進化' && !e.nolog) pendingLog.current.push({ k: `sl${sideSeq.current++}`, name: e.kind === 'スペル' ? e.name : e.owner, text: e.log || e.desc || `【${e.kind}】${e.name ?? ''}`, team: e.team })
+        if (e.uid) pendingFlash.current.push(e.uid) // 緑旗(能力が働いた印)は、ログが出ない能力でも光る
+        if (e.kind !== '進化' && !e.nolog) pendingLog.current.push({ k: `sl${sideSeq.current++}`, name: e.kind === 'スペル' ? e.name : e.owner, text: e.log || e.desc || `【${e.kind}】${e.name ?? ''}`, team: e.team, uid: e.uid || null })
       } else if (e.type !== 'sync') hasEffect = true // sync(盤面の同期だけ)は効果ではない。選択待ちのとき、選ぶ前にログが出てしまうため
     }
-    const logs = hasEffect || (gEnd >= play.events.length - 1 && !(state && state.pending)) ? pendingLog.current.splice(0) : [] // 対象を選ぶ能力(選択式)は、選んで効果が働くまで、ログを保留したままにする
-    if (logs.length) setSideLog((l) => [...l, ...logs].slice(-SIDE_LOG_MAX))
+    const release = hasEffect || (gEnd >= play.events.length - 1 && !(state && state.pending))
+    const logs = release ? pendingLog.current.splice(0) : [] // 対象を選ぶ能力(選択式)は、選んで効果が働くまで、ログを保留したままにする
+    if (logs.length) {
+      setSideLog((l) => [...l, ...logs].slice(-(SIDE_LOG_MAX + 4))) // 最大数を超えたものは、SideLog が消えるところまで見せてから外す
+    }
+    {
+      const ids = release ? pendingFlash.current.splice(0) : []
+      if (ids.length) setFlagFx((m) => { const n = { ...m }; for (const id of ids) n[id] = (n[id] || 0) + 1; return n }) // 能力が働いたキャラの緑旗を光らせる(ログが出るのと同時)
+    }
     if (lines.length) setFeed((f) => [...f, ...lines.map((line, n) => ({ k: `${Date.now()}-${f.length}-${play.i}-${n}`, ...line }))].slice(-8))
   }, [play && play.events, play && play.i, intro, startFx]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1471,6 +1522,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     setPlay(null)
     setFeed([])
     setSideLog([])
+    setFlagFx({})
     const cpuTeam = testInit ? testInit.team : buildCpuTeam(ALL_CHARACTERS, cpuChars, Math.random, level, ALL_SPELLS) // Lv.5以上は、シナジーのある編成。テスト戦は、自分で選んだ相手のチーム
     const cpuSpells = testInit ? testInit.spells : level >= SPELL_LEVEL ? buildCpuSpells(ALL_SPELLS, cpuTeam, Math.random, level) : [] // Lv.5以上のCPUは、編成に合う強いスペルを持つ
     const first = createBattle(team.map((d) => enhanceDef(withRelicPieces(d, format))), cpuTeam, { catalog: ALL_CHARACTERS, artifactCatalog: ARTIFACT_CATALOG, pool: ownedPool(cpuChars), spells: { A: spellSet, B: cpuSpells }, keepTurn: { [ME]: loadSettings().autoEnd === false } })
@@ -1802,6 +1854,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
       hl={hlFor(u.uid)}
       role={roleFor(u.uid)}
       tick={tk}
+      flagTick={flagFx[u.uid] || 0}
       loss={u.uid === selected ? lossShown : 0}
       selected={u.uid === selected}
       selectable={playerTurn && selectableSet.includes(u.uid)}

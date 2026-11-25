@@ -146,6 +146,7 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
   const stealthEvery = Number(rawKw.map((k) => /^stealth_(\d+)$/.exec(k)).find(Boolean)?.[1]) || null
   const clone = (x) => JSON.parse(JSON.stringify(x))
   return {
+    flag: !!def.flag, // 緑旗(能力が働くと光る旗)をつけるキャラ(def.flag: true)
     ct: null, // ct: このキャラのチームで働いているクラス特性(クラス名。働いていなければ null)
     uid: uid || `${team}${index}`, defId: def.id, name: def.name, class: def.class, type: def.type || null, unitType: def.amulet ? 'アミュレット' : 'キャラクター', token: def.token === true, team, relic: def.relic || null, // type: キャラのタイプ(妖精など)
     field, // 'main' = 場のキャラ / 'summon' = 召喚物フィールドの召喚物・アミュレット
@@ -649,11 +650,11 @@ function emit(state, type, data = {}) {
 
 // 直近に発動した能力(画面に説明を出すための記録): kind=種類(ファンファーレ・特性・スペルなど) owner=持ち主の名前 name=能力名 desc=説明
 // log=左のログに出す文(なければ desc)
-function noteAbility(state, kind, owner, name, desc, team, log) {
+function noteAbility(state, kind, owner, name, desc, team, log, uid = null) {
   state.abilitySeq += 1
   state.lastAbility = { seq: state.abilitySeq, kind, owner, name: name || '', desc: desc || '', team: team ?? null }
   state.means = name || kind
-  emit(state, 'ability', { kind, owner, name: name || '', desc: desc || '', log: log || '', nolog: log === false, team: team ?? null }) // log: false = 左のログには出さない
+  emit(state, 'ability', { kind, owner, uid, name: name || '', desc: desc || '', log: log || '', nolog: log === false, team: team ?? null }) // log: false = 左のログには出さない
 }
 
 // ---------- 効果の実行 ----------
@@ -1584,7 +1585,7 @@ function fire(state, trigger, unit, ctx = {}, from = 0) {
     if (earthShort(state, unit.team, p.effects)) continue // 土の印が足りない【土の秘術】の能力は、発動しない(ログなし)
     if (p.oncePerTurn) { if (p.usedSeq === (state.turnSeq || 0)) continue; p.usedSeq = state.turnSeq || 0 } // oncePerTurn: true の能力は、1ターンに1回まで(「それぞれのキャラクターのターンごとに1回」)
     state.log.push(`${unit.name}の${bracket(p.name || TRIGGER_LABELS[trigger])}`)
-    noteAbility(state, p.tag ?? TRIGGER_LABELS[trigger] ?? trigger, unit.name, p.name && p.name !== (p.tag ?? TRIGGER_LABELS[trigger]) ? p.name : '', p.desc, unit.team, logOf(state, unit, p))
+    noteAbility(state, p.tag ?? TRIGGER_LABELS[trigger] ?? trigger, unit.name, p.name && p.name !== (p.tag ?? TRIGGER_LABELS[trigger]) ? p.name : '', p.desc, unit.team, logOf(state, unit, p), unit.uid)
     runEffects(state, unit, p.effects, { ...ctx, trigger, nextPassive: i + 1 })
     if (state.pending) return // 選ぶのを待つ。続きは、選ばれたあとに行う
   }
@@ -1646,7 +1647,7 @@ function resolveDeaths(state, opts) {
         u.buffs = []; u.armor = 0; u.barrier = 0; u.stealth = false
         state.log.push(`${u.name}は消滅した`)
         emit(state, 'vanish', { target: u.uid })
-        noteAbility(state, TRIGGER_LABELS.onLeave, u.name, leave.name && leave.name !== TRIGGER_LABELS.onLeave ? leave.name : '', leave.desc, u.team, logOf(state, u, leave))
+        noteAbility(state, TRIGGER_LABELS.onLeave, u.name, leave.name && leave.name !== TRIGGER_LABELS.onLeave ? leave.name : '', leave.desc, u.team, logOf(state, u, leave), u.uid)
         continue
       }
       u.deathHandled = true
@@ -2152,13 +2153,13 @@ function doTrait(state, actor, action, opts) {
   if (trait.cooldown) trait.wait = trait.cooldown // 使ったあと、自分のターンが cooldown 回まわってくるまで使えない
   recalc(state)
   state.log.push(`${actor.name}の特性【${trait.name}】(MP${trait.cost})`)
-  noteAbility(state, '特性', actor.name, trait.name, trait.desc, actor.team, trait.log)
+  noteAbility(state, '特性', actor.name, trait.name, trait.desc, actor.team, trait.log, actor.uid)
   // 【エンハンス】は、上位を発動すると、下位(同じキャラの、コストが低いエンハンス)もすべて発動する(汎用の仕様)。下位 → 上位の順に効果を行い、下位も、このターンは使い済みにする
   const lowers = isEnhance(trait) ? actor.traits.filter((t) => isEnhance(t) && t.id !== trait.id && t.cost < trait.cost).sort((a, b) => a.cost - b.cost) : []
   for (const lo of lowers) {
     if (!actor.usedTraits.includes(lo.id)) actor.usedTraits.push(lo.id)
     state.log.push(`${actor.name}の特性【${lo.name}】(エンハンスの累積)`)
-    noteAbility(state, '特性', actor.name, lo.name, lo.desc, actor.team, lo.log)
+    noteAbility(state, '特性', actor.name, lo.name, lo.desc, actor.team, lo.log, actor.uid)
     runEffects(state, actor, lo.effects, { opts, chosen: action.target })
   }
   runEffects(state, actor, trait.effects, { opts, chosen: action.target })

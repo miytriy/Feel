@@ -71,6 +71,8 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-cd-dome { 0% { opacity: 0; transform: scale(0.78); } 14% { opacity: 0.55; transform: scale(0.92); } 30% { opacity: 1; transform: scale(1); } 62% { opacity: 0.95; transform: scale(1.02); } 100% { opacity: 0; transform: scale(0.8); } }
     @keyframes feel-cd-lite { 0% { opacity: 0; } 55% { opacity: 0; } 82% { opacity: 0.8; transform: scale(0.9); } 100% { opacity: 0; transform: scale(0.8); } }
     @keyframes feel-cd-tick { 0% { opacity: 0; } 25% { opacity: 1; } 100% { opacity: 0; } }
+    @keyframes feel-flag-pulse { 0% { opacity: 0; } 12% { opacity: 0.92; } 40% { opacity: 0; } 100% { opacity: 0; } }
+    @keyframes feel-flag-bubble { 0% { opacity: 0; transform: scale(0.6); } 14% { opacity: 0.9; transform: scale(3.1); } 45% { opacity: 0.85; transform: scale(3.3); } 72% { opacity: 0.8; transform: scale(3.45); } 100% { opacity: 0; transform: scale(3.7); } }
     @keyframes feel-kw-cycle-2 { 0% { opacity: 0; } 9.00% { opacity: 1; } 41.00% { opacity: 1; } 50.00% { opacity: 0; } 100% { opacity: 0; } }
     @keyframes feel-kw-cycle-3 { 0% { opacity: 0; } 6.00% { opacity: 1; } 27.33% { opacity: 1; } 33.33% { opacity: 0; } 100% { opacity: 0; } }
     @keyframes feel-kw-cycle-4 { 0% { opacity: 0; } 4.50% { opacity: 1; } 20.50% { opacity: 1; } 25.00% { opacity: 0; } 100% { opacity: 0; } }
@@ -112,7 +114,7 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     .tip:hover .tip-box, .tip:focus-visible .tip-box { opacity: 1; transform: none; }
     @keyframes feel-sel-glow { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
     @keyframes feel-note-in { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
-    @keyframes feel-log-in { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes feel-log-in { from { opacity: 0; transform: translateX(-110%); } 35% { opacity: 1; } to { opacity: 1; transform: translateX(0); } }
 @keyframes feel-log-out { from { opacity: 1; } to { opacity: 0; } }
     @keyframes feel-d-frame { 0% { } 100% { background: transparent; border-color: transparent; box-shadow: none; } }
     @keyframes feel-d-fade2m { 0% { opacity: 1; } 100% { opacity: 0.4; } }
