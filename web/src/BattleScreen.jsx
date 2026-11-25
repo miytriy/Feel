@@ -1151,6 +1151,11 @@ function reorderBoost(evs) {
   return out
 }
 export const VANISH_SLOW = 1 // 消滅エフェクトの長さの倍率。1 = 0.9秒(ルール画面と同じ基準・56コマで約62fps)。EFFECTS.mdの基準値。
+// 対戦の最初の盤面にも、「起きたこと」(最初のターンのファンファーレ・召喚など)がある。戦闘開始の画面が終わってから、ここから再生する(最初から展開済みで始まらないように)
+const initialPlay = (st) => {
+  const evs = insertFinisher(reorderBoost(pullDestroy((st && st.events) || [])))
+  return evs.length ? { events: evs, i: 0, prevActive: null, prevAbility: null, prevUnits: null } : null
+}
 const BUFF_APPLY_MS = 250 // 強化の光(feel-aura)が最大になる時(0.9秒の25%付近)
 const LIGHT_FX = new Set(['heal', 'buff', 'keyword', 'countdown']) // 重ねて流してよい軽い演出
 const LIGHT_RATIO = 0.4
@@ -1177,8 +1182,9 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   const [team, setTeam] = useState(teamInit || (online ? [] : null)) // 編成画面で決めた自分のチーム(キャラ定義の配列)。nullなら編成画面を出す
   const [level, setLevel] = useState(levelInit || 2)
   const [intro, setIntro] = useState(false) // ステージ説明を出している(出している間は、CPUは動かない)
-  const [startFx, setStartFx] = useState(false) // 戦闘開始の画面(最初のシステムターンのあいだ)。出している間は、CPUは動かない
-  const startShownRef = useRef(false)
+  const [startFx, setStartFx] = useState(() => !!online && !online.init?.winner) // 対人戦は、最初の盤面から出す(再生より前に止めるため、最初から true)
+ // 戦闘開始の画面(最初のシステムターンのあいだ)。出している間は、CPUは動かない
+  const startShownRef = useRef(!!online && !online.init?.winner)
   const [rtt, setRtt] = useState(null) // 対人戦: 通信の往復時間(ms)
   const [introFirst, setIntroFirst] = useState(false) // 対戦の始まりの、最初のステージ説明
   const [leaveAsk, setLeaveAsk] = useState(false) // 退出の確認を出している
@@ -1207,7 +1213,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   const [careerMsg, setCareerMsg] = useState('') // 戦績の記録の結果の表示
   const mult = cpuDelay / 700 // 再生の速さ(設定の待ち時間に合わせる: 速い≒0.5 / ふつう=1 / ゆっくり≒1.7)
   const [auto, setAuto] = useState(false) // オート(∞): 自分の番も、CPUと同じ考え方で自動で進める
-  const [play, setPlay] = useState(null) // 再生中の記録 { events, i, prevActive, prevAbility }。null なら再生していない
+  const [play, setPlay] = useState(() => (online ? initialPlay(online.init) : null)) // 再生中の記録 { events, i, prevActive, prevAbility }。null なら再生していない
   const playing = !!play
   const statsRef = useRef(newStats()) // キャリア用: この対戦のダメージの集計
   const namesRef = useRef({ A: [], B: [] })
@@ -1334,7 +1340,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
 
   // 再生に合わせて、「いま起きたこと」の履歴に1行ずつ足す
   useEffect(() => {
-    if (!play || !state || play.i >= play.events.length) return
+    if (!play || !state || intro || startFx || play.i >= play.events.length) return // 戦闘開始の画面が終わるまで、ログも出さない
     const nm = (uid) => state.units.find((u) => u.uid === uid)?.name ?? ''
     const tm = (uid) => state.units.find((u) => u.uid === uid)?.team ?? null
     const lineOf = (e) => {
@@ -1364,7 +1370,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     const logs = hasEffect || (gEnd >= play.events.length - 1 && !(state && state.pending)) ? pendingLog.current.splice(0) : [] // 対象を選ぶ能力(選択式)は、選んで効果が働くまで、ログを保留したままにする
     if (logs.length) setSideLog((l) => [...l, ...logs].slice(-SIDE_LOG_MAX))
     if (lines.length) setFeed((f) => [...f, ...lines.map((line, n) => ({ k: `${Date.now()}-${f.length}-${play.i}-${n}`, ...line }))].slice(-8))
-  }, [play && play.events, play && play.i]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [play && play.events, play && play.i, intro, startFx]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 強化(バフ)の数字は、演出の山(光が最も強くなる約0.25秒後)で変える。演出の最初から数字だけ先に変わらないように
   const [buffReady, setBuffReady] = useState(null) // { events, i }: その再生のまとまりで、数字を変えてよい時が来た
@@ -1378,14 +1384,14 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   }, [play && play.events, play && play.i]) // eslint-disable-line react-hooks/exhaustive-deps
   // 再生を1つずつ進める
   useEffect(() => {
-    if (!play || logOpen) return // 戦闘実況を開いている間は、再生を止める
+    if (!play || logOpen || intro || startFx) return // 戦闘実況を開いている間と、ステージ説明・戦闘開始の画面を出している間は、再生を止める
     if (play.i >= play.events.length) { setPlay(null); return }
     const grp = play.events.slice(play.i, groupEnd(play.events, play.i) + 1)
     const full = Math.max(...grp.map((x) => (FIXED_MS.has(x.type) ? EVENT_MS[x.type] : (EVENT_MS[x.type] ?? 500) * mult)))
     const light = overlapOn && grp.every((x) => LIGHT_FX.has(x.type)) // 軽い演出だけのまとまりは、全部が終わるのを待たず、4割ほど進んだら次へ(演出は、そのまま最後まで続く)
     const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), light ? Math.round(full * LIGHT_RATIO) : full)
     return () => clearTimeout(t)
-  }, [play, mult, logOpen])
+  }, [play, mult, logOpen, intro, startFx])
 
   // 対戦が終わって再生も終わったら、キャリア(アカウントの対戦記録)に残す
   useEffect(() => {
@@ -1471,6 +1477,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     try { setHist(collectHistory(null, first)) } catch (e) { console.error(e); setHist(emptyHistory()) }
     setLogOpen(false)
     setState(first)
+    setPlay(initialPlay(first)) // 最初のターンのファンファーレなども、戦闘開始の画面のあとに再生する
   }
   // 案内所 → CPU戦 → チーム を通って来たときは、開いたらすぐ対戦を始める
   const autoRef = useRef(false)
