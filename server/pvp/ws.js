@@ -10,7 +10,11 @@ import { rankOf, applyResult, emptyRank, matchWindow } from '../../web/src/battl
 import { saveRecords } from './record.js'
 
 export function attachPvp({ server, auth, db, allowedOrigins = [], config, requireOwned = true, path = '/pvp', masterPassword = '' }) {
-  const wss = new WebSocketServer({ server, path, maxPayload: 20 * 1024 })
+  const wss = new WebSocketServer({
+    server, path, maxPayload: 20 * 1024,
+    // 1回の更新は、盤面まるごとで30〜40KB(圧縮すると約4KB)。圧縮して送り、回線が細いスマホでの待ちを減らす(小さい知らせは圧縮しない。メモリを使いすぎないよう、前の知らせの辞書は持ち越さない)
+    perMessageDeflate: { threshold: 1024, zlibDeflateOptions: { level: 3 }, serverNoContextTakeover: true, clientNoContextTakeover: true, concurrencyLimit: 4 },
+  })
   const rooms = new Map()      // code → Room
   const roomOfUid = new Map()  // uid → Room
   const sockets = new Map()    // uid → ws(いま使っている接続)
