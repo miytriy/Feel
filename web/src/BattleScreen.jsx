@@ -228,9 +228,9 @@ function LossBlink({ unit, loss, radius = 3 }) {
   return <div data-testid="loss-blink" style={{ position: 'absolute', top: 0, bottom: 0, left: `${left}%`, width: `${width}%`, borderRadius: radius, background: '#ff2d2d', animation: 'feel-blink 0.7s ease-in-out infinite' }} />
 }
 
-function badgesOf(unit) {
+function badgesOf(unit, withKeywords = true) { // 盤面のカードは、疾走・ドレインなどの能力のタグを出さない(withKeywords=false)
   const badges = []
-  for (const k of unit.keywords) {
+  for (const k of withKeywords ? unit.keywords : []) {
     if (k === 'stealth' && !unit.stealth) continue
     if (k === 'barrier' && unit.barrier <= 0) continue
     badges.push(KEYWORDS[k]?.label ?? k)
@@ -427,7 +427,7 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
   }, [tick, cdFx])
   const cdShown = unit.countdown != null ? (cdOld && cdFx && cdFrom != null ? cdFrom : unit.countdown) : null // 大きな数字(動画のとおり、カードの右下)に出す。小さい「CD n」の札は出さない
   useLayoutEffect(() => { cdShownRef.current = cdShown })
-  const badges = (unit.alive ? badgesOf(unit) : []).filter((x) => !/^CD \d+$/.test(x))
+  const badges = (unit.alive ? badgesOf(unit, false) : []).filter((x) => !/^CD \d+$/.test(x))
   // 破壊・消滅の演出中は、まだ生きているときの見た目のまま(演出のあと、暗い半透明の「戦闘不能」の札に変わって残らないように)。演出が終わったら、そっと消す
   const dying = !!(fx && fx.die)
   const gone = !unit.alive && !dying
@@ -676,7 +676,7 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
           <LossBlink unit={unit} loss={loss} />
         </div>
       )}
-      <div style={{ marginTop: 2, color: C.mute, ...(dying && !unit.isAmulet ? { animation: `feel-d-fade2 ${vanishing ? '0.03s ease-in 0.04s' : '0.2s ease-in 0.3s'} forwards`, willChange: 'opacity' } : {}) }}>{unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive || dying ? <><span><span style={hpShown < unit.maxHp ? { color: DOWN_RED, fontWeight: 700 } : undefined}><AnimNum value={Math.ceil(unit.alive || vanishing ? hpShown : 0)} ms={300} /></span><span style={unit.maxHp > unit.baseMaxHp ? { color: UP_GREEN, fontWeight: 700 } : undefined}>/{unit.maxHp}</span></span></> : ''}</div>
+      <div style={{ marginTop: 2, color: C.mute, ...(dying && !unit.isAmulet ? { animation: `feel-d-fade2 ${vanishing ? '0.03s ease-in 0.04s' : '0.2s ease-in 0.3s'} forwards`, willChange: 'opacity' } : {}) }}>{unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive || dying ? <><span style={hpShown < unit.maxHp ? { color: DOWN_RED, fontWeight: 700 } : unit.maxHp > unit.baseMaxHp ? { color: UP_GREEN, fontWeight: 700 } : undefined}><AnimNum value={Math.ceil(unit.alive || vanishing ? hpShown : 0)} ms={300} /></span></> : ''}</div>
       {unit.armor > 0 && <div style={{ color: C.player }}>アーマー {Math.ceil(unit.armor)}{unit.armorRate < 1 ? `(${Math.round(unit.armorRate * 100)}%)` : ''}</div>}
       {badges.length > 0 && (
         <div style={{ marginTop: 2, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
