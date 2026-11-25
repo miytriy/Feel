@@ -1176,6 +1176,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   const [intro, setIntro] = useState(false) // ステージ説明を出している(出している間は、CPUは動かない)
   const [startFx, setStartFx] = useState(false) // 戦闘開始の画面(最初のシステムターンのあいだ)。出している間は、CPUは動かない
   const startShownRef = useRef(false)
+  const [rtt, setRtt] = useState(null) // 対人戦: 通信の往復時間(ms)
   const [introFirst, setIntroFirst] = useState(false) // 対戦の始まりの、最初のステージ説明
   const [leaveAsk, setLeaveAsk] = useState(false) // 退出の確認を出している
   const [menuOpen, setMenuOpen] = useState(false) // バトルメニュー(Esc・ポーズ)を出している
@@ -1480,6 +1481,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     if (!online) return
     return online.client.on((m) => {
       if (m.type === 'update' || m.type === 'end' || (m.type === 'start' && m.resume)) setInbox((q) => [...q, m])
+      else if (m.type === 'rtt') setRtt(m.ms)
       else if (m.type === 'rank') setRankInfo(m)
       else if (m.type === 'opp-offline') setOppOffline(true)
       else if (m.type === 'opp-online') setOppOffline(false)
@@ -2067,6 +2069,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
       {netBanner && <div data-testid="pvp-net" style={{ position: 'fixed', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 200, padding: '6px 14px', borderRadius: 999, background: 'rgba(20,20,28,.88)', color: '#fff', fontSize: 13, pointerEvents: 'none' }}>{netBanner}</div>}
       {!online && intro && <StageIntro level={level} levelInfo={levelInfo} cpuChars={cpuChars} first={introFirst} onClose={() => { setIntro(false); setIntroFirst(false); if (introFirst && !startShownRef.current) { startShownRef.current = true; setStartFx(true) } }} />}
       {startFx && state && <BattleStart round={state.round} onDone={endStartFx} />}
+      {online && rtt != null && <div data-testid="rtt" aria-hidden="true" style={{ position: 'fixed', top: 3, right: 6, zIndex: 9400, fontSize: 10, lineHeight: 1.3, padding: '0 5px', borderRadius: 4, background: 'rgba(0,0,0,0.45)', color: rtt < 120 ? '#8fe3b0' : rtt < 300 ? '#ffd24a' : '#ff8080', pointerEvents: 'none' }}>通信 {rtt}ms</div>}
       {testInit && !online && <button type="button" data-testid="ghost-mode" onClick={() => setGhostMode(GHOST_NEXT[ghostMode] || 'none')} style={{ position: 'fixed', top: 3, right: 4, zIndex: 9500, background: ghostMode === 'none' ? 'rgba(0,0,0,0.75)' : 'rgba(120,70,200,0.9)', color: '#fff', border: '1px solid rgba(255,255,255,0.35)', padding: '1px 6px', borderRadius: 6, fontSize: 9, lineHeight: 1.3, opacity: 0.85, cursor: 'pointer' }}>ゴースト:{GHOST_LABEL[ghostMode] || 'なし'}</button>}
       {testInit && probe && <div data-testid="fx-probe" style={{ position: 'fixed', top: 6, left: '50%', transform: 'translateX(-50%)', zIndex: 9500, background: 'rgba(0,0,0,0.8)', color: '#9ff', padding: '3px 10px', borderRadius: 6, fontSize: 12, pointerEvents: 'none' }}>{probe}</div>}
       {logOpen && <CommentaryOverlay units={view.units} active={view.active} round={view.round} log={view.log} ab={hist.ab} dead={hist.dead} events={hist.ev} onClose={() => setLogOpen(false)} />}

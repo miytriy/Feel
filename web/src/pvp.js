@@ -15,6 +15,7 @@ export function createPvpClient() {
   let retry = 0
   let retryTimer = null
   let pingTimer = null
+  let pingAt = 0 // 最後に ping を送った時刻(pong が返るまでの時間 = 往復の通信時間 RTT)
   const subs = new Set()
   let pendingFirst = null // つないだ直後に送る最初のメッセージ(create / join)
   let authed = false
@@ -35,10 +36,13 @@ export function createPvpClient() {
       retry = 0
       try { raw(guest ? { type: 'auth', guest: true } : { type: 'auth', token: await auth.currentUser.getIdToken() }) } catch (e) { emit({ type: 'error', message: e.message, fatal: true }) }
       clearInterval(pingTimer)
-      pingTimer = setInterval(() => raw({ type: 'ping' }), 20000)
+      const sendPing = () => { pingAt = performance.now(); raw({ type: 'ping' }) }
+      sendPing()
+      pingTimer = setInterval(sendPing, 5000) // 5秒ごと(通信の遅さを画面に出す。切れていないかの確認も兼ねる)
     }
     sock.onmessage = (ev) => {
       let m; try { m = JSON.parse(ev.data) } catch { return }
+      if (m.type === 'pong') { if (pingAt) emit({ type: 'rtt', ms: Math.round(performance.now() - pingAt) }); return }
       if (m.type === 'authed') {
         authed = true
         if (pendingFirst) { raw(pendingFirst); joined = pendingFirst.type !== 'queue'; pendingFirst = null } // 待ち行列は、組み合わされるまでは、切れたら再接続しない
