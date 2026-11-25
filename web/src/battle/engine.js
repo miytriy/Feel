@@ -334,6 +334,7 @@ export function createBattle(teamADefs, teamBDefs, opts = {}) {
     link: { A: 0, B: 0 }, traitCount: { A: 0, B: 0 }, summonSeq: Math.max(startSummons.A, startSummons.B), pending: null,
     active: null, activeKind: null, winner: null, log: ['バトル開始!'],
     comboReset: { A: null, B: null }, comboCount: { A: 0, B: 0 },
+    evolveReadyShown: { A: false, B: false }, // 「進化可能」の演出を、そのチームで出したか(各チーム1回。そのチームの最初のターンの頭に出す)
     keepTurn: { A: !!opts.keepTurn?.A, B: !!opts.keepTurn?.B }, // 設定「行動手段が無いとき自動でターンを終了」をオフにしたチーム(true なら、行動できなくても自動では終わらず、自分で終える)
     catalog: opts.catalog || [], // 全カードの定義(「ビショップ・アミュレットの中から召喚」など、所持に関係なく全カードから選ぶ能力の候補)
     pool: { A: opts.pool?.A || [], B: opts.pool?.B || [] }, // 所持キャラクター(「所持キャラから召喚する」能力の候補)
@@ -1801,6 +1802,10 @@ function beginTurn(state, unit, opts) {
   state.actionsThisTurn = 0
   state.turnSeq = (state.turnSeq || 0) + 1 // ターンの通し番号(oncePerTurn の能力が、ターンごとに1回までを数えるため)
   emit(state, 'turn', { uid: unit.uid, name: unit.name, team: unit.team })
+  if (state.evolveReadyShown && !state.evolveReadyShown[unit.team] && state.round >= EP_GRANT_ROUND) {
+    state.evolveReadyShown[unit.team] = true // 味方は味方のターン、敵は敵のターンの頭に、それぞれ1回
+    if (state.ep[unit.team] >= 1) emit(state, 'evolveReady', { team: unit.team })
+  }
   unit.usedTraits = []
   unit.skillsThisTurn = 0
   for (const tr of unit.traits || []) if (tr.wait > 0) tr.wait -= 1

@@ -12,6 +12,7 @@ import { createPortal } from 'react-dom'
 import { FinisherA, FinisherB } from './FinisherFx.jsx'
 import { HealFx } from './HealFx.jsx'
 import { CountdownFx } from './CountdownFx.jsx'
+import EvolveReadyFx from './EvolveReadyFx.jsx'
 import { BattleHud, StageIntro, ExitConfirm, ResultBanner, ResultReopen, BattleMenu, BattleStart } from './BattleHud.jsx'
 import { CommentaryOverlay, collectHistory, addHistory, emptyHistory } from './BattleLog.jsx'
 import { useIsDesktop, C as BASE, alpha, DISPLAY, useRemembered } from './ui.js'
@@ -1154,8 +1155,8 @@ const BUFF_APPLY_MS = 250 // 強化の光(feel-aura)が最大になる時(0.9秒
 const LIGHT_FX = new Set(['heal', 'buff', 'keyword', 'countdown']) // 重ねて流してよい軽い演出
 const LIGHT_RATIO = 0.4
 // 演出の長さが決まっている(参考動画の再現で、動きの長さが固定の)ものは、待ち時間の設定(速い・ゆっくり)で短く・長くしない。短くすると、演出が途中で切れる
-const FIXED_MS = new Set(['vanish', 'evolve', 'finisher', 'countdown'])
-const EVENT_MS = { turn: 700, ability: 300, attack: 300, damage: 900, heal: 1350, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1000, finisher: 440, countdown: 780, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
+const FIXED_MS = new Set(['vanish', 'evolve', 'finisher', 'countdown', 'evolveReady'])
+const EVENT_MS = { turn: 700, ability: 300, attack: 300, damage: 900, heal: 1350, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1000, finisher: 440, countdown: 780, evolveReady: 1350, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 export default function BattleScreen({ format = 'rotation', settingsView = null, onExit, cpuDelay = 700, rewardApi: rewardApiProp = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null, online = null, testInit = null }) {
@@ -2094,6 +2095,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     <>
       {netBanner && <div data-testid="pvp-net" style={{ position: 'fixed', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 200, padding: '6px 14px', borderRadius: 999, background: 'rgba(20,20,28,.88)', color: '#fff', fontSize: 13, pointerEvents: 'none' }}>{netBanner}</div>}
       {!online && intro && <StageIntro level={level} levelInfo={levelInfo} cpuChars={cpuChars} first={introFirst} onClose={() => { setIntro(false); setIntroFirst(false); if (introFirst && !startShownRef.current) { startShownRef.current = true; setStartFx(true) } }} />}
+      {play && groupEvs.some((x) => x.type === 'evolveReady') && <EvolveReadyFx key={`er-${play.i}`} />}
       {startFx && state && <BattleStart round={state.round} onDone={endStartFx} />}
       {online && rtt != null && <div data-testid="rtt" aria-hidden="true" style={{ position: 'fixed', top: 3, right: 6, zIndex: 9400, fontSize: 10, lineHeight: 1.3, padding: '0 5px', borderRadius: 4, background: 'rgba(0,0,0,0.45)', color: rtt < 120 ? '#8fe3b0' : rtt < 300 ? '#ffd24a' : '#ff8080', pointerEvents: 'none' }}>通信 {rtt}ms</div>}
       {testInit && !online && <button type="button" data-testid="ghost-mode" onClick={() => setGhostMode(GHOST_NEXT[ghostMode] || 'none')} style={{ position: 'fixed', top: 3, right: 4, zIndex: 9500, background: ghostMode === 'none' ? 'rgba(0,0,0,0.75)' : 'rgba(120,70,200,0.9)', color: '#fff', border: '1px solid rgba(255,255,255,0.35)', padding: '1px 6px', borderRadius: 6, fontSize: 9, lineHeight: 1.3, opacity: 0.85, cursor: 'pointer' }}>ゴースト:{GHOST_LABEL[ghostMode] || 'なし'}</button>}
