@@ -1686,14 +1686,15 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     if (ev.type === 'finisher') return { kind: 'finisher', text: '', finAmount: ev.amount, hasMain: !!ev.hasMain } // 必殺の前半: 黒紫の球・鎌・白い雲
     if (ev.type === 'damage') {
       // スキルのダメージと、【必殺】の追加ダメージは、数字を2段に分けて1回で見せる(種類で色が変わる: 物理=白 / 魔法=青 / 確定=虹)
-      const dmgs = mine.filter((x) => x.type === 'damage')
+      const allDmg = mine.filter((x) => x.type === 'damage')
+      const dmgs = allDmg.filter((x) => !x.noNum) // 必殺の破壊が働いたダメージ(noNum)は、数字を出さない
       const main = dmgs.filter((x) => x.means !== '必殺')
       const fin = dmgs.filter((x) => x.means === '必殺')
       const crit = main.some((x) => x.crit)
       const parts = []
       if (fin.length) parts.push({ text: `${fin.reduce((a, x) => a + x.amount, 0)}`, dmgType: 'finisher' }) // 必殺の数字: 「必殺」の文字は付けない(紫で分かる)
       if (main.length) parts.push({ text: `${main.reduce((a, x) => a + x.amount, 0)}${crit ? '!!' : ''}`, dmgType: main[0].dmgType || 'physical' })
-      return { kind: 'damage', text: parts.map((x) => x.text).join(' '), crit, parts, finisher: fin.length > 0, hasMain: main.length > 0 }
+      return { kind: 'damage', text: parts.map((x) => x.text).join(' '), crit, parts, finisher: fin.length > 0 || allDmg.some((x) => x.means === '必殺'), hasMain: main.length > 0 || allDmg.some((x) => x.means !== '必殺') } // 数字を出さないときも、演出(鎌・光)は出す
     }
     if (ev.type === 'buff') { // 強化: ステータスは文字ではなくアイコンで見せる(アイコンがないステータスだけ、文字のまま)
       const bs = mine.filter((x) => x.type === 'buff')

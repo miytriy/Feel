@@ -2097,6 +2097,7 @@ function doSkill(state, actor, targetUid, opts) {
       target.alive = false
       target.killedBy = actor.uid
       state.log.push(`【必殺】${target.name}は破壊された`)
+      for (const e of state.events) if (e.type === 'damage' && e.target === target.uid && e.src === actor.uid) e.noNum = true // 必殺の破壊が働いたときは、ダメージの数字を画面に出さない(計算・ログは、そのまま)
     }
     if (hasKw(actor, 'drain')) heal(state, actor, total)
   } else {
