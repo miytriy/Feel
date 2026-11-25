@@ -24,6 +24,7 @@ import { installKeys, applyRemoteKeys, setKeysSaver, customKeys } from './keys.j
 import { loadRelics, clearRelics } from './relicInv.js'
 import GuideScreen from './GuideScreen.jsx'
 import CpuBattleScreen from './CpuBattleScreen.jsx'
+import DptScreen from './DptScreen.jsx'
 import { rotationAllowed } from './battle/rotations.js'
 import PvpScreen from './PvpScreen.jsx'
 import RandomMatchScreen from './RandomMatchScreen.jsx'
@@ -59,6 +60,14 @@ const TEST_ENTRY = {
   name: 'テスト戦', title: 'テスト戦', area: 'CPU戦 ・ 検証用',
   desc: '自分と相手のチームを、どちらも好きに選んで対戦します。能力・演出の検証用です。',
   rule: 'マスターパスワードを解除している間だけ使えます。相手(CPU)は Lv.1(ランダムに行動)です。報酬・戦績・記録はありません。',
+  rewards: [],
+}
+// DPTテスト場(これもマスターパスワードを解除した人だけ): 動かない的を相手に、自分のチームの1ターンあたりのダメージ(DPT)を測る
+const DPT_ENTRY = {
+  id: 'dpt', test: true, num: 1,
+  name: 'DPTテスト場', title: 'DPTテスト場', area: 'CPU戦 ・ 検証用',
+  desc: '動かない的を相手に、選んだチームを自動で戦わせて、1ターンあたりのダメージ(DPT)を測ります。',
+  rule: 'マスターパスワードを解除している間だけ使えます。的の数・HP・防御、ラウンド数、AIの強さを変えられます。報酬・戦績・記録はありません。',
   rewards: [],
 }
 const CPU_LEVEL_LIST = CPU_LEVELS.map((l) => ({
@@ -110,6 +119,7 @@ export default function App() {
   const partyFormat = ['rotation', 'unlimited', 'infinity'].includes(partyFormatSel) ? partyFormatSel : 'rotation'
   const cpuFormat = ['rotation', 'unlimited', 'infinity'].includes(cpuFormatSel) ? cpuFormatSel : 'rotation'
   const [cpuSel, setCpuSel] = useRemembered('cpu.level', 'lv2') // CPU戦で最後に選んでいた項目(レベル / テスト戦)
+  const [dptRun, setDptRun] = useState(null) // DPTテスト場: 測るチーム { team, spells }
   const [testMine, setTestMine] = useState(null) // テスト戦: 自分のチームを決めたあと、相手のチームを選ぶ間、ここに置いておく { team, spells }
   const [cpuRun, setCpuRun] = useState(null) // 対戦の準備 { id, level, team, spells }
   const [rankRun, setRankRun] = useState(null) // ランクマッチで使うチーム { team, spells }(なければ、保存した編成)
@@ -473,10 +483,10 @@ export default function App() {
     return (
       <ErrorBoundary onExit={() => setScreen('play')}>
         <CpuBattleScreen
-          levels={unlockLv >= 1 ? [...CPU_LEVEL_LIST, TEST_ENTRY] : CPU_LEVEL_LIST}
+          levels={unlockLv >= 1 ? [...CPU_LEVEL_LIST, TEST_ENTRY, DPT_ENTRY] : CPU_LEVEL_LIST}
           format={cpuFormat}
           onFormat={setCpuFormat}
-          levelIdInit={unlockLv >= 1 || cpuSel !== 'test' ? cpuSel : `lv${cpuLevel}`}
+          levelIdInit={unlockLv >= 1 || (cpuSel !== 'test' && cpuSel !== 'dpt') ? cpuSel : `lv${cpuLevel}`}
           onSelect={(l) => { setCpuSel(l.id); if (!l.test) setCpuLevel(l.num) }}
           onChallenge={(l) => { setCpuSel(l.id); if (!l.test) setCpuLevel(l.num); setScreen('team') }}
           onExit={() => setScreen('play')}
@@ -500,11 +510,22 @@ export default function App() {
           onSaveParty={partyApi ? partyApi.save : null}
           onPartyChange={partyApi ? partyApi.setActive : null}
           onStart={(chars, spells) => {
+            if (cpuSel === 'dpt' && unlockLv >= 1) { setDptRun({ team: chars.filter(Boolean), spells: spells || [] }); setScreen('dpt'); return }
             if (cpuSel === 'test' && unlockLv >= 1) { setTestMine({ team: chars, spells: spells || [] }); setScreen('testopp'); return }
             setCpuRun({ id: Date.now(), level: cpuLevel, team: chars, spells: spells || [], format: cpuFormat }); setScreen('loading')
           }}
           onExit={() => setScreen('cpu')}
         />
+      </ErrorBoundary>
+    )
+  }
+
+  // DPTテスト場: 的を相手に、選んだチームの1ターンあたりのダメージを測る
+  if (current === 'dpt') {
+    if (unlockLv < 1 || !dptRun) return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onRandom={() => setScreen('random')} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
+    return (
+      <ErrorBoundary onExit={() => setScreen('cpu')}>
+        <DptScreen team={dptRun.team} spells={dptRun.spells} format={cpuFormat} onChangeTeam={() => setScreen('team')} onExit={() => setScreen('cpu')} />
       </ErrorBoundary>
     )
   }
