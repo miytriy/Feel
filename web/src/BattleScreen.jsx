@@ -337,22 +337,34 @@ function NameFit({ text, style }) {
 
 // 盤面のカードに出す、能力のアイコン(上=ラストワード / 下=ドレイン)。複数持っているときは、その場でフェードイン・アウトを繰り返して順に見せる(動かすのは opacity だけ)
 const KW_ICON_MS = 1500
+// アイコンの共通の台: 暗い紫がかった円盤に、クリーム色の縁(参考画像のとおり)
+const KwDisc = ({ id }) => (
+  <>
+    <defs>
+      <radialGradient id={id} cx="50%" cy="45%" r="60%"><stop offset="0%" stopColor="#2c2430" /><stop offset="100%" stopColor="#17121c" /></radialGradient>
+    </defs>
+    <circle cx="50" cy="50" r="44" fill={`url(#${id})`} stroke="#e8dcc4" strokeWidth="6" />
+    <circle cx="50" cy="50" r="40.5" fill="none" stroke="#5a4a44" strokeWidth="1.2" opacity="0.8" />
+  </>
+)
+// ラストワード: 橙のドクロ(ふちは明るい桃橙、目と鼻は暗い)
 function LwIcon() {
   return (
-    <svg viewBox="0 0 40 40" style={{ width: '100%', height: '100%', display: 'block' }}>
-      <circle cx="20" cy="20" r="17" fill="#e96a2c" stroke="#ffd2a6" strokeWidth="2.2" />
-      <circle cx="20" cy="20" r="13.2" fill="none" stroke="#b8430f" strokeWidth="1.2" opacity="0.7" />
-      <path fillRule="evenodd" fill="#1a0a08" d="M20 8 C26.5 8 30 11.5 30 16.6 C30 19.6 28.8 21.6 27.2 22.8 L27.2 27 Q27.2 29.4 25 29.4 L15 29.4 Q12.8 29.4 12.8 27 L12.8 22.8 C11.2 21.6 10 19.6 10 16.6 C10 11.5 13.5 8 20 8 Z M14 17 Q14 14.8 16.4 14.9 Q18.6 15 18.4 17.8 Q18.2 19.8 16.2 19.8 Q14 19.6 14 17 Z M26 17 Q26 14.8 23.6 14.9 Q21.4 15 21.6 17.8 Q21.8 19.8 23.8 19.8 Q26 19.6 26 17 Z M20 20.6 L18.4 24 Q20 24.6 21.6 24 Z" />
+    <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', display: 'block' }}>
+      <KwDisc id="kwd-lw" />
+      <path fill="#e0743a" stroke="#f0a47c" strokeWidth="3" strokeLinejoin="round" d="M50 17 C68 17 77 30 76 46 C76 56 73 62 66 65 L63 74 Q62 84 50 84 Q38 84 37 74 L34 65 C27 62 24 56 24 46 C23 30 32 17 50 17 Z" />
+      <ellipse cx="37" cy="54" rx="8.5" ry="7.5" fill="#3a1d1b" />
+      <ellipse cx="63" cy="54" rx="8.5" ry="7.5" fill="#3a1d1b" />
+      <path fill="#3a1d1b" d="M50 63 L46.5 71 Q50 72.5 53.5 71 Z" />
     </svg>
   )
 }
+// ドレイン: 赤い渦巻き(丸い胴から、尾が左上へ巻き上がる)
 function DrainIcon() {
   return (
-    <svg viewBox="0 0 40 40" style={{ width: '100%', height: '100%', display: 'block' }}>
-      <circle cx="20" cy="20" r="17" fill="#a8222a" stroke="#f3a3a8" strokeWidth="2.2" />
-      <circle cx="20" cy="20" r="13.2" fill="none" stroke="#5e0f16" strokeWidth="1.2" opacity="0.7" />
-      <path fill="#ffd9dc" d="M24.6 8.6 C16.2 8.2 9.6 14 9.8 21.4 C10 28.4 16 32.6 22.4 31.4 C16.8 29.8 14.4 25 15.6 19.8 C16.6 15.4 20 11.4 24.6 8.6 Z" />
-      <path fill="#ff7a86" d="M27 22 C29.4 24.6 29.6 28 27.4 30.2 C25 32.4 21.4 31.8 20.2 29 C22.6 29.6 25.2 28 25.6 25.6 C25.8 24.4 26.2 23.2 27 22 Z" />
+    <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', display: 'block' }}>
+      <KwDisc id="kwd-dr" />
+      <path fill="#e8354f" stroke="#f77a8e" strokeWidth="1.6" strokeLinejoin="round" d="M24 33 C28 22 40 15 52 15 C72 15 87 30 86 50 C85 72 70 86 52 86 C38 86 28 77 29 65 C30 56 38 52 46 53 C52 54 58 50 58 43 C58 34 50 30 43 33 C38 35 36 41 30 41 C25 41 21 38 24 33 Z" />
     </svg>
   )
 }
@@ -366,7 +378,7 @@ function iconKeysOf(unit) {
 }
 function KeywordIcons({ keys, big }) {
   const n = keys.length
-  const size = big ? 24 : 18
+  const size = big ? 28 : 22
   const total = KW_ICON_MS * n
   // どのカードも同じ位相で切り替わるよう、いまの時刻から開始位置をそろえる
   const [phase] = useState(() => (Date.now() % total) / 1000) // 出した時に1回だけ決める(再描画で動きが飛ばないように)
