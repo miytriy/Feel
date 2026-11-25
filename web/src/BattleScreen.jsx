@@ -386,6 +386,13 @@ function iconKeysOf(unit) {
 function KeywordIcons({ keys, big, flagTick = 0 }) {
   const n = keys.length
   const mountTick = useRef(flagTick) // 出した時点の回数は、もう光らせない(作り直しで光り直さないように)
+  const [burst, setBurst] = useState(false) // 光っているあいだ(約0.8秒)は、緑旗だけを見せる(ほかのアイコンは隠す)
+  useEffect(() => {
+    if (flagTick === mountTick.current || !keys.includes('flag')) return undefined
+    setBurst(true)
+    const t = setTimeout(() => setBurst(false), 800)
+    return () => clearTimeout(t)
+  }, [flagTick]) // eslint-disable-line react-hooks/exhaustive-deps
   const size = big ? 28 : 22
   const total = KW_ICON_MS * n
   // どのカードも同じ位相で切り替わるよう、いまの時刻から開始位置をそろえる
@@ -395,7 +402,7 @@ function KeywordIcons({ keys, big, flagTick = 0 }) {
       {keys.map((k, i) => {
         const { Icon } = KW_ICONS[k]
         return (
-          <span key={k} data-kw={k} style={{ position: 'absolute', inset: 0, opacity: n === 1 ? 1 : 0, willChange: n === 1 ? undefined : 'opacity', animation: n === 1 ? undefined : `feel-kw-cycle-${n} ${total}ms linear ${i * KW_ICON_MS - total - phase * 1000}ms infinite` }}><Icon /></span>
+          <span key={k} data-kw={k} style={{ position: 'absolute', inset: 0, ...(burst ? { opacity: k === 'flag' ? 1 : 0 } : { opacity: n === 1 ? 1 : 0, willChange: n === 1 ? undefined : 'opacity', animation: n === 1 ? undefined : `feel-kw-cycle-${n} ${total}ms linear ${i * KW_ICON_MS - total - phase * 1000}ms infinite` }) }}><Icon /></span>
         )
       })}
       {keys.includes('flag') && flagTick !== mountTick.current && <FlagBurst key={flagTick} />}
