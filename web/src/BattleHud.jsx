@@ -191,6 +191,43 @@ export function BattleHud({ view, level, levelInfo, desktop, onMenu, onIntro, on
   )
 }
 
+
+// 戦闘開始の画面: 最初の「誰のターンでもないシステムターン」の間に出す。速いキャラがいないと、最初のターンまでにラウンドが進んでしまい、
+// ラウンド1が見えないまま始まるので、ここで「ROUND 1」から数えて、いまのラウンドまで見せてごまかす(動かすのは opacity / transform だけ)
+const BS_MS = 1800
+const BS_CSS = `
+.bs { position: fixed; inset: 0; z-index: 2850; display: flex; align-items: center; justify-content: center; pointer-events: auto; background: rgba(5,6,10,0.55); animation: bs-wrap ${BS_MS}ms linear both; font-family: ${FONT}; color: #fff; }
+.bs-band { position: relative; width: 100%; padding: 26px 0 22px; text-align: center; background: linear-gradient(90deg, transparent 0%, rgba(8,10,18,0.85) 18%, rgba(8,10,18,0.85) 82%, transparent 100%); animation: bs-band 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; transform-origin: center; }
+.bs-title { font-family: ${DISPLAY}; font-weight: 700; font-size: clamp(30px, 9vw, 72px); letter-spacing: 0.14em; line-height: 1.1; color: #eaf4ff; text-shadow: 0 0 16px rgba(120,190,255,0.7), 0 3px 0 rgba(0,0,0,0.5); animation: bs-title 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.1) 0.1s both; }
+.bs-round { position: relative; height: 1.6em; margin-top: 6px; font-size: 16px; letter-spacing: 0.4em; color: #9ed3ff; }
+.bs-round span { position: absolute; left: 0; right: 0; top: 0; }
+.bs-r1 { animation: bs-r1 0.9s linear 0.4s both; }
+.bs-r2 { opacity: 0; animation: bs-r2 0.9s linear 0.4s both; }
+@keyframes bs-wrap { 0% { opacity: 0; } 12% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes bs-band { from { transform: scaleX(0); } to { transform: none; } }
+@keyframes bs-title { from { opacity: 0; transform: scale(1.4); } to { opacity: 1; transform: none; } }
+@keyframes bs-r1 { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 1; } }
+@keyframes bs-r1out { 0% { opacity: 0; } 15% { opacity: 1; } 55% { opacity: 1; } 70%, 100% { opacity: 0; } }
+@keyframes bs-r2 { 0%, 55% { opacity: 0; } 70%, 100% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .bs, .bs-band, .bs-title, .bs-r1, .bs-r2 { animation-duration: 0.01ms; } }
+`
+export function BattleStart({ round = 1, onDone }) {
+  useEffect(() => { const t = setTimeout(onDone, BS_MS); return () => clearTimeout(t) }, [onDone])
+  const later = round > 1
+  return (
+    <Top><div className="bs" data-testid="battle-start" role="status" aria-label="戦闘開始" onClick={onDone}>
+      <style>{BS_CSS}</style>
+      <div className="bs-band">
+        <div className="bs-title">BATTLE START</div>
+        <div className="bs-round">
+          <span className="bs-r1" style={later ? { animationName: 'bs-r1out' } : undefined}>ROUND 1</span>
+          {later && <span className="bs-r2">ROUND {round}</span>}
+        </div>
+      </div>
+    </div></Top>
+  )
+}
+
 // ステージ説明(対戦の始まりに出る)。説明は、CPUの強さの説明 + 共通のルールの要点
 export function StageIntro({ level, levelInfo, cpuChars, onClose, first }) {
   const ok = useRef(null)

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { addEvents, buildMatch, newStats } from './career.js'
 import { createBattle, applyAction, addGhosts, getActiveUnit, legalActions, getUnit, gaugeOf, calcDamage, KEYWORDS, TRIGGER_LABELS, bracket, isEnhance, enhanceBody, fusionFor } from './battle/engine.js'
 import { chooseAction, CPU_LEVELS, SPELL_LEVEL } from './battle/ai.js'
@@ -12,7 +12,7 @@ import { createPortal } from 'react-dom'
 import { FinisherA, FinisherB } from './FinisherFx.jsx'
 import { HealFx } from './HealFx.jsx'
 import { CountdownFx } from './CountdownFx.jsx'
-import { BattleHud, StageIntro, ExitConfirm, ResultBanner, ResultReopen, BattleMenu } from './BattleHud.jsx'
+import { BattleHud, StageIntro, ExitConfirm, ResultBanner, ResultReopen, BattleMenu, BattleStart } from './BattleHud.jsx'
 import { CommentaryOverlay, collectHistory, addHistory, emptyHistory } from './BattleLog.jsx'
 import { useIsDesktop, C as BASE, alpha, DISPLAY, useRemembered } from './ui.js'
 import { StatIcon } from './icons.jsx'
@@ -1174,6 +1174,8 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   const [team, setTeam] = useState(teamInit || (online ? [] : null)) // 編成画面で決めた自分のチーム(キャラ定義の配列)。nullなら編成画面を出す
   const [level, setLevel] = useState(levelInit || 2)
   const [intro, setIntro] = useState(false) // ステージ説明を出している(出している間は、CPUは動かない)
+  const [startFx, setStartFx] = useState(false) // 戦闘開始の画面(最初のシステムターンのあいだ)。出している間は、CPUは動かない
+  const startShownRef = useRef(false)
   const [introFirst, setIntroFirst] = useState(false) // 対戦の始まりの、最初のステージ説明
   const [leaveAsk, setLeaveAsk] = useState(false) // 退出の確認を出している
   const [menuOpen, setMenuOpen] = useState(false) // バトルメニュー(Esc・ポーズ)を出している
@@ -1182,6 +1184,8 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   const [cpuCharsSetting, setCpuChars] = useState(() => loadCpuCharSetting()) // 開発者設定: CPUが使うキャラ(test / real)
   const cpuChars = flow ? 'real' : cpuCharsSetting // 通常戦(案内所 → CPU戦 から来たとき)は、いつも本実装キャラ。開発者設定は、単体のテスト画面だけ
   const [state, setState] = useState(online ? online.init : null)
+  const endStartFx = useCallback(() => setStartFx(false), [])
+  useEffect(() => { if (online && state && !state.winner && !startShownRef.current) { startShownRef.current = true; setStartFx(true) } }, [online, state]) // 対人戦: 最初の盤面が来たら、戦闘開始の画面を出す
   const [waitingSend, setWaitingSend] = useState(false) // 対人戦: 行動を送って、サーバーの返事を待っている
   const [inbox, setInbox] = useState([]) // 対人戦: 届いたが、再生中でまだ反映していない知らせ
   const [oppOffline, setOppOffline] = useState(false)
@@ -1299,7 +1303,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   // CPUの番になったら少し待ってから行動する(特性を使ったあとも番が続くので、何度か動く)
   useEffect(() => {
     if (online) return
-    if (!state || state.winner || play || intro || leaveAsk || logOpen || menuOpen) return // バトルメニューを開いている間も止める。戦闘実況を開いている間も止める。再生が終わってから・ステージ説明などを閉じてから動く
+    if (!state || state.winner || play || intro || startFx || leaveAsk || logOpen || menuOpen) return // バトルメニューを開いている間も止める。戦闘実況を開いている間も止める。再生が終わってから・ステージ説明などを閉じてから動く
     const current = getActiveUnit(state)
     if (!current || (current.team !== 'B' && !auto)) return // オート(∞)のときは、自分の番も進める
     const timer = setTimeout(() => {
@@ -1322,7 +1326,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
       }
     }, cpuDelay)
     return () => clearTimeout(timer)
-  }, [state, level, cpuDelay, play, intro, leaveAsk, logOpen, menuOpen, auto])
+  }, [state, level, cpuDelay, play, intro, startFx, leaveAsk, logOpen, menuOpen, auto])
 
   // 再生に合わせて、「いま起きたこと」の履歴に1行ずつ足す
   useEffect(() => {
@@ -1431,6 +1435,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     setLeaveAsk(false)
     setIntro(true) // 対戦の始まりに、ステージ説明を出す
     setIntroFirst(true)
+    startShownRef.current = false // 新しい対戦: 戦闘開始の画面を、もう一度出せるように
     if (rewardApi) {
       rewardApi
         .start(level)
@@ -2060,7 +2065,8 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   const overlays = (
     <>
       {netBanner && <div data-testid="pvp-net" style={{ position: 'fixed', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 200, padding: '6px 14px', borderRadius: 999, background: 'rgba(20,20,28,.88)', color: '#fff', fontSize: 13, pointerEvents: 'none' }}>{netBanner}</div>}
-      {!online && intro && <StageIntro level={level} levelInfo={levelInfo} cpuChars={cpuChars} first={introFirst} onClose={() => { setIntro(false); setIntroFirst(false) }} />}
+      {!online && intro && <StageIntro level={level} levelInfo={levelInfo} cpuChars={cpuChars} first={introFirst} onClose={() => { setIntro(false); setIntroFirst(false); if (introFirst && !startShownRef.current) { startShownRef.current = true; setStartFx(true) } }} />}
+      {startFx && state && <BattleStart round={state.round} onDone={endStartFx} />}
       {testInit && !online && <button type="button" data-testid="ghost-mode" onClick={() => setGhostMode(GHOST_NEXT[ghostMode] || 'none')} style={{ position: 'fixed', top: 3, right: 4, zIndex: 9500, background: ghostMode === 'none' ? 'rgba(0,0,0,0.75)' : 'rgba(120,70,200,0.9)', color: '#fff', border: '1px solid rgba(255,255,255,0.35)', padding: '1px 6px', borderRadius: 6, fontSize: 9, lineHeight: 1.3, opacity: 0.85, cursor: 'pointer' }}>ゴースト:{GHOST_LABEL[ghostMode] || 'なし'}</button>}
       {testInit && probe && <div data-testid="fx-probe" style={{ position: 'fixed', top: 6, left: '50%', transform: 'translateX(-50%)', zIndex: 9500, background: 'rgba(0,0,0,0.8)', color: '#9ff', padding: '3px 10px', borderRadius: 6, fontSize: 12, pointerEvents: 'none' }}>{probe}</div>}
       {logOpen && <CommentaryOverlay units={view.units} active={view.active} round={view.round} log={view.log} ab={hist.ab} dead={hist.dead} events={hist.ev} onClose={() => setLogOpen(false)} />}
