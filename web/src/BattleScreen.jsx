@@ -494,7 +494,7 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
           </svg>
         </span>
       )}
-      {(role === 'target' || role === 'guard') && !(fx && fx.finisher) && ( // 必殺のときは、必殺の演出(白い閃光・破片)が当たりの光を担うので、ふつうの当たりの光(白い閃光・切り筋・輪)は重ねない(何度も光って見えるため)
+      {(role === 'target' || role === 'guard') && (
         // 共通の攻撃エフェクト: 当たった瞬間に、白い閃光・×の切り筋・広がる輪が出る(ガードのときは、黄色い輪が広がる)。カードの外にも少しはみ出して、目立たせる
         <span key={`hit-${tick}`} aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 8 }}>
           {role === 'target' ? (
@@ -1638,6 +1638,11 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
       if (x.type === 'attack') continue // 攻撃の宣言の時点では、まだ当たっていない(エフェクトは、ダメージ・ガードのときの1回だけ)
       if (x.type === 'block') continue; else if (targetIds.get(x.target) !== 'guard') targetIds.set(x.target, 'target')
     }
+  }
+  // 必殺の前半(finisher)のあいだも、攻撃元の「攻撃」の枠は消さずに続ける(消えて、また出ると、ぴょんぴょんと何度も光って見えるため)。攻撃元は、このあとのダメージの攻撃元
+  if (play && groupEvs.some((x) => x.type === 'finisher')) {
+    const nx = play.events.slice(gEnd + 1).find((x) => x.type === 'damage' && x.src)
+    if (nx) attackerIds.add(nx.src)
   }
   const roleFor = (uid) => (attackerIds.has(uid) ? 'attacker' : targetIds.get(uid) || null)
   const hlFor = (uid) => !!ev && ev.type === 'attack' && (ev.src === uid || ev.target === uid)
