@@ -321,34 +321,40 @@ function NameFit({ text, style }) {
 
 // 盤面のカードに出す、能力のアイコン(上=ラストワード / 下=ドレイン)。複数持っているときは、その場でフェードイン・アウトを繰り返して順に見せる(動かすのは opacity だけ)
 const KW_ICON_MS = 1500
-// アイコンの共通の台: 暗い紫がかった円盤に、クリーム色の縁(参考画像のとおり)
+// アイコンの共通の台: 暗い紫がかった円盤に、細いクリーム色の縁(参考画像のとおり)
 const KwDisc = ({ id }) => (
   <>
     <defs>
-      <radialGradient id={id} cx="50%" cy="45%" r="60%"><stop offset="0%" stopColor="#2c2430" /><stop offset="100%" stopColor="#17121c" /></radialGradient>
+      <radialGradient id={id} cx="50%" cy="50%" r="55%"><stop offset="0%" stopColor="#2a2236" /><stop offset="80%" stopColor="#1b1526" /><stop offset="100%" stopColor="#2a1424" /></radialGradient>
     </defs>
-    <circle cx="50" cy="50" r="44" fill={`url(#${id})`} stroke="#e8dcc4" strokeWidth="6" />
-    <circle cx="50" cy="50" r="40.5" fill="none" stroke="#5a4a44" strokeWidth="1.2" opacity="0.8" />
+    <circle cx="50" cy="50" r="45" fill={`url(#${id})`} stroke="#d9cdb8" strokeWidth="3.2" />
+    <circle cx="50" cy="50" r="42" fill="none" stroke="#0e0a14" strokeWidth="3" opacity="0.7" />
   </>
 )
-// ラストワード: 橙のドクロ(ふちは明るい桃橙、目と鼻は暗い)
+// ラストワード: 橙のドクロ(ふちは桃色、目は大きく、鼻は小さな三角)
 function LwIcon() {
   return (
     <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', display: 'block' }}>
       <KwDisc id="kwd-lw" />
-      <path fill="#e0743a" stroke="#f0a47c" strokeWidth="3" strokeLinejoin="round" d="M50 17 C68 17 77 30 76 46 C76 56 73 62 66 65 L63 74 Q62 84 50 84 Q38 84 37 74 L34 65 C27 62 24 56 24 46 C23 30 32 17 50 17 Z" />
-      <ellipse cx="37" cy="54" rx="8.5" ry="7.5" fill="#3a1d1b" />
-      <ellipse cx="63" cy="54" rx="8.5" ry="7.5" fill="#3a1d1b" />
-      <path fill="#3a1d1b" d="M50 63 L46.5 71 Q50 72.5 53.5 71 Z" />
+      <defs><linearGradient id="kwd-sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#e8803a" /><stop offset="1" stopColor="#d9672f" /></linearGradient></defs>
+      <g transform="translate(50 50) scale(0.94) translate(-50 -50)">
+        <path fill="url(#kwd-sk)" stroke="#e6a98a" strokeWidth="3.2" strokeLinejoin="round" d="M50 20 C66 20 75 31 75 45 C75 55 72 60 66 63 L65 72 Q64 82 50 82 Q36 82 35 72 L34 63 C28 60 25 55 25 45 C25 31 34 20 50 20 Z" />
+        <ellipse cx="38" cy="52" rx="9.6" ry="8.4" fill="#3b1c1e" stroke="#e6a98a" strokeWidth="1.6" />
+        <ellipse cx="62" cy="52" rx="9.6" ry="8.4" fill="#3b1c1e" stroke="#e6a98a" strokeWidth="1.6" />
+        <path fill="#3b1c1e" d="M50 63 L46.8 73 Q50 74.5 53.2 73 Z" />
+      </g>
     </svg>
   )
 }
-// ドレイン: 赤い渦巻き(丸い胴から、尾が左上へ巻き上がる)
+// ドレイン: 赤い渦巻き(大きな丸い胴から、細い尾が左上でくるりと巻く。上の中ほどに暗い穴)
 function DrainIcon() {
   return (
     <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', display: 'block' }}>
       <KwDisc id="kwd-dr" />
-      <path fill="#e8354f" stroke="#f77a8e" strokeWidth="1.6" strokeLinejoin="round" d="M24 33 C28 22 40 15 52 15 C72 15 87 30 86 50 C85 72 70 86 52 86 C38 86 28 77 29 65 C30 56 38 52 46 53 C52 54 58 50 58 43 C58 34 50 30 43 33 C38 35 36 41 30 41 C25 41 21 38 24 33 Z" />
+      <circle cx="50" cy="50" r="42" fill="none" stroke="#2c0c1c" strokeWidth="3" opacity="0.8" />
+      <g transform="translate(50 50) scale(0.86) translate(-50 -50)">
+        <path fill="#e5304c" stroke="#f0607a" strokeWidth="1.4" strokeLinejoin="round" d="M20 32 C21 22 30 15 42 14 C54 13 64 13 75 21 C86 29 91 43 88 57 C85 73 72 85 56 85 C40 85 28 75 29 62 C30 52 38 47 47 48.5 C55 50 60 46 60 39 C60 31 55 24.5 48 24.5 C42 24.5 40 29 36 33 C32 37 28 39 24.5 38 C21.5 37 19.5 35 20 32 Z" />
+      </g>
     </svg>
   )
 }
