@@ -107,11 +107,56 @@ const CSS = `
 .br-sub { margin-top: 8px; font-size: 13px; letter-spacing: 0.2em; color: #cfcfd5; animation: bh-rise 0.5s 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .br-msg { white-space: pre-line; font-size: 15px; color: ${C.player}; min-height: 1.5em; animation: bh-rise 0.5s 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .br-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; animation: bh-rise 0.5s 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.br { overflow-y: auto; justify-content: flex-start; padding-top: max(20px, 7vh); gap: 14px; }
+.br > * { flex: none; }
+.br-flash { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 30%, #fff 0%, color-mix(in srgb, var(--rc) 70%, #fff) 40%, transparent 75%); opacity: 0; animation: br-flash 0.7s ease-out both; will-change: opacity; }
+.br-rays { position: fixed; left: 50%; top: 22%; width: 150vmax; aspect-ratio: 1; margin: -75vmax 0 0 -75vmax; pointer-events: none; background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--rc) 34%, transparent) 0deg 5deg, transparent 5deg 15deg); -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 38%); mask-image: radial-gradient(circle, #000 0%, transparent 38%); opacity: 0; animation: br-rays-in 1.2s ease-out 0.15s both, br-rays-spin 60s linear infinite; will-change: transform, opacity; }
+.br-band { position: relative; overflow: hidden; }
+.br-shine { position: absolute; top: 0; bottom: 0; left: 0; width: 38%; pointer-events: none; background: linear-gradient(100deg, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%); opacity: 0; transform: translateX(-120%) skewX(-14deg); animation: br-shine 0.9s ease-out 0.55s both; will-change: transform, opacity; }
+.br.lose .br-title { animation: br-fall 0.7s 0.2s cubic-bezier(0.2, 0.7, 0.3, 1) backwards; }
+.br.win .br-title, .br.draw .br-title { animation: br-zoom 0.65s 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.05) backwards; }
+.br-stats { width: min(560px, 100%); display: flex; flex-direction: column; gap: 10px; }
+.br-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.br-tile { padding: 8px 6px 7px; text-align: center; background: rgba(0,0,0,0.55); border-top: 2px solid var(--rc); animation: br-up 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(0.6s + var(--i) * 0.07s); }
+.br-tile b { display: block; font-family: ${DISPLAY}; font-size: clamp(18px, 5vw, 26px); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.br-tile small { display: block; margin-top: 2px; font-size: 10px; letter-spacing: 0.1em; color: #a9a9b2; }
+.br-units { display: flex; flex-direction: column; gap: 5px; padding: 8px 10px; background: rgba(0,0,0,0.45); animation: br-up 0.45s 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.br-urow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 64px; align-items: center; gap: 8px; font-size: 12px; }
+.br-urow .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.br-urow .bar { height: 8px; background: rgba(255,255,255,0.1); overflow: hidden; }
+.br-urow .bar i { display: block; height: 100%; width: 100%; background: var(--rc); transform: scaleX(var(--w, 1)); transform-origin: left center; animation: br-bar 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(1.05s + var(--i) * 0.09s); will-change: transform; }
+.br-urow .v { text-align: right; font-variant-numeric: tabular-nums; color: #cfcfd5; }
+.br-urow.mvp .nm { color: #ffe66b; font-weight: 700; }
+.br-urow.mvp .nm::before { content: 'MVP '; font-size: 9px; letter-spacing: 0.1em; padding: 1px 4px; margin-right: 5px; background: #ffe66b; color: #111; vertical-align: 1px; }
+.br-rows { width: min(560px, 100%); display: flex; flex-direction: column; gap: 6px; animation: br-up 0.45s 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.br-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; background: rgba(0,0,0,0.55); border-left: 3px solid #6e6e76; font-size: 14px; }
+.br-row.ok { border-left-color: ${C.player}; } .br-row.bad { border-left-color: ${C.bad}; } .br-row.pending { border-left-color: #8fb7ff; }
+.br-row .k { color: #a9a9b2; font-size: 12px; letter-spacing: 0.08em; white-space: nowrap; }
+.br-row .v { font-weight: 700; text-align: right; }
+.br-row .up { color: ${C.player}; } .br-row .down { color: ${C.bad}; }
+.br-row small { display: block; font-weight: 400; color: #a9a9b2; font-size: 11px; }
+.br-dots i { display: inline-block; width: 5px; height: 5px; margin-left: 4px; border-radius: 50%; background: #8fb7ff; animation: br-dot 1s ease-in-out infinite both; }
+.br-dots i:nth-child(2) { animation-delay: 0.15s; } .br-dots i:nth-child(3) { animation-delay: 0.3s; }
+.br-career { font-size: 11px; color: #8e8e96; text-align: center; animation: br-up 0.45s 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.br-reopen { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 2800; min-width: 150px; height: 40px; padding: 0 18px; border: 2px solid #f2f2f3; background: rgba(5,5,7,0.82); color: #f2f2f3; font-size: 13px; font-weight: 700; font-family: ${FONT}; cursor: pointer; clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); animation: bh-fade 0.3s ease-out both; }
+.br-reopen:hover, .br-reopen:focus-visible { background: #f2f2f3; color: #111; outline: none; }
+@keyframes br-flash { 0% { opacity: 0; } 12% { opacity: 0.85; } 100% { opacity: 0; } }
+@keyframes br-rays-in { from { opacity: 0; transform: scale(0.6) rotate(0deg); } to { opacity: 1; transform: scale(1) rotate(8deg); } }
+@keyframes br-rays-spin { from { transform: scale(1) rotate(8deg); } to { transform: scale(1) rotate(368deg); } }
+@keyframes br-shine { 0% { opacity: 0; transform: translateX(-120%) skewX(-14deg); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateX(380%) skewX(-14deg); } }
+@keyframes br-zoom { from { opacity: 0; transform: scale(1.5); } to { opacity: 1; transform: none; } }
+@keyframes br-fall { from { opacity: 0; transform: translateY(-34px) scale(1.08); } to { opacity: 1; transform: none; } }
+@keyframes br-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes br-bar { from { transform: scaleX(0); } to { transform: scaleX(var(--w, 1)); } }
+@keyframes br-dot { 0%, 100% { opacity: 0.25; transform: scale(0.7); } 50% { opacity: 1; transform: scale(1); } }
+@media (max-width: 520px) { .br-tiles { grid-template-columns: repeat(2, 1fr); } .br-urow { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 56px; } }
+.br-rays, .br-flash, .br-shine { display: block; }
+.br.lose .br-rays, .br.lose .br-flash, .br.draw .br-rays { display: none; }
 .br-btn { min-width: 150px; height: 44px; padding: 0 20px; border: 2px solid #f2f2f3; background: transparent; color: #f2f2f3; font-size: 14px; font-weight: 700; font-family: ${FONT}; cursor: pointer; min-height: 0; clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); transition: background 0.15s, color 0.15s; }
 .br-btn.ok { background: ${C.player}; border-color: ${C.player}; color: #111; }
 .br-btn:hover, .br-btn:focus-visible { background: #f2f2f3; color: #111; outline: none; }
 .br-btn.ok:hover, .br-btn.ok:focus-visible { background: #fff35a; }
-@media (prefers-reduced-motion: reduce) { .bh-auto[aria-pressed="true"] .ba-run { animation: none; stroke-dasharray: none; } .bm, .bm-win, .br, .br-band, .br-title, .br-sub, .br-msg, .br-btns, .bh-p.act .bh-face { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .bh-auto[aria-pressed="true"] .ba-run { animation: none; stroke-dasharray: none; } .bm, .bm-win, .br, .br-band, .br-title, .br-sub, .br-msg, .br-btns, .br-flash, .br-rays, .br-shine, .br-tile, .br-units, .br-rows, .br-career, .br-bar i, .br-urow .bar i, .bh-p.act .bh-face { animation: none !important; } }
 `
 
 export function BattleHud({ view, level, levelInfo, desktop, onMenu, onIntro, onCommentary, auto = false, onAuto, stage = null, sub = null }) {
@@ -214,22 +259,72 @@ export function BattleMenu({ mode = '', me = {}, foe = {}, onResume, onRetire, o
 }
 
 // 勝敗の表示。buttons: [{ label, onClick, primary }]。「盤面を見る」は onDismiss
-export function ResultBanner({ winner, message, buttons, onDismiss }) {
+const nf = (n) => Math.round(n).toLocaleString('ja-JP')
+// rows: [{ key, label, state: 'ok' | 'pending' | 'bad' | 'none', value, sub, delta }]
+export function ResultBanner({ winner, message, buttons, onDismiss, match = null, me = 'A', rows = [], career = '' }) {
   winner = winnerView(winner)
   const win = winner === 'A'
+  const kind = win ? 'win' : winner === 'B' ? 'lose' : 'draw'
   const rc = win ? C.player : winner === 'B' ? C.enemy : '#cfcfd5'
+  const foe = me === 'A' ? 'B' : 'A'
+  const mine = match ? (match.units || []).filter((u) => u.team === me).slice(0, 5) : []
+  const top = mine.length ? Math.max(1, mine[0].dealt) : 1
   return (
-    <Top><div className="br" data-testid="result-banner" role="dialog" aria-label="結果" style={{ '--rc': rc }}>
+    <Top><div className={`br ${kind}`} data-testid="result-banner" role="dialog" aria-label="結果" style={{ '--rc': rc }}>
       <style>{CSS}</style>
+      <span className="br-flash" aria-hidden="true" />
+      <span className="br-rays" aria-hidden="true" />
       <div className="br-band">
         <div className="br-title">{win ? 'VICTORY' : winner === 'B' ? 'DEFEAT' : 'DRAW'}</div>
         <div className="br-sub">{win ? '勝利!' : winner === 'B' ? '敗北…' : '引き分け'}</div>
+        <span className="br-shine" aria-hidden="true" />
       </div>
-      <div className="br-msg">{message}</div>
+      {match && (
+        <div className="br-stats" data-testid="result-stats">
+          <div className="br-tiles">
+            {[['ラウンド', match.rounds], ['与えたダメージ', nf(match.totals[me])], ['受けたダメージ', nf(match.totals[foe])], ['回復', nf(match.heal[me])]].map(([k, v], n) => (
+              <div className="br-tile" key={k} style={{ '--i': n }}><b>{v}</b><small>{k}</small></div>
+            ))}
+          </div>
+          {mine.some((u) => u.dealt > 0) && (
+            <div className="br-units">
+              {mine.map((u, n) => (
+                <div className={`br-urow${n === 0 && u.dealt > 0 ? ' mvp' : ''}`} key={u.name} style={{ '--i': n }}>
+                  <span className="nm">{u.name}</span>
+                  <span className="bar"><i style={{ '--w': Math.max(0.03, u.dealt / top) }} /></span>
+                  <span className="v">{nf(u.dealt)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {(rows.length > 0 || message) && (
+        <div className="br-rows" data-testid="result-rows">
+          {rows.map((r) => (
+            <div className={`br-row ${r.state || 'none'}`} key={r.key}>
+              <span className="k">{r.label}</span>
+              <span className="v">
+                {r.state === 'pending' ? <span className="br-dots" aria-label="計算中"><i /><i /><i /></span> : (<>
+                  {r.delta != null ? <span className={r.delta >= 0 ? 'up' : 'down'}>{r.delta >= 0 ? '+' : ''}{r.delta}</span> : null}{r.delta != null && r.value ? ' ' : ''}{r.value}
+                </>)}
+                {r.sub && r.state !== 'pending' && <small>{r.sub}</small>}
+              </span>
+            </div>
+          ))}
+          {rows.length === 0 && message && <div className="br-row none"><span className="v">{message}</span></div>}
+        </div>
+      )}
+      {career && <div className="br-career">{career}</div>}
       <div className="br-btns">
         {buttons.map((b) => <button key={b.label} type="button" className={`br-btn${b.primary ? ' ok' : ''}`} onClick={b.onClick}>{b.label}</button>)}
         {onDismiss && <button type="button" className="br-btn" data-testid="result-dismiss" onClick={onDismiss}>盤面を見る</button>}
       </div>
     </div></Top>
   )
+}
+
+// 「盤面を見る」で結果をしまったあと、もう一度結果(とボタン)を出すための小さなボタン
+export function ResultReopen({ onClick }) {
+  return <button type="button" className="br-reopen" data-testid="result-reopen" onClick={onClick}>結果を表示<style>{CSS}</style></button>
 }

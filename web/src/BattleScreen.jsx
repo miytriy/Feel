@@ -12,7 +12,7 @@ import { createPortal } from 'react-dom'
 import { FinisherA, FinisherB } from './FinisherFx.jsx'
 import { HealFx } from './HealFx.jsx'
 import { CountdownFx } from './CountdownFx.jsx'
-import { BattleHud, StageIntro, ExitConfirm, ResultBanner, BattleMenu } from './BattleHud.jsx'
+import { BattleHud, StageIntro, ExitConfirm, ResultBanner, ResultReopen, BattleMenu } from './BattleHud.jsx'
 import { CommentaryOverlay, collectHistory, addHistory, emptyHistory } from './BattleLog.jsx'
 import { useIsDesktop, C as BASE, alpha, DISPLAY, useRemembered } from './ui.js'
 import { StatIcon } from './icons.jsx'
@@ -1967,6 +1967,20 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   const netBanner = online && !state.winner && (netMsg || oppOffline || (waitingSend && !playing))
     ? (netMsg || (oppOffline ? '相手の接続が切れています。戻るのを待っています…' : '送信中…'))
     : null
+  // 結果画面に出す、対戦の成績(与えた・受けたダメージ、回復、ラウンド、キャラごとの与ダメージ)と、報酬・BPの行
+  let resultMatch = null
+  if (state.winner && !playing) { try { resultMatch = buildMatch(state, level, statsRef.current, namesRef.current) } catch (e) { console.error('結果の集計に失敗', e) } }
+  if (resultMatch && ME === 'B') resultMatch = { ...resultMatch, totals: { A: resultMatch.totals.B, B: resultMatch.totals.A }, heal: { A: resultMatch.heal.B, B: resultMatch.heal.A } }
+  const resultRows = []
+  if (!online && rewardMsg) {
+    const m = /^報酬 \+(\d+) 交易石/.exec(rewardMsg)
+    resultRows.push({ key: 'reward', label: '報酬', state: rewardMsg.endsWith('…') ? 'pending' : m ? 'ok' : /できません|受け取れ/.test(rewardMsg) ? 'bad' : 'none', value: m ? '交易石' : rewardMsg, delta: m ? Number(m[1]) : null })
+  }
+  if (online && online.ranked && state.winner !== 'draw') {
+    resultRows.push(rankInfo
+      ? { key: 'bp', label: 'ランクポイント', state: 'ok', delta: rankInfo.delta, value: `合計 ${rankInfo.bp} BP`, sub: rankInfo.label }
+      : { key: 'bp', label: 'ランクポイント', state: 'pending' })
+  }
   const resultButtons = online ? [{ label: '退出', primary: true, onClick: () => { online.client.leave(); onExit() } }] : [
     { label: 'もう一度', primary: true, onClick: startBattle },
     { label: flow ? 'レベルを選ぶ' : '強さを選び直す', onClick: backLevel },
@@ -1994,7 +2008,8 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
       {settingsOpen && settingsView && createPortal(<div style={{ position: 'fixed', inset: 0, zIndex: 3100 }}>{settingsView(() => setSettingsOpen(false))}</div>, document.body)}
       {abilNote && <AbilityNote unit={abilNote.unit} title={abilNote.title} text={abilNote.text} big={desktop} />}
       {leaveAsk && <ExitConfirm onCancel={() => setLeaveAsk(false)} onExit={leave} online={!!online} />}
-      {state.winner && !playing && resultShown && !intro && <ResultBanner winner={state.winner} message={online ? onlineResultMsg : rewardMsg} buttons={resultButtons} onDismiss={() => setResultShown(false)} />}
+      {state.winner && !playing && resultShown && !intro && <ResultBanner winner={state.winner} message={online ? onlineResultMsg : ''} buttons={resultButtons} onDismiss={() => setResultShown(false)} match={resultMatch} me={ME} rows={resultRows} career={online ? '' : careerMsg} />}
+      {state.winner && !playing && !resultShown && !intro && !menuOpen && !leaveAsk && <ResultReopen onClick={() => setResultShown(true)} />}
     </>
   )
   const errBox = cpuError && <div style={{ marginTop: 6, padding: 6, borderRadius: 6, background: C.dangerBg, color: C.hpLow, fontSize: 12 }}>{cpuError}</div>
