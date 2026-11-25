@@ -103,7 +103,7 @@ const CSS = `
 .bm-btn:hover, .bm-btn:focus-visible { transform: translateY(-2px); filter: brightness(1.1); outline: none; }
 
 .br { position: fixed; inset: 0; z-index: 2900; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 20px; color: #fff; font-family: ${FONT}; background: rgba(5,5,7,0.74); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); animation: bh-fade 0.35s ease-out backwards; }
-.br-band { width: 100%; padding: 26px 0 22px; text-align: center; background: linear-gradient(90deg, transparent 0%, rgba(8,8,14,0.7) 20%, rgba(8,8,14,0.7) 80%, transparent 100%); transform-origin: center; animation: bh-band 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.br-band { width: 100%; padding: 26px 0 22px; text-align: center; background: linear-gradient(90deg, transparent 0%, rgba(8,8,14,0.82) 20%, rgba(8,8,14,0.82) 80%, transparent 100%); transform-origin: center; animation: bh-band 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .br-title { display: flex; justify-content: center; font-family: ${DISPLAY}; font-weight: 700; font-size: clamp(48px, 12vw, 104px); letter-spacing: 0.1em; line-height: 1.05; }
 .br-title i { font-style: normal; display: inline-block; padding: 0 0.02em; color: var(--g2); background: linear-gradient(180deg, var(--g1) 0%, var(--g2) 48%, var(--g3) 52%, var(--g4) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 3px 0 rgba(0,0,0,0.55)) drop-shadow(0 0 14px var(--gl)); animation: br-letter 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.15) backwards; animation-delay: calc(0.25s + var(--i) * 0.06s); }
 .br-sub { margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 14px; letter-spacing: 0.3em; color: var(--g1); animation: bh-rise 0.5s 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
@@ -114,6 +114,8 @@ const CSS = `
 .br-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; animation: bh-rise 0.5s 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .br { overflow-y: auto; justify-content: flex-start; padding-top: max(20px, 7vh); gap: 14px; }
 .br > * { flex: none; }
+.br > *:not(.br-flash):not(.br-rays):not(.br-spark) { position: relative; z-index: 1; } /* 光(fixed)が、文字・成績の表の上に重ならないように、中身は光より前に出す */
+.br-rays, .br-spark, .br-flash { z-index: 0; }
 .br-flash { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 28%, rgba(255,255,255,0.9) 0%, transparent 55%); opacity: 0; animation: br-flash 0.6s ease-out both; will-change: opacity; }
 .br-rays { position: fixed; left: 50%; top: 24%; width: 170vmin; height: 170vmin; margin: -85vmin 0 0 -85vmin; pointer-events: none; background: url(${FXR}glow.webp) center / 100% 100% no-repeat; opacity: 0; animation: br-glow-in 1.1s ease-out 0.1s both, br-breathe 5s ease-in-out 1.2s infinite; will-change: transform, opacity; }
 .br.draw .br-rays { background-image: url(${FXR}silver.webp); }
@@ -150,10 +152,10 @@ const CSS = `
 .br-career { font-size: 11px; color: #8e8e96; text-align: center; animation: br-up 0.45s 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .br-reopen { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 2800; min-width: 150px; height: 40px; padding: 0 18px; border: 2px solid #f2f2f3; background: rgba(5,5,7,0.82); color: #f2f2f3; font-size: 13px; font-weight: 700; font-family: ${FONT}; cursor: pointer; clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); animation: bh-fade 0.3s ease-out both; }
 .br-reopen:hover, .br-reopen:focus-visible { background: #f2f2f3; color: #111; outline: none; }
-@keyframes br-flash { 0% { opacity: 0; } 12% { opacity: 0.85; } 100% { opacity: 0; } }
-@keyframes br-glow-in { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: none; } }
-@keyframes br-breathe { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.06); opacity: 0.8; } }
-@keyframes br-spark { 0%, 100% { opacity: 0; transform: translateY(14px) scale(0.97); } 40%, 60% { opacity: 0.95; } 100% { transform: translateY(-26px) scale(1.03); } }
+@keyframes br-flash { 0% { opacity: 0; } 12% { opacity: 0.4; } 100% { opacity: 0; } }
+@keyframes br-glow-in { from { opacity: 0; transform: scale(0.5); } to { opacity: 0.5; transform: none; } }
+@keyframes br-breathe { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.06); opacity: 0.38; } }
+@keyframes br-spark { 0%, 100% { opacity: 0; transform: translateY(14px) scale(0.97); } 40%, 60% { opacity: 0.55; } 100% { transform: translateY(-26px) scale(1.03); } }
 @keyframes br-shine { 0% { opacity: 0; transform: translateX(-120%) skewX(-14deg); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateX(380%) skewX(-14deg); } }
 @keyframes br-zoom { from { opacity: 0; transform: scale(1.5); } to { opacity: 1; transform: none; } }
 @keyframes br-letter { from { opacity: 0; transform: translateY(26px) scale(1.5); } to { opacity: 1; transform: none; } }
