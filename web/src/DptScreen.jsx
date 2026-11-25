@@ -78,7 +78,7 @@ function Seg({ k, value, onChange, disabled }) {
   )
 }
 
-export default function DptScreen({ team, spells = [], format = 'rotation', onChangeTeam, onExit }) {
+export default function DptScreen({ team, spells = [], format = 'rotation', onChangeTeam, onManual = null, onExit }) {
   const [o, setO] = useRemembered('dpt.opts', DPT_DEFAULTS)
   const opts = { ...DPT_DEFAULTS, ...(o || {}) }
   const set = (k) => (v) => setO({ ...opts, [k]: v })
@@ -148,10 +148,11 @@ export default function DptScreen({ team, spells = [], format = 'rotation', onCh
         <div className="dpt-act">
           <button type="button" className="dpt-btn ok" data-testid="dpt-run" disabled={busy || !names.length} onClick={run}>{busy ? '測定中…' : '測定する'}</button>
           {busy && <button type="button" className="dpt-btn" onClick={() => { cancelRef.current = true }}>中止</button>}
+          {onManual && <button type="button" className="dpt-btn" data-testid="dpt-manual" disabled={busy || !names.length} onClick={() => onManual(enemies.map((e) => enemyDef(e, charById)), { refill: opts.refill !== false })}>自分で操作して測る</button>}
           {onChangeTeam && <button type="button" className="dpt-btn" disabled={busy} onClick={onChangeTeam}>チームを変える</button>}
         </div>
         {busy && <div className="dpt-prog" aria-label="進み具合"><i style={{ transform: `scaleX(${prog})` }} /></div>}
-        <div className="dpt-note">1ターン = 自分のキャラの行動1回(召喚物・効果のダメージも、その行動に数える)。的は攻撃せず、HPは行動のたびに満タンへ戻ります。操作はAIが行い、毎回の結果は乱数で少し変わります。Lv.5は数十秒かかることがあります。</div>
+        <div className="dpt-note">「自分で操作して測る」は、実際の対戦画面で自分が操作し、いまのDPTを画面に出します(敵は攻撃しません)。<br />1ターン = 自分のキャラの行動1回(召喚物・効果のダメージも、その行動に数える)。的は攻撃せず、HPは行動のたびに満タンへ戻ります。操作はAIが行い、毎回の結果は乱数で少し変わります。Lv.5は数十秒かかることがあります。</div>
         {err && <div className="dpt-card" style={{ color: C.bad }}>エラー: {err}</div>}
         {res && (
           <>

@@ -1144,7 +1144,31 @@ const FIXED_MS = new Set(['vanish', 'evolve', 'finisher', 'countdown', 'evolveRe
 const EVENT_MS = { turn: 700, ability: 300, attack: 300, damage: 900, heal: 1350, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1000, finisher: 440, countdown: 780, evolveReady: 1350, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
-export default function BattleScreen({ format = 'rotation', settingsView = null, onExit, cpuDelay = 700, rewardApi: rewardApiProp = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null, online = null, testInit = null }) {
+// DPTテスト場(自分で操作して測る): いまの計測値。合計ダメージ ÷ 自分のターン数
+function DptLive({ stats, round, onReset }) {
+  const [open, setOpen] = useState(false) // 小さい画面でも邪魔にならないよう、ふだんは1行だけ。タップで内訳を開く
+  const dmg = Object.values(stats.rounds).reduce((a, r) => a + r.A, 0)
+  const turns = stats.turns.A
+  const units = Object.values(stats.units).filter((u) => u.team === 'A' && u.dealt > 0).sort((a, b) => b.dealt - a.dealt)
+  const nf = (n) => Math.round(n).toLocaleString('ja-JP')
+  return (
+    <div data-testid="dpt-live" style={{ position: 'fixed', left: 6, top: 40, zIndex: 9400, maxWidth: 210, padding: '3px 8px', background: 'rgba(0,0,0,0.72)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, color: '#f2f2f3', fontSize: 11, lineHeight: 1.5, fontVariantNumeric: 'tabular-nums' }}>
+      <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} style={{ all: 'unset', cursor: 'pointer', display: 'block', width: '100%' }}>
+        <span style={{ fontSize: 10, letterSpacing: '0.1em', color: '#a9a9b2' }}>DPT ・ R{round} {open ? '▲' : '▼'}</span>
+        <span style={{ display: 'block', fontSize: 18, fontWeight: 700, color: '#ffe600', lineHeight: 1.15 }}>{turns ? nf(dmg / turns) : '-'}<span style={{ fontSize: 10, fontWeight: 400, color: '#a9a9b2' }}> / ターン</span></span>
+      </button>
+      {open && (
+        <>
+          <div>合計 {nf(dmg)} ・ {turns}ターン</div>
+          {units.slice(0, 5).map((u) => <div key={u.name} style={{ color: '#cfcfd5', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name} {nf(u.dealt)}</div>)}
+          <button type="button" onClick={onReset} style={{ margin: '4px 0 2px', height: 24, padding: '0 10px', border: '1px solid #f2f2f3', background: 'transparent', color: '#f2f2f3', fontSize: 11, cursor: 'pointer', minHeight: 0 }}>計測をリセット</button>
+        </>
+      )}
+    </div>
+  )
+}
+
+export default function BattleScreen({ format = 'rotation', settingsView = null, onExit, cpuDelay = 700, rewardApi: rewardApiProp = null, partyApi = null, levelInit = null, teamInit = null, spellsInit = null, onBackLevel = null, onBackTeam = null, online = null, testInit = null, dptMode = null }) {
   // online(対人戦): { client, side, opp, init(サーバーが決めた最初の状態), left, turnMs }。サーバーが審判で、行動はサーバーに送り、返ってきた状態を再生する
   if (online) setMe(online.side); else setMe('A')
   const rewardApi = testInit ? null : rewardApiProp // テスト戦(検証用): 報酬も戦績も、記録しない
@@ -1195,6 +1219,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   const [auto, setAuto] = useState(false) // オート(∞): 自分の番も、CPUと同じ考え方で自動で進める
   const [play, setPlay] = useState(() => (online ? initialPlay(online.init) : null)) // 再生中の記録 { events, i, prevActive, prevAbility }。null なら再生していない
   const playing = !!play
+  const [, setDptReset] = useState(0) // DPTテスト場: 計測をリセットしたとき、表示を更新する
   const statsRef = useRef(newStats()) // キャリア用: この対戦のダメージの集計
   const namesRef = useRef({ A: [], B: [] })
   const savedRef = useRef(null) // 記録ずみの対戦(二重に記録しない)
@@ -1409,6 +1434,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   const commit = (next) => {
     try { const d = collectHistory(state, next); setHist((h) => addHistory(h, d)) } catch (e) { console.error('バトルログの集計に失敗', e) } // 失敗しても、対戦は止めない
     try { addEvents(statsRef.current, next.events || [], (uid) => next.units.find((u) => u.uid === uid)) } catch (e) { console.error('キャリアの集計に失敗', e) } // 記録が失敗しても、対戦は止めない
+    if (dptMode && dptMode.refill !== false) for (const u of next.units) if (u.team === OPP() && !next.winner) { if (!u.alive) { u.alive = true; u.vanished = false } u.hp = u.maxHp } // DPTテスト場: 的は、行動のたびに満タンへ戻す(再生は、イベントの記録のとおり)
     const evs = insertFinisher(reorderBoost(pullDestroy(next.events || [])))
     setPlay(evs.length ? { events: evs, i: 0, prevActive: state?.active ?? null, prevAbility: state?.lastAbility ?? null, prevUnits: state?.units ?? null } : null)
     setState(next)
@@ -2086,6 +2112,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
       {play && groupEvs.some((x) => x.type === 'evolveReady') && <EvolveReadyFx key={`er-${play.i}`} />}
       {startFx && state && <BattleStart round={state.round} onDone={endStartFx} />}
       {online && rtt != null && <div data-testid="rtt" aria-hidden="true" style={{ position: 'fixed', top: 3, right: 6, zIndex: 9400, fontSize: 10, lineHeight: 1.3, padding: '0 5px', borderRadius: 4, background: 'rgba(0,0,0,0.45)', color: rtt < 120 ? '#8fe3b0' : rtt < 300 ? '#ffd24a' : '#ff8080', pointerEvents: 'none' }}>通信 {rtt}ms</div>}
+      {dptMode && !online && <DptLive stats={statsRef.current} round={state ? state.round : 0} onReset={() => { statsRef.current = newStats(); setHist((h) => h) ; setDptReset((n) => n + 1) }} />}
       {testInit && !online && <button type="button" data-testid="ghost-mode" onClick={() => setGhostMode(GHOST_NEXT[ghostMode] || 'none')} style={{ position: 'fixed', top: 3, right: 4, zIndex: 9500, background: ghostMode === 'none' ? 'rgba(0,0,0,0.75)' : 'rgba(120,70,200,0.9)', color: '#fff', border: '1px solid rgba(255,255,255,0.35)', padding: '1px 6px', borderRadius: 6, fontSize: 9, lineHeight: 1.3, opacity: 0.85, cursor: 'pointer' }}>ゴースト:{GHOST_LABEL[ghostMode] || 'なし'}</button>}
       {testInit && probe && <div data-testid="fx-probe" style={{ position: 'fixed', top: 6, left: '50%', transform: 'translateX(-50%)', zIndex: 9500, background: 'rgba(0,0,0,0.8)', color: '#9ff', padding: '3px 10px', borderRadius: 6, fontSize: 12, pointerEvents: 'none' }}>{probe}</div>}
       {logOpen && <CommentaryOverlay units={view.units} active={view.active} round={view.round} log={view.log} ab={hist.ab} dead={hist.dead} events={hist.ev} onClose={() => setLogOpen(false)} />}

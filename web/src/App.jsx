@@ -525,7 +525,7 @@ export default function App() {
     if (unlockLv < 1 || !dptRun) return <GuideScreen gems={me ? me.gems : null} onCpu={() => setScreen('cpu')} onRandom={() => setScreen('random')} onRules={() => { setRulesBack('play'); setScreen('rules') }} onExit={goHome} />
     return (
       <ErrorBoundary onExit={() => setScreen('cpu')}>
-        <DptScreen team={dptRun.team} spells={dptRun.spells} format={cpuFormat} onChangeTeam={() => setScreen('team')} onExit={() => setScreen('cpu')} />
+        <DptScreen team={dptRun.team} spells={dptRun.spells} format={cpuFormat} onChangeTeam={() => setScreen('team')} onManual={(enemies, o) => { setCpuRun({ id: Date.now(), level: 1, team: dptRun.team, spells: dptRun.spells, format: cpuFormat, test: { team: enemies, spells: [] }, dpt: o }); setScreen('loading') }} onExit={() => setScreen('cpu')} />
       </ErrorBoundary>
     )
   }
@@ -566,8 +566,9 @@ export default function App() {
           teamInit={cpuRun.team}
           spellsInit={cpuRun.spells}
           testInit={cpuRun.test || null}
-          onExit={() => setScreen('cpu')}
-          onBackLevel={() => setScreen('cpu')}
+          dptMode={cpuRun.dpt || null}
+          onExit={() => setScreen(cpuRun.dpt ? 'dpt' : 'cpu')}
+          onBackLevel={() => setScreen(cpuRun.dpt ? 'dpt' : 'cpu')}
           onBackTeam={() => setScreen('team')}
           rewardApi={rewardApi}
           partyApi={partyApiFor(cpuRun.format || 'rotation')}
