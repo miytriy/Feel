@@ -494,7 +494,7 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
           </svg>
         </span>
       )}
-      {(role === 'target' || role === 'guard') && (
+      {(role === 'target' || role === 'guard') && !(fx && fx.finisher) && ( // 必殺のときは、必殺の演出(白い閃光・破片)が当たりの光を担うので、ふつうの当たりの光(白い閃光・切り筋・輪)は重ねない(何度も光って見えるため)
         // 共通の攻撃エフェクト: 当たった瞬間に、白い閃光・×の切り筋・広がる輪が出る(ガードのときは、黄色い輪が広がる)。カードの外にも少しはみ出して、目立たせる
         <span key={`hit-${tick}`} aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 8 }}>
           {role === 'target' ? (
