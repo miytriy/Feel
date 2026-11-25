@@ -2092,11 +2092,12 @@ function doSkill(state, actor, targetUid, opts) {
     }
     const total = dealt + finDealt
     // 召喚物(アミュレットではない)がターゲットなら、そのまま破壊する
-    if (hasKw(actor, 'finisher') && finDealt > 0 && target.alive && target.field === 'summon' && !target.isAmulet) {
+    if (hasKw(actor, 'finisher') && finDealt > 0 && target.field === 'summon' && !target.isAmulet) { // ダメージで先に倒れていても、必殺の破壊が働いた扱い(数字を出さない)
+      const wasAlive = target.alive
       target.hp = 0
       target.alive = false
-      target.killedBy = actor.uid
-      state.log.push(`【必殺】${target.name}は破壊された`)
+      target.killedBy = target.killedBy || actor.uid
+      if (wasAlive) state.log.push(`【必殺】${target.name}は破壊された`)
       for (const e of state.events) if (e.type === 'damage' && e.target === target.uid && e.src === actor.uid) e.noNum = true // 必殺の破壊が働いたときは、ダメージの数字を画面に出さない(計算・ログは、そのまま)
     }
     if (hasKw(actor, 'drain')) heal(state, actor, total)
