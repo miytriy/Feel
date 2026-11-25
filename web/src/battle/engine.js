@@ -146,7 +146,7 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
   const stealthEvery = Number(rawKw.map((k) => /^stealth_(\d+)$/.exec(k)).find(Boolean)?.[1]) || null
   const clone = (x) => JSON.parse(JSON.stringify(x))
   return {
-    flag: !!def.flag, // 緑旗(能力が働くと光る旗)をつけるキャラ(def.flag: true)
+    flag: !!def.flag || passives.some((p) => typeof p === 'object' && ['constant', 'onAttack', 'onEngage'].includes(p.trigger)), // 緑旗: 【常時】【攻撃時】【交戦時】の能力を持つ(def.flag: true でも付く)
     ct: null, // ct: このキャラのチームで働いているクラス特性(クラス名。働いていなければ null)
     uid: uid || `${team}${index}`, defId: def.id, name: def.name, class: def.class, type: def.type || null, unitType: def.amulet ? 'アミュレット' : 'キャラクター', token: def.token === true, team, relic: def.relic || null, // type: キャラのタイプ(妖精など)
     field, // 'main' = 場のキャラ / 'summon' = 召喚物フィールドの召喚物・アミュレット
