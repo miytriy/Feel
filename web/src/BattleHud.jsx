@@ -23,6 +23,7 @@ function Top({ children }) {
 const nameOf = (levelInfo) => (levelInfo && levelInfo.name && !/^Lv\.\d+$/.test(levelInfo.name) ? levelInfo.name : '')
 const InfoIcon = (p) => <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" {...p}><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7.5v.5" /></svg>
 
+const FXR = `${import.meta.env?.BASE_URL || '/'}fx/result/`
 const CSS = `
 @keyframes bh-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes bh-pop { from { opacity: 0; transform: translateY(14px) scale(0.96); } to { opacity: 1; transform: none; } }
@@ -102,19 +103,28 @@ const CSS = `
 .bm-btn:hover, .bm-btn:focus-visible { transform: translateY(-2px); filter: brightness(1.1); outline: none; }
 
 .br { position: fixed; inset: 0; z-index: 2900; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 20px; color: #fff; font-family: ${FONT}; background: rgba(5,5,7,0.74); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); animation: bh-fade 0.35s ease-out backwards; }
-.br-band { width: 100%; padding: 22px 0 18px; text-align: center; background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.78) 18%, rgba(0,0,0,0.78) 82%, transparent 100%); border-top: 2px solid var(--rc); border-bottom: 2px solid var(--rc); transform-origin: center; animation: bh-band 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
-.br-title { font-family: ${DISPLAY}; font-weight: 700; font-size: clamp(48px, 12vw, 104px); letter-spacing: 0.12em; line-height: 1; color: var(--rc); text-shadow: 0 0 24px color-mix(in srgb, var(--rc) 60%, transparent); animation: bh-rise 0.5s 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
-.br-sub { margin-top: 8px; font-size: 13px; letter-spacing: 0.2em; color: #cfcfd5; animation: bh-rise 0.5s 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.br-band { width: 100%; padding: 26px 0 22px; text-align: center; background: linear-gradient(90deg, transparent 0%, rgba(8,8,14,0.7) 20%, rgba(8,8,14,0.7) 80%, transparent 100%); transform-origin: center; animation: bh-band 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.br-title { display: flex; justify-content: center; font-family: ${DISPLAY}; font-weight: 700; font-size: clamp(48px, 12vw, 104px); letter-spacing: 0.1em; line-height: 1.05; }
+.br-title i { font-style: normal; display: inline-block; padding: 0 0.02em; color: var(--g2); background: linear-gradient(180deg, var(--g1) 0%, var(--g2) 48%, var(--g3) 52%, var(--g4) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 3px 0 rgba(0,0,0,0.55)) drop-shadow(0 0 14px var(--gl)); animation: br-letter 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.15) backwards; animation-delay: calc(0.25s + var(--i) * 0.06s); }
+.br-sub { margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 14px; letter-spacing: 0.3em; color: var(--g1); animation: bh-rise 0.5s 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.br-sub::before, .br-sub::after { content: ''; width: min(22vw, 120px); height: 1px; background: linear-gradient(90deg, transparent, var(--g2)); }
+.br-sub::after { transform: scaleX(-1); }
+.br-sub b { width: 7px; height: 7px; background: var(--g2); transform: rotate(45deg); }
 .br-msg { white-space: pre-line; font-size: 15px; color: ${C.player}; min-height: 1.5em; animation: bh-rise 0.5s 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .br-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; animation: bh-rise 0.5s 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .br { overflow-y: auto; justify-content: flex-start; padding-top: max(20px, 7vh); gap: 14px; }
 .br > * { flex: none; }
-.br-flash { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 30%, #fff 0%, color-mix(in srgb, var(--rc) 70%, #fff) 40%, transparent 75%); opacity: 0; animation: br-flash 0.7s ease-out both; will-change: opacity; }
-.br-rays { position: fixed; left: 50%; top: 22%; width: 150vmax; aspect-ratio: 1; margin: -75vmax 0 0 -75vmax; pointer-events: none; background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--rc) 34%, transparent) 0deg 5deg, transparent 5deg 15deg); -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 38%); mask-image: radial-gradient(circle, #000 0%, transparent 38%); opacity: 0; animation: br-rays-in 1.2s ease-out 0.15s both, br-rays-spin 60s linear infinite; will-change: transform, opacity; }
+.br-flash { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 28%, rgba(255,255,255,0.9) 0%, transparent 55%); opacity: 0; animation: br-flash 0.6s ease-out both; will-change: opacity; }
+.br-rays { position: fixed; left: 50%; top: 24%; width: 170vmin; height: 170vmin; margin: -85vmin 0 0 -85vmin; pointer-events: none; background: url(${FXR}glow.webp) center / 100% 100% no-repeat; opacity: 0; animation: br-glow-in 1.1s ease-out 0.1s both, br-breathe 5s ease-in-out 1.2s infinite; will-change: transform, opacity; }
+.br.draw .br-rays { background-image: url(${FXR}silver.webp); }
+.br-spark { position: fixed; left: 50%; top: 24%; width: 120vmin; height: 120vmin; margin: -60vmin 0 0 -60vmin; pointer-events: none; background: url(${FXR}gold.webp) center / 100% 100% no-repeat; opacity: 0; will-change: transform, opacity; animation: br-spark 4.2s ease-in-out 0.5s infinite both; }
+.br-spark.b { width: 90vmin; height: 90vmin; margin: -45vmin 0 0 -45vmin; animation-duration: 5.6s; animation-delay: 1.6s; transform: rotate(40deg); }
+.br.win { --g1: #fff6c9; --g2: #ffd45a; --g3: #e39a1c; --g4: #ffe48a; --gl: rgba(255,190,60,0.55); }
+.br.lose { --g1: #d7b9bd; --g2: #a44a58; --g3: #6d2733; --g4: #a8707a; --gl: rgba(120,30,50,0.4); }
+.br.draw { --g1: #f4f7ff; --g2: #c9d3ea; --g3: #8d9abb; --g4: #d4dcf0; --gl: rgba(160,180,230,0.4); }
 .br-band { position: relative; overflow: hidden; }
 .br-shine { position: absolute; top: 0; bottom: 0; left: 0; width: 38%; pointer-events: none; background: linear-gradient(100deg, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%); opacity: 0; transform: translateX(-120%) skewX(-14deg); animation: br-shine 0.9s ease-out 0.55s both; will-change: transform, opacity; }
-.br.lose .br-title { animation: br-fall 0.7s 0.2s cubic-bezier(0.2, 0.7, 0.3, 1) backwards; }
-.br.win .br-title, .br.draw .br-title { animation: br-zoom 0.65s 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.05) backwards; }
+.br.lose .br-title i { animation-name: br-fall; }
 .br-stats { width: min(560px, 100%); display: flex; flex-direction: column; gap: 10px; }
 .br-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .br-tile { padding: 8px 6px 7px; text-align: center; background: rgba(0,0,0,0.55); border-top: 2px solid var(--rc); animation: br-up 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(0.6s + var(--i) * 0.07s); }
@@ -141,22 +151,24 @@ const CSS = `
 .br-reopen { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 2800; min-width: 150px; height: 40px; padding: 0 18px; border: 2px solid #f2f2f3; background: rgba(5,5,7,0.82); color: #f2f2f3; font-size: 13px; font-weight: 700; font-family: ${FONT}; cursor: pointer; clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); animation: bh-fade 0.3s ease-out both; }
 .br-reopen:hover, .br-reopen:focus-visible { background: #f2f2f3; color: #111; outline: none; }
 @keyframes br-flash { 0% { opacity: 0; } 12% { opacity: 0.85; } 100% { opacity: 0; } }
-@keyframes br-rays-in { from { opacity: 0; transform: scale(0.6) rotate(0deg); } to { opacity: 1; transform: scale(1) rotate(8deg); } }
-@keyframes br-rays-spin { from { transform: scale(1) rotate(8deg); } to { transform: scale(1) rotate(368deg); } }
+@keyframes br-glow-in { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: none; } }
+@keyframes br-breathe { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.06); opacity: 0.8; } }
+@keyframes br-spark { 0%, 100% { opacity: 0; transform: translateY(14px) scale(0.97); } 40%, 60% { opacity: 0.95; } 100% { transform: translateY(-26px) scale(1.03); } }
 @keyframes br-shine { 0% { opacity: 0; transform: translateX(-120%) skewX(-14deg); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateX(380%) skewX(-14deg); } }
 @keyframes br-zoom { from { opacity: 0; transform: scale(1.5); } to { opacity: 1; transform: none; } }
+@keyframes br-letter { from { opacity: 0; transform: translateY(26px) scale(1.5); } to { opacity: 1; transform: none; } }
 @keyframes br-fall { from { opacity: 0; transform: translateY(-34px) scale(1.08); } to { opacity: 1; transform: none; } }
 @keyframes br-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 @keyframes br-bar { from { transform: scaleX(0); } to { transform: scaleX(var(--w, 1)); } }
 @keyframes br-dot { 0%, 100% { opacity: 0.25; transform: scale(0.7); } 50% { opacity: 1; transform: scale(1); } }
 @media (max-width: 520px) { .br-tiles { grid-template-columns: repeat(2, 1fr); } .br-urow { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 56px; } }
-.br-rays, .br-flash, .br-shine { display: block; }
-.br.lose .br-rays, .br.lose .br-flash, .br.draw .br-rays { display: none; }
+.br-rays, .br-spark, .br-flash, .br-shine { display: block; }
+.br.lose .br-rays, .br.lose .br-spark, .br.lose .br-flash, .br.draw .br-spark, .br.draw .br-flash { display: none; }
 .br-btn { min-width: 150px; height: 44px; padding: 0 20px; border: 2px solid #f2f2f3; background: transparent; color: #f2f2f3; font-size: 14px; font-weight: 700; font-family: ${FONT}; cursor: pointer; min-height: 0; clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); transition: background 0.15s, color 0.15s; }
 .br-btn.ok { background: ${C.player}; border-color: ${C.player}; color: #111; }
 .br-btn:hover, .br-btn:focus-visible { background: #f2f2f3; color: #111; outline: none; }
 .br-btn.ok:hover, .br-btn.ok:focus-visible { background: #fff35a; }
-@media (prefers-reduced-motion: reduce) { .bh-auto[aria-pressed="true"] .ba-run { animation: none; stroke-dasharray: none; } .bm, .bm-win, .br, .br-band, .br-title, .br-sub, .br-msg, .br-btns, .br-flash, .br-rays, .br-shine, .br-tile, .br-units, .br-rows, .br-career, .br-bar i, .br-urow .bar i, .bh-p.act .bh-face { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .bh-auto[aria-pressed="true"] .ba-run { animation: none; stroke-dasharray: none; } .bm, .bm-win, .br, .br-band, .br-title, .br-sub, .br-msg, .br-btns, .br-flash, .br-rays, .br-spark, .br-title i, .br-shine, .br-tile, .br-units, .br-rows, .br-career, .br-bar i, .br-urow .bar i, .bh-p.act .bh-face { animation: none !important; } }
 `
 
 export function BattleHud({ view, level, levelInfo, desktop, onMenu, onIntro, onCommentary, auto = false, onAuto, stage = null, sub = null }) {
@@ -266,6 +278,7 @@ export function ResultBanner({ winner, message, buttons, onDismiss, match = null
   const win = winner === 'A'
   const kind = win ? 'win' : winner === 'B' ? 'lose' : 'draw'
   const rc = win ? C.player : winner === 'B' ? C.enemy : '#cfcfd5'
+  const word = win ? 'VICTORY' : winner === 'B' ? 'DEFEAT' : 'DRAW'
   const foe = me === 'A' ? 'B' : 'A'
   const mine = match ? (match.units || []).filter((u) => u.team === me).slice(0, 5) : []
   const top = mine.length ? Math.max(1, mine[0].dealt) : 1
@@ -274,9 +287,11 @@ export function ResultBanner({ winner, message, buttons, onDismiss, match = null
       <style>{CSS}</style>
       <span className="br-flash" aria-hidden="true" />
       <span className="br-rays" aria-hidden="true" />
+      <span className="br-spark" aria-hidden="true" />
+      <span className="br-spark b" aria-hidden="true" />
       <div className="br-band">
-        <div className="br-title">{win ? 'VICTORY' : winner === 'B' ? 'DEFEAT' : 'DRAW'}</div>
-        <div className="br-sub">{win ? '勝利!' : winner === 'B' ? '敗北…' : '引き分け'}</div>
+        <div className="br-title" aria-label={word}>{[...word].map((ch, n) => <i key={n} aria-hidden="true" style={{ '--i': n }}>{ch}</i>)}</div>
+        <div className="br-sub"><b />{win ? '勝利' : winner === 'B' ? '敗北' : '引き分け'}<b /></div>
         <span className="br-shine" aria-hidden="true" />
       </div>
       {match && (
