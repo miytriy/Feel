@@ -407,6 +407,12 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
   const [cdFrom, setCdFrom] = useState(null)
   const cdShownRef = useRef(null) // 直前に画面に出していた数(これより小さい数へ進むときだけ、前の数から切り替える。出していた数より大きい数を出して、一瞬増えて見えるのを防ぐ)
   const cdFx = !!(fx && fx.kind === 'countdown')
+  // 1回のカウントダウン(数が1つ進む)では、演出は1回だけ。同じ数のまま別のまとまりで、もう一度 countdown が来ても、再び流さない
+  const cdPlay = useRef({ v: null, t: null })
+  let cdShowFx = false
+  if (cdFx) {
+    if (cdPlay.current.v !== unit.countdown || cdPlay.current.t === tick) { cdPlay.current = { v: unit.countdown, t: tick }; cdShowFx = true }
+  }
   useLayoutEffect(() => {
     if (!cdFx) { setCdOld(false); return }
     const from = cdShownRef.current
@@ -571,7 +577,10 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
         </span>
       )}
       {fx && fx.kind === 'finisher' && <FinisherA key={`fa-${tick}`} />}
-      {fx && fx.kind === 'countdown' && <CountdownFx key={`cd-${tick}`} delay={fx.delay} />}
+      {cdShowFx && (fx.die === 'destroy'
+        // 破壊で、カードが下へ伸びて溶けるとき、中の演出まで伸びないように、同じ動きを逆に掛けて打ち消す(原点も同じ)
+        ? <span aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 9, transformOrigin: '50% 0', animation: 'feel-d-unmelt 0.18s ease-in forwards', willChange: 'transform' }}><CountdownFx key={`cd-${unit.countdown}`} delay={fx.delay} /></span>
+        : <CountdownFx key={`cd-${unit.countdown}`} delay={fx.delay} />)}
       {fx && fx.kind === 'damage' && fx.finisher && <FinisherB key={`fb-${tick}`} />}
       {fx && (fx.kind === 'buff' || fx.kind === 'keyword') && (
         // 強化・能力付与のエフェクト: カードの周りに光(強化=金 / 付与=水色)が広がり、記号(▲ / ✦)が昇る

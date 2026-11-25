@@ -117,6 +117,7 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-d-frame { 0% { } 100% { background: transparent; border-color: transparent; box-shadow: none; } }
     @keyframes feel-d-fade2m { 0% { opacity: 1; } 100% { opacity: 0.4; } }
     @keyframes feel-d-fade2 { 0% { opacity: 1; } 100% { opacity: 0; } }
+    @keyframes feel-d-unmelt { 0% { scale: 1 1; transform-origin: 50% 0; } 100% { scale: 0.9615 0.8772; transform-origin: 50% 0; } } /* feel-d-melt(1.04 × 1.14)の逆: 中の演出を伸ばさない */
     @keyframes feel-d-melt { 0% { opacity: 1; scale: 1 1; transform-origin: 50% 0; } 100% { opacity: 0.35; scale: 1.04 1.14; transform-origin: 50% 0; } }
     @keyframes feel-stl-xf { 0%, 100% { opacity: 0; } 25%, 45% { opacity: 1; } 70% { opacity: 0; } }
     @keyframes feel-stl-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.82; } }
