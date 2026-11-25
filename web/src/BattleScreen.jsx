@@ -32,6 +32,7 @@ const C = { ...BASE, hp: '#3ddc97', hpMid: '#ffd24a', hpLow: '#ff5a5a' } // 色�
 const FONT = '"Hiragino Sans","Noto Sans JP",system-ui,sans-serif'
 // 自分のチームは自分の色、相手は相手の色(対人戦で自分が B でも、色は自分から見て決まる)
 const TEAM_COLOR = { get A() { return ME === 'A' ? C.player : C.enemy }, get B() { return ME === 'A' ? C.enemy : C.player } }
+const DOWN_RED = '#ff6a6a' // 現在の値が、最大値より低いときの色(体力。盤面と情報パネル)
 const UP_GREEN = '#4ee08a' // 最大値が元より上がったステータスの色(盤面)
 const TYPE_LABEL = { physical: '物理', magic: '魔法', true: '確定' }
 
@@ -674,7 +675,7 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
           <LossBlink unit={unit} loss={loss} />
         </div>
       )}
-      <div style={{ marginTop: 2, color: C.mute, ...(dying && !unit.isAmulet ? { animation: `feel-d-fade2 ${vanishing ? '0.03s ease-in 0.04s' : '0.2s ease-in 0.3s'} forwards`, willChange: 'opacity' } : {}) }}>{unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive || dying ? <><span style={unit.maxHp > unit.baseMaxHp ? { color: UP_GREEN, fontWeight: 700 } : undefined}><AnimNum value={Math.ceil(unit.alive || vanishing ? hpShown : 0)} ms={300} />/{unit.maxHp}</span></> : ''}</div>
+      <div style={{ marginTop: 2, color: C.mute, ...(dying && !unit.isAmulet ? { animation: `feel-d-fade2 ${vanishing ? '0.03s ease-in 0.04s' : '0.2s ease-in 0.3s'} forwards`, willChange: 'opacity' } : {}) }}>{unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive || dying ? <><span><span style={hpShown < unit.maxHp ? { color: DOWN_RED, fontWeight: 700 } : undefined}><AnimNum value={Math.ceil(unit.alive || vanishing ? hpShown : 0)} ms={300} /></span><span style={unit.maxHp > unit.baseMaxHp ? { color: UP_GREEN, fontWeight: 700 } : undefined}>/{unit.maxHp}</span></span></> : ''}</div>
       {unit.armor > 0 && <div style={{ color: C.player }}>アーマー {Math.ceil(unit.armor)}{unit.armorRate < 1 ? `(${Math.round(unit.armorRate * 100)}%)` : ''}</div>}
       {badges.length > 0 && (
         <div style={{ marginTop: 2, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
@@ -992,7 +993,7 @@ function InfoCard({ testid, unit, accent, children, big = false, style }) {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 12px', alignItems: 'baseline', color: C.mute, fontSize: big ? 12 : 11, fontWeight: 600 }}>
             {import.meta.env.DEV && unit.unitType && <span title="ユニットタイプ(開発用。本番では出さない)" style={{ opacity: 0.6 }}>[{unit.unitType}{unit.token ? '・トークン' : ''}]</span>}
             {kind && <span>{kind}</span>}
-            <span><SI k="hp" /><span style={unit.maxHp > unit.baseMaxHp ? { color: UP_GREEN, fontWeight: 700 } : undefined}>{hp}</span></span>
+            <span><SI k="hp" /><span style={unit.hp < unit.maxHp ? { color: DOWN_RED, fontWeight: 700 } : unit.maxHp > unit.baseMaxHp ? { color: UP_GREEN, fontWeight: 700 } : undefined}>{hp}</span></span>
             <span><SI k="atk" /><span style={unit.atk > unit.base?.atk ? { color: UP_GREEN, fontWeight: 700 } : undefined}>{Math.round(unit.atk)}</span></span>
             <span><SI k="def" /><span style={unit.def > unit.base?.def ? { color: UP_GREEN, fontWeight: 700 } : undefined}>{Math.round(unit.def)}</span></span>
             {mag && <span><SI k="mag" />{Math.round(unit.mag)}</span>}
@@ -1149,6 +1150,7 @@ function reorderBoost(evs) {
   return out
 }
 export const VANISH_SLOW = 1 // 消滅エフェクトの長さの倍率。1 = 0.9秒(ルール画面と同じ基準・56コマで約62fps)。EFFECTS.mdの基準値。
+const BUFF_APPLY_MS = 250 // 強化の光(feel-aura)が最大になる時(0.9秒の25%付近)
 const LIGHT_FX = new Set(['heal', 'buff', 'keyword', 'countdown']) // 重ねて流してよい軽い演出
 const LIGHT_RATIO = 0.4
 // 演出の長さが決まっている(参考動画の再現で、動きの長さが固定の)ものは、待ち時間の設定(速い・ゆっくり)で短く・長くしない。短くすると、演出が途中で切れる
@@ -1363,6 +1365,16 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     if (lines.length) setFeed((f) => [...f, ...lines.map((line, n) => ({ k: `${Date.now()}-${f.length}-${play.i}-${n}`, ...line }))].slice(-8))
   }, [play && play.events, play && play.i]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 強化(バフ)の数字は、演出の山(光が最も強くなる約0.25秒後)で変える。演出の最初から数字だけ先に変わらないように
+  const [buffReady, setBuffReady] = useState(null) // { events, i }: その再生のまとまりで、数字を変えてよい時が来た
+  useEffect(() => {
+    if (!play) return
+    const g = groupEnd(play.events, play.i)
+    if (!play.events.slice(play.i, g + 1).some((x) => x.type === 'buff')) return
+    const { events, i } = play
+    const t = setTimeout(() => setBuffReady({ events, i }), BUFF_APPLY_MS)
+    return () => clearTimeout(t)
+  }, [play && play.events, play && play.i]) // eslint-disable-line react-hooks/exhaustive-deps
   // 再生を1つずつ進める
   useEffect(() => {
     if (!play || logOpen) return // 戦闘実況を開いている間は、再生を止める
@@ -1411,7 +1423,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     try { const d = collectHistory(state, next); setHist((h) => addHistory(h, d)) } catch (e) { console.error('バトルログの集計に失敗', e) } // 失敗しても、対戦は止めない
     try { addEvents(statsRef.current, next.events || [], (uid) => next.units.find((u) => u.uid === uid)) } catch (e) { console.error('キャリアの集計に失敗', e) } // 記録が失敗しても、対戦は止めない
     const evs = insertFinisher(reorderBoost(pullDestroy(next.events || [])))
-    setPlay(evs.length ? { events: evs, i: 0, prevActive: state?.active ?? null, prevAbility: state?.lastAbility ?? null } : null)
+    setPlay(evs.length ? { events: evs, i: 0, prevActive: state?.active ?? null, prevAbility: state?.lastAbility ?? null, prevUnits: state?.units ?? null } : null)
     setState(next)
   }
   const reset = () => {
@@ -1493,7 +1505,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   }, [online])
   // 届いた知らせを、再生が終わってから順に反映する
   useEffect(() => {
-    if (!online || !inbox.length || play) return
+    if (!online || !inbox.length || play || startFx) return // 戦闘開始の画面を出している間は、届いた知らせを反映しない(裏で進まないように)
     const [m, ...rest] = inbox
     setInbox(rest)
     if (m.type === 'end') {
@@ -1512,7 +1524,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     setDeadlineAt(m.left != null ? Date.now() + m.left : null)
     if (m.type === 'start') { setPlay(null); setState(m.state); return } // 再接続: 続きの状態にそろえる(演出は出さない)
     commit(m.state)
-  }, [inbox, play]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [inbox, play, startFx]) // eslint-disable-line react-hooks/exhaustive-deps
   const lastSeq = useRef(-1)
   // 手番の残り時間の表示(秒)
   useEffect(() => {
@@ -1645,6 +1657,11 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     gStart = Math.min(play.i, play.events.length - 1)
     gEnd = groupEnd(play.events, gStart)
     ev = play.events[gEnd] // まとまった出来事は、最後の時点の盤面を見せる(体力の変化が一気に出る)
+    const grpAll = play.events.slice(gStart, gEnd + 1)
+    const buffTargets = new Set(grpAll.filter((x) => x.type === 'buff').map((x) => x.target))
+    const hpTouched = new Set(grpAll.filter((x) => x.type === 'damage' || x.type === 'heal' || x.type === 'finisher').map((x) => x.target))
+    const buffLate = buffTargets.size > 0 && !(buffReady && buffReady.events === play.events && buffReady.i === play.i)
+    const preById = Object.fromEntries((play.prevUnits || []).map((x) => [x.uid, x]))
     let active = play.prevActive
     let lastAbility = play.prevAbility
     for (let k = 0; k <= gEnd && k < play.events.length; k++) {
@@ -1656,7 +1673,16 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
       ...state,
       units: state.units.filter((u) => ev.units[u.uid]).map((u) => {
         const sn = ev.units[u.uid]
-        return { ...u, ...sn, accel: u.accel && sn.accelAV != null ? { ...u.accel, curAV: sn.accelAV } : u.accel }
+        const out = { ...u, ...sn, accel: u.accel && sn.accelAV != null ? { ...u.accel, curAV: sn.accelAV } : u.accel }
+        if (buffLate && buffTargets.has(u.uid)) {
+          // 強化の演出の山まで、強化される前の数字を見せる(体力は、同じまとまりにダメージ・回復がないときだけ)
+          const pre = gStart > 0 ? play.events[gStart - 1].units?.[u.uid] : preById[u.uid]
+          if (pre) {
+            for (const k of ['atk', 'def', 'spd', 'mag']) if (pre[k] !== undefined) out[k] = pre[k]
+            if (!hpTouched.has(u.uid)) { if (pre.maxHp !== undefined) out.maxHp = pre.maxHp; if (pre.hp !== undefined) out.hp = pre.hp }
+          }
+        }
+        return out
       }),
       round: ev.round ?? state.round,
       totalAV: ev.totalAV ?? state.totalAV,
