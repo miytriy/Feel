@@ -71,6 +71,9 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-cd-dome { 0% { opacity: 0; transform: scale(0.78); } 14% { opacity: 0.55; transform: scale(0.92); } 30% { opacity: 1; transform: scale(1); } 62% { opacity: 0.95; transform: scale(1.02); } 100% { opacity: 0; transform: scale(0.8); } }
     @keyframes feel-cd-lite { 0% { opacity: 0; } 55% { opacity: 0; } 82% { opacity: 0.8; transform: scale(0.9); } 100% { opacity: 0; transform: scale(0.8); } }
     @keyframes feel-cd-tick { 0% { opacity: 0; } 25% { opacity: 1; } 100% { opacity: 0; } }
+    @keyframes feel-kw-cycle-2 { 0% { opacity: 0; } 9.00% { opacity: 1; } 41.00% { opacity: 1; } 50.00% { opacity: 0; } 100% { opacity: 0; } }
+    @keyframes feel-kw-cycle-3 { 0% { opacity: 0; } 6.00% { opacity: 1; } 27.33% { opacity: 1; } 33.33% { opacity: 0; } 100% { opacity: 0; } }
+    @keyframes feel-kw-cycle-4 { 0% { opacity: 0; } 4.50% { opacity: 1; } 20.50% { opacity: 1; } 25.00% { opacity: 0; } 100% { opacity: 0; } }
     @keyframes feel-cd-num { 0% { transform: scale(1.5); filter: brightness(1.8); } 100% { transform: scale(1); filter: brightness(1); } }
     @keyframes feel-cd-rim { 0% { opacity: 0; transform: scale(0.82); } 30% { opacity: 0.9; transform: scale(1); } 100% { opacity: 0; transform: scale(1.05); } }
     @keyframes feel-cd-rays { 0% { transform: scale(0.9); } 55% { transform: scale(1); } 100% { transform: scale(0.55); } }

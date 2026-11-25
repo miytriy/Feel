@@ -32,6 +32,7 @@ const C = { ...BASE, hp: '#3ddc97', hpMid: '#ffd24a', hpLow: '#ff5a5a' } // 色�
 const FONT = '"Hiragino Sans","Noto Sans JP",system-ui,sans-serif'
 // 自分のチームは自分の色、相手は相手の色(対人戦で自分が B でも、色は自分から見て決まる)
 const TEAM_COLOR = { get A() { return ME === 'A' ? C.player : C.enemy }, get B() { return ME === 'A' ? C.enemy : C.player } }
+const UP_GREEN = '#4ee08a' // 最大値が元より上がったステータスの色(盤面)
 const TYPE_LABEL = { physical: '物理', magic: '魔法', true: '確定' }
 
 // これから行動する順番(アクションバー)。ラウンドの区切りも入れる
@@ -334,6 +335,53 @@ function NameFit({ text, style }) {
   )
 }
 
+// 盤面のカードに出す、能力のアイコン(上=ラストワード / 下=ドレイン)。複数持っているときは、その場でフェードイン・アウトを繰り返して順に見せる(動かすのは opacity だけ)
+const KW_ICON_MS = 1500
+function LwIcon() {
+  return (
+    <svg viewBox="0 0 40 40" style={{ width: '100%', height: '100%', display: 'block' }}>
+      <circle cx="20" cy="20" r="17" fill="#e96a2c" stroke="#ffd2a6" strokeWidth="2.2" />
+      <circle cx="20" cy="20" r="13.2" fill="none" stroke="#b8430f" strokeWidth="1.2" opacity="0.7" />
+      <path fillRule="evenodd" fill="#1a0a08" d="M20 8 C26.5 8 30 11.5 30 16.6 C30 19.6 28.8 21.6 27.2 22.8 L27.2 27 Q27.2 29.4 25 29.4 L15 29.4 Q12.8 29.4 12.8 27 L12.8 22.8 C11.2 21.6 10 19.6 10 16.6 C10 11.5 13.5 8 20 8 Z M14 17 Q14 14.8 16.4 14.9 Q18.6 15 18.4 17.8 Q18.2 19.8 16.2 19.8 Q14 19.6 14 17 Z M26 17 Q26 14.8 23.6 14.9 Q21.4 15 21.6 17.8 Q21.8 19.8 23.8 19.8 Q26 19.6 26 17 Z M20 20.6 L18.4 24 Q20 24.6 21.6 24 Z" />
+    </svg>
+  )
+}
+function DrainIcon() {
+  return (
+    <svg viewBox="0 0 40 40" style={{ width: '100%', height: '100%', display: 'block' }}>
+      <circle cx="20" cy="20" r="17" fill="#a8222a" stroke="#f3a3a8" strokeWidth="2.2" />
+      <circle cx="20" cy="20" r="13.2" fill="none" stroke="#5e0f16" strokeWidth="1.2" opacity="0.7" />
+      <path fill="#ffd9dc" d="M24.6 8.6 C16.2 8.2 9.6 14 9.8 21.4 C10 28.4 16 32.6 22.4 31.4 C16.8 29.8 14.4 25 15.6 19.8 C16.6 15.4 20 11.4 24.6 8.6 Z" />
+      <path fill="#ff7a86" d="M27 22 C29.4 24.6 29.6 28 27.4 30.2 C25 32.4 21.4 31.8 20.2 29 C22.6 29.6 25.2 28 25.6 25.6 C25.8 24.4 26.2 23.2 27 22 Z" />
+    </svg>
+  )
+}
+const KW_ICONS = { lastWord: { Icon: LwIcon, label: 'ラストワード' }, drain: { Icon: DrainIcon, label: 'ドレイン' } }
+// 持っている能力のアイコンの一覧(ラストワード → ドレインの順)
+function iconKeysOf(unit) {
+  const out = []
+  if ((unit.passiveObjs || []).some((p) => p.trigger === 'lastWord')) out.push('lastWord')
+  if ((unit.keywords || []).includes('drain')) out.push('drain')
+  return out
+}
+function KeywordIcons({ keys, big }) {
+  const n = keys.length
+  const size = big ? 24 : 18
+  const total = KW_ICON_MS * n
+  // どのカードも同じ位相で切り替わるよう、いまの時刻から開始位置をそろえる
+  const [phase] = useState(() => (Date.now() % total) / 1000) // 出した時に1回だけ決める(再描画で動きが飛ばないように)
+  return (
+    <span aria-hidden="true" data-testid="kw-icons" style={{ position: 'absolute', left: '50%', bottom: big ? -10 : -8, width: size, height: size, marginLeft: -size / 2, zIndex: 5, pointerEvents: 'none', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.7))' }}>
+      {keys.map((k, i) => {
+        const { Icon } = KW_ICONS[k]
+        return (
+          <span key={k} data-kw={k} style={{ position: 'absolute', inset: 0, opacity: n === 1 ? 1 : 0, willChange: n === 1 ? undefined : 'opacity', animation: n === 1 ? undefined : `feel-kw-cycle-${n} ${total}ms linear ${i * KW_ICON_MS - total - phase * 1000}ms infinite` }}><Icon /></span>
+        )
+      })}
+    </span>
+  )
+}
+
 export function UnitCard({ unit, active, selected, selectable, lift = true, inspected, onClick, onFocusCard, big = false, fx = null, hl = false, tick = 0, loss = 0, role = null }) {
   // 破壊: HPの数字とバーが、同じ速さで0へ減っていく。消滅: HPは減らないので、消える直前の値のまま(0にしない)
   const lastHp = useRef(unit.hp)
@@ -438,6 +486,7 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
         </span>
       )}
       {fx && fx.die === 'vanish' && <VanishFx key={`van-${tick}`} ms={VANISH_BASE_MS * VANISH_SLOW} />}
+      {unit.alive && iconKeysOf(unit).length > 0 && <KeywordIcons key={iconKeysOf(unit).join()} keys={iconKeysOf(unit)} big={big} />}
       {unit.alive && (unit.keywords || []).includes('guard') && (
         // 【守護】の盤面エフェクト: 縦長の盾(カードに収まる比率)の輪郭が、内側から現れて外側へ広がりながら消える。2枚が半周期ずらして繰り返す
         <span aria-hidden="true" data-testid="fx-guard-idle" style={{ position: 'absolute', left: '50%', top: '50%', height: '94%', aspectRatio: '0.78', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 4 }}>
@@ -604,7 +653,7 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
           <LossBlink unit={unit} loss={loss} />
         </div>
       )}
-      <div style={{ marginTop: 2, color: C.mute, ...(dying && !unit.isAmulet ? { animation: `feel-d-fade2 ${vanishing ? '0.03s ease-in 0.04s' : '0.2s ease-in 0.3s'} forwards`, willChange: 'opacity' } : {}) }}>{unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive || dying ? <><AnimNum value={Math.ceil(unit.alive || vanishing ? hpShown : 0)} ms={300} />/{unit.maxHp}</> : ''}</div>
+      <div style={{ marginTop: 2, color: C.mute, ...(dying && !unit.isAmulet ? { animation: `feel-d-fade2 ${vanishing ? '0.03s ease-in 0.04s' : '0.2s ease-in 0.3s'} forwards`, willChange: 'opacity' } : {}) }}>{unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive || dying ? <><span style={unit.maxHp > unit.baseMaxHp ? { color: UP_GREEN, fontWeight: 700 } : undefined}><AnimNum value={Math.ceil(unit.alive || vanishing ? hpShown : 0)} ms={300} />/{unit.maxHp}</span></> : ''}</div>
       {unit.armor > 0 && <div style={{ color: C.player }}>アーマー {Math.ceil(unit.armor)}{unit.armorRate < 1 ? `(${Math.round(unit.armorRate * 100)}%)` : ''}</div>}
       {badges.length > 0 && (
         <div style={{ marginTop: 2, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
@@ -917,14 +966,14 @@ function InfoCard({ testid, unit, accent, children, big = false, style }) {
   return (
     <div data-testid={testid} style={{ borderRadius: 10, overflow: 'hidden', background: `color-mix(in srgb, ${tint(edge, 9)} 68%, transparent)`, border: `2px solid ${edge}`, boxShadow: `0 0 0 1px ${alpha(edge, 35)}, 0 4px 14px ${alpha('#000000', 28)}`, fontSize: big ? 13 : 12, lineHeight: 1.55, ...style }}>
       <div style={{ padding: big ? '8px 12px 6px' : '6px 10px 5px', background: `linear-gradient(90deg, ${alpha(edge, 30)}, ${alpha(edge, 6)})` }}>
-        <div style={{ fontWeight: 800, fontSize: big ? 16 : 14, overflowWrap: 'anywhere' }}><SI k="spd" />{Math.round(unit.spd)}/{unit.name}{unit.evolved ? '(進化済)' : ''}{unit.field === 'summon' ? '(召喚物)' : ''}</div>
+        <div style={{ fontWeight: 800, fontSize: big ? 16 : 14, overflowWrap: 'anywhere' }}><SI k="spd" /><span style={unit.spd > unit.base?.spd ? { color: UP_GREEN } : undefined}>{Math.round(unit.spd)}</span>/{unit.name}{unit.evolved ? '(進化済)' : ''}{unit.field === 'summon' ? '(召喚物)' : ''}</div>
         {!unit.isAmulet && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 12px', alignItems: 'baseline', color: C.mute, fontSize: big ? 12 : 11, fontWeight: 600 }}>
             {import.meta.env.DEV && unit.unitType && <span title="ユニットタイプ(開発用。本番では出さない)" style={{ opacity: 0.6 }}>[{unit.unitType}{unit.token ? '・トークン' : ''}]</span>}
             {kind && <span>{kind}</span>}
-            <span><SI k="hp" />{hp}</span>
-            <span><SI k="atk" />{Math.round(unit.atk)}</span>
-            <span><SI k="def" />{Math.round(unit.def)}</span>
+            <span><SI k="hp" /><span style={unit.maxHp > unit.baseMaxHp ? { color: UP_GREEN, fontWeight: 700 } : undefined}>{hp}</span></span>
+            <span><SI k="atk" /><span style={unit.atk > unit.base?.atk ? { color: UP_GREEN, fontWeight: 700 } : undefined}>{Math.round(unit.atk)}</span></span>
+            <span><SI k="def" /><span style={unit.def > unit.base?.def ? { color: UP_GREEN, fontWeight: 700 } : undefined}>{Math.round(unit.def)}</span></span>
             {mag && <span><SI k="mag" />{Math.round(unit.mag)}</span>}
           </div>
         )}
