@@ -374,13 +374,39 @@ function FlagIcon() {
     </svg>
   )
 }
-const KW_ICONS = { flag: { Icon: FlagIcon, label: '緑旗' }, lastWord: { Icon: LwIcon, label: 'ラストワード' }, drain: { Icon: DrainIcon, label: 'ドレイン' } }
+// 必殺: 橙の剣(仮の絵。動画に映っていないので、実物は未確認)
+function FinisherIcon() {
+  return (
+    <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', display: 'block' }}>
+      <KwDisc id="kwd-fn" />
+      <g transform="translate(50 50) scale(0.9) translate(-50 -50)">
+        <path fill="#e8803a" stroke="#e6a98a" strokeWidth="2.4" strokeLinejoin="round" d="M50 14 L58 22 L56 58 L44 58 L42 22 Z" />
+        <path fill="#d9672f" stroke="#e6a98a" strokeWidth="2.4" strokeLinejoin="round" d="M32 60 H68 V67 H32 Z M46 67 H54 V82 H46 Z" />
+      </g>
+    </svg>
+  )
+}
+// 常時: 青い輪に点(仮の絵。実物は未確認)
+function AlwaysIcon() {
+  return (
+    <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', display: 'block' }}>
+      <KwDisc id="kwd-aw" />
+      <g transform="translate(50 50) scale(0.9) translate(-50 -50)">
+        <circle cx="50" cy="50" r="22" fill="none" stroke="#5fb4e8" strokeWidth="7" />
+        <circle cx="50" cy="50" r="7" fill="#9fd8f5" />
+      </g>
+    </svg>
+  )
+}
+const KW_ICONS = { flag: { Icon: FlagIcon, label: '緑旗' }, lastWord: { Icon: LwIcon, label: 'ラストワード' }, drain: { Icon: DrainIcon, label: 'ドレイン' }, finisher: { Icon: FinisherIcon, label: '必殺' }, always: { Icon: AlwaysIcon, label: '常時' } }
 // 持っている能力のアイコンの一覧(ラストワード → ドレインの順)
 function iconKeysOf(unit) {
   const out = []
   if (unit.flag) out.push('flag')
   if ((unit.passiveObjs || []).some((p) => p.trigger === 'lastWord')) out.push('lastWord')
   if ((unit.keywords || []).includes('drain')) out.push('drain')
+  if ((unit.keywords || []).includes('finisher')) out.push('finisher')
+  if ((unit.passiveObjs || []).some((p) => p.tag === '常時')) out.push('always')
   return out
 }
 const FLAG_BURST_MS = 560 // 光1回の長さ
