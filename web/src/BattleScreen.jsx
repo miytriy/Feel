@@ -383,16 +383,30 @@ function iconKeysOf(unit) {
   if ((unit.keywords || []).includes('drain')) out.push('drain')
   return out
 }
+const FLAG_BURST_MS = 700 // 光1回の長さ
+const FLAG_STAGGER_MS = 130 // 続けて光るときのずらし
 export function KeywordIcons({ keys, big, flagTick = 0 }) {
   const n = keys.length
-  const mountTick = useRef(flagTick) // 出した時点の回数は、もう光らせない(作り直しで光り直さないように)
-  const [burst, setBurst] = useState(false) // 光っているあいだ(約0.8秒)は、緑旗だけを見せる(ほかのアイコンは隠す)
+  const seenTick = useRef(flagTick) // 出した時点の回数は、もう光らせない(作り直しで光り直さないように)
+  const nextSlot = useRef(0) // 次の光を出せる時刻(2回続けて光るときは、前の光を消さずに重ねて、少しずらして出す。動画のギルダリアのとおり)
+  const idSeq = useRef(0)
+  const [bursts, setBursts] = useState([]) // 光っている最中の光(重なって出る)。あいだは緑旗だけを見せる(ほかのアイコンは隠す)
+  const timers = useRef([])
+  useEffect(() => () => timers.current.forEach(clearTimeout), [])
   useEffect(() => {
-    if (flagTick === mountTick.current || !keys.includes('flag')) return undefined
-    setBurst(true)
-    const t = setTimeout(() => setBurst(false), 850)
-    return () => clearTimeout(t)
+    const add = Math.min(4, flagTick - seenTick.current)
+    seenTick.current = flagTick
+    if (add <= 0 || !keys.includes('flag')) return
+    for (let i = 0; i < add; i++) {
+      const now = Date.now()
+      const at = Math.max(now, nextSlot.current)
+      nextSlot.current = at + FLAG_STAGGER_MS
+      const id = ++idSeq.current
+      timers.current.push(setTimeout(() => setBursts((b) => [...b, id]), at - now))
+      timers.current.push(setTimeout(() => setBursts((b) => b.filter((x) => x !== id)), at - now + FLAG_BURST_MS))
+    }
   }, [flagTick]) // eslint-disable-line react-hooks/exhaustive-deps
+  const burst = bursts.length > 0
   const size = big ? 28 : 22
   const total = KW_ICON_MS * n
   // どのカードも同じ位相で切り替わるよう、いまの時刻から開始位置をそろえる
@@ -405,7 +419,7 @@ export function KeywordIcons({ keys, big, flagTick = 0 }) {
           <span key={k} data-kw={k} style={{ position: 'absolute', inset: 0, ...(burst ? { opacity: k === 'flag' ? 1 : 0 } : { opacity: n === 1 ? 1 : 0, willChange: n === 1 ? undefined : 'opacity', animation: n === 1 ? undefined : `feel-kw-cycle-${n} ${total}ms linear ${i * KW_ICON_MS - total - phase * 1000}ms infinite` }) }}><Icon /></span>
         )
       })}
-      {keys.includes('flag') && flagTick !== mountTick.current && <FlagBurst key={flagTick} size={size} />}
+      {keys.includes('flag') && bursts.map((id) => <FlagBurst key={id} size={size} />)}
     </span>
   )
 }
@@ -416,8 +430,8 @@ function FlagBurst({ size = 22 }) {
   const at = { position: 'absolute', left: '50%', top: '50%', pointerEvents: 'none', borderRadius: '50%', transform: 'translate(-50%, -50%)' }
   return (
     <>
-      <span style={{ ...at, width: size, height: size, background: 'radial-gradient(circle, #f6ffc4 0%, #b8f050 55%, #7fd32e 100%)', boxShadow: '0 0 6px 2px rgba(190,255,90,0.9)', opacity: 0, willChange: 'opacity', animation: 'feel-flag-pulse 850ms ease-out both', zIndex: 3 }} />
-      <span style={{ ...at, width: D, height: D, marginLeft: 0, zIndex: -1, opacity: 0, willChange: 'transform, opacity', animation: 'feel-flag-bubble 850ms cubic-bezier(0.2, 0.7, 0.2, 1) both' }}>
+      <span style={{ ...at, width: size, height: size, background: 'radial-gradient(circle, #f6ffc4 0%, #b8f050 55%, #7fd32e 100%)', boxShadow: '0 0 6px 2px rgba(190,255,90,0.9)', opacity: 0, willChange: 'opacity', animation: `feel-flag-pulse ${FLAG_BURST_MS}ms ease-out both`, zIndex: 3 }} />
+      <span style={{ ...at, width: D, height: D, marginLeft: 0, zIndex: -1, opacity: 0, willChange: 'transform, opacity', animation: `feel-flag-bubble ${FLAG_BURST_MS}ms cubic-bezier(0.2, 0.7, 0.2, 1) both` }}>
         <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 50% 50%, rgba(214,255,120,0.30) 0%, rgba(160,235,70,0.38) 55%, rgba(205,245,95,0.78) 84%, rgba(240,255,170,0.95) 93%, rgba(190,235,90,0) 100%)', boxShadow: '0 0 14px 3px rgba(170,240,80,0.55), inset 0 0 12px 2px rgba(235,255,160,0.6)' }} />
         <span style={{ position: 'absolute', left: '18%', top: '10%', width: '38%', height: '22%', borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(255,255,230,0.85), rgba(255,255,230,0) 70%)', transform: 'rotate(-28deg)' }} />
         <span style={{ position: 'absolute', left: '30%', bottom: '6%', width: '40%', height: '14%', borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(255,250,150,0.6), rgba(255,250,150,0) 70%)' }} />
