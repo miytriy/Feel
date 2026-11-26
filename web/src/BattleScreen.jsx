@@ -412,7 +412,7 @@ export function KeywordIcons({ keys, big, flagTick = 0 }) {
   // どのカードも同じ位相で切り替わるよう、いまの時刻から開始位置をそろえる
   const [phase] = useState(() => (Date.now() % total) / 1000) // 出した時に1回だけ決める(再描画で動きが飛ばないように)
   return (
-    <span aria-hidden="true" data-testid="kw-icons" style={{ position: 'absolute', left: '50%', bottom: big ? -10 : -8, width: size, height: size, marginLeft: -size / 2, zIndex: 5, pointerEvents: 'none', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.7))' }}>
+    <span aria-hidden="true" data-testid="kw-icons" style={{ position: 'absolute', left: '50%', bottom: big ? -10 : -8, width: size, height: size, marginLeft: -size / 2, zIndex: 5, pointerEvents: 'none', filter: burst ? undefined : 'drop-shadow(0 1px 2px rgba(0,0,0,0.7))' }}>
       {keys.map((k, i) => {
         const { Icon } = KW_ICONS[k]
         return (
@@ -431,7 +431,7 @@ function FlagBurst({ size = 22 }) {
   return (
     <>
       <span style={{ ...at, width: size, height: size, background: '#c9f56a', opacity: 0, willChange: 'opacity', animation: `feel-flag-pulse ${FLAG_BURST_MS}ms ease-out both`, zIndex: 3 }} />
-      <span style={{ ...at, width: D, height: D, zIndex: -1, background: 'radial-gradient(circle, rgba(170,235,80,0.42) 0%, rgba(170,235,80,0.5) 70%, rgba(215,248,120,0.7) 100%)', opacity: 0, willChange: 'transform, opacity', animation: `feel-flag-bubble ${FLAG_BURST_MS}ms cubic-bezier(0.2, 0.7, 0.2, 1) both` }} />
+      <span style={{ ...at, width: D, height: D, zIndex: -1, background: 'radial-gradient(circle at 50% 30%, rgba(245,255,150,0.34) 0%, rgba(245,255,150,0) 55%), radial-gradient(circle at 50% 55%, rgba(110,215,60,0.14) 0%, rgba(110,215,60,0.3) 70%, rgba(200,245,100,0.55) 94%, rgba(200,245,100,0) 100%)', opacity: 0, willChange: 'transform, opacity', animation: `feel-flag-bubble ${FLAG_BURST_MS}ms cubic-bezier(0.2, 0.7, 0.2, 1) both` }} />
     </>
   )
 }
