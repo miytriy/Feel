@@ -1217,7 +1217,7 @@ function reorderBoost(evs) {
     for (const e of run) {
       if (e.type === 'ability') { pending.push(e); continue }
       const bk = buckets[e.type]
-      for (const a of pending) if (!bk.abs.some((x) => x.owner === a.owner && x.name === a.name)) bk.abs.push(a)
+      for (const a of pending) if (a.uid || !bk.abs.some((x) => x.owner === a.owner && x.name === a.name)) bk.abs.push(a) // キャラの能力(uid あり)は、働いた回数ぶん出す(動画のマーズ: 【常時】が3体ぶん3回)。スペルなどの重複だけ1回にまとめる
       pending = []; bk.evs.push(e)
     }
     tail.push(...pending)
