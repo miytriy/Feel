@@ -34,7 +34,7 @@
   { "id": "elf_2_04", "name": "翅の女王・ティターニア", "class": "エルフ", "rarity": "legend", "rotation": "2" },
   { "id": "elf_2_07", "name": "絡み付く密林・リーマガ", "class": "エルフ", "rarity": "legend", "rotation": "2" },
   { "id": "elf_20", "name": "薫交の天宮・バックウッド", "class": "エルフ", "rarity": "gold", "rotation": "1" },
-  { "id": "elf_3_01", "name": "不殺の継承者・クルル", "class": "エルフ", "rarity": "legend", "rotation": "3" },
+  { "id": "elf_3_04", "name": "不殺の継承者・クルル", "class": "エルフ", "rarity": "legend", "rotation": "3" },
   { "id": "elf_amulet_01", "name": "燐光の岩", "class": "エルフ", "rarity": "silver", "rotation": "1" },
   { "id": "elf_amulet_02", "name": "聖樹の杖", "class": "エルフ", "rarity": "gold", "rotation": "1" },
   { "id": "elf_amulet_03", "name": "繚乱の庭", "class": "エルフ", "rarity": "bronze", "rotation": "basic" },

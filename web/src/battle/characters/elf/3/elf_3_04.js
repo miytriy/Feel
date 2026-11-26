@@ -1,6 +1,6 @@
 // 不殺の継承者・クルル(ローテーション: 絶傑の継承者 = フォルダ 3)。タイプなし(ー)
 export default {
-  id: 'elf_3_01', name: '不殺の継承者・クルル', class: 'エルフ', rarity: 'legend',
+  id: 'elf_3_04', name: '不殺の継承者・クルル', class: 'エルフ', rarity: 'legend',
   stats: { hp: 349, atk: 111, def: 200, spd: 73 },
   tags: ['弱体化', '治療', 'コントロール', 'サポーター'],
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
