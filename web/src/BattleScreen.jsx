@@ -358,34 +358,35 @@ function DrainIcon() {
     </svg>
   )
 }
-// 緑旗: 暗い丸に、黄緑のふち、緑の旗(動画のとおり)
+// 緑旗: 暗い青緑の円盤に細いクリーム色の縁。竿は右、旗は左へなびく(動画のとおり)
 function FlagIcon() {
   return (
     <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', display: 'block' }}>
       <defs>
-        <radialGradient id="kwd-fl" cx="50%" cy="45%" r="60%"><stop offset="0%" stopColor="#1d3326" /><stop offset="100%" stopColor="#0c1612" /></radialGradient>
-        <linearGradient id="kwd-flg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8fe04a" /><stop offset="1" stopColor="#4fb02c" /></linearGradient>
+        <radialGradient id="kwd-fl" cx="50%" cy="45%" r="60%"><stop offset="0%" stopColor="#1a3430" /><stop offset="100%" stopColor="#0d1c1e" /></radialGradient>
+        <linearGradient id="kwd-flg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#86d63f" /><stop offset="1" stopColor="#6cc22e" /></linearGradient>
       </defs>
-      <circle cx="50" cy="50" r="45" fill="url(#kwd-fl)" stroke="#a7cf4f" strokeWidth="5" />
-      <circle cx="50" cy="50" r="40" fill="none" stroke="#06100b" strokeWidth="2.5" opacity="0.7" />
-      <g transform="translate(50 50) scale(0.95) translate(-50 -50)">
-        <path fill="url(#kwd-flg)" stroke="#bff07a" strokeWidth="1.6" strokeLinejoin="round" d="M30 25 H72 L61 38 L72 51 H37 V76 H30 Z" />
+      <circle cx="50" cy="50" r="45" fill="url(#kwd-fl)" stroke="#c9bd9a" strokeWidth="3" />
+      <circle cx="50" cy="50" r="42" fill="none" stroke="#08130f" strokeWidth="2.5" opacity="0.7" />
+      <g transform="translate(50 52) scale(0.84) translate(-50 -52)">
+      <path fill="url(#kwd-flg)" d="M19 24 C30 27 41 17 52 19 C61 21 67 17 75 13 L68 52 C58 49 50 56 40 53 C32 51 26 56 19 53 Z" />
+      <path fill="#9fe063" d="M68 12 L77 12 L65 91 L57 91 Z" />
       </g>
     </svg>
   )
 }
-// 必殺: 暗い紺の円盤に、紫の鎌(動画のとおり。弧を描く刃と、下へ伸びる細い柄)
+// 必殺: 暗い紺の円盤に、細いクリーム色の縁と紫の鎌(動画のとおり。左上から右へ太くなる刃と、そこから左下へ伸びる細い柄)
 function FinisherIcon() {
   return (
     <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', display: 'block' }}>
       <defs>
         <radialGradient id="kwd-fn" cx="50%" cy="45%" r="60%"><stop offset="0%" stopColor="#2b2766" /><stop offset="100%" stopColor="#171340" /></radialGradient>
       </defs>
-      <circle cx="50" cy="50" r="45" fill="url(#kwd-fn)" stroke="#cdbf9f" strokeWidth="3" />
+      <circle cx="50" cy="50" r="45" fill="url(#kwd-fn)" stroke="#c9bd9a" strokeWidth="3" />
       <circle cx="50" cy="50" r="42" fill="none" stroke="#0b0824" strokeWidth="2.5" opacity="0.7" />
-      <g fill="none" stroke="#8e7be0" strokeLinecap="round" strokeLinejoin="round">
-        <path strokeWidth="6" d="M27 41 C40 31 58 31 71 40 C74 42 76 45 77 48" />
-        <path strokeWidth="4.2" d="M63 46 C57 52 56 60 55 67 C54 73 49 76 44 80" />
+      <g transform="translate(50 52) scale(0.86) translate(-50 -52)">
+      <path fill="#8f7be3" d="M19 24 C30 17 48 12 62 17 C74 21 84 28 90 34 L82 38 C75 32 66 28 56 26.5 C44 25 30 27.5 19 28 Z" />
+      <path fill="none" stroke="#8a78d8" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" d="M80 37 C70 42 62 46 58 54 C54 62 52 70 44 78 C40 82 34 86 29 89" />
       </g>
     </svg>
   )
