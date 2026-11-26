@@ -1475,13 +1475,15 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     // 能力の表示の瞬間には出さず、保留しておき、次の「働き」の出来事と一緒に出す。後ろに働きがなければ、そのまま出す
     const gEnd = groupEnd(play.events, play.i)
     let hasEffect = false
+    const flashNow = []
     for (let k = play.i; k <= gEnd; k++) {
       const e = play.events[k]
       if (e.type === 'ability') {
-        if (e.uid && e.flag) pendingFlash.current.push(e.uid) // 緑旗が光るのは、【常時】【攻撃時】【交戦時】の能力が働いたときだけ(ファンファーレなどでは光らない)。ログが出ない能力でも光る
+        if (e.uid && e.flag) flashNow.push(e.uid) // (保留せず、能力の表示の瞬間に光らせる。マーズの【常時】3回は、ナイトが出たすぐあとに1回ずつ光る) // 緑旗が光るのは、【常時】【攻撃時】【交戦時】の能力が働いたときだけ(ファンファーレなどでは光らない)。ログが出ない能力でも光る
         if (e.kind !== '進化' && !e.nolog) pendingLog.current.push({ k: `sl${sideSeq.current++}`, name: e.kind === 'スペル' ? e.name : e.owner, text: e.log || e.desc || `【${e.kind}】${e.name ?? ''}`, team: e.team, uid: e.uid || null })
       } else if (e.type !== 'sync') hasEffect = true // sync(盤面の同期だけ)は効果ではない。選択待ちのとき、選ぶ前にログが出てしまうため
     }
+    if (flashNow.length) setFlagFx((m) => { const n = { ...m }; for (const id of flashNow) n[id] = (n[id] || 0) + 1; return n })
     const release = hasEffect || (gEnd >= play.events.length - 1 && !(state && state.pending))
     const logs = release ? pendingLog.current.splice(0) : [] // 対象を選ぶ能力(選択式)は、選んで効果が働くまで、ログを保留したままにする
     if (logs.length) {
