@@ -1478,7 +1478,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     for (let k = play.i; k <= gEnd; k++) {
       const e = play.events[k]
       if (e.type === 'ability') {
-        if (e.uid) pendingFlash.current.push(e.uid) // 緑旗(能力が働いた印)は、ログが出ない能力でも光る
+        if (e.uid && e.flag) pendingFlash.current.push(e.uid) // 緑旗が光るのは、【常時】【攻撃時】【交戦時】の能力が働いたときだけ(ファンファーレなどでは光らない)。ログが出ない能力でも光る
         if (e.kind !== '進化' && !e.nolog) pendingLog.current.push({ k: `sl${sideSeq.current++}`, name: e.kind === 'スペル' ? e.name : e.owner, text: e.log || e.desc || `【${e.kind}】${e.name ?? ''}`, team: e.team, uid: e.uid || null })
       } else if (e.type !== 'sync') hasEffect = true // sync(盤面の同期だけ)は効果ではない。選択待ちのとき、選ぶ前にログが出てしまうため
     }

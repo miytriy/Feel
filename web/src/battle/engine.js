@@ -146,7 +146,7 @@ function makeUnit(def, team, index, field = 'main', uid = null) {
   const stealthEvery = Number(rawKw.map((k) => /^stealth_(\d+)$/.exec(k)).find(Boolean)?.[1]) || null
   const clone = (x) => JSON.parse(JSON.stringify(x))
   return {
-    flag: !!def.flag || passives.some((p) => typeof p === 'object' && (/^(常時|攻撃時|交戦時)/.test(p.name || '') || ['constant', 'onAttack', 'onEngage'].includes(p.trigger))), // 緑旗: 【常時】【攻撃時】【交戦時】の能力を持つ(def.flag: true でも付く)
+    flag: !!def.flag || passives.some(isFlagPassive), // 緑旗: 【常時】【攻撃時】【交戦時】の能力を持つ(def.flag: true でも付く)
     ct: null, // ct: このキャラのチームで働いているクラス特性(クラス名。働いていなければ null)
     uid: uid || `${team}${index}`, defId: def.id, name: def.name, class: def.class, type: def.type || null, unitType: def.amulet ? 'アミュレット' : 'キャラクター', token: def.token === true, team, relic: def.relic || null, // type: キャラのタイプ(妖精など)
     field, // 'main' = 場のキャラ / 'summon' = 召喚物フィールドの召喚物・アミュレット
@@ -650,11 +650,13 @@ function emit(state, type, data = {}) {
 
 // 直近に発動した能力(画面に説明を出すための記録): kind=種類(ファンファーレ・特性・スペルなど) owner=持ち主の名前 name=能力名 desc=説明
 // log=左のログに出す文(なければ desc)
-function noteAbility(state, kind, owner, name, desc, team, log, uid = null) {
+// 緑旗の印になる能力(【常時】【攻撃時】【交戦時】)。働いたとき、その緑旗が光る
+function isFlagPassive(p) { return !!p && typeof p === 'object' && (/^(常時|攻撃時|交戦時)/.test(p.name || '') || ['constant', 'onAttack', 'onEngage'].includes(p.trigger)) }
+function noteAbility(state, kind, owner, name, desc, team, log, uid = null, flag = false) {
   state.abilitySeq += 1
   state.lastAbility = { seq: state.abilitySeq, kind, owner, name: name || '', desc: desc || '', team: team ?? null }
   state.means = name || kind
-  emit(state, 'ability', { kind, owner, uid, name: name || '', desc: desc || '', log: log || '', nolog: log === false, team: team ?? null }) // log: false = 左のログには出さない
+  emit(state, 'ability', { kind, owner, uid, flag: !!flag, name: name || '', desc: desc || '', log: log || '', nolog: log === false, team: team ?? null }) // log: false = 左のログには出さない
 }
 
 // ---------- 効果の実行 ----------
@@ -1585,7 +1587,7 @@ function fire(state, trigger, unit, ctx = {}, from = 0) {
     if (earthShort(state, unit.team, p.effects)) continue // 土の印が足りない【土の秘術】の能力は、発動しない(ログなし)
     if (p.oncePerTurn) { if (p.usedSeq === (state.turnSeq || 0)) continue; p.usedSeq = state.turnSeq || 0 } // oncePerTurn: true の能力は、1ターンに1回まで(「それぞれのキャラクターのターンごとに1回」)
     state.log.push(`${unit.name}の${bracket(p.name || TRIGGER_LABELS[trigger])}`)
-    noteAbility(state, p.tag ?? TRIGGER_LABELS[trigger] ?? trigger, unit.name, p.name && p.name !== (p.tag ?? TRIGGER_LABELS[trigger]) ? p.name : '', p.desc, unit.team, logOf(state, unit, p), unit.uid)
+    noteAbility(state, p.tag ?? TRIGGER_LABELS[trigger] ?? trigger, unit.name, p.name && p.name !== (p.tag ?? TRIGGER_LABELS[trigger]) ? p.name : '', p.desc, unit.team, logOf(state, unit, p), unit.uid, isFlagPassive(p))
     runEffects(state, unit, p.effects, { ...ctx, trigger, nextPassive: i + 1 })
     if (state.pending) return // 選ぶのを待つ。続きは、選ばれたあとに行う
   }
