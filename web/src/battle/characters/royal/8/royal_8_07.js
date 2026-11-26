@@ -16,7 +16,7 @@ export default {
       effects: [{ type: 'summon', count: 3, unit: knight }],
     },
     {
-      name: '常時', trigger: 'allyEnter', enterType: '兵士',
+      name: '常時', tag: '常時', trigger: 'allyEnter', enterType: '兵士', // 見出しは【常時】(トリガーの名前「味方が場に出たとき」は出さない)
       desc: '自分の兵士・フォロワーが場に出たとき、それは+200/+0して、【突進】を持つ。これは+100/+0する。',
       log: 'それは+200/+0して、【突進】を持つ。これは+100/+0する。',
       effects: [
