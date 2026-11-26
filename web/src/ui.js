@@ -71,8 +71,9 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-cd-dome { 0% { opacity: 0; transform: scale(0.78); } 14% { opacity: 0.55; transform: scale(0.92); } 30% { opacity: 1; transform: scale(1); } 62% { opacity: 0.95; transform: scale(1.02); } 100% { opacity: 0; transform: scale(0.8); } }
     @keyframes feel-cd-lite { 0% { opacity: 0; } 55% { opacity: 0; } 82% { opacity: 0.8; transform: scale(0.9); } 100% { opacity: 0; transform: scale(0.8); } }
     @keyframes feel-cd-tick { 0% { opacity: 0; } 25% { opacity: 1; } 100% { opacity: 0; } }
-    @keyframes feel-flag-pulse { 0% { opacity: 0; } 10% { opacity: 1; } 38% { opacity: 0.9; } 100% { opacity: 0; } }
-    @keyframes feel-flag-bubble { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); } 14% { opacity: 1; transform: translate(-50%, -50%) scale(0.8); } 40% { opacity: 0.95; transform: translate(-50%, -50%) scale(0.92); } 72% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.04); } }
+    @keyframes feel-flag-pulse { 0% { opacity: 0; } 8% { opacity: 1; } 28% { opacity: 0.95; } 100% { opacity: 0; } }
+    @keyframes feel-flag-core { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); } 10% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 50% { opacity: 0; transform: translate(-50%, -50%) scale(1.35); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.35); } }
+    @keyframes feel-flag-bubble { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } 8% { opacity: 1; transform: translate(-50%, -50%) scale(0.96); } 50% { opacity: 0.9; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.04); } }
     @keyframes feel-kw-cycle-2 { 0% { opacity: 0; } 9.00% { opacity: 1; } 41.00% { opacity: 1; } 50.00% { opacity: 0; } 100% { opacity: 0; } }
     @keyframes feel-kw-cycle-3 { 0% { opacity: 0; } 6.00% { opacity: 1; } 27.33% { opacity: 1; } 33.33% { opacity: 0; } 100% { opacity: 0; } }
     @keyframes feel-kw-cycle-4 { 0% { opacity: 0; } 4.50% { opacity: 1; } 20.50% { opacity: 1; } 25.00% { opacity: 0; } 100% { opacity: 0; } }

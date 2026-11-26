@@ -383,7 +383,7 @@ function iconKeysOf(unit) {
   if ((unit.keywords || []).includes('drain')) out.push('drain')
   return out
 }
-const FLAG_BURST_MS = 700 // 光1回の長さ
+const FLAG_BURST_MS = 560 // 光1回の長さ
 const FLAG_STAGGER_MS = 130 // 続けて光るときのずらし
 export function KeywordIcons({ keys, big, flagTick = 0 }) {
   const n = keys.length
@@ -426,12 +426,17 @@ export function KeywordIcons({ keys, big, flagTick = 0 }) {
 // 緑旗が光る(動画のとおり): 旗が明るい黄緑に光る → 透けた球(ふちが明るく、中は薄い)がふくらみ、しばらく漂って消える(約0.85秒)。
 // 球は最初から大きさ(旗の3.4倍)で描いて scale 1 以下でしか動かさない(拡大してぼやけるのを防ぐ)。transform と opacity だけで動かす
 function FlagBurst({ size = 22 }) {
-  const D = Math.round(size * 3.4)
+  const D = Math.round(size * 3.5)
   const at = { position: 'absolute', left: '50%', top: '50%', pointerEvents: 'none', borderRadius: '50%', transform: 'translate(-50%, -50%)' }
+  const ms = FLAG_BURST_MS
   return (
     <>
-      <span style={{ ...at, width: size, height: size, background: '#c9f56a', opacity: 0, willChange: 'opacity', animation: `feel-flag-pulse ${FLAG_BURST_MS}ms ease-out both`, zIndex: 3 }} />
-      <span style={{ ...at, width: D, height: D, zIndex: -1, background: 'radial-gradient(circle at 50% 30%, rgba(245,255,150,0.34) 0%, rgba(245,255,150,0) 55%), radial-gradient(circle at 50% 55%, rgba(110,215,60,0.14) 0%, rgba(110,215,60,0.3) 70%, rgba(200,245,100,0.55) 94%, rgba(200,245,100,0) 100%)', opacity: 0, willChange: 'transform, opacity', animation: `feel-flag-bubble ${FLAG_BURST_MS}ms cubic-bezier(0.2, 0.7, 0.2, 1) both` }} />
+      <span style={{ ...at, width: size, height: size, background: 'radial-gradient(circle, #e8ffa8 0%, #8df050 70%, #5fd03a 100%)', opacity: 0, willChange: 'opacity', animation: `feel-flag-pulse ${ms}ms ease-out both`, zIndex: 3 }} />
+      <span style={{ ...at, width: size * 1.9, height: size * 1.9, background: 'radial-gradient(circle, rgba(255,255,215,0.9) 0%, rgba(235,255,140,0.45) 45%, rgba(235,255,140,0) 72%)', opacity: 0, willChange: 'transform, opacity', animation: `feel-flag-core ${ms}ms ease-out both`, zIndex: 2 }} />
+      <span style={{ ...at, width: D, height: D, zIndex: -1, opacity: 0, willChange: 'transform, opacity', animation: `feel-flag-bubble ${ms}ms cubic-bezier(0.2, 0.7, 0.2, 1) both` }}>
+        <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 50% 38%, rgba(240,255,170,0.20) 0%, rgba(240,255,170,0) 50%), linear-gradient(to bottom, rgba(140,225,70,0.10) 0%, rgba(190,242,90,0.36) 100%)', boxShadow: 'inset 0 0 0 1.5px rgba(225,255,140,0.6), inset 0 -6px 12px rgba(190,240,90,0.35)' }} />
+        <span style={{ position: 'absolute', left: '4%', right: '4%', top: '47%', height: '11%', borderRadius: '50%', background: 'linear-gradient(to right, rgba(235,250,110,0), rgba(235,250,110,0.7) 25%, rgba(235,250,110,0.7) 75%, rgba(235,250,110,0))', transform: 'rotate(-6deg)' }} />
+      </span>
     </>
   )
 }
@@ -1161,6 +1166,26 @@ function insertFinisher(evs) {
   }
   return out
 }
+// 同じキャラの同じ能力が続けて2回以上働くとき(例: 「他のフォロワーが出たとき」が2体ぶん)は、能力の表示(ログ・緑旗)を先に続けて出して、
+// そのあとにダメージなどを1回ずつ見せる(動画のギルダリア: ログと旗の光が重なって出てから、ダメージが順に入る)。間に召喚・破壊などがあるときは並べ替えない
+function hoistRepeats(evs) {
+  const calm = (t) => t === 'damage' || t === 'heal' || t === 'block'
+  const out = evs.slice()
+  for (let i = 0; i < out.length; i++) {
+    const a = out[i]
+    if (a.type !== 'ability' || !a.uid) continue
+    let ins = i + 1
+    let k = i + 1
+    while (k < out.length) {
+      const e = out[k]
+      if (e.type === 'ability' && e.uid === a.uid && (e.log || e.desc) === (a.log || a.desc) && k > ins) { out.splice(k, 1); out.splice(ins, 0, e); ins += 1; k += 1; continue }
+      if (e.type === 'ability' && e.uid === a.uid && k === ins) { ins += 1; k += 1; continue }
+      if (!calm(e.type)) break
+      k += 1
+    }
+  }
+  return out
+}
 function reorderBoost(evs) {
   const isB = (e) => e.type === 'buff' || e.type === 'keyword'
   const out = []
@@ -1197,7 +1222,7 @@ function reorderBoost(evs) {
 export const VANISH_SLOW = 1 // 消滅エフェクトの長さの倍率。1 = 0.9秒(ルール画面と同じ基準・56コマで約62fps)。EFFECTS.mdの基準値。
 // 対戦の最初の盤面にも、「起きたこと」(最初のターンのファンファーレ・召喚など)がある。戦闘開始の画面が終わってから、ここから再生する(最初から展開済みで始まらないように)
 const initialPlay = (st) => {
-  const evs = insertFinisher(reorderBoost(pullDestroy((st && st.events) || [])))
+  const evs = insertFinisher(reorderBoost(pullDestroy(hoistRepeats((st && st.events) || []))))
   return evs.length ? { events: evs, i: 0, prevActive: null, prevAbility: null, prevUnits: null } : null
 }
 const BUFF_APPLY_MS = 250 // 強化の光(feel-aura)が最大になる時(0.9秒の25%付近)
@@ -1509,7 +1534,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     try { const d = collectHistory(state, next); setHist((h) => addHistory(h, d)) } catch (e) { console.error('バトルログの集計に失敗', e) } // 失敗しても、対戦は止めない
     try { addEvents(statsRef.current, next.events || [], (uid) => next.units.find((u) => u.uid === uid)) } catch (e) { console.error('キャリアの集計に失敗', e) } // 記録が失敗しても、対戦は止めない
     if (dptMode && dptMode.refill !== false) for (const u of next.units) if (u.team === OPP() && !next.winner) { if (!u.alive) { u.alive = true; u.vanished = false } u.hp = u.maxHp } // DPTテスト場: 的は、行動のたびに満タンへ戻す(再生は、イベントの記録のとおり)
-    const evs = insertFinisher(reorderBoost(pullDestroy(next.events || [])))
+    const evs = insertFinisher(reorderBoost(pullDestroy(hoistRepeats(next.events || []))))
     setPlay(evs.length ? { events: evs, i: 0, prevActive: state?.active ?? null, prevAbility: state?.lastAbility ?? null, prevUnits: state?.units ?? null } : null)
     setState(next)
   }

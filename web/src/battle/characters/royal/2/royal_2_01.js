@@ -8,7 +8,7 @@ export default {
   skill: { name: '攻撃', stat: 'atk', type: 'physical', mult: 1.0 }, // 敵単体に攻撃力100%分の物理ダメージ
   passives: [
     // 【連携_20】= condition: { link: 20 }(味方のスキル発動回数が20以上)
-    { name: 'ファンファーレ', trigger: 'fanfare', condition: { link: 20 }, desc: '【連携_20】これは進化する。', log: '【連携_20】これは進化する。', effects: [{ type: 'evolve' }] },
+    { name: 'ファンファーレ', trigger: 'fanfare', condition: { link: 20 }, desc: '【連携_20】これは進化する。', log: 'これは進化する。', effects: [{ type: 'evolve' }] },
     // enterFollower: 出てきたのが、フォロワー(キャラクター・召喚物。アミュレットは除く)のときだけ働く。「他の」= 自分自身が出たときは働かない
     { name: '常時', trigger: 'allyEnter', enterFollower: true, desc: '自分の他のフォロワーが場に出たとき、相手の場のフォロワーすべてに50ダメージ。', log: '相手の場のフォロワーすべてに50ダメージ。',
       effects: [{ type: 'damage', stat: 'atk', mult: 0, add: 50, dmgType: 'physical', target: 'enemyFollowers' }] },
