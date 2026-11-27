@@ -1252,7 +1252,7 @@ const initialPlay = (st) => {
 const BUFF_APPLY_MS = 250 // 強化の光(feel-aura)が最大になる時(0.9秒の25%付近)
 const LIGHT_FX = new Set(['heal', 'buff', 'keyword', 'countdown']) // 重ねて流してよい軽い演出
 const LIGHT_RATIO = 0.4
-const HIT_RATIO = 0.65 // 攻撃・被弾(ダメージだけのまとまり)は、数字が出きる前に次へ進む。演出は最後まで続く
+const HIT_RATIO = 0.5 // 攻撃・被弾(ダメージだけのまとまり)は、数字が出きる前に次へ進む。演出は最後まで続く
 const ABILITY_LIGHT_RATIO = 0.3 // 能力の表示のすぐあとの強化(動画のルミナスナイト → ギルダリアの間 約0.42秒)
 const ABILITY_DMG_RATIO = 0.55 // 能力の表示のすぐあとのダメージ(動画: 旗の光 → 次の周まで約0.65秒)
 // 演出の長さが決まっている(参考動画の再現で、動きの長さが固定の)ものは、待ち時間の設定(速い・ゆっくり)で短く・長くしない。短くすると、演出が途中で切れる
