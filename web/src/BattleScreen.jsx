@@ -1223,7 +1223,7 @@ function reorderBoost(evs) {
   for (let i = 0; i < evs.length;) {
     if (!isB(evs[i]) && !(evs[i].type === 'ability' && evs.slice(i + 1).findIndex((e) => e.type !== 'ability') >= 0 && isB(evs[i + 1 + evs.slice(i + 1).findIndex((e) => e.type !== 'ability')]))) { out.push(evs[i++]); continue }
     let j = i
-    while (j < evs.length && (isB(evs[j]) || evs[j].type === 'ability')) j++
+    while (j < evs.length && (isB(evs[j]) || evs[j].type === 'ability')) { if (evs[j].type === 'ability' && j > i && evs.slice(i, j).some((x) => x.type === 'buff' || x.type === 'keyword')) break; j++ } // 能力が別の回に働いたもの(マーズの【常時】×3)は、1回ずつ別のまとまりにする。性能に「3体を強化」と書いてあるのではなく、「それは+200 / これは+100」が3回働くため
     const run = evs.slice(i, j)
     const buckets = { buff: { abs: [], evs: [] }, keyword: { abs: [], evs: [] } }
     let pending = []; const tail = []
@@ -1537,7 +1537,9 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     const skillHit = play.i > 0 && ['attack', 'finisher'].includes(play.events[play.i - 1].type) // スキル攻撃(攻撃の宣言のあと)のダメージだけ。能力のダメージは、下の afterAbility
     const afterAbility = play.i > 0 && play.events[play.i - 1].type === 'ability'
     const ratio = afterAbility ? (light ? ABILITY_LIGHT_RATIO : grp.every((x) => x.type === 'damage') ? ABILITY_DMG_RATIO : LIGHT_RATIO) : LIGHT_RATIO
-    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), light ? Math.round(full * ratio) : afterAbility && ratio !== LIGHT_RATIO ? Math.round(full * ratio) : dmgOnly && skillHit && overlapOn ? Math.round(full * HIT_RATIO) : full)
+    const gE = groupEnd(play.events, play.i); const nx = play.events[gE + 1]; const pv = play.events[play.i - 1]
+    const repeatFlag = afterAbility && pv.flag && pv.uid && nx && nx.type === 'ability' && nx.flag && nx.uid === pv.uid // 同じ能力が続けて働くとき(マーズの【常時】3回)は、強化の終わりを待たず、次の回を約0.16秒後に重ねる(動画)
+    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), repeatFlag ? 0 : light ? Math.round(full * ratio) : afterAbility && ratio !== LIGHT_RATIO ? Math.round(full * ratio) : dmgOnly && skillHit && overlapOn ? Math.round(full * HIT_RATIO) : full)
     return () => clearTimeout(t)
   }, [play, mult, logOpen, intro, startFx])
 
