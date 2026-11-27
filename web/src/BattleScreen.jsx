@@ -401,7 +401,7 @@ function iconKeysOf(unit) {
   if ((unit.keywords || []).includes('finisher')) out.push('finisher')
   return out
 }
-const FLAG_BURST_MS = 560 // 光1回の長さ
+const FLAG_BURST_MS = 700 // 光1回の長さ
 const FLAG_STAGGER_MS = 130 // 続けて光るときのずらし
 export function KeywordIcons({ keys, big, flagTick = 0 }) {
   const n = keys.length
@@ -447,14 +447,21 @@ function FlagBurst({ size = 22 }) {
   const D = Math.round(size * 3.5)
   const at = { position: 'absolute', left: '50%', top: '50%', pointerEvents: 'none', borderRadius: '50%', transform: 'translate(-50%, -50%)' }
   const ms = FLAG_BURST_MS
+  const ani = (name, ease = 'ease-out') => `${name} ${ms}ms ${ease} both`
   return (
     <>
-      <span style={{ ...at, width: size, height: size, background: 'radial-gradient(circle, #e8ffa8 0%, #8df050 70%, #5fd03a 100%)', opacity: 0, willChange: 'opacity', animation: `feel-flag-pulse ${ms}ms ease-out both`, zIndex: 3 }} />
-      <span style={{ ...at, width: size * 1.9, height: size * 1.9, background: 'radial-gradient(circle, rgba(255,255,215,0.9) 0%, rgba(235,255,140,0.45) 45%, rgba(235,255,140,0) 72%)', opacity: 0, willChange: 'transform, opacity', animation: `feel-flag-core ${ms}ms ease-out both`, zIndex: 2 }} />
-      <span style={{ ...at, width: D, height: D, zIndex: -1, opacity: 0, willChange: 'transform, opacity', animation: `feel-flag-bubble ${ms}ms cubic-bezier(0.2, 0.7, 0.2, 1) both` }}>
-        <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 50% 38%, rgba(240,255,170,0.20) 0%, rgba(240,255,170,0) 50%), linear-gradient(to bottom, rgba(140,225,70,0.10) 0%, rgba(190,242,90,0.36) 100%)', boxShadow: 'inset 0 0 0 1.5px rgba(225,255,140,0.6), inset 0 -6px 12px rgba(190,240,90,0.35)' }} />
-        <span style={{ position: 'absolute', left: '4%', right: '4%', top: '47%', height: '11%', borderRadius: '50%', background: 'linear-gradient(to right, rgba(235,250,110,0), rgba(235,250,110,0.7) 25%, rgba(235,250,110,0.7) 75%, rgba(235,250,110,0))', transform: 'rotate(-6deg)' }} />
+      {/* 旗の丸が、明るい黄緑に光る */}
+      <span style={{ ...at, width: size, height: size, background: 'radial-gradient(circle, #e8ffa8 0%, #8df050 70%, #5fd03a 100%)', opacity: 0, willChange: 'opacity', animation: ani('feel-flag-pulse'), zIndex: 3 }} />
+      <span style={{ ...at, width: D, height: D, zIndex: -1, opacity: 0, willChange: 'transform, opacity', animation: ani('feel-flag-bubble', 'cubic-bezier(0.2, 0.7, 0.2, 1)') }}>
+        {/* 球: 最初は黄緑でしっかり(ほぼ不透明)、あとから透けていく */}
+        <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 38% 30%, rgba(250,255,190,0.55) 0%, rgba(250,255,190,0) 38%), radial-gradient(circle, rgba(150,228,60,0.62) 0%, rgba(165,235,70,0.7) 70%, rgba(220,250,100,0.85) 100%)', boxShadow: 'inset 0 0 0 1px rgba(240,255,170,0.7)', willChange: 'opacity', animation: ani('feel-flag-warm', 'linear') }} />
+        {/* あとから、球が青みがかった緑にかわって透ける */}
+        <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(120,235,190,0.12) 0%, rgba(120,235,190,0.28) 75%, rgba(170,245,230,0.5) 100%)', opacity: 0, willChange: 'opacity', animation: ani('feel-flag-cool', 'linear') }} />
+        {/* 球をまわる、細い白い弧 */}
+        <span style={{ position: 'absolute', left: '-6%', right: '-6%', top: '30%', height: '42%', borderRadius: '50%', border: '1.5px solid transparent', borderTopColor: 'rgba(255,255,255,0.85)', borderBottomColor: 'rgba(255,255,255,0.35)', transform: 'rotate(-16deg)', opacity: 0, willChange: 'opacity', animation: ani('feel-flag-arc', 'linear') }} />
       </span>
+      {/* 消えるときに、球の下へ落ちていく細い光の筋 */}
+      <span style={{ position: 'absolute', left: '50%', top: '50%', width: D * 0.86, height: D * 0.7, marginLeft: -D * 0.43, marginTop: -D * 0.1, pointerEvents: 'none', zIndex: -1, background: 'repeating-linear-gradient(to right, rgba(235,255,235,0.8) 0 1px, rgba(235,255,235,0) 1px 5px)', WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, transparent 100%)', maskImage: 'linear-gradient(to bottom, #000 0%, transparent 100%)', opacity: 0, willChange: 'transform, opacity', animation: ani('feel-flag-streak', 'linear') }} />
     </>
   )
 }
