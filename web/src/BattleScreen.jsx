@@ -410,7 +410,7 @@ export function KeywordIcons({ keys, big, flagTick = 0 }) {
   const seenTick = useRef(flagTick) // 出した時点の回数は、もう光らせない(作り直しで光り直さないように)
   const nextSlot = useRef(0) // 次の光を出せる時刻(2回続けて光るときは、前の光を消さずに重ねて、少しずらして出す。動画のギルダリアのとおり)
   const idSeq = useRef(0)
-  const [bursts, setBursts] = useState([]) // 光っている最中の光(重なって出る)。あいだは緑旗だけを見せる(ほかのアイコンは隠す)
+  const [bursts, setBursts] = useState([]) // 光っている最中の光(重なって出る)。複数のアイコンを持つときも、旗に切りかえない。切りかえの途中のアイコンの上に、そのまま光を重ねる(動画)
   const timers = useRef([])
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
   useEffect(() => {
@@ -436,7 +436,7 @@ export function KeywordIcons({ keys, big, flagTick = 0 }) {
       {keys.map((k, i) => {
         const { Icon } = KW_ICONS[k]
         return (
-          <span key={k} data-kw={k} style={{ position: 'absolute', inset: 0, ...(burst ? { opacity: k === 'flag' ? 1 : 0 } : { opacity: n === 1 ? 1 : 0, willChange: n === 1 ? undefined : 'opacity', animation: n === 1 ? undefined : `feel-kw-cycle-${n} ${total}ms linear ${i * KW_ICON_MS - total - phase * 1000}ms infinite` }) }}><Icon /></span>
+          <span key={k} data-kw={k} style={{ position: 'absolute', inset: 0, opacity: n === 1 ? 1 : 0, willChange: n === 1 ? undefined : 'opacity', animation: n === 1 ? undefined : `feel-kw-cycle-${n} ${total}ms linear ${i * KW_ICON_MS - total - phase * 1000}ms infinite` }}><Icon /></span>
         )
       })}
       {keys.includes('flag') && bursts.map((id) => <FlagBurst key={id} size={size} />)}
