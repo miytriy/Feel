@@ -1252,11 +1252,12 @@ const initialPlay = (st) => {
 const BUFF_APPLY_MS = 250 // 強化の光(feel-aura)が最大になる時(0.9秒の25%付近)
 const LIGHT_FX = new Set(['heal', 'buff', 'keyword', 'countdown']) // 重ねて流してよい軽い演出
 const LIGHT_RATIO = 0.4
+const HIT_RATIO = 0.65 // 攻撃・被弾(ダメージだけのまとまり)は、数字が出きる前に次へ進む。演出は最後まで続く
 const ABILITY_LIGHT_RATIO = 0.3 // 能力の表示のすぐあとの強化(動画のルミナスナイト → ギルダリアの間 約0.42秒)
 const ABILITY_DMG_RATIO = 0.55 // 能力の表示のすぐあとのダメージ(動画: 旗の光 → 次の周まで約0.65秒)
 // 演出の長さが決まっている(参考動画の再現で、動きの長さが固定の)ものは、待ち時間の設定(速い・ゆっくり)で短く・長くしない。短くすると、演出が途中で切れる
 const FIXED_MS = new Set(['vanish', 'evolve', 'finisher', 'countdown', 'evolveReady'])
-const EVENT_MS = { turn: 700, ability: 160, attack: 300, damage: 900, heal: 1350, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1000, finisher: 440, countdown: 780, evolveReady: 1350, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
+const EVENT_MS = { turn: 700, ability: 160, attack: 200, damage: 900, heal: 1350, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1000, finisher: 440, countdown: 780, evolveReady: 1350, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
 
 // 案内所 → CPU戦 → チーム を通って来たとき(flow)は、levelInit / teamInit / spellsInit が渡され、すぐ対戦が始まる。onBackLevel: レベルを選ぶ画面へ / onBackTeam: チームを選ぶ画面へ
 // DPTテスト場(自分で操作して測る): いまの計測値。合計ダメージ ÷ 自分のターン数
@@ -1525,9 +1526,10 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     const full = Math.max(...grp.map((x) => (FIXED_MS.has(x.type) ? EVENT_MS[x.type] : (EVENT_MS[x.type] ?? 500) * mult)))
     const light = overlapOn && grp.every((x) => LIGHT_FX.has(x.type)) // 軽い演出だけのまとまりは、全部が終わるのを待たず、4割ほど進んだら次へ(演出は、そのまま最後まで続く)
     // 能力(常時・攻撃時など)の表示のすぐあとに続く強化・ダメージは、動画のテンポに合わせて早めに次へ進む(旗の光 → 約0.42秒後に次の旗 / 約0.65秒後に次の周)
+    const dmgOnly = grp.every((x) => x.type === 'damage') // ダメージだけのまとまり(破壊・消滅・必殺をふくむものは、全部の長さを見せる)
     const afterAbility = play.i > 0 && play.events[play.i - 1].type === 'ability'
     const ratio = afterAbility ? (light ? ABILITY_LIGHT_RATIO : grp.every((x) => x.type === 'damage') ? ABILITY_DMG_RATIO : LIGHT_RATIO) : LIGHT_RATIO
-    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), light ? Math.round(full * ratio) : afterAbility && ratio !== LIGHT_RATIO ? Math.round(full * ratio) : full)
+    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), light ? Math.round(full * ratio) : afterAbility && ratio !== LIGHT_RATIO ? Math.round(full * ratio) : dmgOnly && overlapOn ? Math.round(full * HIT_RATIO) : full)
     return () => clearTimeout(t)
   }, [play, mult, logOpen, intro, startFx])
 
