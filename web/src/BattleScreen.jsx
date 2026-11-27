@@ -1128,6 +1128,13 @@ const GROUP_TYPES = ['damage', 'heal', 'summon', 'buff', 'keyword', 'destroy', '
 let MIX_LIGHT = true // 軽い演出(回復・強化・能力付与・カウントダウン)は、種類がちがっても、続いていれば1つのまとまりにして、いっせいに流す(設定で切り替え)
 function groupEnd(events, i) {
   const e = events[i]
+  // 緑旗がつく能力(常時・攻撃時・交戦時)が続けて何回も働くとき(マーズ: ナイト3体ぶんの【常時】)は、ひとまとめにして、旗の光を重ねて(ずらして)出す。
+  // 次の強化は、最初の光から約0.16秒後に始まる(光りながら、同時に強化が始まる)
+  if (e && e.type === 'ability' && e.flag && e.uid) {
+    let j = i
+    while (j + 1 < events.length && events[j + 1].type === 'ability' && events[j + 1].flag && events[j + 1].uid) j += 1
+    return j
+  }
   if (!e || !GROUP_TYPES.includes(e.type)) return i
   const seen = new Set([e.target])
   let j = i
