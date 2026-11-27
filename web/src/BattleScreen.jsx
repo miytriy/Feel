@@ -1218,24 +1218,6 @@ function hoistRepeats(evs) {
   }
   return out
 }
-// 召喚された直後のユニットが得る能力(マーズの【常時】の【突進】)は、エフェクトなしで、召喚した瞬間から付いている。
-// 召喚の出来事から、能力付与の出来事の手前までの盤面に、その能力を足し、能力付与の出来事は取り除く(同じターンの中のものだけ)
-function foldEnterKeywords(evs) {
-  const out = evs.slice()
-  for (let k = 0; k < out.length; k++) {
-    const e = out[k]
-    if (!e || e.type !== 'keyword') continue
-    let s0 = -1
-    for (let m = k - 1; m >= 0; m--) { if (out[m].type === 'turn') break; if (out[m].type === 'summon' && out[m].target === e.target) { s0 = m; break } }
-    if (s0 < 0) continue
-    for (let m = s0; m < k; m++) {
-      const u = out[m].units && out[m].units[e.target]
-      if (u && !u.keywords.includes(e.keyword)) out[m] = { ...out[m], units: { ...out[m].units, [e.target]: { ...u, keywords: [...u.keywords, e.keyword] } } }
-    }
-    out.splice(k, 1); k -= 1
-  }
-  return out
-}
 function reorderBoost(evs) {
   const isB = (e) => e.type === 'buff' || e.type === 'keyword'
   const out = []
@@ -1272,7 +1254,7 @@ function reorderBoost(evs) {
 export const VANISH_SLOW = 1 // 消滅エフェクトの長さの倍率。1 = 0.9秒(ルール画面と同じ基準・56コマで約62fps)。EFFECTS.mdの基準値。
 // 対戦の最初の盤面にも、「起きたこと」(最初のターンのファンファーレ・召喚など)がある。戦闘開始の画面が終わってから、ここから再生する(最初から展開済みで始まらないように)
 const initialPlay = (st) => {
-  const evs = insertFinisher(reorderBoost(pullDestroy(hoistRepeats(foldEnterKeywords((st && st.events) || [])))))
+  const evs = insertFinisher(reorderBoost(pullDestroy(hoistRepeats((st && st.events) || []))))
   return evs.length ? { events: evs, i: 0, prevActive: null, prevAbility: null, prevUnits: null } : null
 }
 const BUFF_APPLY_MS = 250 // 強化の光(feel-aura)が最大になる時(0.9秒の25%付近)
@@ -1599,7 +1581,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     try { const d = collectHistory(state, next); setHist((h) => addHistory(h, d)) } catch (e) { console.error('バトルログの集計に失敗', e) } // 失敗しても、対戦は止めない
     try { addEvents(statsRef.current, next.events || [], (uid) => next.units.find((u) => u.uid === uid)) } catch (e) { console.error('キャリアの集計に失敗', e) } // 記録が失敗しても、対戦は止めない
     if (dptMode && dptMode.refill !== false) for (const u of next.units) if (u.team === OPP() && !next.winner) { if (!u.alive) { u.alive = true; u.vanished = false } u.hp = u.maxHp } // DPTテスト場: 的は、行動のたびに満タンへ戻す(再生は、イベントの記録のとおり)
-    const evs = insertFinisher(reorderBoost(pullDestroy(hoistRepeats(foldEnterKeywords(next.events || [])))))
+    const evs = insertFinisher(reorderBoost(pullDestroy(hoistRepeats(next.events || []))))
     setPlay(evs.length ? { events: evs, i: 0, prevActive: state?.active ?? null, prevAbility: state?.lastAbility ?? null, prevUnits: state?.units ?? null } : null)
     setState(next)
   }
