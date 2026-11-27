@@ -615,6 +615,22 @@ function runCrestPassive(state, crest, p, source, ctx = {}, kind = 'クレスト
   runEffects(state, source, p.effects, ctx)
 }
 
+// クレストの【味方がフォロワーを召喚したとき】(trigger: 'allyEnter')。oncePerTurn: true のものは、そのチームのターン開始ごとに1回まで
+// アミュレットは対象外(フォロワーだけ)。効果の target: 'entered' は、出てきたキャラ
+function fireCrestsOnEnter(state, u) {
+  if (!u || u.isAmulet) return
+  for (const crest of [...(state.crests?.[u.team] || [])]) {
+    for (const p of crest.passives) {
+      if (p.trigger !== 'allyEnter') continue
+      if (p.oncePerTurn && crest.enterUsed) continue
+      const source = crestSource(state, crest)
+      if (!source) continue
+      crest.enterUsed = true
+      runCrestPassive(state, crest, p, source, { other: u })
+    }
+  }
+}
+
 // クレストの【味方が回復したとき】。oncePerTurn: true のものは、そのチームのターン開始ごとに1回まで
 function fireCrestsOnHeal(state, team) {
   for (const crest of [...state.crests[team]]) {
@@ -942,6 +958,7 @@ function reanimate(state, source, speed, opts) {
   emit(state, 'summon', { target: u.uid, name: u.name, team: u.team })
   state.log.push(`【リアニメイト_${speed}】${u.name}が蘇生した`)
   for (const a of state.units.filter((x) => x.alive && x.team === u.team && x.uid !== u.uid)) fire(state, 'allyEnter', a, { other: u })
+  fireCrestsOnEnter(state, u)
   seasonEnter(state, u) // シーズン補正
   recalc(state)
   fire(state, 'onEnter', u, {})
@@ -983,6 +1000,7 @@ function afterEnter(state, u) {
   }
   // 自分の場の「味方が場に出たとき」(enterType があれば、そのタイプのキャラが出たときだけ)
   for (const a of state.units.filter((x) => x.alive && x.team === u.team && x.uid !== u.uid)) fire(state, 'allyEnter', a, { other: u })
+  fireCrestsOnEnter(state, u)
   seasonEnter(state, u) // シーズン補正
   recalc(state)
   fire(state, 'onEnter', u, {}) // 【場に出たとき】: ファンファーレ(最初の自分のターン開始時)とは違い、出た瞬間に働く
@@ -1306,7 +1324,7 @@ function runEffects(state, source, effects, ctx = {}) {
       continue
     }
     if (e.type === 'evolve') { // これは進化する(EPは使わない。すでに進化済み・進化できないキャラ・場にいないときは何もしない)
-      if (source.alive && source.field === 'main' && source.evolvable && !source.evolved) doEvolve(state, source, ctx.opts, true)
+      { const tu = e.target === 'entered' ? ctx.other : source; if (tu && tu.alive && tu.field === 'main' && tu.evolvable && !tu.evolved) doEvolve(state, tu, ctx.opts, true) }
       continue
     }
     if (e.type === 'mpMax') { // 自分のMP最大値を増やす(上限 MP_CAP まで。いまのMPは変わらない)
@@ -1474,8 +1492,8 @@ function runEffects(state, source, effects, ctx = {}) {
           break
         }
         case 'gainDoubleSkill': // 【アクティブ】1ターンに2回スキルを発動できる(2回目はMPを消費)
-          t.doubleSkill = { mpCost: e.mpCost ?? 1 }
-          state.log.push(`${t.name}は1ターンに2回スキルを発動できるようになった(2回目はMP${t.doubleSkill.mpCost})`)
+          t.doubleSkill = { mpCost: e.mpCost ?? 1, ...(e.turnOnly ? { turnOnly: true } : {}) } // turnOnly: そのターン中だけ(ターンが終わると消える)
+          state.log.push(e.turnOnly ? `${t.name}はそのターン中、2回スキルを発動できる` : `${t.name}は1ターンに2回スキルを発動できるようになった(2回目はMP${t.doubleSkill.mpCost})`)
           break
         case 'gainKeyword': { // キーワード能力(必殺など)を得る
           const k = e.keyword
@@ -1599,7 +1617,7 @@ function fire(state, trigger, unit, ctx = {}, from = 0) {
 const CREST_OWNER_TRIGGERS = ['turnStart', 'turnEnd']
 const CREST_SUBJECT_TRIGGERS = ['turnStart', 'turnEnd', 'allyTurnStart', 'allyTurnEnd']
 function fireCrests(state, team, trigger, subject, opts) {
-  if (trigger === 'allyTurnStart') for (const c of state.crests[team]) c.healUsed = false // 【味方が回復したとき】(oncePerTurn)の回数をリセット
+  if (trigger === 'allyTurnStart') for (const c of state.crests[team]) { c.healUsed = false; c.enterUsed = false } // 【味方が回復したとき】【味方が召喚したとき】(oncePerTurn)の回数をリセット
   for (const crest of [...state.crests[team]]) {
     if (CREST_OWNER_TRIGGERS.includes(trigger) && crest.sourceUid !== subject.uid) continue
     for (const p of crest.passives) {
@@ -1841,6 +1859,7 @@ function beginTurn(state, unit, opts) {
 }
 
 function endTurn(state, actor) {
+  if (actor.doubleSkill?.turnOnly) actor.doubleSkill = null // 「そのターン中」の2回スキルは、ターン終了で消える
   actor.hasActed = true
   if (actor.alive) { // クレストの【ターン終了時】: そのクレストを持つキャラ自身のターンが終わるときに働く
     fireCrests(state, actor.team, 'turnEnd', actor, undefined)
