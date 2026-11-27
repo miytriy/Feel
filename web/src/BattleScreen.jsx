@@ -11,6 +11,7 @@ import FormationScreen from './FormationScreen.jsx'
 import { createPortal } from 'react-dom'
 import { FinisherA, FinisherB } from './FinisherFx.jsx'
 import { HealFx } from './HealFx.jsx'
+import BuffFx from './BuffFx.jsx'
 import { CountdownFx } from './CountdownFx.jsx'
 import EvolveReadyFx from './EvolveReadyFx.jsx'
 import { BattleHud, StageIntro, ExitConfirm, ResultBanner, ResultReopen, BattleMenu, BattleStart } from './BattleHud.jsx'
@@ -402,6 +403,7 @@ function iconKeysOf(unit) {
   return out
 }
 const FLAG_BURST_MS = 700 // 光1回の長さ
+const FLAG_LOG_DELAY_MS = 100 // 旗が光りはじめてから、左のログが出るまで
 const FLAG_STAGGER_MS = 130 // 続けて光るときのずらし
 export function KeywordIcons({ keys, big, flagTick = 0 }) {
   const n = keys.length
@@ -457,11 +459,7 @@ function FlagBurst({ size = 22 }) {
         <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 38% 30%, rgba(250,255,190,0.55) 0%, rgba(250,255,190,0) 38%), radial-gradient(circle, rgba(150,228,60,0.62) 0%, rgba(165,235,70,0.7) 70%, rgba(220,250,100,0.85) 100%)', boxShadow: 'inset 0 0 0 1px rgba(240,255,170,0.7)', willChange: 'opacity', animation: ani('feel-flag-warm', 'linear') }} />
         {/* あとから、球が青みがかった緑にかわって透ける */}
         <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(120,235,190,0.12) 0%, rgba(120,235,190,0.28) 75%, rgba(170,245,230,0.5) 100%)', opacity: 0, willChange: 'opacity', animation: ani('feel-flag-cool', 'linear') }} />
-        {/* 球をまわる、細い白い弧 */}
-        <span style={{ position: 'absolute', left: '-6%', right: '-6%', top: '30%', height: '42%', borderRadius: '50%', border: '1.5px solid transparent', borderTopColor: 'rgba(255,255,255,0.85)', borderBottomColor: 'rgba(255,255,255,0.35)', transform: 'rotate(-16deg)', opacity: 0, willChange: 'opacity', animation: ani('feel-flag-arc', 'linear') }} />
       </span>
-      {/* 消えるときに、球の下へ落ちていく細い光の筋 */}
-      <span style={{ position: 'absolute', left: '50%', top: '50%', width: D * 0.86, height: D * 0.7, marginLeft: -D * 0.43, marginTop: -D * 0.1, pointerEvents: 'none', zIndex: -1, background: 'repeating-linear-gradient(to right, rgba(235,255,235,0.8) 0 1px, rgba(235,255,235,0) 1px 5px)', WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, transparent 100%)', maskImage: 'linear-gradient(to bottom, #000 0%, transparent 100%)', opacity: 0, willChange: 'transform, opacity', animation: ani('feel-flag-streak', 'linear') }} />
     </>
   )
 }
@@ -653,9 +651,10 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
         ? <span aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 9, transformOrigin: '50% 0', animation: 'feel-d-unmelt 0.18s ease-in forwards', willChange: 'transform' }}><CountdownFx key={`cd-${unit.countdown}`} delay={fx.delay} /></span>
         : <CountdownFx key={`cd-${unit.countdown}`} delay={fx.delay} />)}
       {fx && fx.kind === 'damage' && fx.finisher && <FinisherB key={`fb-${tick}`} />}
-      {fx && (fx.kind === 'buff' || fx.kind === 'keyword') && (
+      {fx && fx.kind === 'buff' && <BuffFx key={`bfx-${tick}`} big={big} />}
+      {fx && fx.kind === 'keyword' && (
         // 強化・能力付与のエフェクト: カードの周りに光(強化=金 / 付与=水色)が広がり、記号(▲ / ✦)が昇る
-        <span key={`aura-${tick}`} aria-hidden="true" data-testid={`fx-${fx.kind}`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 7 }}>
+        <span key={`aura-${tick}`} aria-hidden="true" data-testid="fx-keyword" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 7 }}>
           <span style={{ position: 'absolute', inset: -8, borderRadius: 14, border: `3px solid ${fx.kind === 'buff' ? '#ffd24a' : '#66e0ff'}`, boxShadow: `0 0 18px 4px ${fx.kind === 'buff' ? 'rgba(255,210,74,0.75)' : 'rgba(102,224,255,0.75)'}, inset 0 0 18px 2px ${fx.kind === 'buff' ? 'rgba(255,210,74,0.45)' : 'rgba(102,224,255,0.45)'}`, animation: 'feel-aura 0.9s ease-out both' }} />
           {[0, 1, 2].map((n) => (
             <span key={n} style={{ position: 'absolute', left: `${22 + n * 28}%`, bottom: '14%', fontSize: big ? 22 : 16, fontWeight: 900, color: fx.kind === 'buff' ? '#ffd24a' : '#66e0ff', textShadow: '0 0 3px #000, 0 0 8px currentColor', animation: `feel-rise 0.9s ${n * 0.12}s ease-out both` }}>{fx.kind === 'buff' ? '▲' : '✦'}</span>
@@ -1494,7 +1493,9 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     const release = hasEffect || (gEnd >= play.events.length - 1 && !(state && state.pending))
     const logs = release ? pendingLog.current.splice(0) : [] // 対象を選ぶ能力(選択式)は、選んで効果が働くまで、ログを保留したままにする
     if (logs.length) {
-      setSideLog((l) => [...l, ...logs].slice(-(SIDE_LOG_MAX + 4))) // 最大数を超えたものは、SideLog が消えるところまで見せてから外す
+      const put = () => setSideLog((l) => [...l, ...logs].slice(-(SIDE_LOG_MAX + 4))) // 最大数を超えたものは、SideLog が消えるところまで見せてから外す
+      // 動画: 緑旗が光りはじめて約0.1秒あと(球がふくらんでいる途中)に、左のログが出る
+      if (flashNow.length) setTimeout(put, FLAG_LOG_DELAY_MS); else put()
     }
     {
       const ids = release ? pendingFlash.current.splice(0) : []
