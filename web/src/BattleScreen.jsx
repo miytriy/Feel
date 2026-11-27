@@ -1284,7 +1284,7 @@ const initialPlay = (st) => {
   const evs = insertFinisher(reorderBoost(pullDestroy(hoistRepeats(foldEnterKeywords((st && st.events) || [])))))
   return evs.length ? { events: evs, i: 0, prevActive: null, prevAbility: null, prevUnits: null } : null
 }
-const BUFF_APPLY_MS = 250 // 強化の光(feel-aura)が最大になる時(0.9秒の25%付近)
+const BUFF_APPLY_MS = 120 // 強化の演出(BuffFx)で、弧が回りはじめ・光の筋が落ちはじめる時(動画: 数字が変わるのと、弧・光の筋が出はじめるのが同じ)。グループの始まりから数える
 const LIGHT_FX = new Set(['heal', 'buff', 'keyword', 'countdown']) // 重ねて流してよい軽い演出
 const LIGHT_RATIO = 0.4
 const HIT_RATIO = 0.5 // 攻撃・被弾(ダメージだけのまとまり)は、数字が出きる前に次へ進む。演出は最後まで続く
@@ -1549,8 +1549,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     const g = groupEnd(play.events, play.i)
     if (!play.events.slice(play.i, g + 1).some((x) => x.type === 'buff')) return
     const { events, i } = play
-    const pre = i > 0 && events[i - 1].type === 'ability' ? Math.round(EVENT_MS.ability * mult) : 0 // 直前の能力の表示(旗の光)が始まってから数える
-    const t = setTimeout(() => setBuffReady({ events, i }), Math.max(0, BUFF_APPLY_MS - pre))
+    const t = setTimeout(() => setBuffReady({ events, i }), BUFF_APPLY_MS)
     return () => clearTimeout(t)
   }, [play && play.events, play && play.i]) // eslint-disable-line react-hooks/exhaustive-deps
   // 再生を1つずつ進める
