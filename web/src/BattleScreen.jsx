@@ -725,7 +725,7 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
                 {fx.parts.map((pt, n) => <DmgNum key={n} part={pt} crit={fx.crit && n === 0 && pt.dmgType !== 'finisher'} big={big} />)}
               </span>
             </div>, document.body) : null
-        ) : (
+        ) : fx.kind === 'buff' ? null : ( // 強化の文字(攻撃アイコン+200 など)は廃止(強化のエフェクトだけ出す。数字は、カードの数字が変わる)
         <span key={tick} style={{ position: 'absolute', left: '50%', top: '30%', zIndex: 5, pointerEvents: 'none', fontWeight: 800, fontSize: fx.crit ? (big ? 26 : 20) : (big ? 22 : 17), color: fx.kind === 'heal' ? '#3ddc97' : fx.kind === 'damage' ? '#ff5a5a' : fx.kind === 'buff' ? '#ffd24a' : fx.kind === 'keyword' ? '#66e0ff' : C.player, textShadow: '0 0 3px #000, 0 0 3px #000, 0 0 3px #000', whiteSpace: 'nowrap', animation: 'feel-float 1.2s ease-out forwards' }}>
           {fx.kind === 'buff' && fx.buffs ? fx.buffs.map((b, n) => (
             <span key={n} style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginRight: n < fx.buffs.length - 1 ? 8 : 0 }}>
