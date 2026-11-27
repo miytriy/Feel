@@ -446,19 +446,19 @@ export function KeywordIcons({ keys, big, flagTick = 0 }) {
 // 緑旗が光る(動画のとおり): 旗が明るい黄緑に光る → 透けた球(ふちが明るく、中は薄い)がふくらみ、しばらく漂って消える(約0.85秒)。
 // 球は最初から大きさ(旗の3.4倍)で描いて scale 1 以下でしか動かさない(拡大してぼやけるのを防ぐ)。transform と opacity だけで動かす
 function FlagBurst({ size = 22 }) {
-  const D = Math.round(size * 3.5)
+  const D = Math.round(size * 3.3)
   const at = { position: 'absolute', left: '50%', top: '50%', pointerEvents: 'none', borderRadius: '50%', transform: 'translate(-50%, -50%)' }
   const ms = FLAG_BURST_MS
   const ani = (name, ease = 'ease-out') => `${name} ${ms}ms ${ease} both`
+  const fill = { position: 'absolute', inset: 0, borderRadius: '50%' }
   return (
     <>
-      {/* 旗の丸が、明るい黄緑に光る */}
-      <span style={{ ...at, width: size, height: size, background: 'radial-gradient(circle, #e8ffa8 0%, #8df050 70%, #5fd03a 100%)', opacity: 0, willChange: 'opacity', animation: ani('feel-flag-pulse'), zIndex: 3 }} />
+      {/* 旗の丸が、明るい黄緑に光る(ふちは淡い黄色) */}
+      <span style={{ ...at, width: size, height: size, background: 'radial-gradient(circle at 40% 35%, #f2ffb8 0%, #a6ee4a 55%, #6fd23a 100%)', boxShadow: '0 0 5px 2px rgba(225,255,120,0.85)', opacity: 0, willChange: 'opacity', animation: ani('feel-flag-pulse'), zIndex: 3 }} />
       <span style={{ ...at, width: D, height: D, zIndex: -1, opacity: 0, willChange: 'transform, opacity', animation: ani('feel-flag-bubble', 'cubic-bezier(0.2, 0.7, 0.2, 1)') }}>
-        {/* 球: 最初は黄緑でしっかり(ほぼ不透明)、あとから透けていく */}
-        <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 38% 30%, rgba(250,255,190,0.55) 0%, rgba(250,255,190,0) 38%), radial-gradient(circle, rgba(150,228,60,0.62) 0%, rgba(165,235,70,0.7) 70%, rgba(220,250,100,0.85) 100%)', boxShadow: 'inset 0 0 0 1px rgba(240,255,170,0.7)', willChange: 'opacity', animation: ani('feel-flag-warm', 'linear') }} />
-        {/* あとから、球が青みがかった緑にかわって透ける */}
-        <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle, rgba(120,235,190,0.12) 0%, rgba(120,235,190,0.28) 75%, rgba(170,245,230,0.5) 100%)', opacity: 0, willChange: 'opacity', animation: ani('feel-flag-cool', 'linear') }} />
+        {/* 球(焼き込み画像): 最初は上が黄色いもや・下が黄緑 → あとから緑〜青みがかった緑にかわって透けていく */}
+        <img src={`${import.meta.env?.BASE_URL || '/'}fx/flag/orb-warm.webp`} alt="" draggable={false} decoding="async" style={{ ...fill, width: '100%', height: '100%', willChange: 'opacity', animation: ani('feel-flag-warm', 'linear') }} />
+        <img src={`${import.meta.env?.BASE_URL || '/'}fx/flag/orb-cool.webp`} alt="" draggable={false} decoding="async" style={{ ...fill, width: '100%', height: '100%', opacity: 0, willChange: 'opacity', animation: ani('feel-flag-cool', 'linear') }} />
       </span>
     </>
   )
@@ -1527,9 +1527,10 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     const light = overlapOn && grp.every((x) => LIGHT_FX.has(x.type)) // 軽い演出だけのまとまりは、全部が終わるのを待たず、4割ほど進んだら次へ(演出は、そのまま最後まで続く)
     // 能力(常時・攻撃時など)の表示のすぐあとに続く強化・ダメージは、動画のテンポに合わせて早めに次へ進む(旗の光 → 約0.42秒後に次の旗 / 約0.65秒後に次の周)
     const dmgOnly = grp.every((x) => x.type === 'damage') // ダメージだけのまとまり(破壊・消滅・必殺をふくむものは、全部の長さを見せる)
+    const skillHit = play.i > 0 && ['attack', 'finisher'].includes(play.events[play.i - 1].type) // スキル攻撃(攻撃の宣言のあと)のダメージだけ。能力のダメージは、下の afterAbility
     const afterAbility = play.i > 0 && play.events[play.i - 1].type === 'ability'
     const ratio = afterAbility ? (light ? ABILITY_LIGHT_RATIO : grp.every((x) => x.type === 'damage') ? ABILITY_DMG_RATIO : LIGHT_RATIO) : LIGHT_RATIO
-    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), light ? Math.round(full * ratio) : afterAbility && ratio !== LIGHT_RATIO ? Math.round(full * ratio) : dmgOnly && overlapOn ? Math.round(full * HIT_RATIO) : full)
+    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), light ? Math.round(full * ratio) : afterAbility && ratio !== LIGHT_RATIO ? Math.round(full * ratio) : dmgOnly && skillHit && overlapOn ? Math.round(full * HIT_RATIO) : full)
     return () => clearTimeout(t)
   }, [play, mult, logOpen, intro, startFx])
 
@@ -1886,9 +1887,10 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   }
   // 攻撃した側・受けた側の印(まとまった出来事の全員ぶん)。全体攻撃なら、攻撃側1体と、受ける側が全員
   const attackerIds = new Set(); const targetIds = new Map()
+  const abilityHit = !!play && play.i > 0 && play.events[play.i - 1].type === 'ability' // 能力のダメージ(ギルダリアの全体攻撃など)には、攻撃した側の「攻撃」の枠は出さない。緑旗の光で、だれの能力か分かるため
   for (const x of groupEvs) {
     if ((x.type === 'damage' || x.type === 'block' || x.type === 'attack') && x.src && x.target && x.src !== x.target) {
-      attackerIds.add(x.src)
+      if (!abilityHit) attackerIds.add(x.src)
       if (x.type === 'attack') continue // 攻撃の宣言の時点では、まだ当たっていない(エフェクトは、ダメージ・ガードのときの1回だけ)
       if (x.type === 'block') continue; else if (targetIds.get(x.target) !== 'guard') targetIds.set(x.target, 'target')
     }
