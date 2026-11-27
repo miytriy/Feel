@@ -403,6 +403,7 @@ function iconKeysOf(unit) {
   return out
 }
 const FLAG_BURST_MS = 700 // 光1回の長さ
+const REPEAT_FLAG_MS = 150 // 同じ緑旗の能力が続けて働くとき、能力の表示(160ms)のあとに足す待ち。次の回まで約0.31秒(動画のマーズ: 左のログが 1.67→2.00→2.30秒で出る)
 const FLAG_LOG_DELAY_MS = 100 // 旗が光りはじめてから、左のログが出るまで
 const FLAG_STAGGER_MS = 130 // 続けて光るときのずらし
 export function KeywordIcons({ keys, big, flagTick = 0 }) {
@@ -1539,7 +1540,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     const ratio = afterAbility ? (light ? ABILITY_LIGHT_RATIO : grp.every((x) => x.type === 'damage') ? ABILITY_DMG_RATIO : LIGHT_RATIO) : LIGHT_RATIO
     const gE = groupEnd(play.events, play.i); const nx = play.events[gE + 1]; const pv = play.events[play.i - 1]
     const repeatFlag = afterAbility && pv.flag && pv.uid && nx && nx.type === 'ability' && nx.flag && nx.uid === pv.uid // 同じ能力が続けて働くとき(マーズの【常時】3回)は、強化の終わりを待たず、次の回を約0.16秒後に重ねる(動画)
-    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), repeatFlag ? 0 : light ? Math.round(full * ratio) : afterAbility && ratio !== LIGHT_RATIO ? Math.round(full * ratio) : dmgOnly && skillHit && overlapOn ? Math.round(full * HIT_RATIO) : full)
+    const t = setTimeout(() => setPlay((p) => (p ? { ...p, i: groupEnd(p.events, p.i) + 1 } : p)), repeatFlag ? Math.round(REPEAT_FLAG_MS * mult) : light ? Math.round(full * ratio) : afterAbility && ratio !== LIGHT_RATIO ? Math.round(full * ratio) : dmgOnly && skillHit && overlapOn ? Math.round(full * HIT_RATIO) : full)
     return () => clearTimeout(t)
   }, [play, mult, logOpen, intro, startFx])
 
