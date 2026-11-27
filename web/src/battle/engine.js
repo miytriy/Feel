@@ -1324,7 +1324,7 @@ function runEffects(state, source, effects, ctx = {}) {
       continue
     }
     if (e.type === 'evolve') { // これは進化する(EPは使わない。すでに進化済み・進化できないキャラ・場にいないときは何もしない)
-      { const tu = e.target === 'entered' ? ctx.other : source; if (tu && tu.alive && tu.field === 'main' && tu.evolvable && !tu.evolved) doEvolve(state, tu, ctx.opts, true) }
+      { const tu = e.target === 'entered' ? ctx.other : source; if (tu && tu.alive && (tu.field === 'main' || tu.field === 'summon') && tu.evolvable && !tu.evolved) doEvolve(state, tu, ctx.opts, true) }
       continue
     }
     if (e.type === 'mpMax') { // 自分のMP最大値を増やす(上限 MP_CAP まで。いまのMPは変わらない)
