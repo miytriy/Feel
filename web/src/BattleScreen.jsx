@@ -745,7 +745,16 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
           <LossBlink unit={unit} loss={loss} />
         </div>
       )}
-      <div style={{ marginTop: 2, color: C.mute, ...(dying && !unit.isAmulet ? { animation: `feel-d-fade2 ${vanishing ? '0.03s ease-in 0.04s' : '0.2s ease-in 0.3s'} forwards`, willChange: 'opacity' } : {}) }}>{unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive || dying ? <><span style={hpShown < unit.maxHp ? { color: DOWN_RED, fontWeight: 700 } : unit.maxHp > unit.baseMaxHp ? { color: UP_GREEN, fontWeight: 700 } : undefined}><AnimNum value={Math.ceil(unit.alive || vanishing ? hpShown : 0)} ms={300} /></span></> : ''}</div>
+      {/* 左寄せ: 下の中央に出るアイコン(旗など)と重ならないように */}
+      {/* カードの下: 名前 → HPバー → [HPアイコン]HP → [攻撃アイコン]攻撃力(11/27 のデザイン) */}
+      <div style={{ marginTop: 2, color: C.mute, ...(dying && !unit.isAmulet ? { animation: `feel-d-fade2 ${vanishing ? '0.03s ease-in 0.04s' : '0.2s ease-in 0.3s'} forwards`, willChange: 'opacity' } : {}) }}>
+        {unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive || dying ? (
+          <>
+            <div data-testid="unit-hp" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', paddingLeft: 6, gap: 2 }}><SI k="hp" /><span style={hpShown < unit.maxHp ? { color: DOWN_RED, fontWeight: 700 } : unit.maxHp > unit.baseMaxHp ? { color: UP_GREEN, fontWeight: 700 } : undefined}><AnimNum value={Math.ceil(unit.alive || vanishing ? hpShown : 0)} ms={300} /></span></div>
+            <div data-testid="unit-atk" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', paddingLeft: 6, gap: 2 }}><SI k="atk" /><span style={unit.atk > unit.base?.atk ? { color: UP_GREEN, fontWeight: 700 } : undefined}><AnimNum value={Math.round(unit.atk)} ms={300} /></span></div>
+          </>
+        ) : ''}
+      </div>
       {unit.armor > 0 && <div style={{ color: C.player }}>アーマー {Math.ceil(unit.armor)}{unit.armorRate < 1 ? `(${Math.round(unit.armorRate * 100)}%)` : ''}</div>}
     </div>
   )
