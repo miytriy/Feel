@@ -378,7 +378,7 @@ const enemyOneList = (state, u) => [
 // 奥義ゲージ = 現在のターン数(ラウンド数) + 特性の発動回数(チーム全体)
 export const gaugeOf = (state, team) => state.round + state.traitCount[team]
 
-// 条件: graveyard(墓場の下限) faith(信仰値の下限) hpBelow/hpAbove(HP%) evolved(進化済みか) crests(クレストの数の下限)
+// 条件: allyHasName(自分の場にその名前のユニットがいる) graveyard(墓場の下限) faith(信仰値の下限) hpBelow/hpAbove(HP%) evolved(進化済みか) crests(クレストの数の下限)
 //       link(連携の下限) gauge(奥義ゲージの下限) ultimate(奥義: ゲージ10以上) liberation(解放奥義: ゲージ15以上)
 // コンボ数: 従来はキャラごと(自分のターンが終わると0) / βはチーム共有(コンボリセットのターンで0)
 const comboOf = (state, unit) => state.comboCount[unit.team] // コンボは、ユニットではなくプレイヤー(チーム)に蓄積する
@@ -405,6 +405,7 @@ function checkCond(state, unit, c) {
   if (c.evolveTurn && state.round < EP_GRANT_ROUND) return false // 進化可能ターン: EPが配られたラウンドから戦闘終了まで
   if (c.crests != null && state.crests[unit.team].length < c.crests) return false
   if (c.combo != null && comboOf(state, unit) < c.combo) return false // コンボ: 味方の特性が使われた回数
+  if (c.allyHasName && !state.units.some((x) => x.alive && x.team === unit.team && x.uid !== unit.uid && x.name === c.allyHasName)) return false // 自分の場に、その名前のユニットがいる(『休日の王女・プリム』があるなら)
   if (c.fieldCharsBelow != null && state.units.filter((x) => x.alive && x.field === 'main' && x.team === unit.team).length >= c.fieldCharsBelow) return false // 自分の場の生存しているキャラクターが N 体未満
   if (c.fieldCharsAtLeast != null && state.units.filter((x) => x.alive && x.field === 'main' && x.team === unit.team).length < c.fieldCharsAtLeast) return false // 自分の場の生存しているキャラクターが N 体以上
   return true

@@ -34,7 +34,7 @@
 //   { type:'earth', amount }(土の印を増やす。場の【土の印】アミュレットに溜まる。アミュレットがなければ新しく出す。満員なら働かない)   { type:'earthSummon', amount }(【土の印】アミュレットを召喚する。満員でも上限を超えて出られ、すでにあるものは消滅してその数が足される)
 //   { type:'summon', unit:{ キャラのデータ }, count }   { type:'crest', crest:{ name, passives, countdown } }
 //   perGraveyard: 墓場1つにつき、効果が(heal/buff/armor/damageのadd)その分だけ増える
-//   condition: { link, gauge, ultimate, liberation, faith, graveyard, hpBelow, hpAbove, evolved, crests }
+//   condition: { link, gauge, ultimate, liberation, faith, graveyard, hpBelow, hpAbove, evolved, crests, allyHasName(自分の場にその名前のユニットがいる。「『〇〇』があるなら」) }
 //   target: self / opponent / allies / otherAllies / allyOne / enemies / enemyOne / enemyRandom / summons
 //   onlyField: 'main'|'summon'  効果の対象を、場のキャラクターだけ('main')/召喚物だけ('summon')にしぼる(例: 攻撃時に、攻撃した相手が召喚物なら破壊する)
 //   { type:'evolve', target:'entered' }: クレストの trigger:'allyEnter'(味方がフォロワーを召喚したとき。oncePerTurn: true で味方のターンごとに1回)で、出てきたキャラが進化する
