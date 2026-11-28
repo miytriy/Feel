@@ -1258,7 +1258,7 @@ const initialPlay = (st) => {
   const evs = insertFinisher(reorderBoost(pullDestroy(foldEnterKeywords((st && st.events) || []))))
   return evs.length ? { events: evs, i: 0, prevActive: null, prevAbility: null, prevUnits: null } : null
 }
-const BUFF_APPLY_MS = 130 // 強化の演出(BuffFx)で、白い輪が出て光の筋が流れはじめる時(動画: このときに数字が変わる)。グループの始まりから数える
+const BUFF_APPLY_MS = 50 // 強化の演出(BuffFx)で、カード全体が白く光る時(動画: 光ると同時に数字が変わる)。グループの始まりから数える
 const LIGHT_FX = new Set(['heal', 'buff', 'keyword', 'countdown']) // 重ねて流してよい軽い演出
 const LIGHT_RATIO = 0.4
 const HIT_RATIO = 0.5 // 攻撃・被弾(ダメージだけのまとまり)は、数字が出きる前に次へ進む。演出は最後まで続く
