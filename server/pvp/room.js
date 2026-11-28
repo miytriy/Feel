@@ -151,7 +151,8 @@ export class Room {
     const { engine } = this.reg
     if (!action || typeof action !== 'object') return { error: '行動が正しくありません' }
     const legal = engine.legalActions(this.state)
-    const same = legal.find((a) => JSON.stringify(a) === JSON.stringify(action)) // クライアントの送った形そのままではなく、サーバーが数えた「選べる行動」のほうを使う
+    const multi = action.type === 'chooseMany' && Array.isArray(action.targets) ? { type: 'chooseMany', targets: action.targets.map(String) } : null // 対象を続けて選ぶ行動は、エンジンが1体ずつ確かめる(選べない対象なら失敗する)
+    const same = multi || legal.find((a) => JSON.stringify(a) === JSON.stringify(action)) // クライアントの送った形そのままではなく、サーバーが数えた「選べる行動」のほうを使う
     if (!same) return { error: 'その行動は選べません' }
     let next
     try { next = engine.applyAction(this.state, same, { rng: this.rng }) } catch (e) { return { error: 'その行動は選べません' } }

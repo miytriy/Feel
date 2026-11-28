@@ -2257,7 +2257,24 @@ function doEvolve(state, actor, opts, free = false) { // free: 能力の効果�
 // 行動を実行して、次の行動待ちの状態を返す(元の状態は書き換えない)
 //  特性・進化を使った場合は、同じユニットのターンが続く
 let seasonRng = Math.random // シーズン補正(ウィッチ)の確率用。applyAction の opts.rng を使う
+// 対象を続けて選ぶ(「相手2体を選ぶ」など): targets を1体ずつ choose として順に行う。最後まで選んだあとに、まとめて効果が働く。
+// 起きたことの記録(events)は、全部つなげて返す。途中で選べない対象があれば、全体が失敗する(状態は変わらない)
+function applyChooseMany(prev, action, opts) {
+  const targets = Array.isArray(action.targets) ? action.targets : []
+  if (!prev.pending || prev.pending.modes || prev.pending.confirm || targets.length < 1 || targets.length > 8 || targets.some((t) => typeof t !== 'string')) throw new Error('その行動は選べません')
+  let st = prev
+  const events = []
+  for (let i = 0; i < targets.length; i++) {
+    if (!st.pending) throw new Error('その行動は選べません') // 選ぶ数が多すぎる
+    st = applyAction(st, { type: 'choose', target: targets[i] }, opts)
+    events.push(...(st.events || []))
+  }
+  if (st.pending && st.pending.candidates) throw new Error('その行動は選べません') // まだ選び終わっていない
+  return { ...st, events }
+}
+
 export function applyAction(prev, action, opts = {}) {
+  if (action && action.type === 'chooseMany') return applyChooseMany(prev, action, opts)
   seasonRng = opts.rng || Math.random
   const state = applyActionInner(prev, action, opts)
   if (state !== prev && state.active && !state.pending && !state.winner) { // 自分のターン中に自分が再出場したら、スキルを使わせずにターンを終える

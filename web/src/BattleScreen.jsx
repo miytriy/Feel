@@ -501,7 +501,7 @@ function FlagBurst({ size = 22 }) {
   )
 }
 
-export function UnitCard({ unit, active, selected, selectable, lift = true, inspected, onClick, onFocusCard, big = false, fx = null, hl = false, tick = 0, loss = 0, role = null, flagTick = 0 }) {
+export function UnitCard({ unit, active, selected, checked = false, selectable, lift = true, inspected, onClick, onFocusCard, big = false, fx = null, hl = false, tick = 0, loss = 0, role = null, flagTick = 0 }) {
   // 破壊: HPの数字とバーが、同じ速さで0へ減っていく。消滅: HPは減らないので、消える直前の値のまま(0にしない)
   const lastHp = useRef(unit.hp)
   if (unit.alive) lastHp.current = unit.hp
@@ -563,7 +563,7 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
         minWidth: 0, boxSizing: 'border-box', padding: big ? 10 : 4, ...(big ? { minHeight: 112 } : { height: 106, overflow: 'visible' }), // 戦闘画面が動かないように、スマホ幅のカードは高さを固定 borderRadius: big ? 10 : 8, fontSize: big ? 13 : 10, lineHeight: 1.3,
         background: C.card,
         opacity: 1,
-        border: `2px solid ${selected ? C.active : selectable ? C.ink : active ? TEAM_COLOR[unit.team] : inspected ? C.mute : C.line}`,
+        border: `2px solid ${selected || checked ? C.active : selectable ? C.ink : active ? TEAM_COLOR[unit.team] : inspected ? C.mute : C.line}`,
         boxShadow: selected ? `0 0 0 3px ${alpha(C.active, 33)}` : active ? `0 0 0 3px ${alpha(TEAM_COLOR[unit.team], 20)}` : 'none',
         cursor: 'pointer', position: 'relative',
         transition: 'transform 0.18s ease-out', willChange: selectable && lift ? 'transform' : undefined,
@@ -579,6 +579,7 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
         ...(role === 'target' || role === 'guard' ? { boxShadow: `0 0 0 3px ${role === 'guard' ? C.player : C.bad}, 0 0 16px 2px ${alpha(role === 'guard' ? C.player : C.bad, 55)}`, zIndex: 2 } : {}),
       }}
     >
+      {checked && !gone && <span aria-hidden="true" data-testid="picked-check" style={{ position: 'absolute', top: -9, right: -9, width: big ? 30 : 26, height: big ? 30 : 26, borderRadius: '50%', background: C.active, color: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: big ? 18 : 16, fontWeight: 900, lineHeight: 1, boxShadow: '0 1px 6px rgba(0,0,0,0.55)', border: '2px solid #fff', pointerEvents: 'none', zIndex: 4 }}>✓</span>}
       {selectable && lift && !gone && <span aria-hidden="true" data-testid="sel-glow" style={{ position: 'absolute', inset: -4, borderRadius: big ? 13 : 11, border: `2px solid ${C.active}`, boxShadow: `0 0 14px 3px ${alpha(C.active, 75)}, inset 0 0 10px 1px ${alpha(C.active, 45)}`, pointerEvents: 'none', zIndex: 3, willChange: 'opacity', animation: 'feel-sel-glow 1.1s ease-in-out infinite' }} />}
       {fx && fx.die === 'destroy' && <span key={`dg-${tick}`} aria-hidden="true" style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: '#fff', pointerEvents: 'none', zIndex: 4, opacity: 0, animation: 'feel-d-glow 0.27s ease-in forwards', willChange: 'opacity' }} />}
       {fx && fx.die === 'destroy' && (
@@ -1407,10 +1408,22 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   const accelActs = legal.filter((a) => a.type === 'accelerate')
   const chooseActs = legal.filter((a) => a.type === 'choose') // 効果の対象を選ぶ場面(ファンファーレなど)
   const choosing = chooseActs.length > 0
+  // 「相手2体を選ぶ」のように、同じ効果で続けて選ぶとき: 選んだユニット(picks)をためておき、最後まで選べたら、まとめて効果を働かせる。選んだユニットをもう一度タップすると、選び直せる
+  const [picks, setPicks] = useState([])
+  const basePend = state && state.pending && !state.pending.modes && !state.pending.confirm ? state.pending : null
+  const chainAfter = (list) => { // list を順に選んだあとの、次に選ぶ場面(同じ効果の続き)。選び終わっていれば null
+    let st = state
+    try { for (const t of list) st = applyAction(st, { type: 'choose', target: t }) } catch { return undefined }
+    const p = st.pending
+    return p && !p.modes && !p.confirm && basePend && p.uid === basePend.uid && p.trigger === basePend.trigger && !!p.spell === !!basePend.spell && p.effects.length < basePend.effects.length && JSON.stringify(basePend.effects.slice(basePend.effects.length - p.effects.length)) === JSON.stringify(p.effects) ? p : null // 同じ効果の続き(残りの効果が、いまの効果の後ろの部分と同じ)だけ。別の能力の選択は、まとめない
+  }
+  const picksValid = choosing && basePend && picks.length > 0 ? chainAfter(picks) : null
+  const pickList = choosing && picksValid ? picks : []
+  const stepCands = choosing ? (pickList.length ? picksValid.candidates : chooseActs.map((a) => a.target)) : []
   const modePicking = !!(state && state.pending && state.pending.modes) // 【モード】を選ぶ場面
   const confirming = !!(state && state.pending && state.pending.confirm) // 「使う/使わない」を選ぶ場面
   const selectableSet = choosing
-    ? chooseActs.map((a) => a.target)
+    ? [...stepCands, ...pickList]
     : isAccel
     ? accelActs.map((a) => a.target).filter(Boolean)
     : mode ? traitActions(mode).map((a) => a.target).filter(Boolean) : skillTargets
@@ -1738,6 +1751,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     setSelected(null)
     setMode(mode === trait.id ? null : trait.id)
   }
+  useEffect(() => { setPicks([]) }, [state])
   const handleConfirm = () => {
     if (!selected || !selectableSet.includes(selected)) return
     act(mode ? { type: 'trait', trait: mode, target: selected } : { type: 'skill', target: selected })
@@ -1756,7 +1770,10 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   }
   const handleCard = (u) => {
     if (playerTurn && choosing && selectableSet.includes(u.uid)) {
-      act({ type: 'choose', target: u.uid }) // 選んだらすぐに効果が働く
+      if (pickList.includes(u.uid)) { setPicks(pickList.slice(0, pickList.indexOf(u.uid))); return } // 選んだユニットをもう一度タップ: 選びをやめる(そのあとに選んだものも、選び直し)
+      const next = [...pickList, u.uid]
+      if (chainAfter(next)) { setPicks(next); return } // まだ選ぶ対象が残っている: チェックをつけて、続けて選ばせる
+      act(next.length === 1 ? { type: 'choose', target: u.uid } : { type: 'chooseMany', targets: next }) // 最後まで選んだ: 効果が働く
       return
     }
     if (playerTurn && selectableSet.includes(u.uid)) {
@@ -1990,6 +2007,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
       flagTick={flagFx[u.uid] || 0}
       loss={u.uid === selected ? lossShown : 0}
       selected={u.uid === selected}
+      checked={pickList.includes(u.uid)}
       selectable={playerTurn && selectableSet.includes(u.uid)}
       lift={choosing || isAccel || !!mode}
       inspected={u.uid === inspect}
@@ -2128,13 +2146,16 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
         ) : choosing ? (
           <div style={desktop ? undefined : { display: 'contents' }}>
             <div style={{ fontSize: 13, marginBottom: 6 }}>
-              <b>{actor.name}</b> の効果: 対象を選んでください
+              <b>{actor.name}</b> の効果: 対象を選んでください{pickList.length ? `(${pickList.length}体選択中)` : ''}
             </div>
             <div style={{ fontSize: 12, color: C.mute }}>
               {state.pending && state.pending.effects.some((e) => e.type === 'reenter')
                 ? '選んだ味方が入場し直します(次のターンの開始時にファンファーレがもう一度働き、そのターンはスキル攻撃ができません)。'
-                : '光っている枠のキャラをタップしてください。'}
+                : pickList.length
+                  ? '続けて、光っている枠のキャラをタップしてください。最後まで選ぶと効果が働きます。選んだキャラ(✓)をもう一度タップすると、選びをやめられます。'
+                  : '光っている枠のキャラをタップしてください。'}
             </div>
+            {pickList.length > 0 && <button aria-label="戻る" onClick={() => setPicks(pickList.slice(0, -1))} style={{ ...buttonStyle(false, false), marginTop: 6, padding: '6px 10px', fontSize: 13 }}>ひとつ戻す</button>}
           </div>
         ) : isAccel ? (
           <div>
