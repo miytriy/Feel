@@ -281,3 +281,4 @@ Feel のすべてのエフェクト・アニメーションは、スマホでも
 - 帯: `fx/buff/ribbon.webp`(先の尖った白い三日月)を4本、外側 span の translateX(左右)+内側 span の translateY 弧で渦(竜巻)状に回す。昇りすぎない。
 - 縦線: `fx/buff/streaks.webp`(髪の毛ほどの縦線がびっしり)を2枚(2枚目は反転・遅れ)重ね、上端から scaleY で落とす。
 - 焼き込みは `python3 web/tools/bake-buff.py`。動かすのは transform / opacity のみ。
+- 11/28 再々確認: 帯は廃止。輪は細い楕円5本(傾き違い)がカードを囲んで外へふくらんで消える。縦線は斜め(上が右へ約14°)で、下から上へ流れ上がる(`feel-buff-ring2` / `feel-buff-rise`)。
