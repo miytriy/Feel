@@ -24,8 +24,8 @@ export default function BuffFx({ big = false }) {
         <span key={n} style={{ ...abs, left: `${50 - w / 2}%`, top: `${48 - h / 2}%`, width: `${w}%`, height: `${h}%`, rotate: `${rot}deg`, border: `${big ? 1.5 : 1}px solid rgba(235,250,255,0.9)`, borderRadius: '50%', boxShadow: '0 0 3px rgba(190,235,255,0.7)', opacity: 0, ['--o']: o, animation: ani('feel-buff-ring2', 520, d, 'cubic-bezier(0.2, 0.6, 0.3, 1)') }} />
       ))}
       {/* 斜めの縦線: 下から上へ流れ上がる。2枚重ね */}
-      {[[0, 1, 0.8, 14], [50, -1, 0.55, 10]].map(([d, flip, o, ang], n) => (
-        <span key={n} style={{ ...abs, left: '-20%', width: '140%', top: '-30%', height: '150%', rotate: `${ang}deg`, backgroundImage: `url(${FXB}streaks.webp)`, backgroundSize: '100% 100%', scale: `${flip} 1`, opacity: 0, ['--o']: o, animation: ani('feel-buff-rise', 500, d, 'ease-out') }} />
+      {[[0, 1, 0.8, 0], [50, -1, 0.55, 2]].map(([d, flip, o, ang], n) => (
+        <span key={n} style={{ ...abs, left: "-8%", width: "116%", top: "-30%", height: '150%', rotate: `${ang}deg`, backgroundImage: `url(${FXB}streaks.webp)`, backgroundSize: '100% 100%', scale: `${flip} 1`, opacity: 0, ['--o']: o, animation: ani('feel-buff-rise', 500, d, 'ease-out') }} />
       ))}
       {SPARKS.map(([x, y, d, z], n) => (
         <span key={n} style={{ ...abs, left: `${x}%`, top: `${y}%`, width: z + (big ? 1 : 0), height: z + (big ? 1 : 0), borderRadius: '50%', background: '#fff', boxShadow: '0 0 5px 1px rgba(255,255,255,0.95)', opacity: 0, animation: ani('feel-buff-spark', 380, d) }} />
