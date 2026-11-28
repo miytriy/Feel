@@ -646,7 +646,7 @@ function fireCrestsOnHeal(state, team) {
 }
 
 // 起きたことの記録(画面で、1つずつ順番に見せるため)。そのときの盤面の要約(体力など)つき。AIの先読み(expected)のときは記録しない
-const SNAP_KEYS = ['hp', 'maxHp', 'alive', 'armor', 'armorRate', 'barrier', 'stealth', 'countdown', 'comboCount', 'evolved', 'earthCount', 'curAV', 'baseAV', 'acts', 'accelActs']
+const SNAP_KEYS = ['atk', 'def', 'spd', 'hp', 'maxHp', 'alive', 'armor', 'armorRate', 'barrier', 'stealth', 'countdown', 'comboCount', 'evolved', 'earthCount', 'curAV', 'baseAV', 'acts', 'accelActs']
 function crestSlots(state) {
   const o = {}
   for (const t of ['A', 'B']) o[t] = (state.crests?.[t] || []).map((c) => ({ countdown: c.countdown, slot: c.slot && { ...c.slot } }))
@@ -1406,6 +1406,7 @@ function runEffects(state, source, effects, ctx = {}) {
           if (t.isAmulet && e.stat !== 'spd') break // アミュレットは、速度以外のバフ・デバフを受けない(演出・ログも出さない)
           const bf = { stat: e.stat, pct: (e.pct || 0) + graveBonus(state, source, e), flat: (e.flat || 0) + perAmount(state, source, e, ['perGraveyard']), turns: e.turns ?? null, ...(e.turnsBy === 'source' ? { owner: source.uid } : {}) } // perCombo: コンボ1つにつき、flat がその分だけ増える
           t.buffs.push(bf)
+          if (state.rec) recalc(state) // 再生用の記録に、強化したあとの数字を入れる(画面は強化の演出に合わせて数字を上げる)
           emit(state, 'buff', { target: t.uid, stat: e.stat, text: `${statLabel(e.stat)}${bf.flat ? ` ${bf.flat >= 0 ? '+' : ''}${bf.flat}${e.stat === 'dmgUp' ? '%' : ''}` : ''}${bf.pct ? ` ${bf.pct >= 0 ? '+' : ''}${bf.pct}%` : ''}`.replace(/\s+/g, ' ') })
           state.log.push(`${t.name}の${statLabel(e.stat)}が上がった`)
           break
