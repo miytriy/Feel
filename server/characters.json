@@ -59,6 +59,7 @@
   { "id": "royal_16", "name": "煌刃の勇者・アマリア", "class": "ロイヤル", "rarity": "gold", "rotation": "1" },
   { "id": "royal_17", "name": "刹那のクイックブレイダー", "class": "ロイヤル", "rarity": "bronze", "rotation": "basic" },
   { "id": "royal_2_01", "name": "静寂のアナテマ・ギルダリア", "class": "ロイヤル", "rarity": "legend", "rotation": "2" },
+  { "id": "royal_2_02", "name": "トリガーメイド・セリエ", "class": "ロイヤル", "rarity": "bronze", "rotation": "2" },
   { "id": "royal_6_01", "name": "勇烈の兵士", "class": "ロイヤル", "rarity": "bronze", "rotation": "6" },
   { "id": "royal_6_06", "name": "凄烈の剣王・ロードノエル四世", "class": "ロイヤル", "rarity": "legend", "rotation": "6" },
   { "id": "royal_8_07", "name": "焦がれし炎将・マーズ", "class": "ロイヤル", "rarity": "legend", "rotation": "8" },
