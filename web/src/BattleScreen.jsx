@@ -1200,6 +1200,25 @@ function insertFinisher(evs) {
   }
   return out
 }
+// 召喚された直後のユニットが得る能力(マーズの【常時】の【突進】)は、エフェクトなしで、召喚した瞬間から付いている。
+// 召喚の出来事から、能力付与の出来事の手前までの盤面に、その能力を足し、能力付与の出来事は取り除く(同じターンの中のものだけ)
+function foldEnterKeywords(evs) {
+  const out = evs.slice()
+  for (let k = 0; k < out.length; k++) {
+    const e = out[k]
+    if (!e || e.type !== 'keyword') continue
+    let s0 = -1
+    for (let m = k - 1; m >= 0; m--) { if (out[m].type === 'turn') break; if (out[m].type === 'summon' && out[m].target === e.target) { s0 = m; break } }
+    if (s0 < 0) continue
+    for (let m = s0; m < k; m++) {
+      const u = out[m].units && out[m].units[e.target]
+      if (u && !u.keywords.includes(e.keyword)) out[m] = { ...out[m], units: { ...out[m].units, [e.target]: { ...u, keywords: [...u.keywords, e.keyword] } } }
+    }
+    out.splice(k, 1); k -= 1
+  }
+  return out
+}
+
 function reorderBoost(evs) {
   const isB = (e) => e.type === 'buff' || e.type === 'keyword'
   const out = []
