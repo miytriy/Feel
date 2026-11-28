@@ -23,7 +23,7 @@ export default function BuffFx({ big = false }) {
       {/* 輪: 細い円が、弧を描きながら回って、外へふくらんで消える(動画 11/28)。外側でつぶして楕円にし、内側の円を回すので、軌道が楕円になる */}
       {RINGS.map(([w, k, tilt, d, dir, arc], n) => (
         <span key={n} style={{ ...abs, left: `${50 - w / 2}%`, top: `calc(50% - ${w / 2}%)`, width: `${w}%`, aspectRatio: '1', transform: `rotate(${tilt}deg) scaleY(${k})` }}>
-          <span style={{ ...abs, inset: 0, borderRadius: '50%', border: `${big ? 1.5 : 1}px solid rgba(235,250,255,0.95)`, boxShadow: '0 0 3px rgba(190,235,255,0.7)', WebkitMaskImage: arc ? `conic-gradient(from 0deg, transparent 0deg, #000 ${arc}deg, transparent ${arc + 1}deg)` : undefined, maskImage: arc ? `conic-gradient(from 0deg, transparent 0deg, #000 ${arc}deg, transparent ${arc + 1}deg)` : undefined, opacity: 0, ['--dir']: dir, animation: ani('feel-buff-ring3', 560, d, 'cubic-bezier(0.25, 0.55, 0.3, 1)') }} />
+          <span style={{ ...abs, inset: 0, borderRadius: '50%', border: `${big ? 1.5 : 1}px solid rgba(235,250,255,0.5)`, boxShadow: '0 0 7px 1px rgba(190,235,255,0.35), inset 0 0 7px rgba(190,235,255,0.22)', WebkitMaskImage: arc ? `conic-gradient(from 0deg, transparent 0deg, #000 ${arc}deg, transparent ${arc + 1}deg)` : undefined, maskImage: arc ? `conic-gradient(from 0deg, transparent 0deg, #000 ${arc}deg, transparent ${arc + 1}deg)` : undefined, opacity: 0, ['--dir']: dir, animation: ani('feel-buff-ring3', 560, d, 'cubic-bezier(0.25, 0.55, 0.3, 1)') }} />
         </span>
       ))}
       {/* 斜めの縦線: 下から上へ流れ上がる。2枚重ね */}

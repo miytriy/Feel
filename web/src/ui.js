@@ -77,7 +77,7 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-flag-warm { 0% { opacity: 1; } 38% { opacity: 1; } 70% { opacity: 0; } 100% { opacity: 0; } }
     @keyframes feel-buff-veil { 0% { opacity: 0; } 10% { opacity: 1; } 35% { opacity: 0.7; } 100% { opacity: 0; } }
     @keyframes feel-buff-ring { 0% { opacity: 0; transform: translateY(130%) scale(0.86, 0.8); } 14% { opacity: 1; } 70% { opacity: 0.85; } 100% { opacity: 0; transform: translateY(-210%) scale(1.1, 1); } }
-    @keyframes feel-buff-ring3 { 0% { opacity: 0; transform: rotate(0deg) scale(0.6); } 15% { opacity: 1; } 70% { opacity: 0.9; } 100% { opacity: 0; transform: rotate(calc(var(--dir, 1) * 300deg)) scale(1.08); } }
+    @keyframes feel-buff-ring3 { 0% { opacity: 0; transform: rotate(0deg) scale(0.6); } 15% { opacity: 0.75; } 70% { opacity: 0.6; } 100% { opacity: 0; transform: rotate(calc(var(--dir, 1) * 300deg)) scale(1.08); } }
     @keyframes feel-buff-rise { 0% { opacity: 0; transform: translateY(32%); } 25% { opacity: var(--o, 1); } 70% { opacity: calc(var(--o, 1) * 0.8); } 100% { opacity: 0; transform: translateY(-30%); } }
     @keyframes feel-buff-spark { 0% { opacity: 0; transform: translateY(0) scale(0.4); } 25% { opacity: 1; transform: translateY(-3px) scale(1); } 50% { opacity: 0.4; } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px) scale(0.6); } }
     @keyframes feel-flag-cool { 0% { opacity: 0; } 38% { opacity: 0; } 70% { opacity: 1; } 100% { opacity: 0; } }
