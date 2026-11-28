@@ -402,7 +402,20 @@ function FinisherIcon() {
     </svg>
   )
 }
-const KW_ICONS = { flag: { Icon: FlagIcon, label: '緑旗' }, lastWord: { Icon: LwIcon, label: 'ラストワード' }, drain: { Icon: DrainIcon, label: 'ドレイン' }, finisher: { Icon: FinisherIcon, label: '必殺' } }
+// アクト(アミュレットの【アクト】ができる印): 暗い紫の円盤に、細いクリーム色の縁と、金の八芒星(上下左右が長く、斜めが短い。中央に小さな丸)。参考画像(11/28)のとおり
+function ActIcon() {
+  return (
+    <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', display: 'block' }}>
+      <KwDisc id="kwd-act" />
+      <circle cx="50" cy="50" r="30" fill="none" stroke="#b98f2e" strokeWidth="1.4" opacity="0.7" />
+      <path fill="#f0c95a" stroke="#8a6a1c" strokeWidth="1" strokeLinejoin="round" transform="rotate(45 50 50) translate(50 50) scale(0.66) translate(-50 -50)" d="M50 10 L57 43 L90 50 L57 57 L50 90 L43 57 L10 50 L43 43 Z" />
+      <path fill="#e0ad34" stroke="#8a6a1c" strokeWidth="1.1" strokeLinejoin="round" d="M50 12 L57 43 L88 50 L57 57 L50 88 L43 57 L12 50 L43 43 Z" />
+      <path fill="#fbe28a" opacity="0.8" d="M50 12 L57 43 L50 50 Z M88 50 L57 57 L50 50 Z" />
+      <circle cx="50" cy="50" r="5" fill="#2a2236" stroke="#f0c95a" strokeWidth="2" />
+    </svg>
+  )
+}
+const KW_ICONS = { flag: { Icon: FlagIcon, label: '緑旗' }, lastWord: { Icon: LwIcon, label: 'ラストワード' }, drain: { Icon: DrainIcon, label: 'ドレイン' }, finisher: { Icon: FinisherIcon, label: '必殺' }, act: { Icon: ActIcon, label: 'アクト' } }
 // 持っている能力のアイコンの一覧(ラストワード → ドレインの順)
 function iconKeysOf(unit) {
   const out = []
@@ -410,6 +423,7 @@ function iconKeysOf(unit) {
   if ((unit.passiveObjs || []).some((p) => p.trigger === 'lastWord')) out.push('lastWord')
   if ((unit.keywords || []).includes('drain')) out.push('drain')
   if ((unit.keywords || []).includes('finisher')) out.push('finisher')
+  if ((unit.traits || []).some((t) => t.id === 'act')) out.push('act') // アミュレットの【アクト】
   return out
 }
 const FLAG_BURST_MS = 700 // 光1回の長さ
