@@ -28,7 +28,7 @@ export default function BuffFx({ big = false }) {
       ))}
       {/* 斜めの縦線: 下から上へ流れ上がる。2枚重ね */}
       {[[0, 1, 0.8, 0], [50, -1, 0.55, 2]].map(([d, flip, o, ang], n) => (
-        <span key={n} style={{ ...abs, left: "20%", width: "60%", top: "-4%", height: "108%", rotate: `${ang}deg`, backgroundImage: `url(${FXB}streaks.webp)`, backgroundSize: '100% 100%', scale: `${flip} 1`, opacity: 0, ['--o']: o, animation: ani('feel-buff-rise', 500, d, 'ease-out') }} />
+        <span key={n} style={{ ...abs, left: "6%", width: "88%", top: "-4%", height: "108%", rotate: `${ang}deg`, backgroundImage: `url(${FXB}streaks.webp)`, backgroundSize: '100% 100%', scale: `${flip} 1`, opacity: 0, ['--o']: o, animation: ani('feel-buff-rise', 500, d, 'ease-out') }} />
       ))}
       {SPARKS.map(([x, y, d, z], n) => (
         <span key={n} style={{ ...abs, left: `${x}%`, top: `${y}%`, width: z + (big ? 1 : 0), height: z + (big ? 1 : 0), borderRadius: '50%', background: '#fff', boxShadow: '0 0 5px 1px rgba(255,255,255,0.95)', opacity: 0, animation: ani('feel-buff-spark', 380, d) }} />
