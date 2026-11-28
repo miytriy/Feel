@@ -75,12 +75,10 @@ if (typeof document !== 'undefined' && !document.getElementById('feel-base-style
     @keyframes feel-flag-core { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); } 10% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 50% { opacity: 0; transform: translate(-50%, -50%) scale(1.35); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.35); } }
     @keyframes feel-flag-bubble { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.35); } 10% { opacity: 1; transform: translate(-50%, -50%) scale(0.7); } 24% { opacity: 1; transform: translate(-50%, -50%) scale(0.96); } 60% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.03); } }
     @keyframes feel-flag-warm { 0% { opacity: 1; } 38% { opacity: 1; } 70% { opacity: 0; } 100% { opacity: 0; } }
-    @keyframes feel-buff-flare { 0% { opacity: 0; transform: scale(0.25); } 14% { opacity: 1; transform: scale(1.05); } 40% { opacity: 0.95; transform: scale(1); } 100% { opacity: 0; transform: scale(0.86); } }
-    @keyframes feel-buff-spike { 0% { opacity: 0; transform: scale(var(--sx, 1), var(--sy, 1)) scale(0.2); } 14% { opacity: 1; transform: scale(var(--sx, 1), var(--sy, 1)) scale(1.1); } 100% { opacity: 0; transform: scale(var(--sx, 1), var(--sy, 1)) scale(0.7); } }
-    @keyframes feel-buff-haze { 0% { opacity: 0; transform: scale(0.7); } 18% { opacity: 0.95; } 100% { opacity: 0; transform: scale(1.12); } }
-    @keyframes feel-buff-ring { 0% { opacity: 0; transform: scale(0.55); } 16% { opacity: 0.95; } 100% { opacity: 0; transform: scale(1.32); } }
-    @keyframes feel-buff-streak { 0% { opacity: 0; transform: rotate(15deg) translateY(6%); } 22% { opacity: 0.95; } 100% { opacity: 0; transform: rotate(15deg) translateY(-8%); } }
-    @keyframes feel-buff-spark { 0% { opacity: 0; transform: translateY(0) scale(0.5); } 24% { opacity: 1; transform: translateY(-6px) scale(1); } 100% { opacity: 0; transform: translateY(-30px) scale(0.7); } }
+    @keyframes feel-buff-veil { 0% { opacity: 0; } 18% { opacity: 0.55; } 100% { opacity: 0; } }
+    @keyframes feel-buff-ring { 0% { opacity: 0; transform: translateY(14%) scale(0.82, 0.7); } 22% { opacity: 1; } 62% { opacity: 0.75; } 100% { opacity: 0; transform: translateY(-16%) scale(1.06, 1); } }
+    @keyframes feel-buff-lines { 0% { opacity: 0; transform: translateY(-10%); } 28% { opacity: 1; } 100% { opacity: 0; transform: translateY(12%); } }
+    @keyframes feel-buff-spark { 0% { opacity: 0; transform: translateY(0) scale(0.4); } 22% { opacity: 1; transform: translateY(-4px) scale(1); } 45% { opacity: 0.35; } 62% { opacity: 1; } 100% { opacity: 0; transform: translateY(-22px) scale(0.6); } }
     @keyframes feel-flag-cool { 0% { opacity: 0; } 38% { opacity: 0; } 70% { opacity: 1; } 100% { opacity: 0; } }
     @keyframes feel-kw-cycle-2 { 0% { opacity: 0; } 9.00% { opacity: 1; } 41.00% { opacity: 1; } 50.00% { opacity: 0; } 100% { opacity: 0; } }
     @keyframes feel-kw-cycle-3 { 0% { opacity: 0; } 6.00% { opacity: 1; } 27.33% { opacity: 1; } 33.33% { opacity: 0; } 100% { opacity: 0; } }
