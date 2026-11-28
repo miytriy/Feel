@@ -554,6 +554,7 @@ function dealDamage(target, dmg, isTrue = false, dmgType = 'physical') {
   const covered = Math.min(toArmor, target.armor / mult) // アーマーで止められるダメージ
   target.armor -= covered * mult
   target.hp -= dmg - covered
+  if (dmg - covered > 0) target.hpDown = 'damage' // 体力の数字の色: ダメージで減った → 赤
   if (target.hp <= 0) {
     target.hp = 0
     target.alive = false
@@ -581,6 +582,7 @@ function changeMaxHp(state, t, up, source) {
   if (t.isAmulet || !t.alive || !up) return
   t.maxHp = Math.max(1, t.maxHp + up)
   t.hp = up > 0 ? t.hp + up : Math.min(t.hp + up, t.maxHp)
+  if (up < 0) t.hpDown = 'effect'
   if (t.hp <= 0) { t.hp = 0; t.alive = false; t.killedBy = source?.uid }
 }
 // 現在HPを直接減らす(「HP」の減少。ダメージではないので、防御・アーマー・バリアは関係ない)。減ったら、相手の【相手のフォロワーのHPが場で減らされたとき】が働く
@@ -589,6 +591,7 @@ function loseHpOf(state, t, amount, source) {
   const before = t.hp
   t.hp = Math.max(0, t.hp - amount)
   const lost = before - t.hp
+  if (lost > 0) t.hpDown = 'effect' // HP減少効果はダメージではない → オレンジ
   if (t.hp <= 0) { t.alive = false; t.killedBy = source?.uid }
   if (lost > 0) for (const a of inFireOrder(state.units.filter((x) => x.alive && x.team !== t.team))) fire(state, 'enemyHpDown', a, { other: t })
   return lost
@@ -647,7 +650,7 @@ function fireCrestsOnHeal(state, team) {
 }
 
 // 起きたことの記録(画面で、1つずつ順番に見せるため)。そのときの盤面の要約(体力など)つき。AIの先読み(expected)のときは記録しない
-const SNAP_KEYS = ['atk', 'def', 'spd', 'hp', 'maxHp', 'alive', 'armor', 'armorRate', 'barrier', 'stealth', 'countdown', 'comboCount', 'evolved', 'earthCount', 'curAV', 'baseAV', 'acts', 'accelActs']
+const SNAP_KEYS = ['atk', 'def', 'spd', 'hp', 'maxHp', 'hpDown', 'alive', 'armor', 'armorRate', 'barrier', 'stealth', 'countdown', 'comboCount', 'evolved', 'earthCount', 'curAV', 'baseAV', 'acts', 'accelActs']
 function crestSlots(state) {
   const o = {}
   for (const t of ['A', 'B']) o[t] = (state.crests?.[t] || []).map((c) => ({ countdown: c.countdown, slot: c.slot && { ...c.slot } }))
@@ -1476,6 +1479,7 @@ function runEffects(state, source, effects, ctx = {}) {
         }
         case 'setHp': // HPを value にする(最大HPまで。体力の概念のないアミュレットには効かない)
           if (t.isAmulet || !t.alive) break
+          if (e.value < t.hp) t.hpDown = 'effect'
           t.hp = Math.min(t.maxHp, e.value)
           state.log.push(`${t.name}のHPは${Math.round(t.hp)}になった`)
           break

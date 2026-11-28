@@ -38,12 +38,12 @@ const TEAM_COLOR = { get A() { return ME === 'A' ? C.player : C.enemy }, get B()
 const DOWN_RED = '#ff6a6a' // 現在の値が、最大値より低いときの色(体力。盤面と情報パネル)
 const UP_GREEN = '#4ee08a' // 最大値が元より上がったステータスの色(盤面)
 const DOWN_ORANGE = '#ffa23c' // 体力が、ダメージ以外の手段(最大HPの低下など)で元の最大値より低いときの色
-// 体力の数字の色(11/28): 元の最大値より低い → ダメージで減っていれば赤 / ダメージ以外(最大HPが下がった)ならオレンジ。元の最大値と同じ → 白。元より高い → 緑
+// 体力の数字の色(11/28): 元の最大値より低い → ダメージで減っていれば赤 / ダメージ以外(HP減少効果・最大HPの低下)で最後に減ったならオレンジ(engine の hpDown)。元の最大値と同じ → 白。元より高い → 緑
 const hpStyle = (hp, unit, white = false) => {
   const base = unit.baseMaxHp
   if (base == null) return undefined
   if (hp > base) return { color: UP_GREEN, fontWeight: 700 }
-  if (hp < base) return { color: hp < unit.maxHp ? DOWN_RED : DOWN_ORANGE, fontWeight: 700 }
+  if (hp < base) return { color: unit.hpDown === 'effect' ? DOWN_ORANGE : DOWN_RED, fontWeight: 700 }
   return white ? { color: '#fff' } : undefined
 }
 const TYPE_LABEL = { physical: '物理', magic: '魔法', true: '確定' }
