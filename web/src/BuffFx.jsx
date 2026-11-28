@@ -13,7 +13,7 @@ const SPARKS = [[18, 22, 70, 3], [34, 14, 110, 2], [52, 26, 150, 3], [70, 18, 90
 const FXB = `${import.meta.env?.BASE_URL || '/'}fx/buff/`
 // 渦の帯: [縦の位置%, 傾き°, 遅れms, 向き(1=手前で左→右, -1=奥で右→左), 濃さ, 幅%]
 // [幅%, つぶし率, 傾き°, 遅れms, 回る向き, 弧の長さ°(0=全周)]
-const RINGS = [[104, 0.78, -10, 0, 1, 200], [90, 0.66, 12, 30, -1, 0], [114, 0.84, 6, 60, 1, 250], [78, 0.6, -18, 90, -1, 160], [118, 0.9, -4, 120, 1, 0], [96, 0.72, 20, 150, -1, 220]]
+const RINGS = [[110, 0.5, -28, 0, 1, 230], [96, 0.42, 24, 25, -1, 200], [116, 0.6, -12, 50, 1, 260], [84, 0.36, 38, 75, -1, 170], [104, 0.55, 8, 100, 1, 240], [92, 0.45, -40, 125, -1, 210]]
 
 export default function BuffFx({ big = false }) {
   return (
@@ -23,12 +23,12 @@ export default function BuffFx({ big = false }) {
       {/* 輪: 細い円が、弧を描きながら回って、外へふくらんで消える(動画 11/28)。外側でつぶして楕円にし、内側の円を回すので、軌道が楕円になる */}
       {RINGS.map(([w, k, tilt, d, dir, arc], n) => (
         <span key={n} style={{ ...abs, left: `${50 - w / 2}%`, top: `calc(50% - ${w / 2}%)`, width: `${w}%`, aspectRatio: '1', transform: `rotate(${tilt}deg) scaleY(${k})` }}>
-          <span style={{ ...abs, inset: 0, borderRadius: '50%', border: `${big ? 1.5 : 1}px solid rgba(235,250,255,0.5)`, boxShadow: '0 0 7px 1px rgba(190,235,255,0.35), inset 0 0 7px rgba(190,235,255,0.22)', WebkitMaskImage: arc ? `conic-gradient(from 0deg, transparent 0deg, #000 ${arc}deg, transparent ${arc + 1}deg)` : undefined, maskImage: arc ? `conic-gradient(from 0deg, transparent 0deg, #000 ${arc}deg, transparent ${arc + 1}deg)` : undefined, opacity: 0, ['--dir']: dir, animation: ani('feel-buff-ring3', 560, d, 'cubic-bezier(0.25, 0.55, 0.3, 1)') }} />
+          <span style={{ ...abs, inset: 0, borderRadius: '50%', border: `${big ? 1.5 : 1}px solid rgba(240,252,255,0.65)`, boxShadow: '0 0 7px 1px rgba(190,235,255,0.35), inset 0 0 7px rgba(190,235,255,0.22)', WebkitMaskImage: arc ? `conic-gradient(from 0deg, transparent 0deg, #000 ${arc}deg, transparent ${arc + 1}deg)` : undefined, maskImage: arc ? `conic-gradient(from 0deg, transparent 0deg, #000 ${arc}deg, transparent ${arc + 1}deg)` : undefined, opacity: 0, ['--dir']: dir, animation: ani('feel-buff-ring3', 520, d, 'cubic-bezier(0.25, 0.55, 0.3, 1)') }} />
         </span>
       ))}
       {/* 斜めの縦線: 下から上へ流れ上がる。2枚重ね */}
       {[[0, 1, 0.8, 0], [50, -1, 0.55, 2]].map(([d, flip, o, ang], n) => (
-        <span key={n} style={{ ...abs, left: "-8%", width: "116%", top: "-4%", height: "108%", rotate: `${ang}deg`, backgroundImage: `url(${FXB}streaks.webp)`, backgroundSize: '100% 100%', scale: `${flip} 1`, opacity: 0, ['--o']: o, animation: ani('feel-buff-rise', 500, d, 'ease-out') }} />
+        <span key={n} style={{ ...abs, left: "20%", width: "60%", top: "-4%", height: "108%", rotate: `${ang}deg`, backgroundImage: `url(${FXB}streaks.webp)`, backgroundSize: '100% 100%', scale: `${flip} 1`, opacity: 0, ['--o']: o, animation: ani('feel-buff-rise', 500, d, 'ease-out') }} />
       ))}
       {SPARKS.map(([x, y, d, z], n) => (
         <span key={n} style={{ ...abs, left: `${x}%`, top: `${y}%`, width: z + (big ? 1 : 0), height: z + (big ? 1 : 0), borderRadius: '50%', background: '#fff', boxShadow: '0 0 5px 1px rgba(255,255,255,0.95)', opacity: 0, animation: ani('feel-buff-spark', 380, d) }} />
