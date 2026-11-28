@@ -1258,7 +1258,7 @@ const initialPlay = (st) => {
   const evs = insertFinisher(reorderBoost(pullDestroy(foldEnterKeywords((st && st.events) || []))))
   return evs.length ? { events: evs, i: 0, prevActive: null, prevAbility: null, prevUnits: null } : null
 }
-const BUFF_APPLY_MS = 120 // 強化の演出(BuffFx)で、弧が回りはじめ・光の筋が落ちはじめる時(動画: 数字が変わるのと、弧・光の筋が出はじめるのが同じ)。グループの始まりから数える
+const BUFF_APPLY_MS = 90 // 強化の演出(BuffFx)で、中央の星の閃光が最も強くなる時(動画: このときに数字が変わる)。グループの始まりから数える
 const LIGHT_FX = new Set(['heal', 'buff', 'keyword', 'countdown']) // 重ねて流してよい軽い演出
 const LIGHT_RATIO = 0.4
 const HIT_RATIO = 0.5 // 攻撃・被弾(ダメージだけのまとまり)は、数字が出きる前に次へ進む。演出は最後まで続く
