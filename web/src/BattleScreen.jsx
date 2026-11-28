@@ -1548,7 +1548,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
       const e = play.events[k]
       if (e.type === 'ability') {
         if (e.uid && e.flag) flashNow.push(e.uid) // (保留せず、能力の表示の瞬間に光らせる。マーズの【常時】3回は、ナイトが出たすぐあとに1回ずつ光る) // 緑旗が光るのは、【常時】【攻撃時】【交戦時】の能力が働いたときだけ(ファンファーレなどでは光らない)。ログが出ない能力でも光る
-        if (e.kind !== '進化' && !e.nolog) pendingLog.current.push({ k: `sl${sideSeq.current++}`, name: e.kind === 'スペル' ? e.name : e.owner, text: e.log || e.desc || `【${e.kind}】${e.name ?? ''}`, team: e.team, uid: e.uid || null })
+        if (e.kind !== '進化' && !e.nolog) pendingLog.current.push({ k: `sl${sideSeq.current++}`, name: e.kind === 'スペル' ? e.name : /^クレスト/.test(e.kind || '') && !String(e.owner).startsWith('クレスト：') ? `クレスト：${e.owner}` : e.owner, text: e.log || e.desc || `【${e.kind}】${e.name ?? ''}`, team: e.team, uid: e.uid || null })
       } else if (e.type !== 'sync') hasEffect = true // sync(盤面の同期だけ)は効果ではない。選択待ちのとき、選ぶ前にログが出てしまうため
     }
     if (flashNow.length) setFlagFx((m) => { const n = { ...m }; for (const id of flashNow) n[id] = (n[id] || 0) + 1; return n })
