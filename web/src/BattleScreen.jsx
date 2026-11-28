@@ -1264,7 +1264,7 @@ const LIGHT_RATIO = 0.4
 const HIT_RATIO = 0.5 // 攻撃・被弾(ダメージだけのまとまり)は、数字が出きる前に次へ進む。演出は最後まで続く
 const ABILITY_LIGHT_RATIO = 0.3 // 能力の表示のすぐあとの強化(動画のルミナスナイト → ギルダリアの間 約0.42秒)
 const ABILITY_DMG_RATIO = 0.55 // 能力の表示のすぐあとのダメージ(動画: 旗の光 → 次の周まで約0.65秒)
-// 演出の長さが決まっている(参考動画の再現で、動きの長さが固定の)ものは、待ち時間の設定(速い・ゆっくり)で短く・長くしない。短くすると、演出が途中で切れる
+// 演出の長さが決まっている(参考動画の再現で、動きの長さが固定の)ものは、待ち時間で短く・長くしない。短くすると、演出が途中で切れる
 const FIXED_MS = new Set(['vanish', 'evolve', 'finisher', 'countdown', 'evolveReady'])
 const EVENT_MS = { turn: 700, ability: 160, attack: 200, damage: 900, heal: 1350, summon: 800, block: 800, buff: 900, keyword: 900, evolve: 1000, finisher: 440, countdown: 780, evolveReady: 1350, destroy: 800, vanish: Math.round(950 * VANISH_SLOW), av: 800, sync: 300 }
 
@@ -1340,7 +1340,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
   const [ticketId, setTicketId] = useState(null) // 対戦の報酬用の「対戦券」(サーバーが発行)
   const [rewardMsg, setRewardMsg] = useState('') // 報酬の結果の表示
   const [careerMsg, setCareerMsg] = useState('') // 戦績の記録の結果の表示
-  const mult = cpuDelay / 700 // 再生の速さ(設定の待ち時間に合わせる: 速い≒0.5 / ふつう=1 / ゆっくり≒1.7)
+  const mult = cpuDelay / 700 // 再生の速さ(固定 700 = 1。速さの設定は廃止)
   const [auto, setAuto] = useState(false) // オート(∞): 自分の番も、CPUと同じ考え方で自動で進める
   const [play, setPlay] = useState(() => (online ? initialPlay(online.init) : null)) // 再生中の記録 { events, i, prevActive, prevAbility }。null なら再生していない
   const playing = !!play
@@ -2200,7 +2200,7 @@ export default function BattleScreen({ format = 'rotation', settingsView = null,
     if (selected) setSelected(null)
     if (inspect) setInspect(null)
   }
-  const speedBar = null // スキップボタンは廃止(再生の速さは設定で決める)
+  const speedBar = null // スキップボタンは廃止(再生の速さは固定)
   const nameOf = (uid) => state.units.find((u) => u.uid === uid)?.name ?? ''
   const nowText = !ev ? '' : ev.type === 'damage' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}に${ev.amount}ダメージ${ev.crit ? '(クリティカル!)' : ''}` : ev.type === 'block' ? `⚔ ${nameOf(ev.src)}の${ev.means || '攻撃'}!${nameOf(ev.target)}のバリアが防いだ(0ダメージ)` : ev.type === 'turn' ? `${ev.team === 'B' ? '相手' : 'あなた'}のターン: ${ev.name}` : ''
   // 選んで働く能力(対象を選ぶファンファーレ・特性など)の、小さな情報パネル: 名前と、能力の文

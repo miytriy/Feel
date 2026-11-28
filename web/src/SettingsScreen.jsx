@@ -1,7 +1,6 @@
 import { getAllCharsToken, enableAllChars, clearAllChars } from './api.js'
 import { useEffect, useRef, useState } from 'react'
 import { C, FONT, DISPLAY, useRemembered } from './ui.js'
-import { SPEEDS } from './settings.js'
 import { IconClose, IconAgents, IconRules } from './icons.jsx'
 import { KeyConfig } from './KeysUI.jsx'
 
@@ -109,7 +108,6 @@ export default function SettingsScreen({ user, settings, onChange, onLogin, onLo
     {
       key: 'battle', label: '対戦', Icon: IconSliders, head: '対戦',
       rows: [
-        { type: 'choice', label: 'CPUの行動の待ち時間', options: SPEEDS.map((s) => ({ key: s.key, label: s.label })), value: settings.speed, onPick: (k) => onChange({ ...settings, speed: k }) },
         { type: 'choice', label: '操作パネルで盤面が隠れるとき、フィールドのユニットを小さくして画面に収める(スマホ・小さいPC)', options: [{ key: 'on', label: 'オン' }, { key: 'off', label: 'オフ' }], value: settings.fitField === false ? 'off' : 'on', onPick: (k) => onChange({ ...settings, fitField: k === 'on' }) },
         { type: 'choice', label: 'ユニットの行動手段がひとつも無いとき、自動でターンを終了する', options: [{ key: 'on', label: 'オン' }, { key: 'off', label: 'オフ' }], value: settings.autoEnd === false ? 'off' : 'on', onPick: (k) => onChange({ ...settings, autoEnd: k === 'on' }) },
         { type: 'choice', label: '軽い演出(回復・強化・カウントダウンなど)は、終わるのを待たずに次の演出を流す(試験)', options: [{ key: 'on', label: 'オン' }, { key: 'off', label: 'オフ' }], value: settings.overlap === false ? 'off' : 'on', onPick: (k) => onChange({ ...settings, overlap: k === 'on' }) },
