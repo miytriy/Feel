@@ -402,16 +402,28 @@ function FinisherIcon() {
     </svg>
   )
 }
-// アクト(アミュレットの【アクト】ができる印): 暗い紫の円盤に、細いクリーム色の縁と、金の八芒星(上下左右が長く、斜めが短い。中央に小さな丸)。参考画像(11/28)のとおり
+// アクト(アミュレットの【アクト】ができる印): 暗い紺の円盤に、細いクリーム色の縁。中央は金色で、斜めの4方向へ細く長く伸びる星(先ほど細い)。上下左右には、中心から離れて、短い薄いクリーム色のひし形が浮かぶ。参考画像(11/28)を9倍に拡大して寸法を測って描いた
 function ActIcon() {
+  const i = 5.4, L = 37
+  const star = `M0 ${-L} L${i * 0.62} ${-i} L${L} 0 L${i} ${i * 0.62} L0 ${L} L${-i * 0.62} ${i} L${-L} 0 L${-i} ${-i * 0.62} Z`
+  const lens = 'M0 -13 Q6 0 0 13 Q-6 0 0 -13 Z'
   return (
     <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', display: 'block' }}>
-      <KwDisc id="kwd-act" />
-      <circle cx="50" cy="50" r="30" fill="none" stroke="#b98f2e" strokeWidth="1.4" opacity="0.7" />
-      <path fill="#f0c95a" stroke="#8a6a1c" strokeWidth="1" strokeLinejoin="round" transform="rotate(45 50 50) translate(50 50) scale(0.66) translate(-50 -50)" d="M50 10 L57 43 L90 50 L57 57 L50 90 L43 57 L10 50 L43 43 Z" />
-      <path fill="#e0ad34" stroke="#8a6a1c" strokeWidth="1.1" strokeLinejoin="round" d="M50 12 L57 43 L88 50 L57 57 L50 88 L43 57 L12 50 L43 43 Z" />
-      <path fill="#fbe28a" opacity="0.8" d="M50 12 L57 43 L50 50 Z M88 50 L57 57 L50 50 Z" />
-      <circle cx="50" cy="50" r="5" fill="#2a2236" stroke="#f0c95a" strokeWidth="2" />
+      <defs>
+        <radialGradient id="kwd-act" cx="50%" cy="48%" r="62%"><stop offset="0%" stopColor="#191a3e" /><stop offset="75%" stopColor="#101028" /><stop offset="100%" stopColor="#0a0a18" /></radialGradient>
+        <radialGradient id="kwa-star" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="36"><stop offset="0%" stopColor="#f2b95f" /><stop offset="22%" stopColor="#eec47c" /><stop offset="55%" stopColor="#e7d7a2" /><stop offset="100%" stopColor="#e4e0b8" /></radialGradient>
+        <linearGradient id="kwa-lens" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#efeec6" /><stop offset="100%" stopColor="#b4b288" /></linearGradient>
+      </defs>
+      <circle cx="50" cy="50" r="45" fill="url(#kwd-act)" stroke="#c4c0ab" strokeWidth="2.1" />
+      <circle cx="50" cy="50" r="42.4" fill="none" stroke="#07071a" strokeWidth="1.6" opacity="0.7" />
+      <g transform="translate(50 50)">
+        <g transform="translate(0 -22.5)"><path d={lens} fill="url(#kwa-lens)" /></g>
+        <g transform="translate(22.5 0) rotate(90)"><path d={lens} fill="url(#kwa-lens)" /></g>
+        <g transform="translate(0 22.5)"><path d={lens} fill="url(#kwa-lens)" /></g>
+        <g transform="translate(-22.5 0) rotate(90)"><path d={lens} fill="url(#kwa-lens)" /></g>
+        <path d={star} fill="url(#kwa-star)" transform="rotate(45)" />
+        <path d="M0 -8 L8 0 L0 8 L-8 0 Z" fill="#f1b85e" />
+      </g>
     </svg>
   )
 }
