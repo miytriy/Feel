@@ -361,6 +361,8 @@ const hasKw = (u, k) => u.keywords.includes(k)
 const alliesOf = (state, u) => state.units.filter((x) => x.alive && x.field === 'main' && x.team === u.team)
 const enemiesOf = (state, u) => state.units.filter((x) => x.alive && x.field === 'main' && x.team !== u.team)
 const allyFieldOf = (state, u) => state.units.filter((x) => x.alive && x.team === u.team)
+// 能力の発動順: 左側のユニットから(state.units は左→右の並び)。ユニットのなかでも、キャラクター → アミュレットの順(安定ソート)
+const inFireOrder = (list) => [...list].sort((a, b) => (a.isAmulet ? 1 : 0) - (b.isAmulet ? 1 : 0))
 const summonsOf = (state, u) => state.units.filter((x) => x.alive && x.field === 'summon' && x.team === u.team)
 const SUMMON_MAX = 5 // 召喚物フィールドは最大5体
 // 相手のユニット = 場のキャラクター + 召喚物 + アミュレット(フォロワー = キャラクター + 召喚物。アミュレットは召喚物ではない)
@@ -570,7 +572,6 @@ function applyDamage(state, source, target, amount, isTrue = false, dmgType = 'p
   }
   dealDamage(target, amount, isTrue, dmgType)
   if (!target.alive) target.killedBy = source.uid
-  if (target.field === 'main') { state.graveyard[target.team] += GRAVE_PER_HIT; if (seasonGrave(state, target.team, GRAVE_PER_HIT)) recalc(state) } // 攻撃をされると墓場が溜まる
   emit(state, 'damage', { src: source.uid, target: target.uid, amount: Math.round(amount), means: state.means || '効果', dmgType: isTrue ? 'true' : dmgType })
   return amount
 }
@@ -589,7 +590,7 @@ function loseHpOf(state, t, amount, source) {
   t.hp = Math.max(0, t.hp - amount)
   const lost = before - t.hp
   if (t.hp <= 0) { t.alive = false; t.killedBy = source?.uid }
-  if (lost > 0) for (const a of state.units.filter((x) => x.alive && x.team !== t.team)) fire(state, 'enemyHpDown', a, { other: t })
+  if (lost > 0) for (const a of inFireOrder(state.units.filter((x) => x.alive && x.team !== t.team))) fire(state, 'enemyHpDown', a, { other: t })
   return lost
 }
 
@@ -835,9 +836,8 @@ function placeCrest(state, source, def, onEnemy = false) {
   state.log.push(`クレスト【${def.name}】を置いた`)
 }
 
-// 墓場: 攻撃を受けるたびに+1、キャラが倒されると+3(チーム共有)
-const GRAVE_PER_HIT = 1
-const GRAVE_PER_DEATH = 3
+// 墓場(チーム共有): ユニットが破壊されたとき +1(11/28。被弾時の増加は廃止)
+const GRAVE_PER_DEATH = 1
 // ユニットの絞り込み: filter: { name, type, class, field, follower, keyword }(書いたものすべてに合うユニットだけ)
 //   効果の filter は「対象」を、パッシブの filter は「出た / 倒れたユニット(ctx.other)」を絞る。
 //   古い書き方(効果: onlyName / onlyType / onlyClass / onlyField、パッシブ: enterName / enterType / enterFollower / deathKeyword)も、同じ filter として読む
@@ -957,7 +957,7 @@ function reanimate(state, source, speed, opts) {
   state.units[idx] = u
   emit(state, 'summon', { target: u.uid, name: u.name, team: u.team })
   state.log.push(`【リアニメイト_${speed}】${u.name}が蘇生した`)
-  for (const a of state.units.filter((x) => x.alive && x.team === u.team && x.uid !== u.uid)) fire(state, 'allyEnter', a, { other: u })
+  for (const a of inFireOrder(state.units.filter((x) => x.alive && x.team === u.team && x.uid !== u.uid))) fire(state, 'allyEnter', a, { other: u })
   fireCrestsOnEnter(state, u)
   seasonEnter(state, u) // シーズン補正
   recalc(state)
@@ -999,7 +999,7 @@ function afterEnter(state, u) {
     if (oe.log) noteAbility(state, 'クレスト', `クレスト：${crest.name}`, '', crest.desc, crest.team, oe.log) // 左のログ(oe.log があるときだけ)
   }
   // 自分の場の「味方が場に出たとき」(enterType があれば、そのタイプのキャラが出たときだけ)
-  for (const a of state.units.filter((x) => x.alive && x.team === u.team && x.uid !== u.uid)) fire(state, 'allyEnter', a, { other: u })
+  for (const a of inFireOrder(state.units.filter((x) => x.alive && x.team === u.team && x.uid !== u.uid))) fire(state, 'allyEnter', a, { other: u })
   fireCrestsOnEnter(state, u)
   seasonEnter(state, u) // シーズン補正
   recalc(state)
@@ -1677,16 +1677,16 @@ function resolveDeaths(state, opts) {
       u.barrier = 0
       u.stealth = false
       state.log.push(`${u.name}は倒れた`)
-      emit(state, 'destroy', { target: u.uid, grave: u.field === 'main', lw: (u.passiveObjs || []).some((p) => p.trigger === 'lastWord') }) // lw: ラストワードを持っている(ドクロの演出)。持っていないと、金色の粒になって散る
+      emit(state, 'destroy', { target: u.uid, grave: true, lw: (u.passiveObjs || []).some((p) => p.trigger === 'lastWord') }) // lw: ラストワードを持っている(ドクロの演出)。持っていないと、金色の粒になって散る
       // このターン中に倒されたキャラの記録(元の攻撃力・体力つき)。【場に出たとき】の growByDead が使う。前のターンの記録は捨てる
       state.deaths = (state.deaths || []).filter((d) => d.turn === state.turns)
       state.deaths.push({ turn: state.turns, team: u.team, type: u.type, atk: u.charDef?.stats?.atk ?? u.base.atk, hp: u.charDef?.stats?.hp ?? u.baseMaxHp })
-      if (u.field === 'main') { state.graveyard[u.team] += GRAVE_PER_DEATH; seasonGrave(state, u.team, GRAVE_PER_DEATH) } // 倒されると墓場が大きく増える
+      state.graveyard[u.team] += GRAVE_PER_DEATH; seasonGrave(state, u.team, GRAVE_PER_DEATH) // ユニットが破壊されると墓場が1増える
       seasonDestroyed(state, u) // シーズン補正(ナイトメア)
       const killer = u.killedBy ? getUnit(state, u.killedBy) : null
       fire(state, 'lastWord', u, { other: killer, opts })
       // 場のキャラが倒れたら、同じチームの生き残り(自分以外)の「味方が戦闘不能になったとき」が働く
-      if (u.field === 'main') for (const a of state.units.filter((x) => x.alive && x.team === u.team && x.uid !== u.uid)) fire(state, 'allyDeath', a, { other: u, opts })
+      if (u.field === 'main') for (const a of inFireOrder(state.units.filter((x) => x.alive && x.team === u.team && x.uid !== u.uid))) fire(state, 'allyDeath', a, { other: u, opts })
     }
     recalc(state)
   }
@@ -1871,12 +1871,12 @@ function endTurn(state, actor) {
     fire(state, 'turnEnd', actor, {})
     resolveDeaths(state)
   }
-  for (const u of [...state.units]) { // 【味方のターン終了時】: 味方のキャラのターンが終わるとき、場の味方(キャラ・召喚物・アミュレット)の能力が働く
+  for (const u of inFireOrder(state.units)) { // 【味方のターン終了時】: 味方のキャラのターンが終わるとき、場の味方(キャラ・召喚物・アミュレット)の能力が働く
     if (!u.alive || u.team !== actor.team) continue
     fire(state, 'allyTurnEnd', u, { other: actor })
   }
   resolveDeaths(state)
-  for (const u of [...state.units]) { // 【相手のターン終了時】: 相手のキャラのターンが終わるときに、場のキャラ・召喚物の能力が働く
+  for (const u of inFireOrder(state.units)) { // 【相手のターン終了時】: 相手のキャラのターンが終わるときに、場のキャラ・召喚物の能力が働く
     if (!u.alive || u.team === actor.team) continue
     fire(state, 'enemyTurnEnd', u, {})
   }
@@ -2186,7 +2186,7 @@ function doTrait(state, actor, action, opts) {
   }
   runEffects(state, actor, trait.effects, { opts, chosen: action.target })
   // アミュレットの【アクト】をしたとき: 同じ側の場のキャラの【味方がアミュレットをアクトしたとき】が働く
-  if (actor.isAmulet) for (const a of state.units.filter((x) => x.alive && x.team === actor.team && !x.isAmulet && x.field === 'main')) fire(state, 'allyAmuletAct', a, { other: actor, opts })
+  if (actor.isAmulet) for (const a of inFireOrder(state.units.filter((x) => x.alive && x.team === actor.team && !x.isAmulet && x.field === 'main'))) fire(state, 'allyAmuletAct', a, { other: actor, opts })
   countCombos(state, actor, opts)
   resolveDeaths(state, opts)
   emit(state, 'sync')

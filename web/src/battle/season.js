@@ -115,7 +115,7 @@ export function seasonMpMax(state, team, before, after, awakenMp) {
   return changed
 }
 
-// 墓場が増えた(攻撃を受けた・倒された)。ナイトメア: 増えた分を数える(10増えるたび、死者の攻撃力+5%。墓場を消費しても、増えた分は消えない)
+// 墓場が増えた(ユニットが破壊された)。ナイトメア: 増えた分を数える(10増えるたび、死者の攻撃力+5%。墓場を消費しても、増えた分は消えない)
 export function seasonGrave(state, team, n) {
   const s = state.season?.[team]
   if (!s || !s.classes.includes('ナイトメア') || !(n > 0)) return false

@@ -37,6 +37,15 @@ const FONT = '"Hiragino Sans","Noto Sans JP",system-ui,sans-serif'
 const TEAM_COLOR = { get A() { return ME === 'A' ? C.player : C.enemy }, get B() { return ME === 'A' ? C.enemy : C.player } }
 const DOWN_RED = '#ff6a6a' // 現在の値が、最大値より低いときの色(体力。盤面と情報パネル)
 const UP_GREEN = '#4ee08a' // 最大値が元より上がったステータスの色(盤面)
+const DOWN_ORANGE = '#ffa23c' // 体力が、ダメージ以外の手段(最大HPの低下など)で元の最大値より低いときの色
+// 体力の数字の色(11/28): 元の最大値より低い → ダメージで減っていれば赤 / ダメージ以外(最大HPが下がった)ならオレンジ。元の最大値と同じ → 白。元より高い → 緑
+const hpStyle = (hp, unit, white = false) => {
+  const base = unit.baseMaxHp
+  if (base == null) return undefined
+  if (hp > base) return { color: UP_GREEN, fontWeight: 700 }
+  if (hp < base) return { color: hp < unit.maxHp ? DOWN_RED : DOWN_ORANGE, fontWeight: 700 }
+  return white ? { color: '#fff' } : undefined
+}
 const TYPE_LABEL = { physical: '物理', magic: '魔法', true: '確定' }
 
 // これから行動する順番(アクションバー)。ラウンドの区切りも入れる
@@ -752,7 +761,7 @@ export function UnitCard({ unit, active, selected, selectable, lift = true, insp
       <div style={{ marginTop: 2, color: C.mute, ...(dying && !unit.isAmulet ? { animation: `feel-d-fade2 ${vanishing ? '0.03s ease-in 0.04s' : '0.2s ease-in 0.3s'} forwards`, willChange: 'opacity' } : {}) }}>
         {unit.isAmulet ? (unit.alive ? (unit.earthCount > 0 ? `土の印 ${unit.earthCount}` : '体力なし') : '消えた') : unit.alive || dying ? (
           <>
-            <div data-testid="unit-hp" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', paddingLeft: 6, gap: 2 }}><SI k="hp" /><span style={hpShown < unit.maxHp ? { color: DOWN_RED, fontWeight: 700 } : unit.maxHp > unit.baseMaxHp ? { color: UP_GREEN, fontWeight: 700 } : undefined}><AnimNum value={Math.ceil(unit.alive || vanishing ? hpShown : 0)} ms={300} /></span></div>
+            <div data-testid="unit-hp" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', paddingLeft: 6, gap: 2 }}><SI k="hp" /><span style={hpStyle(hpShown, unit, true)}><AnimNum value={Math.ceil(unit.alive || vanishing ? hpShown : 0)} ms={300} /></span></div>
             <div data-testid="unit-atk" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', paddingLeft: 6, gap: 2 }}><SI k="atk" /><span style={unit.atk > unit.base?.atk ? { color: UP_GREEN, fontWeight: 700 } : undefined}><AnimNum value={Math.round(unit.atk)} ms={300} /></span></div>
           </>
         ) : ''}
@@ -1079,7 +1088,7 @@ function InfoCard({ testid, unit, accent, children, big = false, style }) {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 12px', alignItems: 'baseline', color: C.mute, fontSize: big ? 12 : 11, fontWeight: 600 }}>
             {import.meta.env.DEV && unit.unitType && <span title="ユニットタイプ(開発用。本番では出さない)" style={{ opacity: 0.6 }}>[{unit.unitType}{unit.token ? '・トークン' : ''}]</span>}
             {kind && <span>{kind}</span>}
-            <span><SI k="hp" /><span style={unit.hp < unit.maxHp ? { color: DOWN_RED, fontWeight: 700 } : unit.maxHp > unit.baseMaxHp ? { color: UP_GREEN, fontWeight: 700 } : undefined}>{hp}</span></span>
+            <span><SI k="hp" /><span style={hpStyle(unit.hp, unit)}>{hp}</span></span>
             <span><SI k="atk" /><span style={unit.atk > unit.base?.atk ? { color: UP_GREEN, fontWeight: 700 } : undefined}>{Math.round(unit.atk)}</span></span>
             <span><SI k="def" /><span style={unit.def > unit.base?.def ? { color: UP_GREEN, fontWeight: 700 } : undefined}>{Math.round(unit.def)}</span></span>
             {mag && <span><SI k="mag" />{Math.round(unit.mag)}</span>}
